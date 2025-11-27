@@ -265,7 +265,8 @@ window._mainBoardMounted = true;
   var wrap  = document.getElementById('go-board-wrap');
   var mount = document.getElementById('go-board');
 // Direct path to the Joseki menu (skip redirect index.html)
-var MENU_URL = 'joseki-menu/index.html';
+var MENU_URL = '../joseki-menu/index.html';
+
   if (!wrap || mount.clientWidth === 0) return setTimeout(mountBoard, 50);
 
   /* ====================== PAGE BACKGROUND ====================== */
