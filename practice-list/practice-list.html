@@ -282,10 +282,18 @@
   const lvlOverlay = document.getElementById('level-overlay');
   let leavingToMenu = false;
   const lvlBack    = document.getElementById('level-back');
+  const MENU_URL   = "../joseki-menu/index.html";
 
   function isVisible(el){ return el && el.style.display !== 'none'; }
   function setFavHeaderVisible(show){
     if (favHeader) favHeader.style.display = show ? '' : 'none';
+  }
+
+  function goBackToMenu(){
+    if (leavingToMenu) return;
+    leavingToMenu = true;
+    // Do not close overlay; keep wood background visible until navigation completes
+    window.location.replace(MENU_URL);
   }
 
   let catsGrid = document.getElementById('prac-categories');
@@ -1290,15 +1298,9 @@
       showCategories();
     } else {
       // Root level: go back to main menu WITHOUT closing overlay
-      if (!leavingToMenu){
-        leavingToMenu = true;
-        if (window.GoMenu && typeof window.GoMenu.open === 'function'){
-          window.GoMenu.open();
-        }
-      }
+      goBackToMenu();
     }
   });
-
 
   favHeader && favHeader.addEventListener('click', ()=>{ showFavorites(); });
   lvlBack && lvlBack.addEventListener('click', ()=> LevelUI.close());
@@ -1317,12 +1319,7 @@
           showCategories();
         } else {
           // Esc from root → go back to menu, keep overlay visible
-          if (!leavingToMenu){
-            leavingToMenu = true;
-            if (window.GoMenu && typeof window.GoMenu.open === 'function'){
-              window.GoMenu.open();
-            }
-          }
+          goBackToMenu();
         }
       }
     }
