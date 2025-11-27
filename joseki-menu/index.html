@@ -25,8 +25,7 @@
     inset:0;
     background-image:
       linear-gradient(rgba(0,0,0,.45), rgba(0,0,0,.55)),
-      url('https://github.com/Baduk-Mastery/joseki-menu/blob/main/img/Menu%20Image.jpg');
-    /* later you can replace the URL above with ../img/your-menu-image.jpg */
+      url('../img/Menu Image.jpg');
     background-size:cover;
     background-position:center;
   }
@@ -94,7 +93,7 @@
   }
   .menu-primary:active{ background:#2563eb; }
 
-  /* Slate-outline skin — same colors you used before */
+  /* Slate-outline skin */
   #start-menu[data-skin="slate-outline"]::before{
     filter:brightness(.9) saturate(.9);
   }
@@ -144,18 +143,14 @@
 
       <div class="menu-logo">
         <img
-          src="https://github.com/Baduk-Mastery/joseki-menu/blob/main/img/Joseki%20Master.png"
+          src="../img/Joseki Master.png"
           alt="Joseki Master"
           decoding="async"
           loading="eager"
         />
-        <!-- later you can change src to something like ../img/joseki-master-logo.png -->
       </div>
 
-      <!-- This is the important one: it goes to your joseki page -->
       <a href="../joseki/joseki.html" class="menu-btn menu-primary">Joseki</a>
-
-      <!-- The rest are placeholders for now; you can wire them later -->
       <a href="#" class="menu-btn menu-primary">Practice</a>
       <a href="#" class="menu-btn menu-primary">Drills</a>
       <a href="#" class="menu-btn menu-primary">My Patterns</a>
