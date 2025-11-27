@@ -194,18 +194,25 @@
   window.GoSettings = { open: open, close: close, __ready:true };
 
   // back & esc
-  var btnBack = document.getElementById('s-back');
-  if (btnBack) btnBack.addEventListener('click', function(){
+  // back & esc -> go directly to menu
+  function goBackToMenu(){
     close();
-    // In Bubble we used GoMenu.open; here we just go back to the menu page.
-    window.location.href = MENU_URL;
-  });
+
+    // Jump straight to the real menu file, skipping any redirect page
+    // IMPORTANT: make sure MENU_URL is the SAME value you use in the board script
+    // e.g. '../joseki-menu/index.html'
+    window.location.replace(MENU_URL);
+  }
+
+  var btnBack = document.getElementById('s-back');
+  if (btnBack) btnBack.addEventListener('click', goBackToMenu);
+
   document.addEventListener('keydown', function(e){
     if (e.key === 'Escape' && panel.style.display !== 'none'){
-      close();
-      window.location.href = MENU_URL;
+      goBackToMenu();
     }
   });
+
 
   // === Zoom segmented toggle ===
   var zoomOn  = document.getElementById('zoom-on');
