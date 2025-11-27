@@ -1,0 +1,333 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Go Settings</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      min-height: 100%;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    /* ========= Overlay chrome (WOOD background) ========= */
+    #settings-overlay{
+      display:none; /* will be turned to flex via JS on load */
+      position:fixed; inset:0; z-index:100000;
+      align-items:center; justify-content:center;
+      color:#fff;
+      -webkit-tap-highlight-color:transparent;
+      background-image:
+        linear-gradient(rgba(0,0,0,.35), rgba(0,0,0,.45)),
+        url('../img/wood.jpg');
+      background-size:cover; background-position:center;
+      isolation:isolate;
+    }
+
+    /* Header + card are laid out via grid to avoid overlap, regardless of globals */
+    #settings-overlay .s-inner{
+      width:min(92vw,560px);
+      padding:16px 24px 24px;
+      position:relative;
+      display:grid;
+      grid-template-columns:auto 1fr;
+      grid-template-rows:auto 1fr;
+      grid-template-areas:
+        "back  title"
+        "card  card";
+      align-items:center;
+      gap:12px 16px;
+      text-align:left;
+      box-sizing:border-box;
+    }
+
+    #settings-overlay .s-back{
+      grid-area:back;
+      position:static !important;
+      margin:0 !important;
+      padding:8px 12px;
+      border-radius:12px; cursor:pointer; font-weight:700;
+      background: rgba(37,99,235,.22);
+      color:#e6f3ff;
+      border:2px solid rgba(37,99,235,.75);
+      box-shadow:0 8px 20px rgba(2,6,23,.45), inset 0 0 0 1px rgba(255,255,255,.08);
+      transition:transform .06s, background .15s, box-shadow .15s;
+      white-space:nowrap;
+      z-index:1;
+    }
+    #settings-overlay .s-back:hover{  background: rgba(37,99,235,.26); }
+    #settings-overlay .s-back:active{ background: rgba(37,99,235,.32); transform:translateY(1px); }
+
+    #settings-overlay .s-title{
+      grid-area:title;
+      position:static !important;
+      display:block !important;
+      margin:0 !important;
+      font-size:34px; font-weight:800; line-height:1.15;
+      text-shadow:0 1px 2px rgba(0,0,0,.35);
+      overflow:visible;
+      min-width:0;
+    }
+
+    #settings-overlay .s-card{
+      grid-area:card;
+      background: rgba(37,99,235,.22);
+      border:2px solid rgba(37,99,235,.75);
+      border-radius:12px;
+      box-shadow:0 8px 20px rgba(2,6,23,.45), inset 0 0 0 1px rgba(255,255,255,.08);
+      padding:12px;
+      color:#e6f3ff;
+    }
+
+    #settings-overlay .s-row{
+      display:flex !important;
+      align-items:center; justify-content:space-between;
+      padding:14px 12px; border-radius:12px;
+    }
+    #settings-overlay .s-row + .s-row{ margin-top:6px; }
+    #settings-overlay .s-label{ font-size:18px; font-weight:700; letter-spacing:.2px; color:#e6f3ff; }
+
+    #settings-overlay .seg{
+      display:inline-flex !important; gap:6px; padding:4px;
+      background:#161b29; border:1px solid #2b3246; border-radius:999px;
+      box-shadow:inset 0 2px 8px rgba(0,0,0,.35);
+    }
+    #settings-overlay .seg-btn{
+      position:static !important;
+      min-width:72px; padding:10px 14px; border-radius:999px; border:none; cursor:pointer;
+      background:transparent; color:#cfe2ff; font-weight:800; font-size:14px;
+      letter-spacing:.4px; text-transform:uppercase;
+      transition:transform .06s;
+    }
+    #settings-overlay .seg-btn:active{ transform:translateY(1px); }
+    #settings-overlay .seg-btn[aria-pressed="true"]{
+      background:#3b82f6; color:#fff; box-shadow:0 6px 18px rgba(59,130,246,.45);
+    }
+
+    @media (max-width: 360px){
+      #settings-overlay .s-inner{
+        grid-template-columns: auto 1fr;
+        gap:10px 12px;
+      }
+      #settings-overlay .s-title{ font-size:28px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ===== Settings Overlay (headline + Zoom + Sound + Highlight toggles) ===== -->
+<div id="settings-overlay" aria-modal="true" role="dialog">
+  <div class="s-inner">
+    <button id="s-back" class="s-back" type="button" aria-label="Back to menu">← Back</button>
+    <h1 class="s-title">Settings</h1>
+
+    <!-- Card -->
+    <div class="s-card">
+      <!-- Row: Zoom -->
+      <div class="s-row">
+        <div class="s-label">Zoom</div>
+        <div class="seg" role="group" aria-label="Zoom setting">
+          <button id="zoom-on"  class="seg-btn" data-val="on"  aria-pressed="false">ON</button>
+          <button id="zoom-off" class="seg-btn" data-val="off" aria-pressed="false">OFF</button>
+        </div>
+      </div>
+
+      <!-- Row: Sound -->
+      <div class="s-row">
+        <div class="s-label">Sound</div>
+        <div class="seg" role="group" aria-label="Sound setting">
+          <button id="sound-on"  class="seg-btn" data-val="on"  aria-pressed="false">ON</button>
+          <button id="sound-off" class="seg-btn" data-val="off" aria-pressed="false">OFF</button>
+        </div>
+      </div>
+
+      <!-- Row: Highlight last -->
+      <div class="s-row">
+        <div class="s-label">Highlight last Move</div>
+        <div class="seg" role="group" aria-label="Highlight last setting">
+          <button id="hlast-on"  class="seg-btn" data-val="on"  aria-pressed="false">ON</button>
+          <button id="hlast-off" class="seg-btn" data-val="off" aria-pressed="false">OFF</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  if (window.GoSettings && window.GoSettings.__ready) return;
+
+  var panel = document.getElementById('settings-overlay');
+  if (!panel) return;
+
+  var MENU_URL = '../joseki-menu/index.html'; // adjust if your menu path is different
+
+  // === prefs store (shared, persisted) ===
+  var STORAGE_KEY = 'go_prefs';
+  var GoPrefs = (window.GoPrefs = window.GoPrefs || {});
+  try { Object.assign(GoPrefs, JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}') || {}); } catch(e){}
+  if (typeof GoPrefs.josekiZoom     === 'undefined') GoPrefs.josekiZoom     = true;
+  if (typeof GoPrefs.soundOn       === 'undefined') GoPrefs.soundOn       = true;
+  if (typeof GoPrefs.highlightLast === 'undefined') GoPrefs.highlightLast = true;
+
+  function savePrefs(){
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(GoPrefs)); } catch(e){}
+  }
+
+  // === overlay open/close ===
+  var docEl = document.documentElement, prevOverflow = "";
+  function open(){
+    prevOverflow = docEl.style.overflow || "";
+    docEl.style.overflow = "hidden";
+    panel.style.display = "flex";
+    setZoomUI(!!GoPrefs.josekiZoom);
+    setSoundUI(!!GoPrefs.soundOn);
+    setHLUI(!!GoPrefs.highlightLast);
+  }
+  function close(){
+    panel.style.display = "none";
+    docEl.style.overflow = prevOverflow;
+  }
+  window.GoSettings = { open: open, close: close, __ready:true };
+
+  // back & esc
+  var btnBack = document.getElementById('s-back');
+  if (btnBack) btnBack.addEventListener('click', function(){
+    close();
+    // In Bubble we used GoMenu.open; here we just go back to the menu page.
+    window.location.href = MENU_URL;
+  });
+  document.addEventListener('keydown', function(e){
+    if (e.key === 'Escape' && panel.style.display !== 'none'){
+      close();
+      window.location.href = MENU_URL;
+    }
+  });
+
+  // === Zoom segmented toggle ===
+  var zoomOn  = document.getElementById('zoom-on');
+  var zoomOff = document.getElementById('zoom-off');
+
+  function setZoomUI(isOn){
+    if (!zoomOn || !zoomOff) return;
+    zoomOn.setAttribute('aria-pressed',  isOn ? 'true' : 'false');
+    zoomOff.setAttribute('aria-pressed', isOn ? 'false' : 'true');
+  }
+
+  function applyZoomPref(){
+    var v = !!GoPrefs.josekiZoom;
+    if (window.JosekiZoom && typeof JosekiZoom.setEnabled === 'function'){
+      try { JosekiZoom.setEnabled(v); } catch(e){}
+    }
+    if (window.PracticeZoom && typeof PracticeZoom.setEnabled === 'function'){
+      try { PracticeZoom.setEnabled(v); } catch(e){}
+    }
+    try {
+      window.dispatchEvent(new CustomEvent('go:prefs-changed', { detail:{ key:'josekiZoom', value:v } }));
+    } catch(e){}
+  }
+
+  if (zoomOn)  zoomOn.addEventListener('click', function(){
+    GoPrefs.josekiZoom = true;
+    savePrefs();
+    setZoomUI(true);
+    applyZoomPref();
+  });
+  if (zoomOff) zoomOff.addEventListener('click', function(){
+    GoPrefs.josekiZoom = false;
+    savePrefs();
+    setZoomUI(false);
+    applyZoomPref();
+  });
+
+  // === Sound segmented toggle ===
+  var soundOnBtn  = document.getElementById('sound-on');
+  var soundOffBtn = document.getElementById('sound-off');
+
+  function setSoundUI(isOn){
+    if (!soundOnBtn || !soundOffBtn) return;
+    soundOnBtn.setAttribute('aria-pressed',  isOn ? 'true' : 'false');
+    soundOffBtn.setAttribute('aria-pressed', isOn ? 'false' : 'true');
+  }
+
+  function applySoundPref(){
+    var v = !!GoPrefs.soundOn;
+    if (window.JosekiSound && typeof JosekiSound.setEnabled === 'function'){
+      try { JosekiSound.setEnabled(v); } catch(e){}
+    }
+    if (window.PracticeSound && typeof PracticeSound.setEnabled === 'function'){
+      try { PracticeSound.setEnabled(v); } catch(e){}
+    }
+    try {
+      window.dispatchEvent(new CustomEvent('go:prefs-changed', { detail:{ key:'soundOn', value:v } }));
+    } catch(e){}
+  }
+
+  if (soundOnBtn)  soundOnBtn.addEventListener('click', function(){
+    GoPrefs.soundOn = true;
+    savePrefs();
+    setSoundUI(true);
+    applySoundPref();
+  });
+  if (soundOffBtn) soundOffBtn.addEventListener('click', function(){
+    GoPrefs.soundOn = false;
+    savePrefs();
+    setSoundUI(false);
+    applySoundPref();
+  });
+
+  // === Highlight last segmented toggle ===
+  var hlastOn  = document.getElementById('hlast-on');
+  var hlastOff = document.getElementById('hlast-off');
+
+  function setHLUI(isOn){
+    if (!hlastOn || !hlastOff) return;
+    hlastOn.setAttribute('aria-pressed',  isOn ? 'true' : 'false');
+    hlastOff.setAttribute('aria-pressed', isOn ? 'false' : 'true');
+  }
+
+  function applyHLPref(){
+    var v = !!GoPrefs.highlightLast;
+    if (window.JosekiHighlight && typeof JosekiHighlight.setEnabled === 'function'){
+      try { JosekiHighlight.setEnabled(v); } catch(e){}
+    }
+    if (window.PracticeHighlight && typeof PracticeHighlight.setEnabled === 'function'){
+      try { PracticeHighlight.setEnabled(v); } catch(e){}
+    }
+    try {
+      window.dispatchEvent(new CustomEvent('go:prefs-changed', { detail:{ key:'highlightLast', value:v } }));
+    } catch(e){}
+  }
+
+  if (hlastOn)  hlastOn.addEventListener('click', function(){
+    GoPrefs.highlightLast = true;
+    savePrefs();
+    setHLUI(true);
+    applyHLPref();
+  });
+  if (hlastOff) hlastOff.addEventListener('click', function(){
+    GoPrefs.highlightLast = false;
+    savePrefs();
+    setHLUI(false);
+    applyHLPref();
+  });
+
+  // Initial UI sync (even if overlay is closed)
+  setZoomUI(!!GoPrefs.josekiZoom);
+  setSoundUI(!!GoPrefs.soundOn);
+  setHLUI(!!GoPrefs.highlightLast);
+
+  // Standalone page: open overlay immediately when ready
+  if (document.readyState === 'complete' || document.readyState === 'interactive') {
+    open();
+  } else {
+    document.addEventListener('DOMContentLoaded', open);
+  }
+})();
+</script>
+
+</body>
+</html>
