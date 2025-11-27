@@ -399,6 +399,18 @@ body.bg-wood [class*="blur"]{
   })();
 
   var SIZE = 19, B='B', W='W';
+  // ===== shared preferences with settings page =====
+  var STORAGE_KEY = 'go_prefs';
+  var GoPrefs = (window.GoPrefs = window.GoPrefs || {});
+
+  try {
+    Object.assign(GoPrefs, JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}') || {});
+  } catch (e) {}
+
+  if (typeof GoPrefs.josekiZoom     === 'undefined') GoPrefs.josekiZoom     = true;
+  if (typeof GoPrefs.soundOn       === 'undefined') GoPrefs.soundOn       = true;
+  if (typeof GoPrefs.highlightLast === 'undefined') GoPrefs.highlightLast = true;
+
 
   // ---------- state ----------
   var board = new WGo.Board(mount, { size: SIZE });
@@ -415,11 +427,15 @@ body.bg-wood [class*="blur"]{
   var freeMode = false, josekiAnchor = null;
 
   // Sound preference
-  var soundEnabled = true;
-  function setSoundEnabled(v){ soundEnabled = !!v; }
+  // Sound preference (initial from prefs)
+  var soundEnabled = !!GoPrefs.soundOn;
+  function setSoundEnabled(v){
+    soundEnabled = !!v;
+  }
 
-  // Highlight last move
-  var highlightLastEnabled = true;
+  // Highlight last move (initial from prefs)
+  var highlightLastEnabled = !!GoPrefs.highlightLast;
+
 
   // Pass button helpers
   var passBtn = null;
@@ -434,7 +450,8 @@ body.bg-wood [class*="blur"]{
   }
 
   // ---------- fullscreen zoom ----------
-  var zoomEnabled = true;
+  var zoomEnabled = !!GoPrefs.josekiZoom;
+
 
   var scale = 1, minScale = 1, maxScale = 2.6;
   var baseW = 0;
