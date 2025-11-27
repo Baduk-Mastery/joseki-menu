@@ -835,17 +835,36 @@ body.bg-wood [class*="blur"]{
   }
 
   function rebuildFromHistory(){
-    for (var y=0;y<SIZE;y++) grid[y].fill(null);
+    // Make sure "current" is within bounds
+    if (current < 0) current = 0;
+    if (current > history.length) current = history.length;
+
+    // Clear board
+    for (var y = 0; y < SIZE; y++) grid[y].fill(null);
+
+    // Replay root stones (from SGF) if present
     if (hasSGF){
-      for (var i=0;i<rootAB.length;i++){ var p=rootAB[i]; grid[p.y][p.x]=B; }
-      for (var j=0;j<rootAW.length;j++){ var q=rootAW[j]; grid[q.y][q.x]=W; }
+      for (var i = 0; i < rootAB.length; i++){
+        var p = rootAB[i];
+        grid[p.y][p.x] = B;
+      }
+      for (var j = 0; j < rootAW.length; j++){
+        var q = rootAW[j];
+        grid[q.y][q.x] = W;
+      }
     }
-    for (var k=0;k<history.length;k++){
-      var m=history[k]; attemptPlay(m.x,m.y,m.color);
+
+    // Only replay moves up to "current" (NOT the full history)
+    for (var k = 0; k < current; k++){
+      var m = history[k];
+      attemptPlay(m.x, m.y, m.color);
     }
-    turn = (current%2===0)?B:W;
-    redraw(); updateDesc();
+
+    turn = (current % 2 === 0) ? B : W;
+    redraw();
+    updateDesc();
   }
+
 
   // ---------- SGF parsing ----------
   function readBracket(str, i){
