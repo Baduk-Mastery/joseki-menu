@@ -280,6 +280,7 @@
   const backBtn    = document.getElementById('practice-back');
   const favHeader  = document.getElementById('practice-favorites');
   const lvlOverlay = document.getElementById('level-overlay');
+  let leavingToMenu = false;
   const lvlBack    = document.getElementById('level-back');
 
   function isVisible(el){ return el && el.style.display !== 'none'; }
@@ -1283,30 +1284,50 @@
       hideFavToast();
       return;
     }
+
     if (state.view === 'vars' || state.view === 'favs'){
+      // Back within Practice: go up one level (no navigation)
       showCategories();
     } else {
-      PracticeUI.close();
-      if (window.GoMenu && typeof window.GoMenu.open === 'function') window.GoMenu.open();
+      // Root level: go back to main menu WITHOUT closing overlay
+      if (!leavingToMenu){
+        leavingToMenu = true;
+        if (window.GoMenu && typeof window.GoMenu.open === 'function'){
+          window.GoMenu.open();
+        }
+      }
     }
   });
+
 
   favHeader && favHeader.addEventListener('click', ()=>{ showFavorites(); });
   lvlBack && lvlBack.addEventListener('click', ()=> LevelUI.close());
 
   window.addEventListener('keydown', (e)=>{
     if (e.key === 'Escape'){
-      if (isVisible(lvlOverlay)) LevelUI.close();
-      else if (isVisible(overlay)){
+      if (isVisible(lvlOverlay)) {
+        LevelUI.close();
+      } else if (isVisible(overlay)){
         if (overlay.classList.contains('toast-open')) {
           hideFavToast();
           return;
         }
-        if (state.view==='vars' || state.view==='favs') showCategories();
-        else PracticeUI.close();
+        if (state.view === 'vars' || state.view === 'favs'){
+          // Esc inside a category/favorites → go back to category list
+          showCategories();
+        } else {
+          // Esc from root → go back to menu, keep overlay visible
+          if (!leavingToMenu){
+            leavingToMenu = true;
+            if (window.GoMenu && typeof window.GoMenu.open === 'function'){
+              window.GoMenu.open();
+            }
+          }
+        }
       }
     }
   });
+
 })();
 </script>
 
