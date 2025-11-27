@@ -979,15 +979,23 @@ body.bg-wood [class*="blur"]{
   hook('jbtnReset',   function(){ if (hasSGF) { freeMode=false; josekiAnchor=null; currentNode=null; buildPositionTo(null); } else { current=0; rebuildFromHistory(); } exitFullscreen(); });
 
   function openMenuWithConfirm(){
+    // Simple confirmation popup
+    var goBack = window.confirm("Do you want to go back to the menu?");
+    if (!goBack) return;
+
+    // If an overlay menu exists on this page, open it
     if (window.GoMenu && typeof GoMenu.open === 'function'){
       GoMenu.open();
-    } else {
-      // For now just go back to menu page if you like:
-      // window.location.href = "/";
-      console.log("Menu button clicked");
+      return;
     }
+
+    // Otherwise navigate to the main menu page (index.html at project root)
+    window.location.href = "/";
   }
+
+  // Wire the Menu button to this handler
   hook('jbtnMenu', openMenuWithConfirm);
+
 
   // public APIs
   window.JosekiBoard = window.JosekiBoard || {};
