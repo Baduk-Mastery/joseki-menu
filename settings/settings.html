@@ -193,15 +193,11 @@
   }
   window.GoSettings = { open: open, close: close, __ready:true };
 
-  // back & esc
-  // back & esc -> go directly to menu
+    // back & esc -> go directly to menu without white flash
   function goBackToMenu(){
-    close();
-
-    // Jump straight to the real menu file, skipping any redirect page
-    // IMPORTANT: make sure MENU_URL is the SAME value you use in the board script
-    // e.g. '../joseki-menu/index.html'
-    window.location.replace(MENU_URL);
+    // Do NOT call close() here; leaving the overlay visible
+    // avoids a brief white frame before navigation.
+    window.location.replace(MENU_URL); // or window.location.href = MENU_URL;
   }
 
   var btnBack = document.getElementById('s-back');
@@ -212,6 +208,7 @@
       goBackToMenu();
     }
   });
+
 
 
   // === Zoom segmented toggle ===
