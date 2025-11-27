@@ -100,7 +100,6 @@
     .jbtn[disabled]:active{
       transform: none;
     }
-
   </style>
 
   <style>
@@ -229,7 +228,7 @@
     <button id="jbtnPass"    class="jbtn"             type="button" disabled>Pass</button>
     <button id="jbtnReset"   class="jbtn jbtn-alt"    type="button">Reset</button>
   </div>
-
+</div>
 
 <!-- In-app "Back to menu" confirmation -->
 <div id="menu-confirm-overlay" aria-hidden="true">
@@ -274,8 +273,8 @@ window._mainBoardMounted = true;
 
   var wrap  = document.getElementById('go-board-wrap');
   var mount = document.getElementById('go-board');
-// Direct path to the Joseki menu (skip redirect index.html)
-var MENU_URL = '../joseki-menu/index.html';
+  // Direct path to the Joseki menu (skip redirect index.html)
+  var MENU_URL = '../joseki-menu/index.html';
 
   if (!wrap || mount.clientWidth === 0) return setTimeout(mountBoard, 50);
 
@@ -407,7 +406,7 @@ body.bg-wood [class*="blur"]{
   var grid  = Array.from({length:SIZE}, ()=>Array(SIZE).fill(null));
   var history = [];
   var current = 0;
-  var turn    = B;
+  var turn    = B;  // side to move
 
   // SGF state
   var hasSGF = false, sgfRootSeq = null, currentNode = null;
@@ -422,6 +421,7 @@ body.bg-wood [class*="blur"]{
 
   // Highlight last move
   var highlightLastEnabled = true;
+
   // Pass button helpers
   var passBtn = null;
   function getPassBtn(){
@@ -535,7 +535,7 @@ body.bg-wood [class*="blur"]{
     applyPanAndSize(true);
   }
 
-  // Remember which grid intersection we tapped (not just a normalized 0–1)
+  // Remember which grid intersection we tapped
   var lastTapBoardI = Math.floor(SIZE / 2);
   var lastTapBoardJ = Math.floor(SIZE / 2);
 
@@ -573,11 +573,9 @@ body.bg-wood [class*="blur"]{
     if (newScale > maxScale) newScale = maxScale;
     if (newScale === scale) return;
 
-    // Set new scale and update board size once
     scale = newScale;
-    applyPanAndSize(false); // updates board width to baseW * scale
+    applyPanAndSize(false);
 
-    // Now compute offsets so that (i,j) is exactly at screen center
     const { vw, vh } = viewportSize();
     const targetW = Math.max(2, Math.round(baseW * scale));
     const { padX, padY } = padsFor(targetW);
@@ -614,7 +612,6 @@ body.bg-wood [class*="blur"]{
 
     resetViewLocal();
 
-    // After fullscreen is active, zoom in so that the tapped intersection is centered
     requestAnimationFrame(function(){
       const { vw, vh } = viewportSize();
       const needToCover   = Math.max(vw, vh) / baseW;
@@ -718,7 +715,6 @@ body.bg-wood [class*="blur"]{
         e.stopPropagation();
         e.stopImmediatePropagation && e.stopImmediatePropagation();
         suppressNextBoardClick = true;
-        // NEW: use the exact intersection indices we captured
         enterFullscreenAtIntersection(lastTapBoardI, lastTapBoardJ);
       } else {
         suppressNextBoardClick = false;
@@ -778,7 +774,7 @@ body.bg-wood [class*="blur"]{
       for (var i=0;i<nodeLabels.length;i++) addLB(nodeLabels[i].x, nodeLabels[i].y, nodeLabels[i].text);
     }
     if (hasSGF && !freeMode){
-      var opts = getNextCandidates(currentNode);
+      var opts = getTurnCandidates(currentNode);
       for (var k=0;k<opts.length;k++){
         addLB(opts[k].xy.x, opts[k].xy.y, String.fromCharCode(65+k));
       }
@@ -864,17 +860,23 @@ body.bg-wood [class*="blur"]{
       }
     }
 
+    var lastMove = null;
     for (var k = 0; k < current; k++){
       var m = history[k];
       attemptPlay(m.x, m.y, m.color);
+      lastMove = m;
     }
 
-      turn = (current % 2 === 0) ? B : W;
+    if (!lastMove){
+      turn = B;
+    } else {
+      turn = (lastMove.color === B ? W : B);
+    }
+
     redraw();
     updateDesc();
     updatePassButtonState();
   }
-
 
   // ---------- SGF parsing ----------
   function readBracket(str, i){
@@ -1015,12 +1017,20 @@ body.bg-wood [class*="blur"]{
     }
     return candidatesDedup(arr);
   }
+
+  // Only candidates for current side to move
+  function getTurnCandidates(node){
+    var all = getNextCandidates(node);
+    if (!all || !all.length) return [];
+    return all.filter(function(c){ return c.color === turn; });
+  }
+
   // Decide when the Pass button should be enabled.
   // Idea:
   // - Must be in SGF joseki mode (hasSGF && !freeMode)
-  // - Must have a current node (not at root)
-  // - There must be at least one normal next move (cand[0])
-  // - Auto-playing that move must lead to a position where the side to move flips color.
+  // - Must have a currentNode (not root)
+  // - There must be at least one candidate for the current color (turn)
+  //   and at least one for the other color.
   function computePassAvailability(){
     if (!hasSGF || freeMode) return false;
     if (!currentNode) return false;
@@ -1028,25 +1038,16 @@ body.bg-wood [class*="blur"]{
     var cand = getNextCandidates(currentNode);
     if (!cand || !cand.length) return false;
 
-    var currentColor = cand[0].color;
+    var other = (turn === B ? W : B);
+    var haveCurrent = false;
+    var haveOther = false;
 
-    // If next candidates have mixed colors, it's weird – disable pass.
-    for (var i = 1; i < cand.length; i++){
-      if (cand[i].color !== currentColor) return false;
+    for (var i=0;i<cand.length;i++){
+      if (cand[i].color === turn) haveCurrent = true;
+      if (cand[i].color === other) haveOther = true;
     }
 
-    var mainChild = cand[0].node;
-    if (!mainChild) return false;
-
-    var nextCand = getNextCandidates(mainChild);
-    if (!nextCand || !nextCand.length) return false;
-
-    var nextColor = nextCand[0].color;
-
-    // Only enable pass if it will actually switch the side to move
-    if (nextColor === currentColor) return false;
-
-    return true;
+    return haveCurrent && haveOther;
   }
 
   function updatePassButtonState(){
@@ -1067,7 +1068,14 @@ body.bg-wood [class*="blur"]{
     for (var i=0;i<rootAB.length;i++){ var p=rootAB[i]; grid[p.y][p.x]=B; }
     for (var j=0;j<rootAW.length;j++){ var q=rootAW[j]; grid[q.y][q.x]=W; }
 
-    if (!node){ current = 0; turn=B; redraw(); updateDesc(); return; }
+    if (!node){
+      current = 0;
+      turn = B;
+      redraw();
+      updateDesc();
+      updatePassButtonState();
+      return;
+    }
 
     var path = pathTo(node);
     for (var k=0;k<path.length;k++){
@@ -1082,13 +1090,17 @@ body.bg-wood [class*="blur"]{
         }
       }
     }
-       current = history.length;
-    turn = (current%2===0)?B:W;
+    current = history.length;
+    if (!history.length){
+      turn = B;
+    } else {
+      var last = history[history.length-1];
+      turn = (last.color === B ? W : B);
+    }
     redraw();
     updateDesc();
     updatePassButtonState();
   }
-
 
   function gotoPrev (){ if (!currentNode) return; currentNode = currentNode.prev || null; buildPositionTo(currentNode); }
   function gotoNext (){ var cand = getNextCandidates(currentNode); if (!cand.length) return; currentNode = cand[0].node; buildPositionTo(currentNode); }
@@ -1097,7 +1109,7 @@ body.bg-wood [class*="blur"]{
     if (zoomEnabled && suppressNextBoardClick){ suppressNextBoardClick = false; return; }
 
     if (hasSGF && !freeMode){
-      var opts = getNextCandidates(currentNode);
+      var opts = getTurnCandidates(currentNode); // filtered by turn
       for (var i=0;i<opts.length;i++){
         if (opts[i].xy.x===x && opts[i].xy.y===y){
           currentNode = opts[i].node;
@@ -1115,18 +1127,17 @@ body.bg-wood [class*="blur"]{
     if (current < history.length) history.splice(current);
     var r = attemptPlay(x,y,turn);
     if(!r.ok) return;
-        history.push({ x:x, y:y, color: turn, captures: r.captures });
-    current = history.length; turn = (turn===B?W:B);
+    history.push({ x:x, y:y, color: turn, captures: r.captures });
+    current = history.length;
+    turn = (turn===B?W:B);
     redraw();
     updateDesc();
     updatePassButtonState();
     try { if (soundEnabled && window.StoneSFX && StoneSFX.play) StoneSFX.play(); } catch(e){}
 
-
     if (zoomEnabled && (scale > 1 || isFullscreen)) setTimeout(exitFullscreen, 10);
   });
 
-  // ---------- controls ----------
   // ---------- controls ----------
   function hook(id, fn){
     var el = document.getElementById(id);
@@ -1152,23 +1163,15 @@ body.bg-wood [class*="blur"]{
     }
   });
 
-  // Pass: auto-play one normal next move (mainline)
-  // and leave you at the position where the other color is to move.
+  // Pass: flip side to move only, do not autoplay.
   hook('jbtnPass', function(){
     if (!hasSGF || freeMode) return;
     if (!computePassAvailability()) return;
 
-    var cand = getNextCandidates(currentNode);
-    if (!cand || !cand.length) return;
-
-    var mainChild = cand[0].node;
-    if (!mainChild) return;
-
-    // Auto-play the "skipped" move
-    currentNode = mainChild;
-    buildPositionTo(currentNode);
-
-    try { if (soundEnabled && window.StoneSFX && StoneSFX.play) StoneSFX.play(); } catch(e){}
+    turn = (turn === B ? W : B);
+    redraw();
+    updateDesc();
+    updatePassButtonState();
   });
 
   hook('jbtnReset',   function(){
@@ -1181,7 +1184,6 @@ body.bg-wood [class*="blur"]{
     }
     exitFullscreen();
   });
-
 
   // ====== In-app "Back to menu" dialog ======
   var menuConfirmOverlay = document.getElementById('menu-confirm-overlay');
@@ -1208,14 +1210,13 @@ body.bg-wood [class*="blur"]{
     });
   }
 
-if (menuConfirmOk){
-  menuConfirmOk.addEventListener('click', function(e){
-    e.stopPropagation();
-    closeMenuConfirm();
-    window.location.href = MENU_URL; // go directly to menu
-  });
-}
-
+  if (menuConfirmOk){
+    menuConfirmOk.addEventListener('click', function(e){
+      e.stopPropagation();
+      closeMenuConfirm();
+      window.location.href = MENU_URL; // go directly to menu
+    });
+  }
 
   document.addEventListener('keydown', function(e){
     if (e.key === 'Escape') {
@@ -1223,15 +1224,13 @@ if (menuConfirmOk){
     }
   });
 
-function openMenuWithConfirm(){
-  if (menuConfirmOverlay){
-    menuConfirmOverlay.classList.add('is-open');
-  } else {
-    // If for some reason the overlay isn't there, still go straight to menu
-    window.location.href = MENU_URL;
+  function openMenuWithConfirm(){
+    if (menuConfirmOverlay){
+      menuConfirmOverlay.classList.add('is-open');
+    } else {
+      window.location.href = MENU_URL;
+    }
   }
-}
-
 
   hook('jbtnMenu', openMenuWithConfirm);
 
@@ -1264,7 +1263,7 @@ function openMenuWithConfirm(){
       if (txt.charCodeAt && txt.charCodeAt(0)===0xFEFF) txt = txt.slice(1);
       var parsed = parseGameTree(txt, txt.indexOf('('));
       var rootSeq = parsed.seq && parsed.seq.length ? parsed.seq : [];
-      if (!rootSeq.length){ hasSGF=false; freeMode=false; redraw(); updateDesc(); return; }
+      if (!rootSeq.length){ hasSGF=false; freeMode=false; redraw(); updateDesc(); updatePassButtonState(); return; }
       linkify(rootSeq, null);
       sgfRootSeq = rootSeq;
       extractRoot(rootSeq);
@@ -1275,14 +1274,13 @@ function openMenuWithConfirm(){
       buildPositionTo(null);
       fitBoard();
       try { if (window.PageBG && typeof PageBG.add === 'function') PageBG.add(); } catch(e){}
-       }catch(e){
+    }catch(e){
       console.error('SGF parse error:', e);
       hasSGF=false; freeMode=false;
       redraw();
       updateDesc();
       updatePassButtonState();
     }
-
   }
   function fetchAndLoadSGF(url){
     fetch(url, { cache:'no-cache' })
@@ -1298,6 +1296,3 @@ function openMenuWithConfirm(){
 
 </body>
 </html>
-
-
-
