@@ -771,12 +771,11 @@ body.bg-wood [class*="blur"]{
     // Labels and candidate markers
     if (hasSGF && !freeMode){
       var allCand = getNextCandidates(currentNode || null) || [];
-      var turnCand = allCand.filter(function(c){ return c.color === turn && c.xy; });
+      var turnCand = allCand.filter(function(c){ return c.color === turn; });
 
-      // Map of all candidate intersections (any color, coordinate only)
+      // Map of all candidate intersections (any color)
       var candMap = {};
       for (var i=0;i<allCand.length;i++){
-        if (!allCand[i].xy) continue; // skip passes
         var key = allCand[i].xy.x + ':' + allCand[i].xy.y;
         candMap[key] = true;
       }
@@ -922,18 +921,8 @@ body.bg-wood [class*="blur"]{
       var ch=str[i];
       if (ch===';'){ node={}; seq.push(node); i++; }
       else if ((ch>='A'&&ch<='Z')||(ch>='a'&&ch<='z')){
-        var key=''; 
-        while(i<str.length){
-          var c=str[i]; 
-          if((c>='A'&&c<='Z')||(c>='a'&&c<='z')){ key+=c; i++; } 
-          else break; 
-        }
-        var vals=[]; 
-        while(i<str.length && str[i]==='['){ 
-          var r=readBracket(str,i+1); 
-          vals.push(r.text); 
-          i=r.next; 
-        }
+        var key=''; while(i<str.length){ var c=str[i]; if((c>='A'&&c<='Z')||(c>='a'&&c<='z')){ key+=c; i++; } else break; }
+        var vals=[]; while(i<str.length && str[i]==='['){ var r=readBracket(str,i+1); vals.push(r.text); i=r.next; }
         if(!node){ node={}; seq.push(node); }
         node[key] = vals.length>1 ? vals : vals[0];
       }
@@ -998,46 +987,37 @@ body.bg-wood [class*="blur"]{
     if (n && n.AB_) rootAB = n.AB_;
     if (n && n.AW_) rootAW = n.AW_;
   }
-
-  // --- New: move info with pass detection ---
-  function nodeMoveInfo(n){
-    if (!n) return null;
-    var hasB = !!n.B;
-    var hasW = !!n.W;
-    if (!hasB && !hasW) return null;
-
-    var color = hasB ? B : W;
-    var raw   = hasB ? n.B : n.W;
-
-    // If property stored as array, take first
-    if (Array.isArray(raw)) raw = raw[0];
-    if (raw == null) raw = '';
-    raw = String(raw);
-
-    var isPass = (raw === ''); // B[] or W[] => pass
-    var xy = null;
-    if (!isPass){
-      xy = sgfCoordToXY(raw);
-      if (!xy){
-        // Fallback: treat unknown coordinates like a pass, so we don't break.
-        isPass = true;
-      }
-    }
-    return { color: color, xy: xy, isPass: isPass };
+  function nodeHasMove(n){ return !!(n && (n.B || n.W)); }
+  function nodeMoveXY(n){
+    var s = n.B || n.W; var xy = sgfCoordToXY(s);
+    return xy ? {x:xy.x, y:xy.y, color: (n.B?B:W)} : null;
   }
-
-  function nodeHasMove(n){
-    return !!nodeMoveInfo(n);
-  }
-
   function candidatesDedup(list){
     var seen={}, out=[];
     for (var i=0;i<list.length;i++){
-      var mv=list[i];
-      var key = (mv.xy ? (mv.xy.x+':'+mv.xy.y) : 'PASS') + ':' + mv.color;
+      var mv=list[i]; var key = mv.xy.x+':'+mv.xy.y+':'+mv.color;
       if (!seen[key]){ seen[key]=1; out.push(mv); }
     }
     return out;
+  }
+
+  // Helpers that are aware of pass nodes (B[] / W[])
+
+  function nodeHasColorProp(n){
+    return !!(n && (typeof n.B !== 'undefined' || typeof n.W !== 'undefined'));
+  }
+
+  function nodePassColor(n){
+    if (!n) return null;
+    if (typeof n.B !== 'undefined'){
+      var v = Array.isArray(n.B) ? n.B[0] : n.B;
+      if (v === '') return B;
+    }
+    if (typeof n.W !== 'undefined'){
+      var v2 = Array.isArray(n.W) ? n.W[0] : n.W;
+      if (v2 === '') return W;
+    }
+    return null;
   }
 
   function getRootCandidates(){
@@ -1045,15 +1025,10 @@ body.bg-wood [class*="blur"]{
     if (!sgfRootSeq || !sgfRootSeq.length) return out;
     var r = sgfRootSeq[0];
 
-    // main line from root
     var n = r;
     while(n && !nodeHasMove(n)) n = n.next;
-    if (n && nodeHasMove(n)){
-      var info = nodeMoveInfo(n);
-      if (info) out.push({node:n, xy:info.xy, color:info.color, isPass:info.isPass});
-    }
+    if (n && nodeHasMove(n)){ var mv = nodeMoveXY(n); if (mv) out.push({node:n, xy:{x:mv.x,y:mv.y}, color:mv.color}); }
 
-    // root variations
     if (r && r.variations && r.variations.length){
       for (var v=0; v<r.variations.length; v++){
         var seq = r.variations[v];
@@ -1061,10 +1036,7 @@ body.bg-wood [class*="blur"]{
           var first = seq[0];
           var m = first;
           while(m && !nodeHasMove(m)) m = m.next;
-          if (m && nodeHasMove(m)){
-            var info2 = nodeMoveInfo(m);
-            if (info2) out.push({node:m, xy:info2.xy, color:info2.color, isPass:info2.isPass});
-          }
+          if (m && nodeHasMove(m)){ var mv2=nodeMoveXY(m); if (mv2) out.push({node:m, xy:{x:mv2.x,y:mv2.y}, color:mv2.color}); }
         }
       }
     }
@@ -1074,50 +1046,95 @@ body.bg-wood [class*="blur"]{
   function getNextCandidates(node){
     if (!node) return getRootCandidates();
     var arr=[];
-    // main line after this node
     if (node.next){
-      var n=node.next; 
-      while(n && !nodeHasMove(n)) n=n.next;
-      if (n && nodeHasMove(n)){
-        var info = nodeMoveInfo(n);
-        if (info) arr.push({node:n, xy:info.xy, color:info.color, isPass:info.isPass});
-      }
+      var n=node.next; while(n && !nodeHasMove(n)) n=n.next;
+      if (n && nodeHasMove(n)){ var mv=nodeMoveXY(n); if (mv) arr.push({node:n, xy:{x:mv.x,y:mv.y}, color:mv.color}); }
     }
-    // variations off this node
     if (node.variations && node.variations.length){
       for (var v=0; v<node.variations.length; v++){
         var seq = node.variations[v];
         if (seq && seq.length){
           var m = seq[0];
           while(m && !nodeHasMove(m)) m = m.next;
-          if (m && nodeHasMove(m)){
-            var info2 = nodeMoveInfo(m);
-            if (info2) arr.push({node:m, xy:info2.xy, color:info2.color, isPass:info2.isPass});
-          }
+          if (m && nodeHasMove(m)){ var mv2=nodeMoveXY(m); if (mv2) arr.push({node:m, xy:{x:mv2.x,y:mv2.y}, color:mv2.color}); }
         }
       }
     }
     return candidatesDedup(arr);
   }
 
-  // Only candidates for current side to move, and only with coordinates (clickable)
+  // Color nodes for "next position" regardless of whether it is a pass or a board move
+  function getNextColorNodes(node){
+    var arr = [];
+    if (!sgfRootSeq || !sgfRootSeq.length) return arr;
+
+    if (!node){
+      var r = sgfRootSeq[0];
+      var n = r;
+      while (n && !nodeHasColorProp(n)) n = n.next;
+      if (n && nodeHasColorProp(n)) arr.push(n);
+
+      if (r.variations && r.variations.length){
+        for (var v = 0; v < r.variations.length; v++){
+          var seq = r.variations[v];
+          if (seq && seq.length){
+            var m = seq[0];
+            while (m && !nodeHasColorProp(m)) m = m.next;
+            if (m && nodeHasColorProp(m)) arr.push(m);
+          }
+        }
+      }
+      return arr;
+    }
+
+    if (node.next){
+      var n2 = node.next;
+      while (n2 && !nodeHasColorProp(n2)) n2 = n2.next;
+      if (n2 && nodeHasColorProp(n2)) arr.push(n2);
+    }
+    if (node.variations && node.variations.length){
+      for (var vv = 0; vv < node.variations.length; vv++){
+        var seq2 = node.variations[vv];
+        if (seq2 && seq2.length){
+          var m2 = seq2[0];
+          while (m2 && !nodeHasColorProp(m2)) m2 = m2.next;
+          if (m2 && nodeHasColorProp(m2)) arr.push(m2);
+        }
+      }
+    }
+    return arr;
+  }
+
+  // All pass-nodes reachable as immediate next positions from the given node (or root)
+  function getPassCandidates(node){
+    var colorNodes = getNextColorNodes(node || null);
+    var out = [];
+    for (var i = 0; i < colorNodes.length; i++){
+      var c = nodePassColor(colorNodes[i]);
+      if (c){
+        out.push({ node: colorNodes[i], color: c });
+      }
+    }
+    return out;
+  }
+
+  // Only candidates for current side to move (board moves, not passes)
   function getTurnCandidates(node){
     var all = getNextCandidates(node);
     if (!all || !all.length) return [];
-    return all.filter(function(c){ return c.color === turn && c.xy; });
+    return all.filter(function(c){ return c.color === turn; });
   }
 
   // Decide when the Pass button should be enabled:
-  // Enabled iff there is an SGF pass continuation for the side to move.
+  // enabled only if there is at least one SGF pass node (B[] / W[]) for the current side to move.
   function computePassAvailability(){
     if (!hasSGF || freeMode) return false;
 
-    var cand = getNextCandidates(currentNode || null);
-    if (!cand || !cand.length) return false;
+    var passList = getPassCandidates(currentNode || null);
+    if (!passList || !passList.length) return false;
 
-    for (var i=0;i<cand.length;i++){
-      var c = cand[i];
-      if (c.isPass && c.color === turn) return true;
+    for (var i = 0; i < passList.length; i++){
+      if (passList[i].color === turn) return true;
     }
     return false;
   }
@@ -1133,12 +1150,45 @@ body.bg-wood [class*="blur"]{
     return out;
   }
 
-  // Build position by walking SGF path, including passes for turn parity
+  // Apply a single SGF node (including pass) to the board; returns the move color if
+  // this node represents a move or pass, otherwise null.
+  function applyNodeToBoard(nd){
+    if (!nd) return null;
+    var colorProp, color;
+    if (typeof nd.B !== 'undefined'){
+      colorProp = nd.B;
+      color = B;
+    } else if (typeof nd.W !== 'undefined'){
+      colorProp = nd.W;
+      color = W;
+    } else {
+      return null; // no move/pass
+    }
+
+    var str;
+    if (Array.isArray(colorProp)) str = colorProp[0];
+    else str = colorProp;
+
+    if (str === '' || str == null){
+      // Pure pass: change only the side to move, no stones
+      return color;
+    }
+
+    var xy = sgfCoordToXY(str);
+    if (!xy) return color; // treat as "move" for color progression, even if coord is weird
+
+    var r = attemptPlay(xy.x, xy.y, color);
+    if (r.ok){
+      history.push({ x: xy.x, y: xy.y, color: color, captures: r.captures });
+      return color;
+    }
+    return color;
+  }
+
   function buildPositionTo(node){
     for (var y=0;y<SIZE;y++) grid[y].fill(null);
     history.length = 0;
 
-    // apply root AB/AW
     for (var i=0;i<rootAB.length;i++){ var p=rootAB[i]; grid[p.y][p.x]=B; }
     for (var j=0;j<rootAW.length;j++){ var q=rootAW[j]; grid[q.y][q.x]=W; }
 
@@ -1159,24 +1209,18 @@ body.bg-wood [class*="blur"]{
       if (nd.AB_) for (var a=0;a<nd.AB_.length;a++){ var pb=nd.AB_[a]; grid[pb.y][pb.x]=B; }
       if (nd.AW_) for (var b=0;b<nd.AW_.length;b++){ var pw=nd.AW_[b]; grid[pw.y][pw.x]=W; }
 
-      var info = nodeMoveInfo(nd);
-      if (!info) continue;
-
-      lastColor = info.color;
-
-      if (!info.isPass && info.xy){
-        var r = attemptPlay(info.xy.x, info.xy.y, info.color);
-        if (r.ok) history.push({ x:info.xy.x, y:info.xy.y, color: info.color, captures:r.captures });
-      }
-      // For pass: we just advance turn parity via lastColor; board doesn't change.
+      var c = applyNodeToBoard(nd);
+      if (c) lastColor = c;
     }
 
     current = history.length;
+
     if (!lastColor){
       turn = B;
     } else {
       turn = (lastColor === B ? W : B);
     }
+
     redraw();
     updateDesc();
     updatePassButtonState();
@@ -1189,7 +1233,7 @@ body.bg-wood [class*="blur"]{
     if (zoomEnabled && suppressNextBoardClick){ suppressNextBoardClick = false; return; }
 
     if (hasSGF && !freeMode){
-      var opts = getTurnCandidates(currentNode); // filtered by turn & non-pass
+      var opts = getTurnCandidates(currentNode); // filtered by turn
       for (var i=0;i<opts.length;i++){
         if (opts[i].xy.x===x && opts[i].xy.y===y){
           currentNode = opts[i].node;
@@ -1243,22 +1287,23 @@ body.bg-wood [class*="blur"]{
     }
   });
 
-  // Pass: follow SGF pass node for the current side, if it exists.
+  // Pass: follow an SGF pass node (B[] / W[]) for the current side to move.
   hook('jbtnPass', function(){
     if (!hasSGF || freeMode) return;
-    if (!computePassAvailability()) return;
 
-    var cand = getNextCandidates(currentNode || null);
-    var passNode = null;
-    for (var i=0;i<cand.length;i++){
-      if (cand[i].isPass && cand[i].color === turn){
-        passNode = cand[i].node;
+    var passList = getPassCandidates(currentNode || null);
+    if (!passList || !passList.length) return;
+
+    var chosen = null;
+    for (var i = 0; i < passList.length; i++){
+      if (passList[i].color === turn){
+        chosen = passList[i].node;
         break;
       }
     }
-    if (!passNode) return;
+    if (!chosen) return;
 
-    currentNode = passNode;
+    currentNode = chosen;
     buildPositionTo(currentNode);
     try { if (soundEnabled && window.StoneSFX && StoneSFX.play) StoneSFX.play(); } catch(e){}
     if (zoomEnabled && (scale > 1 || isFullscreen)) setTimeout(exitFullscreen, 10);
