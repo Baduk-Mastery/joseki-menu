@@ -1,12 +1,1050 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <title>Joseki Board – Placeholder</title>
+  <meta charset="utf-8" />
+  <title>Joseki Board</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      min-height: 100%;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    /* Board wrapper */
+    #go-board-wrap {
+      width: 100%;
+      max-width: 720px;
+      margin: 16px auto;
+      box-sizing: border-box;
+    }
+
+    @media (max-width: 480px){
+      #go-board-wrap { padding:8px 12px 0; }
+    }
+
+    #go-board-wrap #desc-wrap{ max-width:720px; width:100%; }
+    #desc-box::-webkit-scrollbar { display: none; }
+    #desc-box.grabbing { cursor: grabbing; }
+
+    .j-ctrls{
+      width:100%; max-width:720px; margin:10px auto 0;
+      padding:8px 12px; gap:10px; justify-content:center; flex-wrap:wrap;
+      display:flex; box-sizing:border-box;
+    }
+    .jbtn{
+      padding:12px 16px; border-radius:12px; border:1px solid #cbd5e1;
+      background:#fff; font-weight:800; font-size:15px; color:#0f172a;
+      cursor:pointer; box-shadow:0 2px 8px rgba(15,23,42,.06);
+      -webkit-tap-highlight-color: transparent;
+    }
+    .jbtn:active{ transform:translateY(1px); }
+    .jbtn-alt{ background:#e7f0ff; color:#0b4aa2; border-color:#a7c1ff; }
+    .jbtn-strong{ background:#111827; color:#fff; border-color:#111827; }
+
+    /* Fullscreen zoom overlay */
+    #go-zoom-overlay{
+      position:fixed; inset:0; z-index:99998;
+      display:none; align-items:center; justify-content:center;
+      background:rgba(0,0,0,.75);
+      -webkit-tap-highlight-color:transparent;
+    }
+    #go-zoom-stage{
+      width:100vw; height:100vh;
+      display:flex; align-items:center; justify-content:center;
+      touch-action:none;
+    }
+
+    /* Board drop shadow */
+    #go-board{
+      box-shadow:
+        0 18px 40px rgba(0,0,0,.32),
+        0 6px 16px rgba(0,0,0,.22) !important;
+      border-radius: 10px;
+    }
+    #go-board.is-fullscreen{ box-shadow: none !important; }
+  </style>
+
+  <style>
+    /* Responsive Joseki buttons (Practice styling) */
+    #joseki-ctrls{ display:flex; flex-wrap:nowrap; gap:10px; align-items:stretch; justify-content:center; }
+    #joseki-ctrls .jbtn,
+    #joseki-ctrls .jbtn-strong,
+    #joseki-ctrls .jbtn-alt{
+      flex:1 1 0; min-width:0; white-space:nowrap;
+      padding:12px 16px; border-radius:12px; font-weight:800; font-size:15px; line-height:1; cursor:pointer;
+      background: rgba(37,99,235,.22); color:#e6f3ff; border:2px solid rgba(37,99,235,.75);
+      box-shadow:none !important; transition:transform .06s, background .15s; -webkit-tap-highlight-color:transparent;
+    }
+    #joseki-ctrls .jbtn:hover,
+    #joseki-ctrls .jbtn-strong:hover,
+    #joseki-ctrls .jbtn-alt:hover{ background: rgba(37,99,235,.26); }
+    #joseki-ctrls .jbtn:active,
+    #joseki-ctrls .jbtn-strong:active,
+    #joseki-ctrls .jbtn-alt:active{ background: rgba(37,99,235,.32); transform: translateY(1px); }
+    #joseki-ctrls .jbtn:focus-visible,
+    #joseki-ctrls .jbtn-strong:focus-visible,
+    #joseki-ctrls .jbtn-alt:focus-visible{ outline: 2px solid rgba(255,255,255,.85); outline-offset: 2px; }
+    @media (max-width: 400px){
+      #joseki-ctrls .jbtn,
+      #joseki-ctrls .jbtn-strong,
+      #joseki-ctrls .jbtn-alt{ font-size:14px; padding:10px 12px; }
+    }
+  </style>
+
+  <style>
+    /* Make the description box's width include its border so edges align */
+    #desc-box { box-sizing: border-box; }
+
+    /* Let the button row use the full width (no side padding),
+       so it lines up exactly with #desc-box */
+    #joseki-ctrls{
+      padding-left: 0 !important;
+      padding-right: 0 !important;
+    }
+
+    /* Keep one-line layout while allowing each button to stretch evenly */
+    #joseki-ctrls .jbtn,
+    #joseki-ctrls .jbtn-strong,
+    #joseki-ctrls .jbtn-alt{
+      flex: 1 1 0;
+      min-width: 0;
+      white-space: nowrap;
+    }
+  </style>
 </head>
 <body>
-  <h1>Joseki Board (placeholder)</h1>
-  <p>If you see this page, the menu → Joseki link works and GitHub/Vercel routing are fine.</p>
-  <p>We will replace this with the full interactive board script later.</p>
+
+<!-- Joseki Board -->
+<div id="go-board-wrap">
+  <!-- Board -->
+  <div id="go-board"
+       style="width:100%;border-radius:6px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.08);"></div>
+
+  <!-- Integrated description -->
+  <div id="desc-wrap" style="width:100%;display:flex;justify-content:center;margin:10px auto 0;">
+    <div id="desc-box"
+         style="
+           max-width:720px;width:100%;height:120px;
+           padding:12px;border:1px solid #ddd;border-radius:8px;
+           overflow-y:auto;-webkit-overflow-scrolling:touch;touch-action:pan-y;
+           background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.06);
+           line-height:1.6;font-size:15px;text-align:center;
+           scrollbar-width:none;
+           cursor:grab;">
+      <div id="descText">Move description will appear here.</div>
+    </div>
+  </div>
+
+  <!-- Buttons -->
+  <div id="joseki-ctrls" class="j-ctrls">
+    <button id="jbtnMenu"    class="jbtn jbtn-strong" type="button">Menu</button>
+    <button id="jbtnBack"    class="jbtn"             type="button">Back</button>
+    <button id="jbtnForward" class="jbtn"             type="button">Next</button>
+    <button id="jbtnReset"   class="jbtn jbtn-alt"    type="button">Reset</button>
+  </div>
+</div>
+
+<!-- Simple click sound (local file) -->
+<script>
+  window.StoneSFX = (function () {
+    var audio = new Audio("../sound/click.mp3");
+    audio.preload = "auto";
+    return {
+      play: function () {
+        try {
+          audio.currentTime = 0;
+          audio.play();
+        } catch (e) {}
+      }
+    };
+  })();
+</script>
+
+<!-- Local WGo library -->
+<script src="../lib/wgo.min.js"></script>
+
+<script>
+/* Prevent double-mount */
+if (!window._mainBoardMounted) {
+window._mainBoardMounted = true;
+
+(function mountBoard(){
+  if (!window.WGo) return setTimeout(mountBoard, 50);
+
+  var wrap  = document.getElementById('go-board-wrap');
+  var mount = document.getElementById('go-board');
+  if (!wrap || mount.clientWidth === 0) return setTimeout(mountBoard, 50);
+
+  /* ====================== PAGE BACKGROUND ====================== */
+  (function(){
+    if (!document.getElementById('site-bg-wood')){
+      var css = `
+:root{ --wood-url: url('../img/wood.jpg'); }
+html.bg-wood, body.bg-wood{
+  background-image: linear-gradient(rgba(0,0,0,.35), rgba(0,0,0,.45)), var(--wood-url);
+  background-size: cover; background-position: center; background-repeat: no-repeat; background-attachment: fixed; min-height:100%;
+}
+body.bg-wood #bubble,
+body.bg-wood .bubble-r-container,
+body.bg-wood #page,
+body.bg-wood .page,
+body.bg-wood #root,
+body.bg-wood [data-visual-element="Page"],
+body.bg-wood .bubble-element.Page{
+  background: transparent !important;
+}
+html.no-wood, body.no-wood{ background: none !important; }
+
+body.bg-wood .modal-backdrop,
+body.bg-wood .bubble-overlay,
+body.bg-wood .overlay,
+body.bg-wood .popup-dim,
+body.bg-wood .s-dim,
+body.bg-wood .dim,
+body.bg-wood .backdrop{
+  background: transparent !important;
+  backdrop-filter: none !important;
+  filter: none !important;
+}
+body.bg-wood .blur,
+body.bg-wood .blurry,
+body.bg-wood .frost,
+body.bg-wood .frosted,
+body.bg-wood [class*="blur"]{
+  filter: none !important;
+  backdrop-filter: none !important;
+}
+      `;
+      var st = document.createElement('style');
+      st.id = 'site-bg-wood';
+      st.textContent = css;
+      document.head.appendChild(st);
+    }
+    function addBG(){
+      document.documentElement.classList.remove('no-wood');
+      document.body.classList.remove('no-wood');
+      document.documentElement.classList.add('bg-wood');
+      document.body.classList.add('bg-wood');
+    }
+    function removeBG(){
+      document.documentElement.classList.remove('bg-wood');
+      document.body.classList.remove('bg-wood');
+      document.documentElement.classList.add('no-wood');
+      document.body.classList.add('no-wood');
+    }
+    window.PageBG = window.PageBG || { add: addBG, remove: removeBG };
+
+    try { PageBG.add(); } catch(e){}
+
+    (function keepBackgroundCrisp(){
+      const SEL = '.modal-backdrop, .bubble-overlay, .overlay, .popup-dim, .s-dim, .dim, .backdrop';
+      function undim(){
+        if (!document.body.classList.contains('bg-wood')) return;
+        document.querySelectorAll(SEL).forEach(el=>{
+          el.style.background = 'transparent';
+          el.style.backdropFilter = 'none';
+          el.style.filter = 'none';
+        });
+      }
+      const mo = new MutationObserver(undim);
+      mo.observe(document.body, { childList:true, subtree:true, attributes:true, attributeFilter:['class','style'] });
+      undim();
+    })();
+
+    function isShown(el){
+      if (!el) return false;
+      var cs = getComputedStyle(el);
+      return cs.display !== 'none' && el.offsetWidth > 0 && el.offsetHeight > 0;
+    }
+    var targets = [ document.getElementById('group-joseki'), wrap ].filter(Boolean);
+    if (targets.length){
+      var mo2 = new MutationObserver(function(){
+        for (var i=0;i<targets.length;i++){
+          if (isShown(targets[i])) { try { PageBG.add(); } catch(e){} break; }
+        }
+      });
+      targets.forEach(function(t){
+        mo2.observe(t, { attributes:true, attributeFilter:['style','class','data-hidden'] });
+      });
+    }
+  })();
+  /* ==================== /PAGE BACKGROUND ==================== */
+
+  /* ===== Remove duplicate description boxes & button rows (static page safety) ===== */
+  (function dedupeUI(){
+    function keepOnlyFirst(selector){
+      const all = Array.from(document.querySelectorAll(selector));
+      if (!all.length) return;
+      let keeper = all.find(el => wrap.contains(el)) || all[0];
+      all.forEach(el => { if (el !== keeper && el.parentNode) el.parentNode.removeChild(el); });
+    }
+    keepOnlyFirst('#desc-wrap');
+    keepOnlyFirst('#joseki-ctrls');
+  })();
+
+  /* Description drag-to-scroll */
+  (function(){
+    var box = document.getElementById('desc-box');
+    if (!box) return;
+    let isDown=false, startY=0, startScroll=0;
+    box.addEventListener('mousedown', (e) => {
+      isDown = true; box.classList.add('grabbing'); startY = e.clientY; startScroll = box.scrollTop; e.preventDefault();
+    });
+    box.addEventListener('mousemove', (e) => { if (!isDown) return; const dy = e.clientY - startY; box.scrollTop = startScroll - dy; });
+    ['mouseup','mouseleave'].forEach(ev => box.addEventListener(ev, () => { isDown=false; box.classList.remove('grabbing'); }));
+    box.addEventListener('touchstart', (e) => { startY = e.touches[0].clientY; startScroll = box.scrollTop; }, {passive:true});
+    box.addEventListener('touchmove',  (e) => { const dy = e.touches[0].clientY - startY; box.scrollTop = startScroll - dy; }, {passive:true});
+  })();
+
+  var SIZE = 19, B='B', W='W';
+
+  // ---------- state ----------
+  var board = new WGo.Board(mount, { size: SIZE });
+  var grid  = Array.from({length:SIZE}, ()=>Array(SIZE).fill(null));
+  var history = [];
+  var current = 0;
+  var turn    = B;
+
+  // SGF state
+  var hasSGF = false, sgfRootSeq = null, currentNode = null;
+  var rootLabels = [], rootNote = '', rootAB = [], rootAW = [];
+
+  // Free-play divergence
+  var freeMode = false, josekiAnchor = null;
+
+  // Sound preference
+  var soundEnabled = true;
+  function setSoundEnabled(v){ soundEnabled = !!v; }
+
+  // Highlight last move
+  var highlightLastEnabled = true;
+
+  // ---------- fullscreen zoom ----------
+  var zoomEnabled = true;
+
+  var scale = 1, minScale = 1, maxScale = 2.6;
+  var baseW = 0;
+  var offsetX = 0, offsetY = 0;
+  var zoomLayer = null;
+  var animId = 0;
+
+  var isFullscreen = false;
+  var overlay = null, stage = null, returnAnchor = null;
+  var prevOverflow = "";
+
+  function ensureZoomLayer(){
+    if (zoomLayer) return;
+    mount.style.position = 'relative';
+    mount.style.overflow = 'hidden';
+    zoomLayer = document.createElement('div');
+    zoomLayer.style.position = 'absolute';
+    zoomLayer.style.left = '0px';
+    zoomLayer.style.top  = '0px';
+    zoomLayer.style.willChange = 'left, top, width, height';
+    while (mount.firstChild) zoomLayer.appendChild(mount.firstChild);
+    mount.appendChild(zoomLayer);
+  }
+  ensureZoomLayer();
+
+  // Wood texture on moving layer
+  (function(){
+    mount.style.backgroundImage = 'none';
+    zoomLayer.style.backgroundImage = "url('../img/wood.jpg')";
+    zoomLayer.style.backgroundSize = "cover";
+    zoomLayer.style.backgroundPosition = "center";
+  })();
+
+  function ensureOverlay(){
+    if (overlay) return;
+    overlay = document.createElement('div');
+    overlay.id = 'go-zoom-overlay';
+    overlay.innerHTML = '<div id="go-zoom-stage"></div>';
+    document.body.appendChild(overlay);
+    stage = overlay.querySelector('#go-zoom-stage');
+  }
+
+  function viewportSize(){
+    if (isFullscreen) {
+      return {
+        vw: mount.clientWidth  || window.innerWidth  || baseW || 1,
+        vh: mount.clientHeight || window.innerHeight || baseW || 1
+      };
+    }
+    return {
+      vw: mount.clientWidth || baseW || 1,
+      vh: mount.clientHeight || baseW || 1
+    };
+  }
+
+  function padsFor(targetW){
+    const { vw, vh } = viewportSize();
+    const padX = Math.max(0, (vw - targetW) / 2);
+    const padY = Math.max(0, (vh - targetW) / 2);
+    return { padX, padY };
+  }
+  function clampPanWith(vw, vh, tw){
+    const maxX = Math.max(0, tw - vw);
+    const maxY = Math.max(0, tw - vh);
+    offsetX = Math.max(0, Math.min(offsetX, maxX));
+    offsetY = Math.max(0, Math.min(offsetY, maxY));
+  }
+
+  function applyPanAndSize(redrawAfter){
+    const { vw, vh } = viewportSize();
+    const targetW = Math.max(2, Math.round(baseW * scale));
+
+    board.setWidth(targetW);
+    zoomLayer.style.width  = targetW + 'px';
+    zoomLayer.style.height = targetW + 'px';
+
+    const { padX, padY } = padsFor(targetW);
+    clampPanWith(vw, vh, targetW);
+    zoomLayer.style.left = (padX - offsetX) + 'px';
+    zoomLayer.style.top  = (padY - offsetY) + 'px';
+
+    if (isFullscreen){
+      mount.style.width  = '100vw';
+      mount.style.height = '100vh';
+    } else {
+      mount.style.width  = '';
+      mount.style.height = baseW + 'px';
+    }
+    if (redrawAfter) redraw();
+  }
+
+  function resetViewLocal(){
+    scale = 1; offsetX = 0; offsetY = 0;
+    applyPanAndSize(true);
+  }
+
+  function animateTo(targetScale, targetOffsetX, targetOffsetY){
+    targetScale = Math.max(minScale, Math.min(maxScale, targetScale));
+    var s0 = scale, ox0 = offsetX, oy0 = offsetY;
+    var s1 = targetScale, ox1 = targetOffsetX, oy1 = targetOffsetY;
+    var t0 = performance.now(), dur = 180;
+    cancelAnimationFrame(animId);
+    (function step(now){
+      var t = Math.min(1, (now - t0)/dur);
+      var e = t<.5 ? 2*t*t : -1+(4-2*t)*t;
+      scale   = s0  + (s1  - s0 )*e;
+      offsetX = ox0 + (ox1 - ox0)*e;
+      offsetY = oy0 + (oy1 - oy0)*e;
+      applyPanAndSize(true);
+      if (t < 1) animId = requestAnimationFrame(step);
+    })(t0);
+  }
+
+  function zoomInAt(screenX, screenY, factor){
+    const { vw, vh } = viewportSize();
+    const targetScale = Math.max(minScale, Math.min(maxScale, scale * factor));
+    const targetW = Math.max(2, Math.round(baseW * targetScale));
+    const { padX, padY } = padsFor(targetW);
+
+    const centerX = vw / 2;
+    const centerY = vh / 2;
+
+    const dx = screenX - centerX;
+    const dy = screenY - centerY;
+
+    let newOffsetX = offsetX + dx;
+    let newOffsetY = offsetY + dy;
+
+    animateTo(targetScale, newOffsetX, newOffsetY);
+  }
+
+  var lastTapBoardNX = 0.5, lastTapBoardNY = 0.5;
+
+  function captureBoardAnchorFromEvent(e){
+    const rect = mount.getBoundingClientRect();
+    const pxLocal = e.clientX - rect.left;
+    const pyLocal = e.clientY - rect.top;
+
+    var best = Infinity, bi = 9, bj = 9;
+    for (var ix=0; ix<SIZE; ix++){
+      const xPix = board.getX(ix);
+      for (var iy=0; iy<SIZE; iy++){
+        const yPix = board.getY(iy);
+        const dx = xPix - pxLocal;
+        const dy = yPix - pyLocal;
+        const d2 = dx*dx + dy*dy;
+        if (d2 < best){ best = d2; bi = ix; bj = iy; }
+      }
+    }
+    const targetW = Math.max(2, Math.round(baseW * scale));
+    const pxBoard = board.getX(bi);
+    const pyBoard = board.getY(bj);
+    lastTapBoardNX = (targetW ? pxBoard / targetW : 0.5);
+    lastTapBoardNY = (targetW ? pyBoard / targetW : 0.5);
+  }
+
+  function ensureFSOverlay(){
+    ensureOverlay();
+    prevOverflow = document.documentElement.style.overflow || "";
+    document.documentElement.style.overflow = 'hidden';
+  }
+
+  function enterFullscreenAtNormalized(nx, ny){
+    if (isFullscreen) return;
+    ensureFSOverlay();
+
+    returnAnchor = document.createElement('div');
+    returnAnchor.style.display = 'none';
+    mount.parentNode.insertBefore(returnAnchor, mount);
+    stage.appendChild(mount);
+
+    overlay.style.display = 'flex';
+    isFullscreen = true;
+
+    mount.classList.add('is-fullscreen');
+
+    const vwFS = window.innerWidth || document.documentElement.clientWidth || 800;
+    const vhFS = window.innerHeight || document.documentElement.clientHeight || 800;
+    baseW = Math.floor(Math.min(vwFS, vhFS));
+    if (baseW % 2) baseW--;
+
+    resetViewLocal();
+
+    requestAnimationFrame(function(){
+      const pxBoard = Math.max(0, Math.min(1, nx)) * baseW;
+      const pyBoard = Math.max(0, Math.min(1, ny)) * baseW;
+
+      const targetW0 = Math.max(2, Math.round(baseW * scale));
+      const { padX, padY } = padsFor(targetW0);
+
+      const pxScreen = padX + pxBoard;
+      const pyScreen = padY + pyBoard;
+
+      const { vw, vh } = viewportSize();
+      const needToCover = Math.max(vw, vh) / baseW;
+      const initialFactor = Math.max(1.8, needToCover + 0.02);
+
+      zoomInAt(pxScreen, pyScreen, initialFactor);
+    });
+  }
+
+  function exitFullscreen(){
+    if (!isFullscreen) return;
+
+    mount.classList.remove('is-fullscreen');
+
+    resetViewLocal();
+
+    if (returnAnchor && returnAnchor.parentNode){
+      returnAnchor.parentNode.insertBefore(mount, returnAnchor);
+      returnAnchor.parentNode.removeChild(returnAnchor);
+      returnAnchor = null;
+    }
+
+    mount.style.width = '';
+    mount.style.height = '';
+    overlay.style.display = 'none';
+    isFullscreen = false;
+
+    document.documentElement.style.overflow = prevOverflow;
+
+    fitBoard();
+  }
+
+  var isPanning = false;
+  var panStart = null;
+  var activePointerId = null;
+
+  function beginPan(e){
+    isPanning = false;
+    panStart = { x: e.clientX, y: e.clientY, ox: offsetX, oy: offsetY };
+    activePointerId = e.pointerId;
+    try { mount.setPointerCapture(e.pointerId); } catch(_) {}
+  }
+  function updatePan(e){
+    if (panStart == null) return;
+    if (!isFullscreen || scale <= 1) return;
+
+    const dx = e.clientX - panStart.x;
+    const dy = e.clientY - panStart.y;
+
+    if (!isPanning && (dx*dx + dy*dy) > 9){
+      isPanning = true;
+      suppressNextBoardClick = true;
+    }
+    if (!isPanning) return;
+
+    offsetX = panStart.ox - dx;
+    offsetY = panStart.oy - dy;
+
+    const { vw, vh } = viewportSize();
+    const targetW = Math.max(2, Math.round(baseW * scale));
+    clampPanWith(vw, vh, targetW);
+    applyPanAndSize(true);
+
+    e.preventDefault();
+  }
+  function endPan(e){
+    if (activePointerId !== null){
+      try { mount.releasePointerCapture(activePointerId); } catch(_) {}
+    }
+    activePointerId = null;
+    panStart = null;
+    setTimeout(function(){ isPanning = false; }, 0);
+  }
+
+  var tapStart = null, suppressNextBoardClick = false;
+
+  mount.addEventListener('pointerdown', function(e){
+    if (!zoomEnabled) return;
+    tapStart = { x:e.clientX, y:e.clientY, t:performance.now() };
+    captureBoardAnchorFromEvent(e);
+    beginPan(e);
+  }, {passive:true});
+
+  mount.addEventListener('pointermove', function(e){
+    if (!zoomEnabled) return;
+    updatePan(e);
+  }, {passive:false});
+
+  mount.addEventListener('pointerup', function(e){
+    if (!zoomEnabled || !tapStart) { endPan(e); return; }
+    if (isPanning){ endPan(e); tapStart = null; return; }
+
+    const dt = performance.now() - tapStart.t;
+    const dx = e.clientX - tapStart.x;
+    const dy = e.clientY - tapStart.y;
+    tapStart = null;
+    endPan(e);
+
+    if (dt < 250 && (dx*dx + dy*dy) < 9){
+      if (scale === 1 && !isFullscreen){
+        e.preventDefault();
+        e.stopPropagation();
+        e.stopImmediatePropagation && e.stopImmediatePropagation();
+        suppressNextBoardClick = true;
+        enterFullscreenAtNormalized(lastTapBoardNX, lastTapBoardNY);
+      } else {
+        suppressNextBoardClick = false;
+      }
+    }
+  }, {passive:false, capture:true});
+
+  mount.addEventListener('pointercancel', endPan, {passive:true});
+
+  document.addEventListener('keydown', function(e){
+    if (e.key === 'Escape' && isFullscreen) exitFullscreen();
+  });
+
+  window.JosekiZoom = {
+    isEnabled(){ return zoomEnabled; },
+    setEnabled(v){ zoomEnabled = !!v; if (!zoomEnabled) { if (isFullscreen) exitFullscreen(); else resetViewLocal(); } },
+    resetView: function(){ if (isFullscreen) exitFullscreen(); else resetViewLocal(); },
+    isFullscreen: function(){ return isFullscreen; }
+  };
+
+  function fitBoard(){
+    if (isFullscreen){
+      const vwFS = window.innerWidth || document.documentElement.clientWidth || 800;
+      const vhFS = window.innerHeight || document.documentElement.clientHeight || 800;
+      baseW = Math.floor(Math.min(vwFS, vhFS));
+      if (baseW % 2) baseW--;
+      mount.style.width  = '100vw';
+      mount.style.height = '100vh';
+    } else {
+      var w = mount.clientWidth || 400;
+      w = Math.floor(w); if (w % 2) w--;
+      baseW = w;
+      mount.style.width  = '';
+      mount.style.height = baseW + 'px';
+    }
+    applyPanAndSize(true);
+  }
+  window.addEventListener('resize', fitBoard);
+  window.addEventListener('orientationchange', function(){ setTimeout(fitBoard, 200); });
+  fitBoard();
+
+  function addLB(x,y,text){ board.addObject({ x:x, y:y, type:'LB', text:text }); }
+
+  function redraw(){
+    board.removeAllObjects();
+    for (var y=0;y<SIZE;y++){
+      for (var x=0;x<SIZE;x++){
+        var v=grid[y][x];
+        if (v===B) board.addObject({x:x,y:y,c:WGo.B});
+        else if (v===W) board.addObject({x:x,y:y,c:WGo.W});
+      }
+    }
+    if (hasSGF && !freeMode){
+      var nodeLabels = [];
+      if (!currentNode) nodeLabels = rootLabels;
+      else if (currentNode.LB_) nodeLabels = currentNode.LB_;
+      for (var i=0;i<nodeLabels.length;i++) addLB(nodeLabels[i].x, nodeLabels[i].y, nodeLabels[i].text);
+    }
+    if (hasSGF && !freeMode){
+      var opts = getNextCandidates(currentNode);
+      for (var k=0;k<opts.length;k++){
+        addLB(opts[k].xy.x, opts[k].xy.y, String.fromCharCode(65+k));
+      }
+    }
+    if (highlightLastEnabled && current > 0) {
+      var lm = history[current - 1];
+      if (lm) board.addObject({ x: lm.x, y: lm.y, type: 'CR' });
+    }
+  }
+
+  var descEl = document.getElementById('descText');
+  function updateDesc(){
+    if (!descEl) return;
+    if (freeMode){
+      descEl.innerHTML =
+        '<div style="font-weight:600;margin-bottom:8px;">Free Play Mode</div>' +
+        '<button id="backToJosekiBtn" style="display:inline-block;padding:8px 12px;border-radius:8px;border:1px solid #ccc;background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.06);cursor:pointer;">Back to Joseki</button>';
+      var btn = document.getElementById('backToJosekiBtn');
+      if (btn){
+        btn.onclick = function(){
+          freeMode = false;
+          currentNode = josekiAnchor;
+          buildPositionTo(currentNode);
+        };
+      }
+      return;
+    }
+    if (hasSGF){
+      if (!currentNode){ descEl.textContent = rootNote || ''; return; }
+      descEl.textContent = currentNode.comment || '';
+      return;
+    }
+    descEl.textContent = '';
+  }
+
+  function neighbors(x,y){ var ns=[]; if(x>0)ns.push([x-1,y]); if(x<SIZE-1)ns.push([x+1,y]); if(y>0)ns.push([x,y-1]); if(y<SIZE-1)ns.push([x,y+1]); return ns; }
+  function groupAndLiberties(x,y){
+    var color=grid[y][x]; if(!color) return {stones:[],liberties:0};
+    var st=[[x,y]], seen={}, stones=[], libs=0;
+    while(st.length){
+      var p=st.pop(), cx=p[0], cy=p[1], k=cx+':'+cy; if(seen[k]) continue;
+      seen[k]=1; stones.push([cx,cy]);
+      var ns=neighbors(cx,cy);
+      for(var i=0;i<ns.length;i++){
+        var nx=ns[i][0], ny=ns[i][1], v=grid[ny][nx];
+        if(v===null) libs++; else if(v===color && !seen[nx+':'+ny]) st.push([nx,ny]);
+      }
+    }
+    return {stones:stones, liberties:libs};
+  }
+  function attemptPlay(x,y,color){
+    if(grid[y][x]!==null) return {ok:false, captures:[]};
+    grid[y][x]=color;
+    var opp=(color===B?W:B), captures=[], ns=neighbors(x,y);
+    for(var i=0;i<ns.length;i++){
+      var nx=ns[i][0], ny=ns[i][1];
+      if(grid[ny][nx]===opp){
+        var g=groupAndLiberties(nx,ny);
+        if(g.liberties===0){
+          for(var j=0;j<g.stones.length;j++){ var s=g.stones[j]; grid[s[1]][s[0]]=null; captures.push([s[0],s[1]]); }
+        }
+      }
+    }
+    var self=groupAndLiberties(x,y);
+    if(captures.length===0 && self.liberties===0){ grid[y][x]=null; return {ok:false, captures:[]}; }
+    return {ok:true, captures:captures};
+  }
+
+  function rebuildFromHistory(){
+    for (var y=0;y<SIZE;y++) grid[y].fill(null);
+    if (hasSGF){
+      for (var i=0;i<rootAB.length;i++){ var p=rootAB[i]; grid[p.y][p.x]=B; }
+      for (var j=0;j<rootAW.length;j++){ var q=rootAW[j]; grid[q.y][q.x]=W; }
+    }
+    for (var k=0;k<history.length;k++){
+      var m=history[k]; attemptPlay(m.x,m.y,m.color);
+    }
+    turn = (current%2===0)?B:W;
+    redraw(); updateDesc();
+  }
+
+  // ---------- SGF parsing ----------
+  function readBracket(str, i){
+    var out='', k=i;
+    while(k<str.length){
+      var ch=str[k++]; if(ch==='\\'){ if(k<str.length) out+=str[k++]; continue; }
+      if(ch===']') break; out+=ch;
+    }
+    return { text: out, next: k };
+  }
+  function parseGameTree(str, i){
+    var seq=[], node=null;
+    if (str[i] !== '(') return { seq:[], next:i };
+    i++;
+    while (i<str.length){
+      var ch=str[i];
+      if (ch===';'){ node={}; seq.push(node); i++; }
+      else if ((ch>='A'&&ch<='Z')||(ch>='a'&&ch<='z')){
+        var key=''; while(i<str.length){ var c=str[i]; if((c>='A'&&c<='Z')||(c>='a'&&c<='z')){ key+=c; i++; } else break; }
+        var vals=[]; while(i<str.length && str[i]==='['){ var r=readBracket(str,i+1); vals.push(r.text); i=r.next; }
+        if(!node){ node={}; seq.push(node); }
+        node[key] = vals.length>1 ? vals : vals[0];
+      }
+      else if (ch==='('){
+        var child = parseGameTree(str, i);
+        i = child.next;
+        if (seq.length){
+          var parent = seq[seq.length-1];
+          parent.variations = parent.variations || [];
+          parent.variations.push(child.seq);
+        }
+      }
+      else if (ch===')'){ i++; break; }
+      else { i++; }
+    }
+    return { seq: seq, next: i };
+  }
+  function sgfCoordToXY(s){
+    if(!s||s.length<2) return null;
+    var x=s.charCodeAt(0)-97, y=s.charCodeAt(1)-97;
+    if(x<0||y<0||x>=SIZE||y>=SIZE) return null;
+    return {x:x,y:y};
+  }
+  function parseLB(lb){
+    var out=[], list = Array.isArray(lb) ? lb : (lb ? [lb] : []);
+    for (var i=0;i<list.length;i++){
+      var t=list[i]||'', colon=t.indexOf(':');
+      var a=t.substring(0, colon>=0?colon:t.length);
+      var label = colon>=0 ? t.substring(colon+1) : '•';
+      var xy=sgfCoordToXY(a); if(xy) out.push({x:xy.x,y:xy.y,text:label});
+    }
+    return out;
+  }
+  function listCoords(prop){
+    var out=[], list = Array.isArray(prop)? prop : (prop?[prop]:[]);
+    for (var i=0;i<list.length;i++){ var xy=sgfCoordToXY(list[i]); if(xy) out.push(xy); }
+    return out;
+  }
+  function linkify(seq, parent){
+    for (var i=0;i<seq.length;i++){
+      var n=seq[i];
+      n.prev = (i===0? parent : seq[i-1]);
+      n.next = (i<seq.length-1? seq[i+1] : null);
+      if (n.C) n.comment = Array.isArray(n.C)? n.C[0] : n.C;
+      if (n.LB) n.LB_ = parseLB(n.LB);
+      if (n.AB) n.AB_ = listCoords(n.AB);
+      if (n.AW) n.AW_ = listCoords(n.AW);
+      if (n.variations && n.variations.length){
+        for (var v=0; v<n.variations.length; v++){
+          var childSeq = n.variations[v];
+          if (childSeq && childSeq.length) linkify(childSeq, n);
+        }
+      }
+    }
+  }
+  function extractRoot(seq){
+    rootLabels = []; rootNote = ''; rootAB = []; rootAW = [];
+    if (!seq || !seq.length) return;
+    var n = seq[0];
+    if (n && n.LB_) rootLabels = n.LB_;
+    if (n && n.comment) rootNote = n.comment;
+    if (n && n.AB_) rootAB = n.AB_;
+    if (n && n.AW_) rootAW = n.AW_;
+  }
+  function nodeHasMove(n){ return !!(n && (n.B || n.W)); }
+  function nodeMoveXY(n){
+    var s = n.B || n.W; var xy = sgfCoordToXY(s);
+    return xy ? {x:xy.x, y:xy.y, color: (n.B?B:W)} : null;
+  }
+  function candidatesDedup(list){
+    var seen={}, out=[];
+    for (var i=0;i<list.length;i++){
+      var mv=list[i]; var key = mv.xy.x+':'+mv.xy.y+':'+mv.color;
+      if (!seen[key]){ seen[key]=1; out.push(mv); }
+    }
+    return out;
+  }
+
+  function getRootCandidates(){
+    var out=[];
+    if (!sgfRootSeq || !sgfRootSeq.length) return out;
+    var r = sgfRootSeq[0];
+
+    var n = r;
+    while(n && !nodeHasMove(n)) n = n.next;
+    if (n && nodeHasMove(n)){ var mv = nodeMoveXY(n); if (mv) out.push({node:n, xy:{x:mv.x,y:mv.y}, color:mv.color}); }
+
+    if (r && r.variations && r.variations.length){
+      for (var v=0; v<r.variations.length; v++){
+        var seq = r.variations[v];
+        if (seq && seq.length){
+          var first = seq[0];
+          var m = first;
+          while(m && !nodeHasMove(m)) m = m.next;
+          if (m && nodeHasMove(m)){ var mv2=nodeMoveXY(m); if (mv2) out.push({node:m, xy:{x:mv2.x,y:mv2.y}, color:mv2.color}); }
+        }
+      }
+    }
+    return candidatesDedup(out);
+  }
+
+  function getNextCandidates(node){
+    if (!node) return getRootCandidates();
+    var arr=[];
+    if (node.next){
+      var n=node.next; while(n && !nodeHasMove(n)) n=n.next;
+      if (n && nodeHasMove(n)){ var mv=nodeMoveXY(n); if (mv) arr.push({node:n, xy:{x:mv.x,y:mv.y}, color:mv.color}); }
+    }
+    if (node.variations && node.variations.length){
+      for (var v=0; v<node.variations.length; v++){
+        var seq = node.variations[v];
+        if (seq && seq.length){
+          var m = seq[0];
+          while(m && !nodeHasMove(m)) m = m.next;
+          if (m && nodeHasMove(m)){ var mv2=nodeMoveXY(m); if (mv2) arr.push({node:m, xy:{x:mv2.x,y:mv2.y}, color:mv2.color}); }
+        }
+      }
+    }
+    return candidatesDedup(arr);
+  }
+
+  function pathTo(node){
+    var out=[]; var n=node;
+    while(n){ out.push(n); n=n.prev; }
+    out.reverse();
+    return out;
+  }
+
+  function buildPositionTo(node){
+    for (var y=0;y<SIZE;y++) grid[y].fill(null);
+    history.length = 0;
+
+    for (var i=0;i<rootAB.length;i++){ var p=rootAB[i]; grid[p.y][p.x]=B; }
+    for (var j=0;j<rootAW.length;j++){ var q=rootAW[j]; grid[q.y][q.x]=W; }
+
+    if (!node){ current = 0; turn=B; redraw(); updateDesc(); return; }
+
+    var path = pathTo(node);
+    for (var k=0;k<path.length;k++){
+      var nd = path[k];
+      if (nd.AB_) for (var a=0;a<nd.AB_.length;a++){ var pb=nd.AB_[a]; grid[pb.y][pb.x]=B; }
+      if (nd.AW_) for (var b=0;b<nd.AW_.length;b++){ var pw=nd.AW_[b]; grid[pw.y][pw.x]=W; }
+      if (nodeHasMove(nd)){
+        var mv = nodeMoveXY(nd);
+        if (mv){
+          var r = attemptPlay(mv.x, mv.y, mv.color);
+          if (r.ok) history.push({ x:mv.x, y:mv.y, color: mv.color, captures:r.captures });
+        }
+      }
+    }
+    current = history.length;
+    turn = (current%2===0)?B:W;
+    redraw(); updateDesc();
+  }
+
+  function gotoPrev (){ if (!currentNode) return; currentNode = currentNode.prev || null; buildPositionTo(currentNode); }
+  function gotoNext (){ var cand = getNextCandidates(currentNode); if (!cand.length) return; currentNode = cand[0].node; buildPositionTo(currentNode); }
+
+  board.addEventListener('click', function(x,y){
+    if (zoomEnabled && suppressNextBoardClick){ suppressNextBoardClick = false; return; }
+
+    if (hasSGF && !freeMode){
+      var opts = getNextCandidates(currentNode);
+      for (var i=0;i<opts.length;i++){
+        if (opts[i].xy.x===x && opts[i].xy.y===y){
+          currentNode = opts[i].node;
+          buildPositionTo(currentNode);
+          try { if (soundEnabled && window.StoneSFX && StoneSFX.play) StoneSFX.play(); } catch(e){}
+          if (zoomEnabled && (scale > 1 || isFullscreen)) setTimeout(exitFullscreen, 10);
+          return;
+        }
+      }
+      if (grid[y][x] !== null) return;
+      freeMode = true;
+      josekiAnchor = currentNode;
+    }
+
+    if (current < history.length) history.splice(current);
+    var r = attemptPlay(x,y,turn);
+    if(!r.ok) return;
+    history.push({ x:x, y:y, color: turn, captures: r.captures });
+    current = history.length; turn = (turn===B?W:B);
+    redraw(); updateDesc();
+    try { if (soundEnabled && window.StoneSFX && StoneSFX.play) StoneSFX.play(); } catch(e){}
+
+    if (zoomEnabled && (scale > 1 || isFullscreen)) setTimeout(exitFullscreen, 10);
+  });
+
+  // ---------- controls ----------
+  function hook(id, fn){
+    var el = document.getElementById(id);
+    if (el) el.addEventListener('click', fn);
+    else setTimeout(function(){ hook(id, fn); }, 50);
+  }
+  hook('jbtnBack',    function(){ if (hasSGF && !freeMode) { gotoPrev(); } else if (current>0){ current--; rebuildFromHistory(); } });
+  hook('jbtnForward', function(){ if (hasSGF && !freeMode) { gotoNext(); } else if (current<history.length){ current++; rebuildFromHistory(); } });
+  hook('jbtnReset',   function(){ if (hasSGF) { freeMode=false; josekiAnchor=null; currentNode=null; buildPositionTo(null); } else { current=0; rebuildFromHistory(); } exitFullscreen(); });
+
+  function openMenuWithConfirm(){
+    if (window.GoMenu && typeof GoMenu.open === 'function'){
+      GoMenu.open();
+    } else {
+      // For now just go back to menu page if you like:
+      // window.location.href = "/";
+      console.log("Menu button clicked");
+    }
+  }
+  hook('jbtnMenu', openMenuWithConfirm);
+
+  // public APIs
+  window.JosekiBoard = window.JosekiBoard || {};
+  window.JosekiBoard.reset = function(){
+    freeMode = false; josekiAnchor = null; currentNode = null; current = 0; history.length = 0;
+    buildPositionTo(null);
+    try { document.getElementById('desc-box').scrollTop = 0; } catch(e){}
+    try { window.dispatchEvent(new Event('resize')); } catch(e){}
+    exitFullscreen();
+    try { if (window.PageBG && typeof PageBG.add === 'function') PageBG.add(); } catch(e){}
+  };
+
+  window.JosekiSound = {
+    isEnabled: function(){ return soundEnabled; },
+    setEnabled: function(v){ setSoundEnabled(v); }
+  };
+
+  window.JosekiHighlight = {
+    isEnabled: function(){ return highlightLastEnabled; },
+    setEnabled: function(v){ highlightLastEnabled = !!v; redraw(); }
+  };
+
+  // ---------- load SGF (local file) ----------
+  var SGF_URL = "../sgf/library-1.sgf";
+
+  function loadSGFText(txt){
+    try{
+      if (txt.charCodeAt && txt.charCodeAt(0)===0xFEFF) txt = txt.slice(1);
+      var parsed = parseGameTree(txt, txt.indexOf('('));
+      var rootSeq = parsed.seq && parsed.seq.length ? parsed.seq : [];
+      if (!rootSeq.length){ hasSGF=false; freeMode=false; redraw(); updateDesc(); return; }
+      linkify(rootSeq, null);
+      sgfRootSeq = rootSeq;
+      extractRoot(rootSeq);
+      hasSGF = true;
+      freeMode = false;
+      josekiAnchor = null;
+      currentNode = null;
+      buildPositionTo(null);
+      fitBoard();
+      try { if (window.PageBG && typeof PageBG.add === 'function') PageBG.add(); } catch(e){}
+    }catch(e){
+      console.error('SGF parse error:', e);
+      hasSGF=false; freeMode=false; redraw(); updateDesc();
+    }
+  }
+  function fetchAndLoadSGF(url){
+    fetch(url, { cache:'no-cache' })
+      .then(function(r){ return r.text(); })
+      .then(function(t){ loadSGFText(t); })
+      .catch(function(err){ console.error('SGF load failed:', err); });
+  }
+  fetchAndLoadSGF(SGF_URL);
+
+})(); // mountBoard
+} // _mainBoardMounted
+</script>
+
 </body>
 </html>
