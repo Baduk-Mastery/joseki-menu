@@ -993,31 +993,65 @@ body.bg-wood [class*="blur"]{
     return xy ? {x:xy.x, y:xy.y, color: (n.B?B:W)} : null;
   }
   function candidatesDedup(list){
-    var seen={}, out=[];
-    for (var i=0;i<list.length;i++){
-      var mv=list[i]; var key = mv.xy.x+':'+mv.xy.y+':'+mv.color;
-      if (!seen[key]){ seen[key]=1; out.push(mv); }
+    var seen = {}, out = [];
+    for (var i = 0; i < list.length; i++){
+      var mv = list[i];
+      var key = mv.xy.x + ':' + mv.xy.y + ':' + mv.color;
+      if (!seen[key]){
+        seen[key] = 1;
+        out.push(mv);
+      }
     }
     return out;
   }
 
+  // NEW: follow the SGF chain until we hit a real board move
+  // (skips B[] / W[] "pass" nodes and other non-coordinate nodes).
+  function firstRealMove(startNode){
+    var n = startNode;
+    while (n){
+      var hasB = !!n.B;
+      var hasW = !!n.W;
+
+      if (hasB || hasW){
+        var raw = hasB ? n.B : n.W;
+        var val = Array.isArray(raw) ? raw[0] : raw;
+
+        if (typeof val === 'string' && val.length >= 2){
+          var xy = sgfCoordToXY(val);
+          if (xy){
+            return {
+              node:  n,
+              xy:    { x: xy.x, y: xy.y },
+              color: hasB ? B : W
+            };
+          }
+        }
+        // val is empty or not a valid coordinate => pass (B[] / W[]) or invalid.
+        // We treat that as "pass happened" and keep walking forward in the chain.
+      }
+
+      n = n.next;
+    }
+    return null;
+  }
+
   function getRootCandidates(){
-    var out=[];
+    var out = [];
     if (!sgfRootSeq || !sgfRootSeq.length) return out;
     var r = sgfRootSeq[0];
 
-    var n = r;
-    while(n && !nodeHasMove(n)) n = n.next;
-    if (n && nodeHasMove(n)){ var mv = nodeMoveXY(n); if (mv) out.push({node:n, xy:{x:mv.x,y:mv.y}, color:mv.color}); }
+    // Main line starting from the root
+    var main = firstRealMove(r);
+    if (main) out.push(main);
 
-    if (r && r.variations && r.variations.length){
-      for (var v=0; v<r.variations.length; v++){
+    // Variations starting at the root
+    if (r.variations && r.variations.length){
+      for (var v = 0; v < r.variations.length; v++){
         var seq = r.variations[v];
         if (seq && seq.length){
-          var first = seq[0];
-          var m = first;
-          while(m && !nodeHasMove(m)) m = m.next;
-          if (m && nodeHasMove(m)){ var mv2=nodeMoveXY(m); if (mv2) out.push({node:m, xy:{x:mv2.x,y:mv2.y}, color:mv2.color}); }
+          var cand = firstRealMove(seq[0]);
+          if (cand) out.push(cand);
         }
       }
     }
@@ -1026,21 +1060,25 @@ body.bg-wood [class*="blur"]{
 
   function getNextCandidates(node){
     if (!node) return getRootCandidates();
-    var arr=[];
+    var arr = [];
+
+    // Main line continuation
     if (node.next){
-      var n=node.next; while(n && !nodeHasMove(n)) n=n.next;
-      if (n && nodeHasMove(n)){ var mv=nodeMoveXY(n); if (mv) arr.push({node:n, xy:{x:mv.x,y:mv.y}, color:mv.color}); }
+      var main = firstRealMove(node.next);
+      if (main) arr.push(main);
     }
+
+    // Variations branching off this node
     if (node.variations && node.variations.length){
-      for (var v=0; v<node.variations.length; v++){
+      for (var v = 0; v < node.variations.length; v++){
         var seq = node.variations[v];
         if (seq && seq.length){
-          var m = seq[0];
-          while(m && !nodeHasMove(m)) m = m.next;
-          if (m && nodeHasMove(m)){ var mv2=nodeMoveXY(m); if (mv2) arr.push({node:m, xy:{x:mv2.x,y:mv2.y}, color:mv2.color}); }
+          var cand = firstRealMove(seq[0]);
+          if (cand) arr.push(cand);
         }
       }
     }
+
     return candidatesDedup(arr);
   }
 
@@ -1051,25 +1089,25 @@ body.bg-wood [class*="blur"]{
     return all.filter(function(c){ return c.color === turn; });
   }
 
-  // Decide when the Pass button should be enabled.
-  // Enabled if there is at least one candidate for side-to-move and at least one for the other color.
+  // Pass is available iff:
+  // - we're in SGF mode
+  // - not in free play
+  // - we've played at least one move (currentNode != null)
+  // - there exists at least one continuation whose color is the *other* side.
   function computePassAvailability(){
     if (!hasSGF || freeMode) return false;
+    if (!currentNode) return false; // no pass before the first joseki move
 
-    var cand = getNextCandidates(currentNode || null);
+    var cand = getNextCandidates(currentNode);
     if (!cand || !cand.length) return false;
 
     var other = (turn === B ? W : B);
-    var haveCurrent = false;
-    var haveOther = false;
-
-    for (var i=0;i<cand.length;i++){
-      if (cand[i].color === turn) haveCurrent = true;
-      if (cand[i].color === other) haveOther = true;
+    for (var i = 0; i < cand.length; i++){
+      if (cand[i].color === other) return true;
     }
-
-    return haveCurrent && haveOther;
+    return false;
   }
+
 
   function updatePassButtonState(){
     setPassEnabled(computePassAvailability());
