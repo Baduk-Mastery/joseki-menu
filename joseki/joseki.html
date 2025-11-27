@@ -452,18 +452,17 @@ body.bg-wood [class*="blur"]{
     stage = overlay.querySelector('#go-zoom-stage');
   }
 
-  function viewportSize(){
-    if (isFullscreen) {
-      return {
-        vw: mount.clientWidth  || window.innerWidth  || baseW || 1,
-        vh: mount.clientHeight || window.innerHeight || baseW || 1
-      };
-    }
-    return {
-      vw: mount.clientWidth || baseW || 1,
-      vh: mount.clientHeight || baseW || 1
-    };
+function viewportSize(){
+  if (isFullscreen) {
+    const vw = window.innerWidth  || document.documentElement.clientWidth  || mount.clientWidth  || baseW || 1;
+    const vh = window.innerHeight || document.documentElement.clientHeight || mount.clientHeight || baseW || 1;
+    return { vw, vh };
   }
+  return {
+    vw: mount.clientWidth || baseW || 1,
+    vh: mount.clientHeight || baseW || 1
+  };
+}
 
   function padsFor(targetW){
     const { vw, vh } = viewportSize();
@@ -551,27 +550,18 @@ function zoomToBoardAnchor(nx, ny, factor){
   var lastTapBoardNX = 0.5, lastTapBoardNY = 0.5;
 
   function captureBoardAnchorFromEvent(e){
-    const rect = mount.getBoundingClientRect();
-    const pxLocal = e.clientX - rect.left;
-    const pyLocal = e.clientY - rect.top;
+  const rect = mount.getBoundingClientRect();
+  const pxLocal = e.clientX - rect.left;
+  const pyLocal = e.clientY - rect.top;
 
-    var best = Infinity, bi = 9, bj = 9;
-    for (var ix=0; ix<SIZE; ix++){
-      const xPix = board.getX(ix);
-      for (var iy=0; iy<SIZE; iy++){
-        const yPix = board.getY(iy);
-        const dx = xPix - pxLocal;
-        const dy = yPix - pyLocal;
-        const d2 = dx*dx + dy*dy;
-        if (d2 < best){ best = d2; bi = ix; bj = iy; }
-      }
-    }
-    const targetW = Math.max(2, Math.round(baseW * scale));
-    const pxBoard = board.getX(bi);
-    const pyBoard = board.getY(bj);
-    lastTapBoardNX = (targetW ? pxBoard / targetW : 0.5);
-    lastTapBoardNY = (targetW ? pyBoard / targetW : 0.5);
-  }
+  const w = rect.width  || baseW || 1;
+  const h = rect.height || baseW || 1;
+
+  // Normalized tap position inside the visible board container (0..1)
+  lastTapBoardNX = Math.max(0, Math.min(1, pxLocal / w));
+  lastTapBoardNY = Math.max(0, Math.min(1, pyLocal / h));
+}
+
 
   function ensureFSOverlay(){
     ensureOverlay();
