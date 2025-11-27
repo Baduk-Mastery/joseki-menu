@@ -92,6 +92,15 @@
       #joseki-ctrls .jbtn-strong,
       #joseki-ctrls .jbtn-alt{ font-size:14px; padding:10px 12px; }
     }
+    .jbtn[disabled]{
+      opacity: .45;
+      cursor: default;
+      box-shadow: none;
+    }
+    .jbtn[disabled]:active{
+      transform: none;
+    }
+
   </style>
 
   <style>
@@ -217,9 +226,10 @@
     <button id="jbtnMenu"    class="jbtn jbtn-strong" type="button">Menu</button>
     <button id="jbtnBack"    class="jbtn"             type="button">Back</button>
     <button id="jbtnForward" class="jbtn"             type="button">Next</button>
+    <button id="jbtnPass"    class="jbtn"             type="button" disabled>Pass</button>
     <button id="jbtnReset"   class="jbtn jbtn-alt"    type="button">Reset</button>
   </div>
-</div>
+
 
 <!-- In-app "Back to menu" confirmation -->
 <div id="menu-confirm-overlay" aria-hidden="true">
@@ -412,6 +422,17 @@ body.bg-wood [class*="blur"]{
 
   // Highlight last move
   var highlightLastEnabled = true;
+  // Pass button helpers
+  var passBtn = null;
+  function getPassBtn(){
+    if (!passBtn) passBtn = document.getElementById('jbtnPass');
+    return passBtn;
+  }
+  function setPassEnabled(on){
+    var b = getPassBtn();
+    if (!b) return;
+    b.disabled = !on;
+  }
 
   // ---------- fullscreen zoom ----------
   var zoomEnabled = true;
@@ -848,10 +869,12 @@ body.bg-wood [class*="blur"]{
       attemptPlay(m.x, m.y, m.color);
     }
 
-    turn = (current % 2 === 0) ? B : W;
+      turn = (current % 2 === 0) ? B : W;
     redraw();
     updateDesc();
+    updatePassButtonState();
   }
+
 
   // ---------- SGF parsing ----------
   function readBracket(str, i){
@@ -992,6 +1015,43 @@ body.bg-wood [class*="blur"]{
     }
     return candidatesDedup(arr);
   }
+  // Decide when the Pass button should be enabled.
+  // Idea:
+  // - Must be in SGF joseki mode (hasSGF && !freeMode)
+  // - Must have a current node (not at root)
+  // - There must be at least one normal next move (cand[0])
+  // - Auto-playing that move must lead to a position where the side to move flips color.
+  function computePassAvailability(){
+    if (!hasSGF || freeMode) return false;
+    if (!currentNode) return false;
+
+    var cand = getNextCandidates(currentNode);
+    if (!cand || !cand.length) return false;
+
+    var currentColor = cand[0].color;
+
+    // If next candidates have mixed colors, it's weird – disable pass.
+    for (var i = 1; i < cand.length; i++){
+      if (cand[i].color !== currentColor) return false;
+    }
+
+    var mainChild = cand[0].node;
+    if (!mainChild) return false;
+
+    var nextCand = getNextCandidates(mainChild);
+    if (!nextCand || !nextCand.length) return false;
+
+    var nextColor = nextCand[0].color;
+
+    // Only enable pass if it will actually switch the side to move
+    if (nextColor === currentColor) return false;
+
+    return true;
+  }
+
+  function updatePassButtonState(){
+    setPassEnabled(computePassAvailability());
+  }
 
   function pathTo(node){
     var out=[]; var n=node;
@@ -1022,10 +1082,13 @@ body.bg-wood [class*="blur"]{
         }
       }
     }
-    current = history.length;
+       current = history.length;
     turn = (current%2===0)?B:W;
-    redraw(); updateDesc();
+    redraw();
+    updateDesc();
+    updatePassButtonState();
   }
+
 
   function gotoPrev (){ if (!currentNode) return; currentNode = currentNode.prev || null; buildPositionTo(currentNode); }
   function gotoNext (){ var cand = getNextCandidates(currentNode); if (!cand.length) return; currentNode = cand[0].node; buildPositionTo(currentNode); }
@@ -1052,23 +1115,73 @@ body.bg-wood [class*="blur"]{
     if (current < history.length) history.splice(current);
     var r = attemptPlay(x,y,turn);
     if(!r.ok) return;
-    history.push({ x:x, y:y, color: turn, captures: r.captures });
+        history.push({ x:x, y:y, color: turn, captures: r.captures });
     current = history.length; turn = (turn===B?W:B);
-    redraw(); updateDesc();
+    redraw();
+    updateDesc();
+    updatePassButtonState();
     try { if (soundEnabled && window.StoneSFX && StoneSFX.play) StoneSFX.play(); } catch(e){}
+
 
     if (zoomEnabled && (scale > 1 || isFullscreen)) setTimeout(exitFullscreen, 10);
   });
 
+  // ---------- controls ----------
   // ---------- controls ----------
   function hook(id, fn){
     var el = document.getElementById(id);
     if (el) el.addEventListener('click', fn);
     else setTimeout(function(){ hook(id, fn); }, 50);
   }
-  hook('jbtnBack',    function(){ if (hasSGF && !freeMode) { gotoPrev(); } else if (current>0){ current--; rebuildFromHistory(); } });
-  hook('jbtnForward', function(){ if (hasSGF && !freeMode) { gotoNext(); } else if (current<history.length){ current++; rebuildFromHistory(); } });
-  hook('jbtnReset',   function(){ if (hasSGF) { freeMode=false; josekiAnchor=null; currentNode=null; buildPositionTo(null); } else { current=0; rebuildFromHistory(); } exitFullscreen(); });
+
+  hook('jbtnBack',    function(){
+    if (hasSGF && !freeMode) {
+      gotoPrev();
+    } else if (current>0){
+      current--;
+      rebuildFromHistory();
+    }
+  });
+
+  hook('jbtnForward', function(){
+    if (hasSGF && !freeMode) {
+      gotoNext();
+    } else if (current<history.length){
+      current++;
+      rebuildFromHistory();
+    }
+  });
+
+  // Pass: auto-play one normal next move (mainline)
+  // and leave you at the position where the other color is to move.
+  hook('jbtnPass', function(){
+    if (!hasSGF || freeMode) return;
+    if (!computePassAvailability()) return;
+
+    var cand = getNextCandidates(currentNode);
+    if (!cand || !cand.length) return;
+
+    var mainChild = cand[0].node;
+    if (!mainChild) return;
+
+    // Auto-play the "skipped" move
+    currentNode = mainChild;
+    buildPositionTo(currentNode);
+
+    try { if (soundEnabled && window.StoneSFX && StoneSFX.play) StoneSFX.play(); } catch(e){}
+  });
+
+  hook('jbtnReset',   function(){
+    if (hasSGF) {
+      freeMode=false; josekiAnchor=null; currentNode=null;
+      buildPositionTo(null);
+    } else {
+      current=0;
+      rebuildFromHistory();
+    }
+    exitFullscreen();
+  });
+
 
   // ====== In-app "Back to menu" dialog ======
   var menuConfirmOverlay = document.getElementById('menu-confirm-overlay');
@@ -1162,10 +1275,14 @@ function openMenuWithConfirm(){
       buildPositionTo(null);
       fitBoard();
       try { if (window.PageBG && typeof PageBG.add === 'function') PageBG.add(); } catch(e){}
-    }catch(e){
+       }catch(e){
       console.error('SGF parse error:', e);
-      hasSGF=false; freeMode=false; redraw(); updateDesc();
+      hasSGF=false; freeMode=false;
+      redraw();
+      updateDesc();
+      updatePassButtonState();
     }
+
   }
   function fetchAndLoadSGF(url){
     fetch(url, { cache:'no-cache' })
