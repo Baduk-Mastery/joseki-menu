@@ -114,78 +114,79 @@
       white-space: nowrap;
     }
   </style>
-<style>
-  /* In-app "Back to menu" dialog (slate/blue skin) */
-  #menu-confirm-overlay{
-    position:fixed;
-    inset:0;
-    display:none;
-    align-items:center;
-    justify-content:center;
-    background:rgba(15,23,42,.78);
-    z-index:99999;
-    -webkit-tap-highlight-color:transparent;
-  }
-  #menu-confirm-overlay.is-open{
-    display:flex;
-  }
 
-  .menu-confirm-dialog{
-    width:min(92vw,360px);
-    border-radius:16px;
-    padding:18px 16px 14px;
-    background:#020617;
-    border:1px solid rgba(148,163,184,.75);
-    box-shadow:0 18px 40px rgba(15,23,42,.7);
-    color:#e5edff;
-    font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  }
-  .menu-confirm-title{
-    font-size:18px;
-    font-weight:700;
-    margin-bottom:6px;
-  }
-  .menu-confirm-text{
-    font-size:14px;
-    opacity:.9;
-    margin-bottom:12px;
-  }
-  .menu-confirm-actions{
-    display:flex;
-    gap:10px;
-    margin-top:4px;
-  }
+  <style>
+    /* In-app "Back to menu" dialog (slate/blue skin) */
+    #menu-confirm-overlay{
+      position:fixed;
+      inset:0;
+      display:none;
+      align-items:center;
+      justify-content:center;
+      background:rgba(15,23,42,.78);
+      z-index:99999;
+      -webkit-tap-highlight-color:transparent;
+    }
+    #menu-confirm-overlay.is-open{
+      display:flex;
+    }
 
-  .mc-btn{
-    flex:1 1 0;
-    padding:10px 12px;
-    border-radius:999px;
-    border:1px solid rgba(148,163,184,.9);
-    font-size:14px;
-    font-weight:600;
-    cursor:pointer;
-    background:rgba(15,23,42,.9);
-    color:#e5edff;
-    -webkit-tap-highlight-color:transparent;
-    transition:background .12s, transform .06s, box-shadow .12s;
-  }
-  .mc-btn:active{
-    transform:translateY(1px);
-  }
+    .menu-confirm-dialog{
+      width:min(92vw,360px);
+      border-radius:16px;
+      padding:18px 16px 14px;
+      background:#020617;
+      border:1px solid rgba(148,163,184,.75);
+      box-shadow:0 18px 40px rgba(15,23,42,.7);
+      color:#e5edff;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+    .menu-confirm-title{
+      font-size:18px;
+      font-weight:700;
+      margin-bottom:6px;
+    }
+    .menu-confirm-text{
+      font-size:14px;
+      opacity:.9;
+      margin-bottom:12px;
+    }
+    .menu-confirm-actions{
+      display:flex;
+      gap:10px;
+      margin-top:4px;
+    }
 
-  .mc-btn-primary{
-    background:rgba(37,99,235,.26);
-    border-color:rgba(37,99,235,.85);
-    box-shadow:0 8px 20px rgba(15,23,42,.65), inset 0 0 0 1px rgba(255,255,255,.05);
-  }
-  .mc-btn-primary:hover{
-    background:rgba(37,99,235,.32);
-  }
+    .mc-btn{
+      flex:1 1 0;
+      padding:10px 12px;
+      border-radius:999px;
+      border:1px solid rgba(148,163,184,.9);
+      font-size:14px;
+      font-weight:600;
+      cursor:pointer;
+      background:rgba(15,23,42,.9);
+      color:#e5edff;
+      -webkit-tap-highlight-color:transparent;
+      transition:background .12s, transform .06s, box-shadow .12s;
+    }
+    .mc-btn:active{
+      transform:translateY(1px);
+    }
 
-  .mc-btn-secondary{
-    background:rgba(15,23,42,.85);
-  }
-</style>
+    .mc-btn-primary{
+      background:rgba(37,99,235,.26);
+      border-color:rgba(37,99,235,.85);
+      box-shadow:0 8px 20px rgba(15,23,42,.65), inset 0 0 0 1px rgba(255,255,255,.05);
+    }
+    .mc-btn-primary:hover{
+      background:rgba(37,99,235,.32);
+    }
+
+    .mc-btn-secondary{
+      background:rgba(15,23,42,.85);
+    }
+  </style>
 
 </head>
 <body>
@@ -219,6 +220,7 @@
     <button id="jbtnReset"   class="jbtn jbtn-alt"    type="button">Reset</button>
   </div>
 </div>
+
 <!-- In-app "Back to menu" confirmation -->
 <div id="menu-confirm-overlay" aria-hidden="true">
   <div class="menu-confirm-dialog" role="dialog" aria-modal="true" aria-labelledby="menuConfirmTitle">
@@ -415,7 +417,7 @@ body.bg-wood [class*="blur"]{
   var baseW = 0;
   var offsetX = 0, offsetY = 0;
   var zoomLayer = null;
-  var animId = 0;
+  var animId = 0; // kept for compatibility (not used now)
 
   var isFullscreen = false;
   var overlay = null, stage = null, returnAnchor = null;
@@ -452,17 +454,18 @@ body.bg-wood [class*="blur"]{
     stage = overlay.querySelector('#go-zoom-stage');
   }
 
-function viewportSize(){
-  if (isFullscreen) {
-    const vw = window.innerWidth  || document.documentElement.clientWidth  || mount.clientWidth  || baseW || 1;
-    const vh = window.innerHeight || document.documentElement.clientHeight || mount.clientHeight || baseW || 1;
-    return { vw, vh };
+  function viewportSize(){
+    if (isFullscreen) {
+      return {
+        vw: mount.clientWidth  || window.innerWidth  || baseW || 1,
+        vh: mount.clientHeight || window.innerHeight || baseW || 1
+      };
+    }
+    return {
+      vw: mount.clientWidth || baseW || 1,
+      vh: mount.clientHeight || baseW || 1
+    };
   }
-  return {
-    vw: mount.clientWidth || baseW || 1,
-    vh: mount.clientHeight || baseW || 1
-  };
-}
 
   function padsFor(targetW){
     const { vw, vh } = viewportSize();
@@ -470,6 +473,7 @@ function viewportSize(){
     const padY = Math.max(0, (vh - targetW) / 2);
     return { padX, padY };
   }
+
   function clampPanWith(vw, vh, tw){
     const maxX = Math.max(0, tw - vw);
     const maxY = Math.max(0, tw - vh);
@@ -477,91 +481,59 @@ function viewportSize(){
     offsetY = Math.max(0, Math.min(offsetY, maxY));
   }
 
-function applyPanAndSize(redrawAfter){
-  const { vw, vh } = viewportSize();
-  const targetW = Math.max(2, Math.round(baseW * scale));
+  function applyPanAndSize(redrawAfter){
+    const { vw, vh } = viewportSize();
+    const targetW = Math.max(2, Math.round(baseW * scale));
 
-  board.setWidth(targetW);
-  zoomLayer.style.width  = targetW + 'px';
-  zoomLayer.style.height = targetW + 'px';
+    board.setWidth(targetW);
+    zoomLayer.style.width  = targetW + 'px';
+    zoomLayer.style.height = targetW + 'px';
 
-  const { padX, padY } = padsFor(targetW);
-  // No clamping here – we allow the board to move past the edges
-  zoomLayer.style.left = (padX - offsetX) + 'px';
-  zoomLayer.style.top  = (padY - offsetY) + 'px';
+    const { padX, padY } = padsFor(targetW);
+    // We intentionally do NOT clamp here to allow some "past the edge" movement
+    zoomLayer.style.left = (padX - offsetX) + 'px';
+    zoomLayer.style.top  = (padY - offsetY) + 'px';
 
-  if (isFullscreen){
-    mount.style.width  = '100vw';
-    mount.style.height = '100vh';
-  } else {
-    mount.style.width  = '';
-    mount.style.height = baseW + 'px';
+    if (isFullscreen){
+      mount.style.width  = '100vw';
+      mount.style.height = '100vh';
+    } else {
+      mount.style.width  = '';
+      mount.style.height = baseW + 'px';
+    }
+    if (redrawAfter) redraw();
   }
-  if (redrawAfter) redraw();
-}
-
 
   function resetViewLocal(){
-    scale = 1; offsetX = 0; offsetY = 0;
+    scale = 1;
+    offsetX = 0;
+    offsetY = 0;
     applyPanAndSize(true);
   }
 
-  function animateTo(targetScale, targetOffsetX, targetOffsetY){
-    targetScale = Math.max(minScale, Math.min(maxScale, targetScale));
-    var s0 = scale, ox0 = offsetX, oy0 = offsetY;
-    var s1 = targetScale, ox1 = targetOffsetX, oy1 = targetOffsetY;
-    var t0 = performance.now(), dur = 180;
-    cancelAnimationFrame(animId);
-    (function step(now){
-      var t = Math.min(1, (now - t0)/dur);
-      var e = t<.5 ? 2*t*t : -1+(4-2*t)*t;
-      scale   = s0  + (s1  - s0 )*e;
-      offsetX = ox0 + (ox1 - ox0)*e;
-      offsetY = oy0 + (oy1 - oy0)*e;
-      applyPanAndSize(true);
-      if (t < 1) animId = requestAnimationFrame(step);
-    })(t0);
-  }
-
-function zoomToBoardAnchor(nx, ny, factor){
-  const { vw, vh } = viewportSize();
-  const targetScale = Math.max(minScale, Math.min(maxScale, scale * factor));
-  const targetW = Math.max(2, Math.round(baseW * targetScale));
-  const { padX, padY } = padsFor(targetW);
-
-  const clampedNX = Math.max(0, Math.min(1, nx));
-  const clampedNY = Math.max(0, Math.min(1, ny));
-
-  // Board coordinates (in pixels) at the target scale
-  const pxBoard = clampedNX * targetW;
-  const pyBoard = clampedNY * targetW;
-
-  const centerX = vw / 2;
-  const centerY = vh / 2;
-
-  // Solve: padX - offsetX + pxBoard = centerX  =>  offsetX = padX + pxBoard - centerX
-  const newOffsetX = padX + pxBoard - centerX;
-  const newOffsetY = padY + pyBoard - centerY;
-
-  animateTo(targetScale, newOffsetX, newOffsetY);
-}
-
-
-  var lastTapBoardNX = 0.5, lastTapBoardNY = 0.5;
+  // Remember which grid intersection we tapped (not just a normalized 0–1)
+  var lastTapBoardI = Math.floor(SIZE / 2);
+  var lastTapBoardJ = Math.floor(SIZE / 2);
 
   function captureBoardAnchorFromEvent(e){
-  const rect = mount.getBoundingClientRect();
-  const pxLocal = e.clientX - rect.left;
-  const pyLocal = e.clientY - rect.top;
+    const rect = mount.getBoundingClientRect();
+    const pxLocal = e.clientX - rect.left;
+    const pyLocal = e.clientY - rect.top;
 
-  const w = rect.width  || baseW || 1;
-  const h = rect.height || baseW || 1;
-
-  // Normalized tap position inside the visible board container (0..1)
-  lastTapBoardNX = Math.max(0, Math.min(1, pxLocal / w));
-  lastTapBoardNY = Math.max(0, Math.min(1, pyLocal / h));
-}
-
+    var best = Infinity, bi = lastTapBoardI, bj = lastTapBoardJ;
+    for (var ix=0; ix<SIZE; ix++){
+      const xPix = board.getX(ix);
+      for (var iy=0; iy<SIZE; iy++){
+        const yPix = board.getY(iy);
+        const dx = xPix - pxLocal;
+        const dy = yPix - pyLocal;
+        const d2 = dx*dx + dy*dy;
+        if (d2 < best){ best = d2; bi = ix; bj = iy; }
+      }
+    }
+    lastTapBoardI = bi;
+    lastTapBoardJ = bj;
+  }
 
   function ensureFSOverlay(){
     ensureOverlay();
@@ -569,7 +541,35 @@ function zoomToBoardAnchor(nx, ny, factor){
     document.documentElement.style.overflow = 'hidden';
   }
 
-  function enterFullscreenAtNormalized(nx, ny){
+  function zoomToIntersection(i, j, factor){
+    if (!zoomEnabled) return;
+
+    var newScale = scale * factor;
+    if (newScale < minScale) newScale = minScale;
+    if (newScale > maxScale) newScale = maxScale;
+    if (newScale === scale) return;
+
+    // Set new scale and update board size once
+    scale = newScale;
+    applyPanAndSize(false); // updates board width to baseW * scale
+
+    // Now compute offsets so that (i,j) is exactly at screen center
+    const { vw, vh } = viewportSize();
+    const targetW = Math.max(2, Math.round(baseW * scale));
+    const { padX, padY } = padsFor(targetW);
+
+    const pxBoard = board.getX(i);
+    const pyBoard = board.getY(j);
+    const centerX = vw / 2;
+    const centerY = vh / 2;
+
+    offsetX = padX + pxBoard - centerX;
+    offsetY = padY + pyBoard - centerY;
+
+    applyPanAndSize(true);
+  }
+
+  function enterFullscreenAtIntersection(i, j){
     if (isFullscreen) return;
     ensureFSOverlay();
 
@@ -583,22 +583,20 @@ function zoomToBoardAnchor(nx, ny, factor){
 
     mount.classList.add('is-fullscreen');
 
-    const vwFS = window.innerWidth || document.documentElement.clientWidth || 800;
+    const vwFS = window.innerWidth  || document.documentElement.clientWidth  || 800;
     const vhFS = window.innerHeight || document.documentElement.clientHeight || 800;
     baseW = Math.floor(Math.min(vwFS, vhFS));
     if (baseW % 2) baseW--;
 
     resetViewLocal();
 
-requestAnimationFrame(function(){
-  const { vw, vh } = viewportSize();
-  const needToCover = Math.max(vw, vh) / baseW;
-  const initialFactor = Math.max(1.8, needToCover + 0.02);
-
-  // Zoom so that the tapped board point (nx, ny) is exactly centered
-  zoomToBoardAnchor(nx, ny, initialFactor);
-});
-
+    // After fullscreen is active, zoom in so that the tapped intersection is centered
+    requestAnimationFrame(function(){
+      const { vw, vh } = viewportSize();
+      const needToCover   = Math.max(vw, vh) / baseW;
+      const initialFactor = Math.max(1.8, needToCover + 0.02);
+      zoomToIntersection(i, j, initialFactor);
+    });
   }
 
   function exitFullscreen(){
@@ -696,7 +694,8 @@ requestAnimationFrame(function(){
         e.stopPropagation();
         e.stopImmediatePropagation && e.stopImmediatePropagation();
         suppressNextBoardClick = true;
-        enterFullscreenAtNormalized(lastTapBoardNX, lastTapBoardNY);
+        // NEW: use the exact intersection indices we captured
+        enterFullscreenAtIntersection(lastTapBoardI, lastTapBoardJ);
       } else {
         suppressNextBoardClick = false;
       }
@@ -825,14 +824,11 @@ requestAnimationFrame(function(){
   }
 
   function rebuildFromHistory(){
-    // Make sure "current" is within bounds
     if (current < 0) current = 0;
     if (current > history.length) current = history.length;
 
-    // Clear board
     for (var y = 0; y < SIZE; y++) grid[y].fill(null);
 
-    // Replay root stones (from SGF) if present
     if (hasSGF){
       for (var i = 0; i < rootAB.length; i++){
         var p = rootAB[i];
@@ -844,7 +840,6 @@ requestAnimationFrame(function(){
       }
     }
 
-    // Only replay moves up to "current" (NOT the full history)
     for (var k = 0; k < current; k++){
       var m = history[k];
       attemptPlay(m.x, m.y, m.color);
@@ -854,7 +849,6 @@ requestAnimationFrame(function(){
     redraw();
     updateDesc();
   }
-
 
   // ---------- SGF parsing ----------
   function readBracket(str, i){
@@ -1083,7 +1077,6 @@ requestAnimationFrame(function(){
     menuConfirmOverlay.classList.remove('is-open');
   }
 
-  // Click outside dialog closes it
   if (menuConfirmOverlay){
     menuConfirmOverlay.addEventListener('click', function(e){
       if (e.target === menuConfirmOverlay) {
@@ -1092,7 +1085,6 @@ requestAnimationFrame(function(){
     });
   }
 
-  // "Stay here"
   if (menuConfirmCancel){
     menuConfirmCancel.addEventListener('click', function(e){
       e.stopPropagation();
@@ -1100,17 +1092,14 @@ requestAnimationFrame(function(){
     });
   }
 
-  // "Yes, go to menu"
   if (menuConfirmOk){
     menuConfirmOk.addEventListener('click', function(e){
       e.stopPropagation();
       closeMenuConfirm();
-      // Go back to the main menu (index.html one level up from /joseki/joseki.html)
       window.location.href = '../index.html';
     });
   }
 
-  // ESC closes dialog
   document.addEventListener('keydown', function(e){
     if (e.key === 'Escape') {
       closeMenuConfirm();
@@ -1121,13 +1110,11 @@ requestAnimationFrame(function(){
     if (menuConfirmOverlay){
       menuConfirmOverlay.classList.add('is-open');
     } else {
-      // Fallback: if overlay not found, just go straight to menu
       window.location.href = '../index.html';
     }
   }
 
   hook('jbtnMenu', openMenuWithConfirm);
-
 
   // public APIs
   window.JosekiBoard = window.JosekiBoard || {};
