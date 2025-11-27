@@ -114,6 +114,79 @@
       white-space: nowrap;
     }
   </style>
+<style>
+  /* In-app "Back to menu" dialog (slate/blue skin) */
+  #menu-confirm-overlay{
+    position:fixed;
+    inset:0;
+    display:none;
+    align-items:center;
+    justify-content:center;
+    background:rgba(15,23,42,.78);
+    z-index:99999;
+    -webkit-tap-highlight-color:transparent;
+  }
+  #menu-confirm-overlay.is-open{
+    display:flex;
+  }
+
+  .menu-confirm-dialog{
+    width:min(92vw,360px);
+    border-radius:16px;
+    padding:18px 16px 14px;
+    background:#020617;
+    border:1px solid rgba(148,163,184,.75);
+    box-shadow:0 18px 40px rgba(15,23,42,.7);
+    color:#e5edff;
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  }
+  .menu-confirm-title{
+    font-size:18px;
+    font-weight:700;
+    margin-bottom:6px;
+  }
+  .menu-confirm-text{
+    font-size:14px;
+    opacity:.9;
+    margin-bottom:12px;
+  }
+  .menu-confirm-actions{
+    display:flex;
+    gap:10px;
+    margin-top:4px;
+  }
+
+  .mc-btn{
+    flex:1 1 0;
+    padding:10px 12px;
+    border-radius:999px;
+    border:1px solid rgba(148,163,184,.9);
+    font-size:14px;
+    font-weight:600;
+    cursor:pointer;
+    background:rgba(15,23,42,.9);
+    color:#e5edff;
+    -webkit-tap-highlight-color:transparent;
+    transition:background .12s, transform .06s, box-shadow .12s;
+  }
+  .mc-btn:active{
+    transform:translateY(1px);
+  }
+
+  .mc-btn-primary{
+    background:rgba(37,99,235,.26);
+    border-color:rgba(37,99,235,.85);
+    box-shadow:0 8px 20px rgba(15,23,42,.65), inset 0 0 0 1px rgba(255,255,255,.05);
+  }
+  .mc-btn-primary:hover{
+    background:rgba(37,99,235,.32);
+  }
+
+  .mc-btn-secondary{
+    background:rgba(15,23,42,.85);
+  }
+</style>
+
 </head>
 <body>
 
@@ -144,6 +217,19 @@
     <button id="jbtnBack"    class="jbtn"             type="button">Back</button>
     <button id="jbtnForward" class="jbtn"             type="button">Next</button>
     <button id="jbtnReset"   class="jbtn jbtn-alt"    type="button">Reset</button>
+  </div>
+</div>
+<!-- In-app "Back to menu" confirmation -->
+<div id="menu-confirm-overlay" aria-hidden="true">
+  <div class="menu-confirm-dialog" role="dialog" aria-modal="true" aria-labelledby="menuConfirmTitle">
+    <div class="menu-confirm-title" id="menuConfirmTitle">Back to menu?</div>
+    <div class="menu-confirm-text">
+      Do you want to leave this joseki view and return to the main menu?
+    </div>
+    <div class="menu-confirm-actions">
+      <button type="button" id="menuConfirmCancel" class="mc-btn mc-btn-secondary">Stay here</button>
+      <button type="button" id="menuConfirmOk" class="mc-btn mc-btn-primary">Yes, go to menu</button>
+    </div>
   </div>
 </div>
 
@@ -978,22 +1064,59 @@ body.bg-wood [class*="blur"]{
   hook('jbtnForward', function(){ if (hasSGF && !freeMode) { gotoNext(); } else if (current<history.length){ current++; rebuildFromHistory(); } });
   hook('jbtnReset',   function(){ if (hasSGF) { freeMode=false; josekiAnchor=null; currentNode=null; buildPositionTo(null); } else { current=0; rebuildFromHistory(); } exitFullscreen(); });
 
-  function openMenuWithConfirm(){
-    // Simple confirmation popup
-    var goBack = window.confirm("Do you want to go back to the menu?");
-    if (!goBack) return;
+  // ====== In-app "Back to menu" dialog ======
+  var menuConfirmOverlay = document.getElementById('menu-confirm-overlay');
+  var menuConfirmCancel  = document.getElementById('menuConfirmCancel');
+  var menuConfirmOk      = document.getElementById('menuConfirmOk');
 
-    // If an overlay menu exists on this page, open it
-    if (window.GoMenu && typeof GoMenu.open === 'function'){
-      GoMenu.open();
-      return;
-    }
-
-    // Otherwise navigate to the main menu page (index.html at project root)
-    window.location.href = "/";
+  function closeMenuConfirm(){
+    if (!menuConfirmOverlay) return;
+    menuConfirmOverlay.classList.remove('is-open');
   }
 
-  // Wire the Menu button to this handler
+  // Click outside dialog closes it
+  if (menuConfirmOverlay){
+    menuConfirmOverlay.addEventListener('click', function(e){
+      if (e.target === menuConfirmOverlay) {
+        closeMenuConfirm();
+      }
+    });
+  }
+
+  // "Stay here"
+  if (menuConfirmCancel){
+    menuConfirmCancel.addEventListener('click', function(e){
+      e.stopPropagation();
+      closeMenuConfirm();
+    });
+  }
+
+  // "Yes, go to menu"
+  if (menuConfirmOk){
+    menuConfirmOk.addEventListener('click', function(e){
+      e.stopPropagation();
+      closeMenuConfirm();
+      // Go back to the main menu (index.html one level up from /joseki/joseki.html)
+      window.location.href = '../index.html';
+    });
+  }
+
+  // ESC closes dialog
+  document.addEventListener('keydown', function(e){
+    if (e.key === 'Escape') {
+      closeMenuConfirm();
+    }
+  });
+
+  function openMenuWithConfirm(){
+    if (menuConfirmOverlay){
+      menuConfirmOverlay.classList.add('is-open');
+    } else {
+      // Fallback: if overlay not found, just go straight to menu
+      window.location.href = '../index.html';
+    }
+  }
+
   hook('jbtnMenu', openMenuWithConfirm);
 
 
