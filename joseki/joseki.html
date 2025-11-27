@@ -387,13 +387,11 @@ body.bg-wood [class*="blur"]{
     box.addEventListener('touchmove',  (e) => { const dy = e.touches[0].clientY - startY; box.scrollTop = startScroll - dy; }, {passive:true});
   })();
 
-var SIZE = 19, B='B', W='W';
+  var SIZE = 19, B='B', W='W';
 
-// ---------- state ----------
-var board = new WGo.Board(mount, { size: SIZE });
-var boardCanvas = mount.querySelector('canvas'); // inner WGo canvas (for precise coords)
-var grid  = Array.from({length:SIZE}, ()=>Array(SIZE).fill(null));
-
+  // ---------- state ----------
+  var board = new WGo.Board(mount, { size: SIZE });
+  var grid  = Array.from({length:SIZE}, ()=>Array(SIZE).fill(null));
   var history = [];
   var current = 0;
   var turn    = B;
@@ -516,28 +514,26 @@ var grid  = Array.from({length:SIZE}, ()=>Array(SIZE).fill(null));
   // Remember which grid intersection we tapped (not just a normalized 0–1)
   var lastTapBoardI = Math.floor(SIZE / 2);
   var lastTapBoardJ = Math.floor(SIZE / 2);
-function captureBoardAnchorFromEvent(e){
-  var canvas = boardCanvas || mount.querySelector('canvas');
-  if (!canvas) return;
 
-  const rect = canvas.getBoundingClientRect();
-  const pxLocal = e.clientX - rect.left;
-  const pyLocal = e.clientY - rect.top;
+  function captureBoardAnchorFromEvent(e){
+    const rect = mount.getBoundingClientRect();
+    const pxLocal = e.clientX - rect.left;
+    const pyLocal = e.clientY - rect.top;
 
-  var best = Infinity, bi = lastTapBoardI, bj = lastTapBoardJ;
-  for (var ix=0; ix<SIZE; ix++){
-    const xPix = board.getX(ix);
-    for (var iy=0; iy<SIZE; iy++){
-      const yPix = board.getY(iy);
-      const dx = xPix - pxLocal;
-      const dy = yPix - pyLocal;
-      const d2 = dx*dx + dy*dy;
-      if (d2 < best){ best = d2; bi = ix; bj = iy; }
+    var best = Infinity, bi = lastTapBoardI, bj = lastTapBoardJ;
+    for (var ix=0; ix<SIZE; ix++){
+      const xPix = board.getX(ix);
+      for (var iy=0; iy<SIZE; iy++){
+        const yPix = board.getY(iy);
+        const dx = xPix - pxLocal;
+        const dy = yPix - pyLocal;
+        const d2 = dx*dx + dy*dy;
+        if (d2 < best){ best = d2; bi = ix; bj = iy; }
+      }
     }
+    lastTapBoardI = bi;
+    lastTapBoardJ = bj;
   }
-  lastTapBoardI = bi;
-  lastTapBoardJ = bj;
-}
 
   function ensureFSOverlay(){
     ensureOverlay();
@@ -545,42 +541,33 @@ function captureBoardAnchorFromEvent(e){
     document.documentElement.style.overflow = 'hidden';
   }
 
-function zoomToIntersection(i, j, factor){
-  if (!zoomEnabled) return;
+  function zoomToIntersection(i, j, factor){
+    if (!zoomEnabled) return;
 
-  var newScale = scale * factor;
-  if (newScale < minScale) newScale = minScale;
-  if (newScale > maxScale) newScale = maxScale;
-  if (newScale === scale) return;
+    var newScale = scale * factor;
+    if (newScale < minScale) newScale = minScale;
+    if (newScale > maxScale) newScale = maxScale;
+    if (newScale === scale) return;
 
-  // 1) Apply the new scale first (no centering yet)
-  scale = newScale;
-  applyPanAndSize(false); // updates board size & zoomLayer position
+    // Set new scale and update board size once
+    scale = newScale;
+    applyPanAndSize(false); // updates board width to baseW * scale
 
-  // 2) Measure where that intersection actually is on the screen
-  var canvas = boardCanvas || mount.querySelector('canvas');
-  if (!canvas) { applyPanAndSize(true); return; }
+    // Now compute offsets so that (i,j) is exactly at screen center
+    const { vw, vh } = viewportSize();
+    const targetW = Math.max(2, Math.round(baseW * scale));
+    const { padX, padY } = padsFor(targetW);
 
-  var cRect   = canvas.getBoundingClientRect();
-  var pxLocal = board.getX(i);  // coordinates inside the canvas
-  var pyLocal = board.getY(j);
-  var globalX = cRect.left + pxLocal;
-  var globalY = cRect.top  + pyLocal;
+    const pxBoard = board.getX(i);
+    const pyBoard = board.getY(j);
+    const centerX = vw / 2;
+    const centerY = vh / 2;
 
-  // Center of the screen (fullscreen overlay)
-  var centerX = window.innerWidth  || document.documentElement.clientWidth  || (cRect.left + cRect.right)/2;
-  var centerY = window.innerHeight || document.documentElement.clientHeight || (cRect.top  + cRect.bottom)/2;
+    offsetX = padX + pxBoard - centerX;
+    offsetY = padY + pyBoard - centerY;
 
-  // 3) Adjust pan so that this point moves exactly to the center
-  // Increasing offsetX moves the board LEFT on screen (since we use padX - offsetX),
-  // so we shift by the delta between current and desired position.
-  offsetX += (globalX - centerX);
-  offsetY += (globalY - centerY);
-
-  // 4) Re-apply with the corrected offsets
-  applyPanAndSize(true);
-}
-
+    applyPanAndSize(true);
+  }
 
   function enterFullscreenAtIntersection(i, j){
     if (isFullscreen) return;
@@ -1188,3 +1175,6 @@ function zoomToIntersection(i, j, factor){
 
 </body>
 </html>
+
+
+
