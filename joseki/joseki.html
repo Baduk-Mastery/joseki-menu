@@ -478,28 +478,29 @@ body.bg-wood [class*="blur"]{
     offsetY = Math.max(0, Math.min(offsetY, maxY));
   }
 
-  function applyPanAndSize(redrawAfter){
-    const { vw, vh } = viewportSize();
-    const targetW = Math.max(2, Math.round(baseW * scale));
+function applyPanAndSize(redrawAfter){
+  const { vw, vh } = viewportSize();
+  const targetW = Math.max(2, Math.round(baseW * scale));
 
-    board.setWidth(targetW);
-    zoomLayer.style.width  = targetW + 'px';
-    zoomLayer.style.height = targetW + 'px';
+  board.setWidth(targetW);
+  zoomLayer.style.width  = targetW + 'px';
+  zoomLayer.style.height = targetW + 'px';
 
-    const { padX, padY } = padsFor(targetW);
-    clampPanWith(vw, vh, targetW);
-    zoomLayer.style.left = (padX - offsetX) + 'px';
-    zoomLayer.style.top  = (padY - offsetY) + 'px';
+  const { padX, padY } = padsFor(targetW);
+  // No clamping here – we allow the board to move past the edges
+  zoomLayer.style.left = (padX - offsetX) + 'px';
+  zoomLayer.style.top  = (padY - offsetY) + 'px';
 
-    if (isFullscreen){
-      mount.style.width  = '100vw';
-      mount.style.height = '100vh';
-    } else {
-      mount.style.width  = '';
-      mount.style.height = baseW + 'px';
-    }
-    if (redrawAfter) redraw();
+  if (isFullscreen){
+    mount.style.width  = '100vw';
+    mount.style.height = '100vh';
+  } else {
+    mount.style.width  = '';
+    mount.style.height = baseW + 'px';
   }
+  if (redrawAfter) redraw();
+}
+
 
   function resetViewLocal(){
     scale = 1; offsetX = 0; offsetY = 0;
@@ -523,23 +524,29 @@ body.bg-wood [class*="blur"]{
     })(t0);
   }
 
-  function zoomInAt(screenX, screenY, factor){
-    const { vw, vh } = viewportSize();
-    const targetScale = Math.max(minScale, Math.min(maxScale, scale * factor));
-    const targetW = Math.max(2, Math.round(baseW * targetScale));
-    const { padX, padY } = padsFor(targetW);
+function zoomToBoardAnchor(nx, ny, factor){
+  const { vw, vh } = viewportSize();
+  const targetScale = Math.max(minScale, Math.min(maxScale, scale * factor));
+  const targetW = Math.max(2, Math.round(baseW * targetScale));
+  const { padX, padY } = padsFor(targetW);
 
-    const centerX = vw / 2;
-    const centerY = vh / 2;
+  const clampedNX = Math.max(0, Math.min(1, nx));
+  const clampedNY = Math.max(0, Math.min(1, ny));
 
-    const dx = screenX - centerX;
-    const dy = screenY - centerY;
+  // Board coordinates (in pixels) at the target scale
+  const pxBoard = clampedNX * targetW;
+  const pyBoard = clampedNY * targetW;
 
-    let newOffsetX = offsetX + dx;
-    let newOffsetY = offsetY + dy;
+  const centerX = vw / 2;
+  const centerY = vh / 2;
 
-    animateTo(targetScale, newOffsetX, newOffsetY);
-  }
+  // Solve: padX - offsetX + pxBoard = centerX  =>  offsetX = padX + pxBoard - centerX
+  const newOffsetX = padX + pxBoard - centerX;
+  const newOffsetY = padY + pyBoard - centerY;
+
+  animateTo(targetScale, newOffsetX, newOffsetY);
+}
+
 
   var lastTapBoardNX = 0.5, lastTapBoardNY = 0.5;
 
@@ -593,22 +600,15 @@ body.bg-wood [class*="blur"]{
 
     resetViewLocal();
 
-    requestAnimationFrame(function(){
-      const pxBoard = Math.max(0, Math.min(1, nx)) * baseW;
-      const pyBoard = Math.max(0, Math.min(1, ny)) * baseW;
+requestAnimationFrame(function(){
+  const { vw, vh } = viewportSize();
+  const needToCover = Math.max(vw, vh) / baseW;
+  const initialFactor = Math.max(1.8, needToCover + 0.02);
 
-      const targetW0 = Math.max(2, Math.round(baseW * scale));
-      const { padX, padY } = padsFor(targetW0);
+  // Zoom so that the tapped board point (nx, ny) is exactly centered
+  zoomToBoardAnchor(nx, ny, initialFactor);
+});
 
-      const pxScreen = padX + pxBoard;
-      const pyScreen = padY + pyBoard;
-
-      const { vw, vh } = viewportSize();
-      const needToCover = Math.max(vw, vh) / baseW;
-      const initialFactor = Math.max(1.8, needToCover + 0.02);
-
-      zoomInAt(pxScreen, pyScreen, initialFactor);
-    });
   }
 
   function exitFullscreen(){
