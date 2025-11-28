@@ -1429,10 +1429,20 @@ var SGF_URL = getParam('sgf');
       showJosekiEverything();
     }
 
-    window.PracticeBoard = {
-      load: function(url, name, opts){
-        try { if (window.PracticeUI    && typeof PracticeUI.close    === 'function') PracticeUI.close(); } catch(e){}
-        try { if (window.PracticeLevel && typeof PracticeLevel.close === 'function') PracticeLevel.close(); } catch(e){}
+window.PracticeBoard = {
+  load: function(url, name, opts){
+    try {
+      if (window.PracticeUI && typeof PracticeUI.close === 'function') {
+        PracticeUI.close();
+      }
+    } catch (e) {}
+
+    try {
+      if (window.PracticeLevel && typeof PracticeLevel.close === 'function') {
+        PracticeLevel.close();
+      }
+    } catch (e) {}
+
 
         if (opts && typeof opts.level !== 'undefined') level = parseInt(opts.level,10) || 2;
         else if (window.PracticeConfig && window.PracticeConfig.level) level = parseInt(window.PracticeConfig.level,10) || 2;
