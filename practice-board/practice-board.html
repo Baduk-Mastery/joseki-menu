@@ -1065,23 +1065,17 @@ var isZoomAnimating = false; // new: track when we are animating zoom
 
     ensureZoomLayer();
 
-function ensureOverlay(){
-  if (overlay) return;
-  overlay = document.getElementById('go-zoom-overlay-prac');
-  if (!overlay){
-    overlay = document.createElement('div');
-    overlay.id = 'go-zoom-overlay-prac';
-    overlay.innerHTML = '<div id="go-zoom-stage-prac"></div>';
-    document.body.appendChild(overlay);
-  }
-  stage = overlay.querySelector('#go-zoom-stage-prac');
-
-  // NEW: default fade behaviour
-  overlay.style.opacity = '1';
-  overlay.style.transition = 'opacity 0.18s ease-out';
-}
-
-
+    function ensureOverlay(){
+      if (overlay) return;
+      overlay = document.getElementById('go-zoom-overlay-prac');
+      if (!overlay){
+        overlay = document.createElement('div');
+        overlay.id = 'go-zoom-overlay-prac';
+        overlay.innerHTML = '<div id="go-zoom-stage-prac"></div>';
+        document.body.appendChild(overlay);
+      }
+      stage = overlay.querySelector('#go-zoom-stage-prac');
+    }
 
     function viewportSize(){
       if (isFullscreen) {
@@ -1241,8 +1235,6 @@ function centerZoomAtGrid(i, j, factor, tapClientX, tapClientY){
 
       stage.appendChild(mount);
       overlay.style.display = 'flex';
-overlay.style.opacity = '1';
-
       mount.classList.add('is-fullscreen');
       isFullscreen = true;
 
@@ -1261,104 +1253,24 @@ overlay.style.opacity = '1';
     }
 
 
-function exitFullscreen(hideOverlay){
-  mount.classList.remove('is-fullscreen');
-  if (!isFullscreen) return;
-
-  // Reset zoom transform to base view while still in fullscreen
-  resetViewLocal();
-
-  // Move board back to its original place in the document
-  if (returnAnchor && returnAnchor.parentNode){
-    returnAnchor.parentNode.insertBefore(mount, returnAnchor);
-    returnAnchor.parentNode.removeChild(returnAnchor);
-    returnAnchor = null;
-  }
-
-  mount.style.width  = '';
-  mount.style.height = '';
-
-  // By default we hide the overlay, but callers can keep it
-  if (overlay && hideOverlay !== false){
-    overlay.style.display = 'none';
-    overlay.style.opacity = '1';
-  }
-
-  isFullscreen = false;
-  document.documentElement.style.overflow = prevOverflow;
-
-  // Refit board for page layout
-  fitBoard();
-  if (typeof refreshLivesUI === 'function') refreshLivesUI();
-  if (typeof refreshHintsUI === 'function') refreshHintsUI();
-}
-function fadeOverlayAfterExit(){
-  if (!overlay) return;
-
-  // Ensure overlay is covering everything
-  overlay.style.display = 'flex';
-  overlay.style.opacity = '1';
-  overlay.style.transition = overlay.style.transition || 'opacity 0.18s ease-out';
-
-  // Force reflow so the browser sees the change
-  void overlay.offsetWidth;
-
-  overlay.style.opacity = '0';
-
-  var finished = false;
-  function done(){
-    if (finished) return;
-    finished = true;
-    overlay.removeEventListener('transitionend', done);
-    overlay.style.display = 'none';
-    overlay.style.opacity = '1';
-  }
-
-  overlay.addEventListener('transitionend', done);
-
-  // Safety timeout in case transitionend doesn’t fire
-  setTimeout(done, 260);
-}
-
-// Fade the overlay out, then actually exit fullscreen (snap happens while invisible)
-function fadeExitFullscreen(){
-  if (!isFullscreen){
-    return;
-  }
-  if (!overlay){
-    // Fallback: just exit if for some reason overlay is missing
-    exitFullscreen();
-    return;
-  }
-
-  let finished = false;
-
-  function done(){
-    if (finished) return;
-    finished = true;
-    overlay.removeEventListener('transitionend', done);
-    // Reset for next time
-    overlay.style.opacity = '1';
-    // Now do the real exit (snap happens while overlay is invisible)
-    exitFullscreen();
-  }
-
-  // Make sure overlay is visible at the start of fade
-  overlay.style.display = 'flex';
-  overlay.style.opacity = '1';
-
-  // Force reflow so the transition will run
-  void overlay.offsetWidth;
-
-  // Start fade to transparent
-  overlay.style.opacity = '0';
-
-  // When fade ends, run exit
-  overlay.addEventListener('transitionend', done);
-  // Fallback in case transitionend doesn’t fire
-  setTimeout(done, 260);
-}
-
+    function exitFullscreen(){
+      mount.classList.remove('is-fullscreen');
+      if (!isFullscreen) return;
+      resetViewLocal();
+      if (returnAnchor && returnAnchor.parentNode){
+        returnAnchor.parentNode.insertBefore(mount, returnAnchor);
+        returnAnchor.parentNode.removeChild(returnAnchor);
+        returnAnchor = null;
+      }
+      mount.style.width = '';
+      mount.style.height = '';
+      if (overlay) overlay.style.display = 'none';
+      isFullscreen = false;
+      document.documentElement.style.overflow = prevOverflow;
+      fitBoard();
+      if (typeof refreshLivesUI  === 'function') refreshLivesUI();
+      if (typeof refreshHintsUI  === 'function') refreshHintsUI();
+    }
 
     var isPanning = false, panStart = null, activePointerId = null,
     tapStart = null, suppressNextBoardClick = false;
@@ -1743,36 +1655,35 @@ mount.addEventListener('pointercancel', function(e){
 
  // Smooth zoom-out back to full-board view, then exit fullscreen if needed
 // Smooth zoom-out back to full-board view, then exit fullscreen if needed
-// Smooth zoom-out back to full-board view, then exit fullscreen and fade overlay
 function smoothZoomOutAndExit(){
   if (!zoomEnabled) return;
 
-  // If we’re already at base view and not fullscreen, nothing to do
+  // If we are already at base view and not fullscreen, nothing to do
   if (scale <= 1 && !isFullscreen) return;
 
   // Cancel any in-flight zoom animation
   cancelAnimationFrame(animId);
 
-  var startScale   = scale;
-  var startOffsetX = offsetX;
-  var startOffsetY = offsetY;
+  const startScale   = scale;
+  const startOffsetX = offsetX;
+  const startOffsetY = offsetY;
 
-  var t0  = performance.now();
-  var dur = 230;  // quick but smooth
+  const t0  = performance.now();
+  const dur = 230; // ~0.23s, quick but smooth
 
   isZoomAnimating = true;
 
   function step(now){
-    var t = (now - t0) / dur;
+    let t = (now - t0) / dur;
     if (t > 1) t = 1;
 
-    // cubic ease-out
-    var e = 1 - Math.pow(1 - t, 3);
+    // Cubic ease-out
+    const e = 1 - Math.pow(1 - t, 3);
 
     // Interpolate scale back to 1
-    scale   = startScale + (1 - startScale) * e;
+    scale = startScale + (1 - startScale) * e;
 
-    // Bring pan offsets back to 0
+    // Bring pan offsets back to 0 (centered board)
     offsetX = startOffsetX * (1 - e);
     offsetY = startOffsetY * (1 - e);
 
@@ -1782,7 +1693,7 @@ function smoothZoomOutAndExit(){
     if (t < 1){
       animId = requestAnimationFrame(step);
     } else {
-      // Final snap to clean base state in fullscreen overlay
+      // Final snap to a clean base state
       scale   = 1;
       offsetX = 0;
       offsetY = 0;
@@ -1790,12 +1701,9 @@ function smoothZoomOutAndExit(){
 
       applyPanAndSize(true);
 
+      // If we were in fullscreen, now leave it
       if (isFullscreen){
-        // 1) Exit fullscreen (board jumps back into page), but KEEP overlay dark.
-        exitFullscreen(false);
-
-        // 2) Now fade the overlay away to reveal the final, correct layout.
-        fadeOverlayAfterExit();
+        exitFullscreen();
       }
     }
   }
