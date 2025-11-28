@@ -1253,45 +1253,24 @@ function centerZoomAtGrid(i, j, factor, tapClientX, tapClientY){
     }
 
 
-    function exitFullscreen(skipReset){
-  mount.classList.remove('is-fullscreen');
-  if (!isFullscreen) return;
-
-  // Normal ESC / wrong-move / reset flows still do an instant reset.
-  // Only the smooth zoom-out path calls exitFullscreen(true).
-  if (!skipReset){
-    resetViewLocal();
-  }
-
-  if (returnAnchor && returnAnchor.parentNode){
-    returnAnchor.parentNode.insertBefore(mount, returnAnchor);
-    returnAnchor.parentNode.removeChild(returnAnchor);
-    returnAnchor = null;
-  }
-
-  mount.style.width  = '';
-  mount.style.height = '';
-  if (overlay) overlay.style.display = 'none';
-  isFullscreen = false;
-  document.documentElement.style.overflow = prevOverflow;
-
-  // Re-fit into the normal page layout
-  fitBoard();
-
-  // If we came from a smooth zoom-out, we already animated back visually.
-  // Just ensure we end in a clean base state in the new layout,
-  // without another visible “jump”.
-  if (skipReset){
-    scale   = 1;
-    offsetX = 0;
-    offsetY = 0;
-    applyPanAndSize(true);
-  }
-
-  if (typeof refreshLivesUI  === 'function') refreshLivesUI();
-  if (typeof refreshHintsUI  === 'function') refreshHintsUI();
-}
-
+    function exitFullscreen(){
+      mount.classList.remove('is-fullscreen');
+      if (!isFullscreen) return;
+      resetViewLocal();
+      if (returnAnchor && returnAnchor.parentNode){
+        returnAnchor.parentNode.insertBefore(mount, returnAnchor);
+        returnAnchor.parentNode.removeChild(returnAnchor);
+        returnAnchor = null;
+      }
+      mount.style.width = '';
+      mount.style.height = '';
+      if (overlay) overlay.style.display = 'none';
+      isFullscreen = false;
+      document.documentElement.style.overflow = prevOverflow;
+      fitBoard();
+      if (typeof refreshLivesUI  === 'function') refreshLivesUI();
+      if (typeof refreshHintsUI  === 'function') refreshHintsUI();
+    }
 
     var isPanning = false, panStart = null, activePointerId = null,
     tapStart = null, suppressNextBoardClick = false;
@@ -1674,37 +1653,62 @@ mount.addEventListener('pointercancel', function(e){
       else alert('Pro unlocks unlimited tries.');
     });
 
-// Smooth zoom-out back to base zoom, then exit fullscreen without snapping
+ // Smooth zoom-out back to full-board view, then exit fullscreen if needed
+// Smooth zoom-out back to full-board view, then exit fullscreen if needed
 function smoothZoomOutAndExit(){
   if (!zoomEnabled) return;
 
-  // If we’re already at base zoom and not in fullscreen, nothing to do
+  // If we are already at base view and not fullscreen, nothing to do
   if (scale <= 1 && !isFullscreen) return;
 
   // Cancel any in-flight zoom animation
   cancelAnimationFrame(animId);
 
-  // We’ll anchor the animation at whatever board point is
-  // currently under the visual centre of the board.
-  const { vw, vh } = viewportSize();
-  const sxCenter = vw / 2;
-  const syCenter = vh / 2;
-  const s0       = scale || 1;
+  const startScale   = scale;
+  const startOffsetX = offsetX;
+  const startOffsetY = offsetY;
 
-  // Convert from screen centre → world (unscaled board) coordinates
-  // so animateTo can keep that point fixed while changing scale.
-  const pxWorld = (offsetX + sxCenter) / s0;
-  const pyWorld = (offsetY + syCenter) / s0;
+  const t0  = performance.now();
+  const dur = 230; // ~0.23s, quick but smooth
 
-  // Animate smoothly back to scale 1 around that anchor.
-  // animateTo already does cubic ease-out and sets isZoomAnimating.
-  animateTo(1, pxWorld, pyWorld, sxCenter, syCenter, function(){
-    // When the visual zoom-out is finished, THEN leave fullscreen,
-    // but skip the internal instant reset to avoid a second snap.
-    if (isFullscreen){
-      exitFullscreen(true);  // new optional flag, see below
+  isZoomAnimating = true;
+
+  function step(now){
+    let t = (now - t0) / dur;
+    if (t > 1) t = 1;
+
+    // Cubic ease-out
+    const e = 1 - Math.pow(1 - t, 3);
+
+    // Interpolate scale back to 1
+    scale = startScale + (1 - startScale) * e;
+
+    // Bring pan offsets back to 0 (centered board)
+    offsetX = startOffsetX * (1 - e);
+    offsetY = startOffsetY * (1 - e);
+
+    // Apply transform without clamping while we animate
+    applyPanAndSize(false);
+
+    if (t < 1){
+      animId = requestAnimationFrame(step);
+    } else {
+      // Final snap to a clean base state
+      scale   = 1;
+      offsetX = 0;
+      offsetY = 0;
+      isZoomAnimating = false;
+
+      applyPanAndSize(true);
+
+      // If we were in fullscreen, now leave it
+      if (isFullscreen){
+        exitFullscreen();
+      }
     }
-  });
+  }
+
+  step(t0);
 }
 
 
@@ -2014,6 +2018,8 @@ window.PracticeBoard = {
 
 </body>
 </html>
+
+
 
 
 
