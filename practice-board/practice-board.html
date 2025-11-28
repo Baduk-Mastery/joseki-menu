@@ -655,27 +655,39 @@ window.addEventListener('go:prefs-changed', function(e){
       try { redraw(); } catch(e){}
     }
     function positionHintEl(){
-      if (!hintXY || !board || !hintEl) return;
+      if (!hintXY || !board || !hintEl || !zoomLayer) return;
 
-      // Center of the intersection in CSS pixels (relative to zoomLayer)
-      var px = getXcss(hintXY.x);
-      var py = getYcss(hintXY.y);
+      var c = mount.querySelector('canvas');
+      if (!c) return;
 
-      // Approximate grid spacing in CSS pixels
-      var spacingX = Math.abs(getXcss(1) - getXcss(0)) || 0;
-      var spacingY = Math.abs(getYcss(1) - getYcss(0)) || 0;
+      var rectCanvas = c.getBoundingClientRect();
+      var rectLayer  = zoomLayer.getBoundingClientRect();
+
+      var scaleX = rectCanvas.width  / (c.width  || rectCanvas.width  || 1);
+      var scaleY = rectCanvas.height / (c.height || rectCanvas.height || 1);
+
+      // Center of intersection in canvas coordinates
+      var cx = board.getX(hintXY.x);
+      var cy = board.getY(hintXY.y);
+
+      // Convert to CSS coords relative to zoomLayer
+      var px = (rectCanvas.left - rectLayer.left) + cx * scaleX;
+      var py = (rectCanvas.top  - rectLayer.top)  + cy * scaleY;
+
+      // Grid spacing in CSS pixels (from board, same scaling)
+      var spacingX = Math.abs(board.getX(1) - board.getX(0)) * scaleX || 0;
+      var spacingY = Math.abs(board.getY(1) - board.getY(0)) * scaleY || 0;
       var spacing  = spacingX && spacingY ? Math.min(spacingX, spacingY)
                                           : (spacingX || spacingY || 24);
 
-      // Diameter slightly smaller than the stone – tweak factor if needed
-      var d = Math.round(spacing * 0.62);
+      var d = spacing * 0.62;  // keep your current size factor
 
       hintEl.style.width  = d + 'px';
       hintEl.style.height = d + 'px';
-      // tiny vertical nudge (-0.5) to avoid feeling "a bit low"
-      hintEl.style.left   = Math.round(px - d / 2) + 'px';
-      hintEl.style.top    = Math.round(py - d / 2 - 0.5) + 'px';
+      hintEl.style.left   = (px - d / 2) + 'px';
+      hintEl.style.top    = (py - d / 2) + 'px';
     }
+
 
 
     function showHintAt(x,y){
