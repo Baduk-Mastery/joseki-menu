@@ -274,7 +274,7 @@
   padding:8px 24px;
 
   border-radius:10px;
-  border:1px solid rgba(255,255,255,.45);
+  border:1px solid rgba(255,255,255,.40);
 
   font-size:16px;
   font-weight:800;
@@ -283,30 +283,32 @@
   text-shadow:0 1px 0 rgba(120,60,20,.7);
   cursor:pointer;
 
-  /* ⬇️ prevent the “marking / selecting” effect */
+  /* prevent “marking” */
   user-select:none;
   -webkit-user-select:none;
   -moz-user-select:none;
   -ms-user-select:none;
   -webkit-tap-highlight-color:transparent;
 
+  /* softer highlight + same wood texture */
   background-image:
     linear-gradient(
       to bottom,
-      rgba(255,255,255,.18),
-      rgba(255,255,255,.06) 38%,
-      rgba(0,0,0,.10) 100%
+      rgba(255,255,255,.12),
+      rgba(255,255,255,.03) 38%,
+      rgba(0,0,0,.14) 100%
     ),
     url('../img/wood.jpg');
   background-size:100% 100%, cover;
   background-position:center;
   background-repeat:no-repeat;
 
-  filter:brightness(1.18) saturate(.98);
+  /* mid brightness: between board and bg */
+  filter:brightness(1.08) saturate(.96);
 
   box-shadow:
-    0 3px 0 rgba(133,74,26,.9),
-    0 8px 14px rgba(0,0,0,.5);
+    0 3px 0 rgba(133,74,26,.85),
+    0 8px 14px rgba(0,0,0,.45);
 
   transition:
     transform .08s ease-out,
@@ -314,24 +316,22 @@
     filter .12s ease-out;
 }
 
+#prac-ctrls .pbtn:hover{
+  filter:brightness(1.12) saturate(.98);
+  transform:translateY(-1px);
+  box-shadow:
+    0 4px 0 rgba(133,74,26,.9),
+    0 10px 16px rgba(0,0,0,.48);
+}
 
-  /* Hover: tiny brightness bump, still minimal gloss */
-  #prac-ctrls .pbtn:hover,
-  #prac-ctrls .pbtn-strong:hover,
-  #prac-ctrls .pbtn-alt:hover{
-    filter:brightness(1.24) saturate(1);
-  }
+#prac-ctrls .pbtn:active{
+  filter:brightness(.97) saturate(.96);
+  transform:translateY(2px);
+  box-shadow:
+    0 1px 0 rgba(120,60,20,.9),
+    0 4px 8px rgba(0,0,0,.55);
+}
 
-  /* Pressed: push down & slightly darker, auto-resets on mouseup/touchend */
-  #prac-ctrls .pbtn:active,
-  #prac-ctrls .pbtn-strong:active,
-  #prac-ctrls .pbtn-alt:active{
-    transform:translateY(2px);
-    box-shadow:
-      0 1px 0 rgba(133,74,26,.9),
-      0 4px 8px rgba(0,0,0,.45);
-    filter:brightness(1.00) saturate(.98);
-  }
 
   #prac-ctrls .pbtn:focus-visible,
   #prac-ctrls .pbtn-strong:focus-visible,
