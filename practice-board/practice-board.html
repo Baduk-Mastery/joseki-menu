@@ -255,57 +255,57 @@
 </style>
 
 <style>
-  /* NEW Wooden Style Buttons */
+  /* UPDATED Wooden Style Buttons to match reference */
   #prac-ctrls .pbtn,
   #prac-ctrls .pbtn-strong,
   #prac-ctrls .pbtn-alt {
-    padding: 12px 20px; /* Slightly wider for a better look */
-    border-radius: 8px; /* Slightly squarer corners look more like wood blocks */
+    padding: 12px 20px;
+    border-radius: 8px; /* Matching the rounded corners */
     font-weight: 800;
     font-size: 16px;
     line-height: 1;
     cursor: pointer;
-    text-transform: uppercase; /* Optional: makes text look like the mockups */
     
-    /* Spacing between buttons */
-    margin: 0 6px; 
+    /* Removed text-transform: uppercase; to rely on HTML for casing */
+    
+    margin: 0 6px; /* Spacing between buttons */
 
-    /* THE WOOD LOOK */
-    background: linear-gradient(to bottom, #eecfa1 5%, #cd9b5e 100%);
-    background-color: #eecfa1; /* Fallback color */
-    color: #4a3b2a; /* Dark Brown text for contrast */
+    /* Default (Unpressed) Look */
+    background: linear-gradient(to bottom, #d6a76f 0%, #b38b59 100%); /* Softer wood gradient */
+    color: #4a3b2a; /* Dark Brown text */
     
-    /* The 3D Bevel and Shadow */
-    border: 1px solid #b38b59;
+    border: 1px solid #a37c4e; /* Outer edge */
     box-shadow: 
-        inset 0 1px 0 0 #fff6e5, /* Tiny highlight at the very top edge */
-        0 4px 0 0 #8f6b4e,      /* The thick "bottom" 3D edge */
-        0 5px 8px 0 rgba(0,0,0,0.35); /* The drop shadow on the board */
+        inset 0 1px 0 rgba(255,255,255,0.3), /* Top inner highlight */
+        inset 0 -2px 0 rgba(0,0,0,0.1),    /* Bottom inner shadow */
+        0 4px 0 #8c6a49,                   /* Main 3D "depth" shadow */
+        0 4px 6px rgba(0,0,0,0.3);         /* Overall drop shadow */
     
-    text-shadow: 0 1px 0 rgba(255,255,255,0.4); /* Makes text look "etched" or printed */
-    transition: all 0.1s;
+    text-shadow: none; /* Removed for a flatter text look, like the reference */
+    transition: all 0.1s ease-out; /* Smoother transitions */
   }
 
-  /* Hover Effect (When mouse is over it) */
+  /* Hover Effect */
   #prac-ctrls .pbtn:hover {
-    background: linear-gradient(to bottom, #f5dcb3 5%, #dcb076 100%);
-    transform: translateY(-1px); /* Moves up slightly */
+    background: linear-gradient(to bottom, #e0b078 0%, #c49962 100%); /* Slightly lighter on hover */
+    transform: translateY(-1px); /* Slight lift */
+    box-shadow: 
+        inset 0 1px 0 rgba(255,255,255,0.3),
+        inset 0 -2px 0 rgba(0,0,0,0.1),
+        0 5px 0 #9e7a53,                   /* "Depth" shadow becomes slightly larger */
+        0 6px 8px rgba(0,0,0,0.35);         /* Drop shadow becomes slightly larger */
   }
 
-  /* Active Effect (When clicked) */
+  /* Active Effect (When Clicked/Pressed) */
   #prac-ctrls .pbtn:active {
-    position: relative;
+    transform: translateY(3px); /* Button pushes down further */
+    background: linear-gradient(to bottom, #b38b59 0%, #d6a76f 100%); /* Inverted gradient for pressed look */
     
-    /* Pushes button down to hide the 3D edge */
-    transform: translateY(4px); 
-    
-    /* Removes the thick bottom edge and shadow to look "flat/pressed" */
+    /* Adjusting shadows to look "pressed in" */
     box-shadow: 
-        inset 0 2px 4px rgba(0,0,0,0.2), /* Inner shadow to look pressed in */
-        0 0 0 0 #8f6b4e, 
-        0 0 0 0 rgba(0,0,0,0);
-        
-    background: #cd9b5e; /* Slightly darker when pressed */
+        inset 0 2px 4px rgba(0,0,0,0.2), /* Inner shadow to look concave */
+        0 1px 0 rgba(255,255,255,0.1),   /* Subtle top highlight when pressed */
+        0 1px 2px rgba(0,0,0,0.2);       /* Minimal drop shadow when pressed */
   }
 
   /* Focus Ring (For accessibility/tabbing) */
@@ -313,7 +313,8 @@
     outline: 2px solid #ffffff;
     outline-offset: 2px;
   }
-</style><style>
+</style>
+<style>
   /* In-app "Back to menu" dialog (same style as Joseki board) */
   #menu-confirm-overlay{
     position:fixed;
