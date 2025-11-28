@@ -255,62 +255,33 @@
 </style>
 
 <style>
-  /* UPDATED Wooden Style Buttons to match reference */
+  /* Practice Board buttons — Back style, no shadow */
   #prac-ctrls .pbtn,
   #prac-ctrls .pbtn-strong,
-  #prac-ctrls .pbtn-alt {
-    padding: 12px 20px;
-    border-radius: 8px; /* Matching the rounded corners */
-    font-weight: 800;
-    font-size: 16px;
-    line-height: 1;
-    cursor: pointer;
-    
-    /* Removed text-transform: uppercase; to rely on HTML for casing */
-    
-    margin: 0 6px; /* Spacing between buttons */
+  #prac-ctrls .pbtn-alt{
+    padding:12px 16px;
+    border-radius:12px;
+    font-weight:800;
+    font-size:15px;
+    line-height:1;
+    cursor:pointer;
 
-    /* Default (Unpressed) Look */
-    background: linear-gradient(to bottom, #d6a76f 0%, #b38b59 100%); /* Softer wood gradient */
-    color: #4a3b2a; /* Dark Brown text */
-    
-    border: 1px solid #a37c4e; /* Outer edge */
-    box-shadow: 
-        inset 0 1px 0 rgba(255,255,255,0.3), /* Top inner highlight */
-        inset 0 -2px 0 rgba(0,0,0,0.1),    /* Bottom inner shadow */
-        0 4px 0 #8c6a49,                   /* Main 3D "depth" shadow */
-        0 4px 6px rgba(0,0,0,0.3);         /* Overall drop shadow */
-    
-    text-shadow: none; /* Removed for a flatter text look, like the reference */
-    transition: all 0.1s ease-out; /* Smoother transitions */
+    background: rgba(37,99,235,.22);
+    color:#e6f3ff;
+    border:2px solid rgba(37,99,235,.75);
+
+    box-shadow: none !important;
+    transition: transform .06s, background .15s;
   }
-
-  /* Hover Effect */
-  #prac-ctrls .pbtn:hover {
-    background: linear-gradient(to bottom, #e0b078 0%, #c49962 100%); /* Slightly lighter on hover */
-    transform: translateY(-1px); /* Slight lift */
-    box-shadow: 
-        inset 0 1px 0 rgba(255,255,255,0.3),
-        inset 0 -2px 0 rgba(0,0,0,0.1),
-        0 5px 0 #9e7a53,                   /* "Depth" shadow becomes slightly larger */
-        0 6px 8px rgba(0,0,0,0.35);         /* Drop shadow becomes slightly larger */
+  #prac-ctrls .pbtn:hover{
+    background: rgba(37,99,235,.26);
   }
-
-  /* Active Effect (When Clicked/Pressed) */
-  #prac-ctrls .pbtn:active {
-    transform: translateY(3px); /* Button pushes down further */
-    background: linear-gradient(to bottom, #b38b59 0%, #d6a76f 100%); /* Inverted gradient for pressed look */
-    
-    /* Adjusting shadows to look "pressed in" */
-    box-shadow: 
-        inset 0 2px 4px rgba(0,0,0,0.2), /* Inner shadow to look concave */
-        0 1px 0 rgba(255,255,255,0.1),   /* Subtle top highlight when pressed */
-        0 1px 2px rgba(0,0,0,0.2);       /* Minimal drop shadow when pressed */
+  #prac-ctrls .pbtn:active{
+    background: rgba(37,99,235,.32);
+    transform: translateY(1px);
   }
-
-  /* Focus Ring (For accessibility/tabbing) */
-  #prac-ctrls .pbtn:focus-visible {
-    outline: 2px solid #ffffff;
+  #prac-ctrls .pbtn:focus-visible{
+    outline: 2px solid rgba(255,255,255,.85);
     outline-offset: 2px;
   }
 </style>
@@ -2049,10 +2020,3 @@ window.PracticeBoard = {
 
 </body>
 </html>
-
-
-
-
-
-
-
