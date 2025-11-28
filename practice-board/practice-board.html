@@ -215,16 +215,17 @@
     position:absolute;
     pointer-events:none;
     border-radius:50%;
-    border:3px solid rgba(11,74,162,.95);
-    background:rgba(231,240,255,.35);
+    border:2px solid rgba(11,74,162,.95);
+    background:rgba(231,240,255,.30);
     animation: pracPulse 0.9s ease-in-out infinite alternate;
-    box-shadow: 0 0 0 1px rgba(11,74,162,.18), 0 0 10px rgba(11,74,162,.35) inset;
-    z-index: 10000;
+    box-shadow:0 0 0 1px rgba(11,74,162,.18), 0 0 6px rgba(11,74,162,.35) inset;
+    z-index:10000;
   }
   @keyframes pracPulse{
-    from{ transform:scale(.92); opacity:.7; }
-    to  { transform:scale(1.04); opacity:1; }
+    from{ transform:scale(.94); opacity:.75; }
+    to  { transform:scale(1.03); opacity:1; }
   }
+
 
 
   /* Practice-only fullscreen overlay */
@@ -653,37 +654,29 @@ window.addEventListener('go:prefs-changed', function(e){
       hintEl = null;
       try { redraw(); } catch(e){}
     }
-       function positionHintEl(){
+    function positionHintEl(){
       if (!hintXY || !board || !hintEl) return;
 
-      // Canvas → CSS scale factor
-      var scale = canvasCssScale();
-
-      // Center of the intersection in CSS pixels
+      // Center of the intersection in CSS pixels (relative to zoomLayer)
       var px = getXcss(hintXY.x);
       var py = getYcss(hintXY.y);
 
-      // Stone radius in CSS pixels
-      var r = (board.stoneRadius || 0) * scale;
+      // Approximate grid spacing in CSS pixels
+      var spacingX = Math.abs(getXcss(1) - getXcss(0)) || 0;
+      var spacingY = Math.abs(getYcss(1) - getYcss(0)) || 0;
+      var spacing  = spacingX && spacingY ? Math.min(spacingX, spacingY)
+                                          : (spacingX || spacingY || 24);
 
-      // Fallback if stoneRadius is not ready for some reason
-      if (!r) {
-        try {
-          var dx = (board.getX(1) - board.getX(0)) * scale;
-          r = dx * 0.5;
-        } catch(_) {
-          r = 12; // safe default
-        }
-      }
-
-      // Diameter: about same as the stone, slight extra for the ring
-      var d = Math.round(r * 2 * 1.02);
+      // Diameter slightly smaller than the stone – tweak factor if needed
+      var d = Math.round(spacing * 0.62);
 
       hintEl.style.width  = d + 'px';
       hintEl.style.height = d + 'px';
+      // tiny vertical nudge (-0.5) to avoid feeling "a bit low"
       hintEl.style.left   = Math.round(px - d / 2) + 'px';
-      hintEl.style.top    = Math.round(py - d / 2) + 'px';
+      hintEl.style.top    = Math.round(py - d / 2 - 0.5) + 'px';
     }
+
 
     function showHintAt(x,y){
       hintXY = {x:x, y:y};
