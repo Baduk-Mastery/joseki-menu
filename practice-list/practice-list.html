@@ -302,6 +302,7 @@
 (function(){
   // Update this path if your SGF is in a different folder/name
   const SGF_URL   = "../sgf/library-1.sgf";
+
   const MIN_MOVES = 6;  // Only show variations with at least this many moves
 
   const overlay    = document.getElementById('practice-overlay');
@@ -315,6 +316,13 @@
   function isVisible(el){ return el && el.style.display !== 'none'; }
   function setFavHeaderVisible(show){
     if (favHeader) favHeader.style.display = show ? '' : 'none';
+  }
+  const PRACTICE_CFG_KEY = 'go_practice_config';
+
+  function savePracticeConfig(){
+    try {
+      localStorage.setItem(PRACTICE_CFG_KEY, JSON.stringify(window.PracticeConfig || {}));
+    } catch(e){}
   }
 
   function goBackToMenu(){
@@ -1023,12 +1031,16 @@
       moves:  (line.moves || []).map(m => ({ x:m.x, y:m.y, color:m.color }))
     };
 
+    // persist for the Practice Board page
+    savePracticeConfig();
+
     if (lvlOverlay){
       LevelUI.open();
     } else {
       console.log('[Practice] Selected line (no board wired yet):', window.PracticeConfig.selectedLine);
     }
   }
+
 
   /* Build data */
 
@@ -1358,11 +1370,21 @@
     window.PracticeConfig = window.PracticeConfig || {};
     window.PracticeConfig.level = lvl;
 
+    // Persist full config (selectedLine + level)
+    savePracticeConfig();
+
     LevelUI.close();
 
-    console.log('[Practice] Selected level (no board wired yet):', lvl, window.PracticeConfig);
-    // In the next step we will navigate to the Practice Board page from here.
+    // Extra safety: only go to board if a line was actually selected
+    if (!window.PracticeConfig.selectedLine){
+      console.warn('[Practice] Level picked but no selectedLine in PracticeConfig; not opening board.');
+      return;
+    }
+
+    // Open practice board page
+    window.location.href = "../practice-board/index.html";
   });
+
 
   backBtn && backBtn.addEventListener('click', ()=>{
     if (overlay.classList.contains('toast-open')){
