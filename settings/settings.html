@@ -163,173 +163,139 @@
   var panel = document.getElementById('settings-overlay');
   if (!panel) return;
 
-  var MENU_URL = '../joseki-menu/index.html'; // adjust if your menu path is different
-
-  // === prefs store (shared, persisted) ===
+  var MENU_URL    = '../joseki-menu/index.html';
   var STORAGE_KEY = 'go_prefs';
+
+  // Shared prefs object
   var GoPrefs = (window.GoPrefs = window.GoPrefs || {});
-  try { Object.assign(GoPrefs, JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}') || {}); } catch(e){}
-  if (typeof GoPrefs.josekiZoom     === 'undefined') GoPrefs.josekiZoom     = true;
-  if (typeof GoPrefs.soundOn       === 'undefined') GoPrefs.soundOn       = true;
-  if (typeof GoPrefs.highlightLast === 'undefined') GoPrefs.highlightLast = true;
+
+  // Load from localStorage
+  try {
+    var saved = localStorage.getItem(STORAGE_KEY);
+    if (saved) {
+      Object.assign(GoPrefs, JSON.parse(saved) || {});
+    }
+  } catch (e) {}
+
+  // Defaults
+  if (typeof GoPrefs.josekiZoom === 'undefined')     GoPrefs.josekiZoom     = true;
+  if (typeof GoPrefs.soundOn === 'undefined')        GoPrefs.soundOn        = true;
+  if (typeof GoPrefs.highlightLast === 'undefined')  GoPrefs.highlightLast  = true;
 
   function savePrefs(){
-    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(GoPrefs)); } catch(e){}
-  }
-
-  // === overlay open/close ===
-  var docEl = document.documentElement, prevOverflow = "";
-  function open(){
-    prevOverflow = docEl.style.overflow || "";
-    docEl.style.overflow = "hidden";
-    panel.style.display = "flex";
-    setZoomUI(!!GoPrefs.josekiZoom);
-    setSoundUI(!!GoPrefs.soundOn);
-    setHLUI(!!GoPrefs.highlightLast);
-  }
-  function close(){
-    panel.style.display = "none";
-    docEl.style.overflow = prevOverflow;
-  }
-  window.GoSettings = { open: open, close: close, __ready:true };
-
-    // back & esc -> go directly to menu without white flash
-  function goBackToMenu(){
-    // Do NOT call close() here; leaving the overlay visible
-    // avoids a brief white frame before navigation.
-    window.location.replace(MENU_URL); // or window.location.href = MENU_URL;
-  }
-
-  var btnBack = document.getElementById('s-back');
-  if (btnBack) btnBack.addEventListener('click', goBackToMenu);
-
-  document.addEventListener('keydown', function(e){
-    if (e.key === 'Escape' && panel.style.display !== 'none'){
-      goBackToMenu();
-    }
-  });
-
-
-
-  // === Zoom segmented toggle ===
-  var zoomOn  = document.getElementById('zoom-on');
-  var zoomOff = document.getElementById('zoom-off');
-
-  function setZoomUI(isOn){
-    if (!zoomOn || !zoomOff) return;
-    zoomOn.setAttribute('aria-pressed',  isOn ? 'true' : 'false');
-    zoomOff.setAttribute('aria-pressed', isOn ? 'false' : 'true');
-  }
-
-  function applyZoomPref(){
-    var v = !!GoPrefs.josekiZoom;
-    if (window.JosekiZoom && typeof JosekiZoom.setEnabled === 'function'){
-      try { JosekiZoom.setEnabled(v); } catch(e){}
-    }
-    if (window.PracticeZoom && typeof PracticeZoom.setEnabled === 'function'){
-      try { PracticeZoom.setEnabled(v); } catch(e){}
-    }
     try {
-      window.dispatchEvent(new CustomEvent('go:prefs-changed', { detail:{ key:'josekiZoom', value:v } }));
-    } catch(e){}
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(GoPrefs));
+    } catch (e) {}
   }
 
-  if (zoomOn)  zoomOn.addEventListener('click', function(){
-    GoPrefs.josekiZoom = true;
-    savePrefs();
-    setZoomUI(true);
-    applyZoomPref();
-  });
-  if (zoomOff) zoomOff.addEventListener('click', function(){
-    GoPrefs.josekiZoom = false;
-    savePrefs();
-    setZoomUI(false);
-    applyZoomPref();
-  });
-
-  // === Sound segmented toggle ===
-  var soundOnBtn  = document.getElementById('sound-on');
-  var soundOffBtn = document.getElementById('sound-off');
-
-  function setSoundUI(isOn){
-    if (!soundOnBtn || !soundOffBtn) return;
-    soundOnBtn.setAttribute('aria-pressed',  isOn ? 'true' : 'false');
-    soundOffBtn.setAttribute('aria-pressed', isOn ? 'false' : 'true');
-  }
-
-  function applySoundPref(){
-    var v = !!GoPrefs.soundOn;
-    if (window.JosekiSound && typeof JosekiSound.setEnabled === 'function'){
-      try { JosekiSound.setEnabled(v); } catch(e){}
-    }
-    if (window.PracticeSound && typeof PracticeSound.setEnabled === 'function'){
-      try { PracticeSound.setEnabled(v); } catch(e){}
-    }
+  function broadcast(key){
     try {
-      window.dispatchEvent(new CustomEvent('go:prefs-changed', { detail:{ key:'soundOn', value:v } }));
-    } catch(e){}
+      var ev = new CustomEvent('go:prefs-changed', {
+        detail: { key: key, value: GoPrefs[key] }
+      });
+      window.dispatchEvent(ev);
+    } catch (e) {}
   }
 
-  if (soundOnBtn)  soundOnBtn.addEventListener('click', function(){
-    GoPrefs.soundOn = true;
-    savePrefs();
-    setSoundUI(true);
-    applySoundPref();
-  });
-  if (soundOffBtn) soundOffBtn.addEventListener('click', function(){
-    GoPrefs.soundOn = false;
-    savePrefs();
-    setSoundUI(false);
-    applySoundPref();
-  });
-
-  // === Highlight last segmented toggle ===
-  var hlastOn  = document.getElementById('hlast-on');
-  var hlastOff = document.getElementById('hlast-off');
-
-  function setHLUI(isOn){
-    if (!hlastOn || !hlastOff) return;
-    hlastOn.setAttribute('aria-pressed',  isOn ? 'true' : 'false');
-    hlastOff.setAttribute('aria-pressed', isOn ? 'false' : 'true');
-  }
-
-  function applyHLPref(){
-    var v = !!GoPrefs.highlightLast;
-    if (window.JosekiHighlight && typeof JosekiHighlight.setEnabled === 'function'){
-      try { JosekiHighlight.setEnabled(v); } catch(e){}
-    }
-    if (window.PracticeHighlight && typeof PracticeHighlight.setEnabled === 'function'){
-      try { PracticeHighlight.setEnabled(v); } catch(e){}
-    }
+  function applyToBoards(){
+    // Zoom
     try {
-      window.dispatchEvent(new CustomEvent('go:prefs-changed', { detail:{ key:'highlightLast', value:v } }));
-    } catch(e){}
+      if (window.JosekiZoom && typeof JosekiZoom.setEnabled === 'function') {
+        JosekiZoom.setEnabled(!!GoPrefs.josekiZoom);
+      }
+      if (window.PracticeZoom && typeof PracticeZoom.setEnabled === 'function') {
+        PracticeZoom.setEnabled(!!GoPrefs.josekiZoom);
+      }
+    } catch (e) {}
+
+    // Sound
+    try {
+      if (window.JosekiSound && typeof JosekiSound.setEnabled === 'function') {
+        JosekiSound.setEnabled(!!GoPrefs.soundOn);
+      }
+      if (window.PracticeSound && typeof PracticeSound.setEnabled === 'function') {
+        PracticeSound.setEnabled(!!GoPrefs.soundOn);
+      }
+    } catch (e) {}
+
+    // Highlight
+    try {
+      if (window.JosekiHighlight && typeof JosekiHighlight.setEnabled === 'function') {
+        JosekiHighlight.setEnabled(!!GoPrefs.highlightLast);
+      }
+      if (window.PracticeHighlight && typeof PracticeHighlight.setEnabled === 'function') {
+        PracticeHighlight.setEnabled(!!GoPrefs.highlightLast);
+      }
+    } catch (e) {}
   }
 
-  if (hlastOn)  hlastOn.addEventListener('click', function(){
-    GoPrefs.highlightLast = true;
+  function setPref(key, val){
+    GoPrefs[key] = !!val;
     savePrefs();
-    setHLUI(true);
-    applyHLPref();
-  });
-  if (hlastOff) hlastOff.addEventListener('click', function(){
-    GoPrefs.highlightLast = false;
-    savePrefs();
-    setHLUI(false);
-    applyHLPref();
-  });
-
-  // Initial UI sync (even if overlay is closed)
-  setZoomUI(!!GoPrefs.josekiZoom);
-  setSoundUI(!!GoPrefs.soundOn);
-  setHLUI(!!GoPrefs.highlightLast);
-
-  // Standalone page: open overlay immediately when ready
-  if (document.readyState === 'complete' || document.readyState === 'interactive') {
-    open();
-  } else {
-    document.addEventListener('DOMContentLoaded', open);
+    broadcast(key);
+    applyToBoards();
   }
+
+  // UI elements
+  var zoomOn   = document.getElementById('zoom-on');
+  var zoomOff  = document.getElementById('zoom-off');
+  var soundOn  = document.getElementById('sound-on');
+  var soundOff = document.getElementById('sound-off');
+  var hOn      = document.getElementById('hlast-on');
+  var hOff     = document.getElementById('hlast-off');
+  var backBtn  = document.getElementById('s-back');
+
+  function syncButtons(){
+    if (zoomOn && zoomOff){
+      zoomOn.setAttribute('aria-pressed', GoPrefs.josekiZoom ? 'true' : 'false');
+      zoomOff.setAttribute('aria-pressed', GoPrefs.josekiZoom ? 'false' : 'true');
+    }
+    if (soundOn && soundOff){
+      soundOn.setAttribute('aria-pressed', GoPrefs.soundOn ? 'true' : 'false');
+      soundOff.setAttribute('aria-pressed', GoPrefs.soundOn ? 'false' : 'true');
+    }
+    if (hOn && hOff){
+      hOn.setAttribute('aria-pressed', GoPrefs.highlightLast ? 'true' : 'false');
+      hOff.setAttribute('aria-pressed', GoPrefs.highlightLast ? 'false' : 'true');
+    }
+  }
+
+  // Wire up handlers
+  if (zoomOn)  zoomOn.addEventListener('click',  function(){ setPref('josekiZoom', true);  syncButtons(); });
+  if (zoomOff) zoomOff.addEventListener('click', function(){ setPref('josekiZoom', false); syncButtons(); });
+
+  if (soundOn)  soundOn.addEventListener('click',  function(){ setPref('soundOn', true);  syncButtons(); });
+  if (soundOff) soundOff.addEventListener('click', function(){ setPref('soundOn', false); syncButtons(); });
+
+  if (hOn)  hOn.addEventListener('click',  function(){ setPref('highlightLast', true);  syncButtons(); });
+  if (hOff) hOff.addEventListener('click', function(){ setPref('highlightLast', false); syncButtons(); });
+
+  if (backBtn){
+    backBtn.addEventListener('click', function(){
+      try {
+        if (window.history && window.history.length > 1){
+          window.history.back();
+        } else {
+          window.location.href = MENU_URL;
+        }
+      } catch (e) {
+        window.location.href = MENU_URL;
+      }
+    });
+  }
+
+  // Show the overlay and sync UI/state on load
+  panel.style.display = 'flex';
+  syncButtons();
+  applyToBoards();
+
+  window.GoSettings = {
+    __ready: true,
+    getPrefs: function(){ return Object.assign({}, GoPrefs); },
+    setZoom: function(on){ setPref('josekiZoom', !!on); syncButtons(); },
+    setSound: function(on){ setPref('soundOn', !!on); syncButtons(); },
+    setHighlight: function(on){ setPref('highlightLast', !!on); syncButtons(); }
+  };
 })();
 </script>
 

@@ -266,6 +266,30 @@
     outline-offset: 2px;
   }
 </style>
+<!-- Shared Go prefs (same key as Joseki board + Settings) -->
+<script>
+(function(){
+  var STORAGE_KEY = 'go_prefs';
+  var GoPrefs = (window.GoPrefs = window.GoPrefs || {});
+
+  try {
+    var saved = localStorage.getItem(STORAGE_KEY);
+    if (saved) {
+      Object.assign(GoPrefs, JSON.parse(saved) || {});
+    }
+  } catch (e) {}
+
+  if (typeof GoPrefs.josekiZoom === 'undefined')     GoPrefs.josekiZoom     = true;
+  if (typeof GoPrefs.soundOn === 'undefined')        GoPrefs.soundOn        = true;
+  if (typeof GoPrefs.highlightLast === 'undefined')  GoPrefs.highlightLast  = true;
+
+  window.GoPrefsSave = function(){
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(GoPrefs));
+    } catch (e) {}
+  };
+})();
+</script>
 
 <!-- Stone SFX (local, guarded) -->
 <script>
@@ -365,19 +389,43 @@ html.no-wood, body.no-wood{ background: none !important; }
     var grid  = Array.from({length:SIZE}, ()=>Array(SIZE).fill(null));
     var history = [], current = 0, turn = B;
 
-    var highlightLastEnabled =
-      (window.GoPrefs && typeof window.GoPrefs.highlightLast !== 'undefined')
-        ? !!window.GoPrefs.highlightLast : true;
+var highlightLastEnabled =
+  (window.GoPrefs && typeof window.GoPrefs.highlightLast !== 'undefined')
+    ? !!window.GoPrefs.highlightLast : true;
+
+var zoomEnabled = (window.GoPrefs && typeof window.GoPrefs.josekiZoom !== 'undefined')
+  ? !!window.GoPrefs.josekiZoom : true;
 
     var lastX = null, lastY = null;
 
-    window.addEventListener('go:prefs-changed', function(e){
-      var d = e.detail || {};
-      if (d.key === 'highlightLast') {
-        highlightLastEnabled = !!d.value;
-        try { redraw(); } catch(_) {}
+window.addEventListener('go:prefs-changed', function(e){
+  var d = e.detail || {};
+  if (!d || typeof d.key === 'undefined') return;
+
+  if (d.key === 'highlightLast') {
+    // Update practice-board highlight
+    highlightLastEnabled = !!d.value;
+    try { redraw(); } catch(_) {}
+  } else if (d.key === 'josekiZoom') {
+    // Toggle zoom on practice board
+    try {
+      if (window.PracticeZoom && typeof PracticeZoom.setEnabled === 'function') {
+        PracticeZoom.setEnabled(!!d.value);
       }
-    });
+    } catch (_) {}
+  } else if (d.key === 'soundOn') {
+    // Toggle sound via shared sound bridge
+    try {
+      if (window.PracticeSound && typeof PracticeSound.setEnabled === 'function') {
+        PracticeSound.setEnabled(!!d.value);
+      } else if (window.StoneSFX && '_enabled' in StoneSFX) {
+        StoneSFX._enabled = !!d.value;
+      }
+    } catch (_) {}
+  }
+});
+
+
 
     window.PracticeHighlight = {
       isEnabled(){ return highlightLastEnabled; },
