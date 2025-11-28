@@ -1115,7 +1115,7 @@ window.addEventListener('go:prefs-changed', function(e){
       applyPanAndSize(true);
     }
 
-function animateTo(targetScale, targetOffsetX, targetOffsetY, onDone){
+function animateTo(targetScale, targetOffsetX, targetOffsetY){
   targetScale = Math.max(minScale, Math.min(maxScale, targetScale));
 
   const s0  = scale;
@@ -1127,7 +1127,7 @@ function animateTo(targetScale, targetOffsetX, targetOffsetY, onDone){
   const oy1 = targetOffsetY;
 
   const t0  = performance.now();
-  const dur = 220; // snappy but a bit longer, feels smoother
+  const dur = 180; // faster than 260ms
 
   cancelAnimationFrame(animId);
 
@@ -1135,20 +1135,21 @@ function animateTo(targetScale, targetOffsetX, targetOffsetY, onDone){
     let t = (now - t0) / dur;
     if (t > 1) t = 1;
 
-    // Smoothstep easing (very even velocity, similar to high-quality app zooms)
-    const e = t * t * (3 - 2 * t);
+    // Snappier but still smooth: cubic ease-out
+    const e = 1 - Math.pow(1 - t, 3);
 
     scale   = s0  + (s1  - s0 ) * e;
     offsetX = ox0 + (ox1 - ox0) * e;
     offsetY = oy0 + (oy1 - oy0) * e;
 
+    // No heavy redraws during animation
     applyPanAndSize(false);
 
     if (t < 1){
       animId = requestAnimationFrame(step);
     } else {
+      // One final redraw at the end so markers/hints stay in sync
       applyPanAndSize(true);
-      if (typeof onDone === 'function') onDone();
     }
   })(t0);
 }
@@ -1215,62 +1216,6 @@ function animateTo(targetScale, targetOffsetX, targetOffsetY, onDone){
       });
     }
 
-function smoothZoomBackAfterMove(){
-  if (!zoomEnabled) return;
-
-  // Normal case: user is in fullscreen zoom
-  if (isFullscreen){
-    // Animate scale back to 1, but keep the current pan
-    const startOX = offsetX;
-    const startOY = offsetY;
-    const targetScale = 1;
-
-    animateTo(targetScale, startOX, startOY, function(){
-      try {
-        // Measure current visual width of the board before moving it
-        const rect = mount.getBoundingClientRect();
-        let finalW = Math.floor(rect.width || baseW || 0);
-        if (finalW < 2) finalW = baseW || 2;
-        if (finalW % 2) finalW--;
-
-        // Restore scroll
-        document.documentElement.style.overflow = prevOverflow;
-
-        // Move board back to its original place in the page
-        if (returnAnchor && returnAnchor.parentNode){
-          returnAnchor.parentNode.insertBefore(mount, returnAnchor);
-          returnAnchor.parentNode.removeChild(returnAnchor);
-          returnAnchor = null;
-        }
-
-        // Hide overlay and update flags
-        if (overlay) overlay.style.display = 'none';
-        isFullscreen = false;
-        mount.classList.remove('is-fullscreen');
-
-        // Re-base geometry so visual width stays the same
-        baseW   = finalW;
-        scale   = 1;
-        offsetX = 0;
-        offsetY = 0;
-
-        // Apply once in inline mode – no extra jump
-        applyPanAndSize(true);
-      } catch (e){
-        // Fallback: if anything goes wrong, use the old hard exit
-        exitFullscreen();
-      }
-    });
-    return;
-  }
-
-  // Safety: if for some reason we are zoomed without fullscreen
-  if (scale !== 1){
-    animateTo(1, 0, 0, function(){
-      resetViewLocal();
-    });
-  }
-}
 
     function exitFullscreen(){
       mount.classList.remove('is-fullscreen');
@@ -1650,10 +1595,7 @@ function smoothZoomBackAfterMove(){
           buildPositionTo(currentNode);
           StoneSFX.play();
 
-          if (zoomEnabled && (scale > 1 || isFullscreen)) {
-  smoothZoomBackAfterMove();
-}
-
+          if (zoomEnabled && (scale > 1 || isFullscreen)) setTimeout(exitFullscreen, 10);
 
           var nexts = getNextCandidates(currentNode);
           if (!nexts.length){ showClearedOrWin(); return; }
@@ -1901,3 +1843,6 @@ window.PracticeBoard = {
 
 </body>
 </html>
+
+
+
