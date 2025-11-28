@@ -255,7 +255,7 @@
 </style>
 
 <style>
-  /* Practice Board buttons – light wood, board-like */
+  /* Practice Board buttons – subtle gloss, board-like wood */
   #prac-ctrls{
     max-width:720px;
     margin:14px auto 0;
@@ -272,22 +272,24 @@
     position:relative;
     min-width:90px;
     padding:8px 24px;
-    border-radius:14px;                  /* closer to reference shape */
+
+    /* corners a bit sharper (less pill-like) */
+    border-radius:10px;
     border:1px solid rgba(255,255,255,.45);
 
     font-size:16px;
     font-weight:800;
     line-height:1.1;
-    color:#fff7dd;
-    text-shadow:0 1px 1px rgba(120,60,20,.85);
+    color:#fff3cf;
+    text-shadow:0 1px 0 rgba(120,60,20,.7);
     cursor:pointer;
 
-    /* wood texture + light glossy overlay */
+    /* much softer highlight – no big white band */
     background-image:
       linear-gradient(
         to bottom,
-        rgba(255,255,255,.75),
-        rgba(255,255,255,.25) 42%,
+        rgba(255,255,255,.18),
+        rgba(255,255,255,.06) 38%,
         rgba(0,0,0,.10) 100%
       ),
       url('../img/wood.jpg');
@@ -295,12 +297,12 @@
     background-position:center;
     background-repeat:no-repeat;
 
-    /* lighten the page wood so it’s nearer to the board color */
-    filter:brightness(1.3) saturate(.95);
+    /* make wood a bit lighter than page background, closer to board */
+    filter:brightness(1.18) saturate(.98);
 
     box-shadow:
-      0 3px 0 rgba(133,74,26,.9),        /* hard “base” edge */
-      0 8px 16px rgba(0,0,0,.55);        /* drop shadow */
+      0 3px 0 rgba(133,74,26,.9),
+      0 8px 14px rgba(0,0,0,.5);
 
     transition:
       transform .08s ease-out,
@@ -308,21 +310,22 @@
       filter .12s ease-out;
   }
 
-  /* Hover: a bit brighter but same texture */
+  /* Hover: tiny brightness bump, still minimal gloss */
   #prac-ctrls .pbtn:hover,
   #prac-ctrls .pbtn-strong:hover,
   #prac-ctrls .pbtn-alt:hover{
-    filter:brightness(1.38) saturate(1);
+    filter:brightness(1.24) saturate(1);
   }
 
-  /* Pressed: subtle push-down, color returns automatically after click */
+  /* Pressed: push down & slightly darker, auto-resets on mouseup/touchend */
   #prac-ctrls .pbtn:active,
   #prac-ctrls .pbtn-strong:active,
   #prac-ctrls .pbtn-alt:active{
     transform:translateY(2px);
     box-shadow:
       0 1px 0 rgba(133,74,26,.9),
-      0 4px 10px rgba(0,0,0,.45);
+      0 4px 8px rgba(0,0,0,.45);
+    filter:brightness(1.08) saturate(.98);
   }
 
   #prac-ctrls .pbtn:focus-visible,
