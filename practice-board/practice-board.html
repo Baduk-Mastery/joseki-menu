@@ -1115,7 +1115,7 @@ window.addEventListener('go:prefs-changed', function(e){
       applyPanAndSize(true);
     }
 
-function animateTo(targetScale, targetOffsetX, targetOffsetY){
+function animateTo(targetScale, targetOffsetX, targetOffsetY, onDone){
   targetScale = Math.max(minScale, Math.min(maxScale, targetScale));
 
   const s0  = scale;
@@ -1127,7 +1127,7 @@ function animateTo(targetScale, targetOffsetX, targetOffsetY){
   const oy1 = targetOffsetY;
 
   const t0  = performance.now();
-  const dur = 180; // faster than 260ms
+  const dur = 220; // snappy but a bit longer, feels smoother
 
   cancelAnimationFrame(animId);
 
@@ -1135,21 +1135,20 @@ function animateTo(targetScale, targetOffsetX, targetOffsetY){
     let t = (now - t0) / dur;
     if (t > 1) t = 1;
 
-    // Snappier but still smooth: cubic ease-out
-    const e = 1 - Math.pow(1 - t, 3);
+    // Smoothstep easing (very even velocity, similar to high-quality app zooms)
+    const e = t * t * (3 - 2 * t);
 
     scale   = s0  + (s1  - s0 ) * e;
     offsetX = ox0 + (ox1 - ox0) * e;
     offsetY = oy0 + (oy1 - oy0) * e;
 
-    // No heavy redraws during animation
     applyPanAndSize(false);
 
     if (t < 1){
       animId = requestAnimationFrame(step);
     } else {
-      // One final redraw at the end so markers/hints stay in sync
       applyPanAndSize(true);
+      if (typeof onDone === 'function') onDone();
     }
   })(t0);
 }
@@ -1216,6 +1215,36 @@ function animateTo(targetScale, targetOffsetX, targetOffsetY){
       });
     }
 
+function smoothZoomBackAfterMove(){
+  if (!zoomEnabled) return;
+
+  // Normal case: user is in fullscreen zoom
+  if (isFullscreen){
+    const vp = viewportSize();
+    const vw = vp.vw;
+    const vh = vp.vh;
+
+    const targetScale = 1;
+    const bw = baseW * targetScale || 1;
+
+    // Center the full board in the viewport for the zoom-out
+    const targetOffsetX = (bw - vw) / 2;
+    const targetOffsetY = (bw - vh) / 2;
+
+    animateTo(targetScale, targetOffsetX, targetOffsetY, function(){
+      // After the smooth zoom-out, return to inline board
+      exitFullscreen();
+    });
+    return;
+  }
+
+  // Safety: if for some reason we are zoomed without fullscreen
+  if (scale !== 1){
+    animateTo(1, 0, 0, function(){
+      resetViewLocal();
+    });
+  }
+}
 
     function exitFullscreen(){
       mount.classList.remove('is-fullscreen');
@@ -1595,7 +1624,10 @@ function animateTo(targetScale, targetOffsetX, targetOffsetY){
           buildPositionTo(currentNode);
           StoneSFX.play();
 
-          if (zoomEnabled && (scale > 1 || isFullscreen)) setTimeout(exitFullscreen, 10);
+          if (zoomEnabled && (scale > 1 || isFullscreen)) {
+  smoothZoomBackAfterMove();
+}
+
 
           var nexts = getNextCandidates(currentNode);
           if (!nexts.length){ showClearedOrWin(); return; }
