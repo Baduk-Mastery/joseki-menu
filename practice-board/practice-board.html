@@ -1220,20 +1220,46 @@ function smoothZoomBackAfterMove(){
 
   // Normal case: user is in fullscreen zoom
   if (isFullscreen){
-    const vp = viewportSize();
-    const vw = vp.vw;
-    const vh = vp.vh;
-
+    // Animate scale back to 1, but keep the current pan
+    const startOX = offsetX;
+    const startOY = offsetY;
     const targetScale = 1;
-    const bw = baseW * targetScale || 1;
 
-    // Center the full board in the viewport for the zoom-out
-    const targetOffsetX = (bw - vw) / 2;
-    const targetOffsetY = (bw - vh) / 2;
+    animateTo(targetScale, startOX, startOY, function(){
+      try {
+        // Measure current visual width of the board before moving it
+        const rect = mount.getBoundingClientRect();
+        let finalW = Math.floor(rect.width || baseW || 0);
+        if (finalW < 2) finalW = baseW || 2;
+        if (finalW % 2) finalW--;
 
-    animateTo(targetScale, targetOffsetX, targetOffsetY, function(){
-      // After the smooth zoom-out, return to inline board
-      exitFullscreen();
+        // Restore scroll
+        document.documentElement.style.overflow = prevOverflow;
+
+        // Move board back to its original place in the page
+        if (returnAnchor && returnAnchor.parentNode){
+          returnAnchor.parentNode.insertBefore(mount, returnAnchor);
+          returnAnchor.parentNode.removeChild(returnAnchor);
+          returnAnchor = null;
+        }
+
+        // Hide overlay and update flags
+        if (overlay) overlay.style.display = 'none';
+        isFullscreen = false;
+        mount.classList.remove('is-fullscreen');
+
+        // Re-base geometry so visual width stays the same
+        baseW   = finalW;
+        scale   = 1;
+        offsetX = 0;
+        offsetY = 0;
+
+        // Apply once in inline mode – no extra jump
+        applyPanAndSize(true);
+      } catch (e){
+        // Fallback: if anything goes wrong, use the old hard exit
+        exitFullscreen();
+      }
     });
     return;
   }
