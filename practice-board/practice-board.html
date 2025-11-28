@@ -1330,7 +1330,7 @@ function updatePan(e){
       beginPan(e);
     }, {passive:true});
 
-      mount.addEventListener('pointerup', function(e){
+          mount.addEventListener('pointerup', function(e){
       if (!zoomEnabled || !tapStart) { endPan(e); return; }
       if (isPanning){ endPan(e); tapStart = null; return; }
 
@@ -1348,18 +1348,28 @@ function updatePan(e){
 
       if (dt < 250 && (dx*dx + dy*dy) < 9){
         if (scale === 1 && !isFullscreen){
+          // First tap: enter fullscreen / zoom, but don't play a move
           e.preventDefault();
           e.stopPropagation();
           if (e.stopImmediatePropagation) e.stopImmediatePropagation();
 
           suppressNextBoardClick = true;
-          // Always zoom to where the user actually tapped
           enterFullscreenAtGrid(gi, gj, tapClientX, tapClientY);
         } else {
+          // Already zoomed / fullscreen: treat this as a board tap at (gi, gj)
+          e.preventDefault();
+          e.stopPropagation();
+          if (e.stopImmediatePropagation) e.stopImmediatePropagation();
+
           suppressNextBoardClick = false;
+
+          try {
+            handlePracticeClick(gi, gj);
+          } catch (_) {}
         }
       }
     }, {passive:false, capture:true});
+
 
 
 
@@ -1612,21 +1622,33 @@ function updatePan(e){
       else alert('Pro unlocks unlimited tries.');
     });
 
-    board.addEventListener('click', function(x,y){
-      if (zoomEnabled && suppressNextBoardClick){ suppressNextBoardClick = false; return; }
+        // Centralised handler for "play at board coordinate (x,y)"
+    function handlePracticeClick(x, y){
       if (!hasSGF || isAutoPlacing) return;
 
+      // Lives quota (Free) on L2–L3
       if (!isPro() && (level === 2 || level === 3)){
         var peek = QUOTA.peek('prac:lives-l23', MAX_LIVES_FREE_L23);
         if (peek.remaining <= 0){ showLocked(); return; }
       }
 
       var opts = getNextCandidates(currentNode);
-      for (var i=0;i<opts.length;i++){
+      if (!opts || !opts.length){
+        showClearedOrWin();
+        return;
+      }
+
+      for (var i = 0; i < opts.length; i++){
         var cand = opts[i];
-        var pos = tfXY(cand.xy.x, cand.xy.y);
-        if (pos.x===x && pos.y===y){
-          if (playerOnly && cand.color !== playerColor){ showWrong(); return; }
+        var pos  = tfXY(cand.xy.x, cand.xy.y);
+
+        if (pos.x === x && pos.y === y){
+          // Wrong colour in player-only levels (should never happen, but guard)
+          if (playerOnly && cand.color !== playerColor){
+            showWrong();
+            return;
+          }
+
           if ((level === 4 || level === 5) && showSingleNext) showSingleNext = false;
           if (level === 2 && !l2HintConsumed) l2HintConsumed = true;
 
@@ -1634,16 +1656,40 @@ function updatePan(e){
           buildPositionTo(currentNode);
           StoneSFX.play();
 
-          if (zoomEnabled && (scale > 1 || isFullscreen)) setTimeout(exitFullscreen, 10);
+          // Auto-exit zoom when a correct move is played
+          if (zoomEnabled && (scale > 1 || isFullscreen)){
+            setTimeout(exitFullscreen, 10);
+          }
 
           var nexts = getNextCandidates(currentNode);
-          if (!nexts.length){ showClearedOrWin(); return; }
-          if (playerOnly){ autoPlaceOpponentIfNeeded(); }
+          if (!nexts.length){
+            showClearedOrWin();
+            return;
+          }
+          if (playerOnly){
+            autoPlaceOpponentIfNeeded();
+          }
           return;
         }
       }
+
+      // No candidate matched this point – wrong move
       showWrong();
+    }
+
+    // WGo's own click mapping is only trusted when not zoomed/fullscreen
+    board.addEventListener('click', function(x, y){
+      // When zoomed / fullscreen, we use our own pointer-based mapping instead
+      if (zoomEnabled && (scale > 1 || isFullscreen)) return;
+
+      if (zoomEnabled && suppressNextBoardClick){
+        suppressNextBoardClick = false;
+        return;
+      }
+
+      handlePracticeClick(x, y);
     });
+
 
     // In-app "Back to menu" dialog wiring (same as Joseki board)
     var menuConfirmOverlay = document.getElementById('menu-confirm-overlay');
