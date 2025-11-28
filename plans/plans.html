@@ -1,0 +1,405 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Joseki Master – Plans</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <style>
+    html, body{
+      margin:0;
+      padding:0;
+      min-height:100%;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    /* ===== Overlay chrome (wood bg) — scroll-safe & global-proof ===== */
+    #plans-overlay{
+      position:fixed;
+      inset:0;
+      z-index:100000;
+      display:none;                     /* JS will turn this to flex on load */
+      justify-content:center;           /* center horizontally */
+      align-items:flex-start;           /* pin to top so header is never cut */
+      overflow:auto;                    /* overlay scrolls */
+      -webkit-overflow-scrolling:touch; /* iOS smooth scroll */
+      overscroll-behavior:contain;
+      padding: calc(env(safe-area-inset-top, 0px) + 20px) 0
+               calc(env(safe-area-inset-bottom, 0px) + 20px);
+      color:#fff;
+      -webkit-tap-highlight-color:transparent;
+      background-image:
+        linear-gradient(rgba(0,0,0,.35), rgba(0,0,0,.45)),
+        url('https://3d85c7a311526e02aeeeb19e952d0c09.cdn.bubble.io/f1755870506985x437178801728222500/wood.jpg');
+      background-size:cover;
+      background-position:center;
+      isolation:isolate;
+      box-sizing:border-box;
+    }
+    #plans-overlay .s-inner{
+      width:min(92vw,560px);
+      padding:12px 24px 22px;
+      margin:0 auto;
+      text-align:center;
+      position:relative;
+      box-sizing:border-box !important;
+    }
+
+    /* ===== Header layout (row1: back + title; row2: status spans both) ===== */
+    .pl-header{
+      display:grid !important;
+      grid-template-columns:auto 1fr;
+      grid-template-rows:auto auto;
+      align-items:center;
+      column-gap:16px;
+      row-gap:6px;
+      margin-bottom:8px;
+      text-align:left;
+    }
+    .pl-header .s-back{
+      grid-column:1;
+      grid-row:1;
+      position:static !important;
+      float:none !important;
+      margin:0 !important;
+      padding:8px 12px;
+      border-radius:12px;
+      cursor:pointer;
+      font-weight:700;
+      background: rgba(37,99,235,.22);
+      color:#e6f3ff;
+      border:2px solid rgba(37,99,235,.75);
+      box-shadow:0 8px 20px rgba(2,6,23,.45), inset 0 0 0 1px rgba(255,255,255,.08);
+      transition:transform .06s, background .15s, box-shadow .15s;
+      white-space:nowrap;
+    }
+    .pl-header .s-back:hover{
+      background: rgba(37,99,235,.26);
+    }
+    .pl-header .s-back:active{
+      background: rgba(37,99,235,.32);
+      transform:translateY(1px);
+    }
+
+    .pl-header .s-title{
+      grid-column:2;
+      grid-row:1;
+      position:static !important;
+      float:none !important;
+      display:block !important;
+      margin:0 !important;
+      font-size:30px;
+      line-height:1.12;
+      font-weight:800;
+      text-shadow:0 1px 2px rgba(0,0,0,.35);
+      min-width:0;
+    }
+    .pl-header .pl-status{
+      grid-column:1 / span 2;
+      grid-row:2;
+      margin:0;
+      font-weight:700;
+      color:#e6f3ff;
+    }
+
+    /* ===== Cards ===== */
+    #plans-overlay .s-card{
+      background: rgba(37,99,235,.22);
+      border:2px solid rgba(37,99,235,.75);
+      border-radius:12px;
+      box-shadow:0 8px 20px rgba(2,6,23,.45), inset 0 0 0 1px rgba(255,255,255,.08);
+      padding:12px;
+      color:#e6f3ff;
+    }
+    .pl-grid{
+      display:grid;
+      gap:12px;
+      margin-top:8px;
+      grid-template-columns: 1fr;
+    }
+    @media (min-width: 720px){
+      .pl-grid{ grid-template-columns: 1fr 1fr; }
+    }
+
+    .pl-card{
+      display:flex;
+      flex-direction:column;
+    }
+    .pl-head{
+      display:flex;
+      align-items:baseline;
+      justify-content:space-between;
+      padding:6px 6px 0 6px;
+      margin-bottom:4px;
+    }
+    .pl-name{
+      font-size:20px;
+      font-weight:800;
+      letter-spacing:.2px;
+      color:#e6f3ff;
+    }
+    .pl-price{
+      font-size:22px;
+      font-weight:900;
+    }
+
+    .pl-list{
+      margin:6px 0 10px;
+      padding:0 16px 0 24px;
+    }
+    .pl-list li{
+      margin:6px 0;
+    }
+    .pl-list small{
+      opacity:.85;
+    }
+
+    .pl-cta{
+      display:flex;
+      gap:8px;
+      padding:6px;
+    }
+    .pl-btn{
+      flex:1;
+      padding:12px 14px;
+      border-radius:12px;
+      cursor:pointer;
+      font-weight:800;
+      background: rgba(37,99,235,.22);
+      color:#e6f3ff;
+      border:2px solid rgba(37,99,235,.75);
+      box-shadow:0 8px 20px rgba(2,6,23,.45), inset 0 0 0 1px rgba(255,255,255,.08);
+      transition:transform .06s, background .15s, box-shadow .15s;
+      position:static !important;
+      display:inline-block !important;
+      float:none !important;
+    }
+    .pl-btn:hover{
+      background: rgba(37,99,235,.26);
+    }
+    .pl-btn:active{
+      background: rgba(37,99,235,.32);
+      transform:translateY(1px);
+    }
+    .pl-strong{
+      background:#3b82f6;
+      color:#fff;
+      border-color:#3b82f6;
+      box-shadow:0 8px 22px rgba(59,130,246,.45), inset 0 0 0 1px rgba(255,255,255,.12);
+    }
+    .pl-strong:active{
+      background:#2563eb;
+    }
+
+    .pl-note{
+      opacity:.9;
+      margin:12px 0 0;
+      text-align:left;
+    }
+
+    /* Tiny screens */
+    @media (max-width: 360px){
+      .pl-header .s-title{
+        font-size:26px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ===== Plans Overlay (used here as full page) ===== -->
+  <div id="plans-overlay" aria-modal="true" role="dialog" style="display:none">
+    <div class="s-inner">
+      <!-- Header: back + title on row 1; status on row 2 -->
+      <div class="pl-header">
+        <button id="pl-back" class="s-back" type="button" aria-label="Back to menu">← Back</button>
+        <h1 class="s-title">Choose Plan</h1>
+        <div id="pl-status" class="pl-status" aria-live="polite">
+          Your current plan: <strong id="pl-status-plan">Free</strong>
+        </div>
+      </div>
+
+      <!-- Cards -->
+      <div class="pl-grid">
+        <!-- Free -->
+        <section class="s-card pl-card" aria-label="Free plan">
+          <header class="pl-head">
+            <div class="pl-name">Free</div>
+            <div class="pl-price">€0</div>
+          </header>
+          <ul class="pl-list">
+            <li>Joseki board</li>
+            <li>Practice Level 1–3</li>
+            <li>3 Hints / day (Practice)</li>
+            <li>Level 2 &amp; 3: 5 lives per day<br><small>After 5 mistakes you can try again tomorrow</small></li>
+            <li><strong>Drills:</strong> select up to <strong>2</strong> joseki variations; <strong>2</strong> runs/day</li>
+          </ul>
+          <div class="pl-cta">
+            <button id="pl-free-keep" class="pl-btn" type="button">Keep Free</button>
+          </div>
+        </section>
+
+        <!-- Pro -->
+        <section class="s-card pl-card" aria-label="Pro plan">
+          <header class="pl-head">
+            <div class="pl-name">Pro</div>
+            <div class="pl-price">—</div>
+          </header>
+          <ul class="pl-list">
+            <li>Unlimited on Practice board</li>
+            <li>Levels 4 &amp; 5 unlocked</li>
+            <li>No daily limits</li>
+            <li><strong>Drills:</strong> select up to <strong>10</strong> joseki variations; <strong>unlimited</strong> runs/day</li>
+          </ul>
+          <div class="pl-cta">
+            <button id="pl-pro-activate" class="pl-btn pl-strong" type="button">Go Pro</button>
+          </div>
+        </section>
+      </div>
+
+      <p class="pl-note">You can change plans here anytime.</p>
+    </div>
+  </div>
+
+  <script>
+  /* Plans overlay controller + current-plan status + limits for Drills */
+  (function(){
+    if (window.GoPlans && window.GoPlans.__ready) return;
+
+    var panel = document.getElementById('plans-overlay');
+    if (!panel) return;
+
+    var statusEl = document.getElementById('pl-status-plan');
+
+    // Fallback Tier store (until /shared/tier.js takes over)
+    var Tier = window.Tier || {
+      get: function(){
+        try{
+          return (localStorage.getItem('go_tier') || 'free').toLowerCase();
+        }catch(e){
+          return 'free';
+        }
+      },
+      set: function(v){
+        try{
+          var t = (v || 'free').toLowerCase();
+          localStorage.setItem('go_tier', t);
+          window.dispatchEvent(new CustomEvent('tier:changed', { detail:{ tier:t } }));
+        }catch(e){}
+      }
+    };
+
+    // Limits for Drills (used by other pages via localStorage + optional events)
+    var LIMITS_FREE = { drills: { maxSelections: 2,  triesPerDay: 2 } };
+    var LIMITS_PRO  = { drills: { maxSelections: 10, triesPerDay: Number.POSITIVE_INFINITY } };
+
+    function currentLimits(){
+      return (Tier.get() === 'pro') ? LIMITS_PRO : LIMITS_FREE;
+    }
+
+    function emitLimitsChanged(){
+      try{
+        window.dispatchEvent(new CustomEvent('limits:changed', {
+          detail: { tier: Tier.get(), limits: currentLimits() }
+        }));
+      }catch(e){}
+    }
+
+    // Global helper object (if any page wants it)
+    window.GoLimits = {
+      getTier: function(){ return Tier.get(); },
+      get: function(){ return currentLimits(); },
+      constants: { FREE: LIMITS_FREE, PRO: LIMITS_PRO }
+    };
+
+    function niceName(s){
+      return (String(s || 'free').toLowerCase() === 'pro') ? 'Pro' : 'Free';
+    }
+
+    function refreshStatus(){
+      if (statusEl){
+        statusEl.textContent = niceName(Tier.get());
+      }
+      emitLimitsChanged();
+    }
+
+    function open(){
+      refreshStatus();
+      panel.style.display = 'flex';
+      panel.scrollTop = 0;
+      // Lock background scroll on this page (harmless, but keeps behavior consistent)
+      document.documentElement.style.overflow = 'hidden';
+    }
+
+    function close(){
+      panel.style.display = 'none';
+      document.documentElement.style.overflow = '';
+    }
+
+    function goBackToMenu(){
+      // If used as overlay inside another page, fall back to GoMenu
+      if (window.GoMenu && typeof window.GoMenu.open === 'function'){
+        window.GoMenu.open();
+        return;
+      }
+      // Standalone page: try history first, otherwise go to menu page
+      if (document.referrer && document.referrer.indexOf('menu') !== -1){
+        history.back();
+      }else{
+        window.location.href = '../menu/menu.html';
+      }
+    }
+
+    window.GoPlans = { open: open, close: close, __ready:true };
+
+    // Back button
+    var backBtn = document.getElementById('pl-back');
+    if (backBtn){
+      backBtn.addEventListener('click', function(){
+        close();
+        goBackToMenu();
+      });
+    }
+
+    // ESC closes and goes back
+    document.addEventListener('keydown', function(e){
+      if (e.key === 'Escape' && panel.style.display !== 'none'){
+        close();
+        goBackToMenu();
+      }
+    });
+
+    // Keep status in sync if someone else changes tier
+    window.addEventListener('tier:changed', refreshStatus);
+
+    // CTA wiring (Paywall later)
+    var keepFreeBtn = document.getElementById('pl-free-keep');
+    if (keepFreeBtn){
+      keepFreeBtn.addEventListener('click', function(){
+        Tier.set('free');
+        refreshStatus();
+        close();
+        goBackToMenu();
+      });
+    }
+
+    var goProBtn = document.getElementById('pl-pro-activate');
+    if (goProBtn){
+      goProBtn.addEventListener('click', function(){
+        if (window.Paywall && typeof window.Paywall.open === 'function'){
+          window.Paywall.open();
+          return;
+        }
+        Tier.set('pro');
+        refreshStatus();
+        close();
+        goBackToMenu();
+      });
+    }
+
+    // Show the overlay immediately when this page loads
+    open();
+  })();
+  </script>
+</body>
+</html>
