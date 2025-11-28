@@ -255,77 +255,91 @@
 </style>
 
 <style>
-  /* Practice Board buttons – match reference shape */
-  #prac-ctrls{
-    max-width:720px;
-    margin:14px auto 0;
-    padding:0 12px 18px;
-    display:flex;
-    justify-content:center;
-    gap:12px;
-    flex-wrap:wrap;
-  }
-
+  /* Wood buttons like the board */
   #prac-ctrls .pbtn,
   #prac-ctrls .pbtn-strong,
   #prac-ctrls .pbtn-alt{
-    position:relative;
-    min-width:96px;
-    padding:8px 22px;
-    border-radius:12px;              /* less round, closer to ref */
-    border:1px solid rgba(255,255,255,.25);
-    font-size:16px;
-    font-weight:800;
-    line-height:1.1;
-    color:#fff7dd;
-    text-shadow:0 1px 1px rgba(140,70,20,.75);
-    cursor:pointer;
+    position: relative;
+    padding: 12px 26px;
+    border-radius: 14px;
+    font-weight: 800;
+    font-size: 16px;
+    line-height: 1;
+    cursor: pointer;
 
-    /* keep existing wood texture; just shape + shadow */
-    background-clip:padding-box;
+    /* same wood as the board – use the raw wood image, not the dark page gradient */
+    background-image: var(--wood-url, url('../img/wood.jpg'));
+    background-repeat: no-repeat;
+    background-size: 180% 180%;
+    background-position: center center;
+
+    border: 1px solid rgba(155, 94, 34, .9);
+    color: #fff8d3;
+    text-shadow: 0 1px 1px rgba(120, 70, 22, .9);
+
     box-shadow:
-      0 3px 0 rgba(133,74,26,.9),    /* hard base edge */
-      0 7px 14px rgba(0,0,0,.45);    /* soft drop shadow */
+      0 6px 0 rgba(149, 87, 35, 1),
+      0 10px 18px rgba(0, 0, 0, .45);
+
+    -webkit-tap-highlight-color: transparent;
     transition:
       transform .08s ease-out,
       box-shadow .08s ease-out,
-      filter .08s ease-out;
+      filter .12s ease-out;
   }
 
-  /* Soft glossy top highlight like the example */
+  /* glossy top highlight to fake the 3D bevel */
   #prac-ctrls .pbtn::before,
   #prac-ctrls .pbtn-strong::before,
   #prac-ctrls .pbtn-alt::before{
     content:"";
     position:absolute;
-    inset:2px 4px 46%;
-    border-radius:10px;
-    background:linear-gradient(
-      to bottom,
-      rgba(255,255,255,.80),
-      rgba(255,255,255,.18)
+    left:4px;
+    right:4px;
+    top:3px;
+    bottom:40%;
+    border-radius: 12px;
+    background: linear-gradient(to bottom,
+      rgba(255,255,255,.85),
+      rgba(255,255,255,0)
     );
-    opacity:.9;
     pointer-events:none;
   }
 
-  /* Pressed state – small push-down, keeps color/texture */
-  #prac-ctrls .pbtn:active,
-  #prac-ctrls .pbtn-strong:active,
-  #prac-ctrls .pbtn-alt:active{
-    transform:translateY(2px);
-    box-shadow:
-      0 1px 0 rgba(133,74,26,.9),
-      0 3px 8px rgba(0,0,0,.35);
+  /* hover = tiny brightness bump, but keep same wood colour */
+  #prac-ctrls .pbtn:hover{
+    filter: brightness(1.03);
   }
 
-  #prac-ctrls .pbtn:active::before,
-  #prac-ctrls .pbtn-strong:active::before,
-  #prac-ctrls .pbtn-alt:active::before{
-    inset:3px 5px 50%;
-    opacity:.8;
+  /* pressed state: only while the mouse/finger is down */
+  #prac-ctrls .pbtn:active{
+    transform: translateY(3px);
+    box-shadow:
+      0 3px 0 rgba(149, 87, 35, 1),
+      0 4px 10px rgba(0,0,0,.4);
+    filter: brightness(.98);
+  }
+
+  #prac-ctrls .pbtn:focus-visible{
+    outline: 2px solid rgba(255,255,255,.85);
+    outline-offset: 3px;
+  }
+
+  /* make sure variant classes don't override the wood background */
+  #prac-ctrls .pbtn-strong,
+  #prac-ctrls .pbtn-alt{
+    background-image: var(--wood-url, url('../img/wood.jpg'));
+  }
+
+  #prac-ctrls .pbtn-locked{
+    opacity: .6;
+    cursor: default;
+    box-shadow:
+      0 4px 0 rgba(120, 78, 36, .85),
+      0 6px 10px rgba(0,0,0,.35);
   }
 </style>
+
 <style>
   /* In-app "Back to menu" dialog (same style as Joseki board) */
   #menu-confirm-overlay{
