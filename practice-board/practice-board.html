@@ -255,65 +255,88 @@
 </style>
 
 <style>
-  /* Practice Board buttons – wood style like screenshot */
+  /* Practice Board buttons – wood texture like screenshot */
   #prac-ctrls .pbtn,
   #prac-ctrls .pbtn-strong,
-  #prac-ctrls .pbtn-alt {
-    padding: 12px 20px;
-    border-radius: 16px;
-    border: 1px solid #c07b35;
+  #prac-ctrls .pbtn-alt{
+    position: relative;
+    padding: 10px 20px;
+    border-radius: 12px;              /* a bit less round */
+    border: 1px solid #b97936;
     font-weight: 800;
     font-size: 15px;
     line-height: 1;
     cursor: pointer;
-
-    color: #fff9e8;
-    text-shadow: 0 1px 2px rgba(120, 60, 20, 0.7);
-
-    background-image: linear-gradient(
-      to bottom,
-      #f6c787 0%,
-      #e6a659 45%,
-      #d1843a 100%
-    );
+    color: #fff7e0;
+    text-shadow: 0 1px 2px rgba(110, 60, 20, 0.8);
+    background: transparent;
+    overflow: hidden;
 
     box-shadow:
-      0 4px 0 rgba(130, 72, 26, 0.95),          /* bottom edge */
-      0 6px 10px rgba(0, 0, 0, 0.35),           /* drop shadow */
-      inset 0 1px 0 rgba(255, 255, 255, 0.85),  /* top highlight */
-      inset 0 -2px 0 rgba(150, 86, 34, 0.75);   /* bottom inner edge */
+      0 4px 0 rgba(120, 72, 30, 0.95),       /* bottom edge */
+      0 6px 10px rgba(0, 0, 0, 0.35),        /* drop shadow */
+      inset 0 1px 0 rgba(255, 255, 255, .85),
+      inset 0 -2px 0 rgba(140, 86, 40, .75);
 
     transition:
       transform 0.08s ease-out,
       box-shadow 0.08s ease-out,
-      background-image 0.12s ease-out;
+      filter 0.12s ease-out;
+  }
+
+  /* Wood texture background (rotated 180°) */
+  #prac-ctrls .pbtn::before,
+  #prac-ctrls .pbtn-strong::before,
+  #prac-ctrls .pbtn-alt::before{
+    content: "";
+    position: absolute;
+    inset: -4px;
+    border-radius: inherit;
+    background-image: url("../img/wood.jpg");
+    background-size: 160% 160%;
+    background-position: center;
+    transform: rotate(180deg);
+    filter: brightness(1.05) saturate(1.1);
+    z-index: -1;
+  }
+
+  /* Soft glossy highlight on top */
+  #prac-ctrls .pbtn::after,
+  #prac-ctrls .pbtn-strong::after,
+  #prac-ctrls .pbtn-alt::after{
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background: linear-gradient(
+      to bottom,
+      rgba(255, 255, 255, 0.35) 0%,
+      rgba(255, 255, 255, 0.10) 40%,
+      rgba(0, 0, 0, 0.18) 100%
+    );
+    pointer-events: none;
   }
 
   #prac-ctrls .pbtn:hover,
   #prac-ctrls .pbtn-strong:hover,
-  #prac-ctrls .pbtn-alt:hover {
-    background-image: linear-gradient(
-      to bottom,
-      #f9cf94 0%,
-      #e9ae63 45%,
-      #d78c42 100%
-    );
+  #prac-ctrls .pbtn-alt:hover{
+    filter: brightness(1.06);
   }
 
   #prac-ctrls .pbtn:active,
   #prac-ctrls .pbtn-strong:active,
-  #prac-ctrls .pbtn-alt:active {
+  #prac-ctrls .pbtn-alt:active{
     transform: translateY(2px);
     box-shadow:
-      0 2px 0 rgba(130, 72, 26, 0.95),
+      0 2px 0 rgba(120, 72, 30, 0.95),
       0 3px 6px rgba(0, 0, 0, 0.35),
-      inset 0 1px 0 rgba(255, 255, 255, 0.7),
-      inset 0 -1px 0 rgba(150, 86, 34, 0.7);
+      inset 0 1px 0 rgba(255, 255, 255, .7),
+      inset 0 -1px 0 rgba(140, 86, 40, .7);
   }
 
   #prac-ctrls .pbtn:focus-visible,
   #prac-ctrls .pbtn-strong:focus-visible,
-  #prac-ctrls .pbtn-alt:focus-visible {
+  #prac-ctrls .pbtn-alt:focus-visible{
     outline: 2px solid rgba(255, 255, 255, 0.9);
     outline-offset: 2px;
   }
