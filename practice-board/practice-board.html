@@ -1654,29 +1654,63 @@ mount.addEventListener('pointercancel', function(e){
     });
 
  // Smooth zoom-out back to full-board view, then exit fullscreen if needed
+// Smooth zoom-out back to full-board view, then exit fullscreen if needed
 function smoothZoomOutAndExit(){
   if (!zoomEnabled) return;
+
+  // If we are already at base view and not fullscreen, nothing to do
   if (scale <= 1 && !isFullscreen) return;
 
-  const {vw, vh} = viewportSize();
-  const sxTarget = vw / 2;
-  const syTarget = vh / 2;
+  // Cancel any in-flight zoom animation
+  cancelAnimationFrame(animId);
 
-  // World coordinates of the point currently under the screen center
-  const pxWorld = (offsetX + sxTarget) / scale;
-  const pyWorld = (offsetY + syTarget) / scale;
+  const startScale   = scale;
+  const startOffsetX = offsetX;
+  const startOffsetY = offsetY;
 
-  // Animate back to scale 1 while keeping that point fixed
-  animateTo(1, pxWorld, pyWorld, sxTarget, syTarget, function(){
-    if (isFullscreen){
-      // After the smooth zoom-out, leave fullscreen normally
-      exitFullscreen();
+  const t0  = performance.now();
+  const dur = 230; // ~0.23s, quick but smooth
+
+  isZoomAnimating = true;
+
+  function step(now){
+    let t = (now - t0) / dur;
+    if (t > 1) t = 1;
+
+    // Cubic ease-out
+    const e = 1 - Math.pow(1 - t, 3);
+
+    // Interpolate scale back to 1
+    scale = startScale + (1 - startScale) * e;
+
+    // Bring pan offsets back to 0 (centered board)
+    offsetX = startOffsetX * (1 - e);
+    offsetY = startOffsetY * (1 - e);
+
+    // Apply transform without clamping while we animate
+    applyPanAndSize(false);
+
+    if (t < 1){
+      animId = requestAnimationFrame(step);
     } else {
-      // Non-fullscreen safety fallback
-      resetViewLocal();
+      // Final snap to a clean base state
+      scale   = 1;
+      offsetX = 0;
+      offsetY = 0;
+      isZoomAnimating = false;
+
+      applyPanAndSize(true);
+
+      // If we were in fullscreen, now leave it
+      if (isFullscreen){
+        exitFullscreen();
+      }
     }
-  });
+  }
+
+  step(t0);
 }
+
 
     function handlePracticeClick(x, y){
       if (!hasSGF || isAutoPlacing) return;
