@@ -269,6 +269,33 @@
     margin-top:10px; display:flex; gap:10px; justify-content:center; flex-wrap:wrap;
   }
   #practice-overlay.toast-open .s-inner{ pointer-events:none; }
+
+  /* Pro-level toast inside Level overlay */
+  #level-overlay .level-toast{
+    position:fixed; left:50%; top:50%; transform:translate(-50%,-50%);
+    z-index:100002; display:none; pointer-events:none;
+  }
+  #level-overlay .level-toast .level-toast-card{
+    pointer-events:auto;
+    background-image:
+      linear-gradient(rgba(0,0,0,.35), rgba(0,0,0,.45)),
+      url('../img/wood.jpg');
+    background-size:cover; background-position:center;
+    border:2px solid rgba(37,99,235,.75);
+    border-radius:12px;
+    box-shadow:0 8px 20px rgba(2,6,23,.45), inset 0 0 0 1px rgba(255,255,255,.08);
+    padding:10px 12px;
+    min-width:280px; max-width:min(92vw, 420px);
+    max-height:calc(100vh - 32px); overflow:auto;
+    text-shadow:0 1px 2px rgba(0,0,0,.35);
+  }
+  #level-overlay .level-toast .level-toast-text{
+    font-weight:800; font-size:14px; line-height:1.35; color:#e6f3ff;
+  }
+  #level-overlay .level-toast .level-toast-actions{
+    margin-top:10px; display:flex; gap:10px; justify-content:center; flex-wrap:wrap;
+  }
+  #level-overlay.toast-open .s-inner{ pointer-events:none; }
 </style>
 
 <script>
@@ -346,6 +373,56 @@
   };
   window.PracticeLevel = LevelUI;
 
+  /* Pro-level toast (in-app notification for locked levels) */
+
+  let proToast = null, proText = null, proLaterBtn = null, proUpgradeBtn = null;
+  function ensureProToast(){
+    if (proToast) return;
+    proToast = document.createElement('div');
+    proToast.className = 'level-toast';
+    proToast.setAttribute('role','alertdialog');
+    proToast.setAttribute('aria-modal','true');
+    proToast.innerHTML =
+      '<div class="s-card level-toast-card">' +
+        '<div class="level-toast-text">Levels 4 and 5 are part of Joseki Master Pro.</div>' +
+        '<div class="level-toast-actions">' +
+          '<button type="button" class="s-btn" id="level-pro-later">Maybe later</button>' +
+          '<button type="button" class="s-btn" id="level-pro-upgrade">View Pro</button>' +
+        '</div>' +
+      '</div>';
+    lvlOverlay.appendChild(proToast);
+
+    proText       = proToast.querySelector('.level-toast-text');
+    proLaterBtn   = proToast.querySelector('#level-pro-later');
+    proUpgradeBtn = proToast.querySelector('#level-pro-upgrade');
+
+    proLaterBtn.addEventListener('click', hideProToast);
+    proUpgradeBtn.addEventListener('click', function(){
+      if (window.GoPlans && typeof window.GoPlans.open === 'function') {
+        window.GoPlans.open();
+      } else if (window.Paywall && typeof Paywall.open === 'function') {
+        Paywall.open();
+      }
+      hideProToast();
+    });
+  }
+  function isProToastOpen(){
+    return !!(proToast && proToast.style.display !== 'none');
+  }
+  function showProToast(){
+    ensureProToast();
+    proToast.style.display = 'block';
+    lvlOverlay.classList.add('toast-open');
+    setTimeout(function(){
+      try { proLaterBtn && proLaterBtn.focus(); } catch(_){}
+    }, 30);
+  }
+  function hideProToast(){
+    if (!proToast) return;
+    proToast.style.display = 'none';
+    lvlOverlay.classList.remove('toast-open');
+  }
+
   /* SGF parsing for thumbnails */
 
   function rb(str,i){
@@ -354,7 +431,6 @@
       const ch=str[k++];
       if(ch==='\\'){
         if(k<str.length) out+=str[k++];
-
         continue;
       }
       if(ch===']') break;
@@ -1273,9 +1349,8 @@
     if (!card) return;
 
     if (card.getAttribute('aria-disabled') === 'true'){
-      if (window.GoPlans && typeof window.GoPlans.open === 'function') window.GoPlans.open();
-      else if (window.Paywall && typeof Paywall.open === 'function') window.Paywall.open();
-      else alert('This level is available on Pro.');
+      // Show in-app Pro notification instead of external alert/paywall directly
+      showProToast();
       return;
     }
 
@@ -1310,6 +1385,10 @@
   window.addEventListener('keydown', (e)=>{
     if (e.key === 'Escape'){
       if (isVisible(lvlOverlay)) {
+        if (isProToastOpen()){
+          hideProToast();
+          return;
+        }
         LevelUI.close();
       } else if (isVisible(overlay)){
         if (overlay.classList.contains('toast-open')) {
