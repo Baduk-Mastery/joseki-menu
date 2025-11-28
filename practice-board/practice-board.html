@@ -1,0 +1,1498 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Joseki Master – Practice Board</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    html, body{
+      margin:0;
+      padding:0;
+      min-height:100%;
+      font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+    }
+  </style>
+
+  <!-- Simple global menu bridge for Practice Board -->
+  <script>
+    window.GoMenu = window.GoMenu || {
+      open: function(){
+        // From /practice-board/ go back to main menu
+        window.location.href = "../joseki-menu/index.html";
+      }
+    };
+  </script>
+
+  <!-- WGo (local) -->
+  <script src="../wgo/wgo.min.js"></script>
+</head>
+<body>
+
+<noscript>
+  <p>
+    JavaScript is required to use Practice mode.
+    <a href="../joseki-menu/index.html">Back to menu</a>
+  </p>
+</noscript>
+
+<!-- Practice Board (standalone page) -->
+<div id="go-board-prac-wrap" data-hidden="1" style="width:100%;max-width:720px;margin:0 auto;box-sizing:border-box;">
+  <!-- Practice meters (Free plan) -->
+  <div id="prac-meters" aria-live="polite" style="display:none;">
+    <div class="meter-row" id="row-lives">
+      <span class="meter-label">Lives</span>
+      <div id="meter-lives" class="stones" role="img" aria-label="Lives remaining"></div>
+    </div>
+    <div class="meter-row" id="row-hints">
+      <span class="meter-label">Hints</span>
+      <span id="meter-hints" class="hints-num" role="text">3</span>
+    </div>
+  </div>
+
+  <div id="go-board-prac"
+       style="position:relative;width:100%;border-radius:6px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.08);"></div>
+
+  <!-- Practice controls -->
+  <div id="prac-ctrls" class="prac-ctrls">
+    <button id="pbtn-menu"  class="pbtn pbtn-strong" type="button">Menu</button>
+    <button id="pbtn-hint"  class="pbtn"            type="button">Hint</button>
+    <button id="pbtn-reset" class="pbtn pbtn-alt"   type="button">Reset</button>
+  </div>
+</div>
+
+<!-- Wrong Move Modal -->
+<div id="prac-wrong" style="display:none;position:fixed;inset:0;z-index:99999;align-items:center;justify-content:center;">
+  <div style="position:absolute;inset:0;background:rgba(0,0,0,.55);"></div>
+  <div style="position:relative;z-index:1;background:#fff;border:1px solid #e2e8f0;border-radius:10px;box-shadow:0 12px 28px rgba(15,23,42,.18);width:min(86vw,420px);padding:16px;text-align:center;font-family:system-ui,Segoe UI,Arial,sans-serif;color:#0f172a;">
+    <div style="font-weight:800;font-size:18px;margin-bottom:8px;">Wrong Move</div>
+    <div style="color:#334155;margin-bottom:14px;">That point isn’t part of this joseki.</div>
+    <button id="prac-wrong-back" style="padding:8px 14px;border-radius:8px;border:1px solid #cbd5e1;background:#f1f5f9;font-weight:700;cursor:pointer;">Back</button>
+  </div>
+</div>
+
+<!-- Cleared Modal -->
+<div id="prac-cleared" style="display:none;position:fixed;inset:0;z-index:99999;align-items:center;justify-content:center;">
+  <div style="position:absolute;inset:0;background:rgba(0,0,0,.55);"></div>
+  <div style="position:relative;z-index:1;background:#fff;border:1px solid #e2e8f0;border-radius:10px;box-shadow:0 12px 28px rgba(15,23,42,.18);width:min(86vw,420px);padding:16px;text-align:center;font-family:system-ui,Segoe UI,Arial,sans-serif;color:#0f172a;">
+    <div style="font-weight:800;font-size:18px;margin-bottom:8px;">Cleared</div>
+    <div style="color:#334155;margin-bottom:14px;">Great! Let’s try the next side/corner.</div>
+    <button id="prac-cleared-next" style="padding:8px 14px;border-radius:8px;border:1px solid #cbd5e1;background:#e7f0ff;color:#0b4aa2;font-weight:700;cursor:pointer;">Next</button>
+  </div>
+</div>
+
+<!-- Congratulations Modal -->
+<div id="prac-win" style="display:none;position:fixed;inset:0;z-index:99999;align-items:center;justify-content:center;">
+  <div style="position:absolute;inset:0;background:rgba(0,0,0,.55);"></div>
+  <div style="position:relative;z-index:1;background:#fff;border:1px solid #e2e8f0;border-radius:10px;box-shadow:0 12px 28px rgba(15,23,42,.18);width:min(86vw,520px);padding:16px;text-align:center;font-family:system-ui,Segoe UI,Arial,sans-serif;color:#0f172a;">
+    <div style="font-weight:800;font-size:18px;margin-bottom:14px;">Congratulations!</div>
+    <div style="color:#334155;margin-bottom:14px;">You cleared all 8 sides.</div>
+    <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap;">
+      <button id="prac-win-back"     style="padding:8px 14px;border-radius:8px;border:1px solid #cbd5e1;background:#e7f0ff;color:#0b4aa2;font-weight:700;cursor:pointer;">Back to Joseki selection</button>
+      <button id="prac-win-retry"    style="padding:8px 14px;border-radius:8px;border:1px solid #cbd5e1;background:#f1f5f9;color:#0f172a;font-weight:700;cursor:pointer;">Retry</button>
+      <button id="prac-win-progress" style="display:none;padding:8px 14px;border-radius:8px;border:1px solid #cbd5e1;background:#f1f5f9;color:#0f172a;font-weight:700;cursor:pointer;">Next level</button>
+    </div>
+  </div>
+</div>
+
+<!-- Out of Lives Modal -->
+<div id="prac-locked" style="display:none;position:fixed;inset:0;z-index:99999;align-items:center;justify-content:center;">
+  <div style="position:absolute;inset:0;background:rgba(0,0,0,.55);"></div>
+  <div style="position:relative;z-index:1;background:#fff;border:1px solid #e2e8f0;border-radius:10px;box-shadow:0 12px 28px rgba(15,23,42,.18);width:min(86vw,460px);padding:16px;text-align:center;font-family:system-ui,Segoe UI,Arial,sans-serif;color:#0f172a;">
+    <div style="font-weight:800;font-size:18px;margin-bottom:14px;">Out of Lives</div>
+    <div id="prac-locked-msg" style="color:#334155;margin-bottom:14px;">You’ve used all lives for today on Levels 2–3.</div>
+    <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap;">
+      <button id="prac-locked-pro"  style="padding:8px 14px;border-radius:8px;border:1px solid #cbd5e1;background:#e7f0ff;color:#0b4aa2;font-weight:700;cursor:pointer;">Go Pro</button>
+      <button id="prac-locked-back" style="padding:8px 14px;border-radius:8px;border:1px solid #cbd5e1;background:#f1f5f9;font-weight:700;cursor:pointer;">Back</button>
+    </div>
+  </div>
+</div>
+
+<!-- Out of Hints Modal -->
+<div id="prac-hints-out" style="display:none;position:fixed;inset:0;z-index:99999;align-items:center;justify-content:center;">
+  <div style="position:absolute;inset:0;background:rgba(0,0,0,.55);"></div>
+  <div style="position:relative;z-index:1;background:#fff;border:1px solid #e2e8f0;border-radius:10px;box-shadow:0 12px 28px rgba(15,23,42,.18);width:min(86vw,460px);padding:16px;text-align:center;font-family:system-ui,Segoe UI,Arial,sans-serif;color:#0f172a;">
+    <div style="font-weight:800;font-size:18px;margin-bottom:14px;">Out of Hints</div>
+    <div style="color:#334155;margin-bottom:14px;">You’ve used all 3 daily hints on Practice.</div>
+    <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap;">
+      <button id="prac-hints-pro"  style="padding:8px 14px;border-radius:8px;border:1px solid #cbd5e1;background:#e7f0ff;color:#0b4aa2;font-weight:700;cursor:pointer;">Go Pro</button>
+      <button id="prac-hints-back" style="padding:8px 14px;border-radius:8px;border:1px solid #cbd5e1;background:#f1f5f9;font-weight:700;cursor:pointer;">Back</button>
+    </div>
+  </div>
+</div>
+
+<style>
+  @media (max-width: 480px){
+    #go-board-prac-wrap { padding:8px 12px 0; }
+  }
+
+  #go-board-prac-wrap[data-hidden="1"]{
+    position:fixed !important;
+    left:-200vw !important; top:-200vh !important;
+    opacity:0 !important; pointer-events:none !important;
+  }
+  #go-board-prac canvas{ display:block; margin:0 auto; }
+
+  /* Hide legacy Bubble buttons if present (harmless on standalone) */
+  #group-practice[data-hidden="1"]{ display:none !important; }
+  #group-joseki[data-hidden="1"]{ display:none !important; }
+  #go-board-wrap[data-hidden="1"]{ display:none !important; }
+  #group-practice[data-force-show="1"]{
+    display:block !important; visibility:visible !important; opacity:1 !important;
+  }
+  #btnBack, #btnForward, #btnReset { display:none !important; }
+
+  /* New controls */
+  .prac-ctrls{
+    max-width:720px; margin:10px auto 0;
+    padding:8px 12px; display:flex; gap:10px; justify-content:center; flex-wrap:wrap;
+  }
+  .pbtn{
+    padding:12px 16px; border-radius:12px; border:1px solid #cbd5e1;
+    background:#fff; font-weight:800; font-size:15px; color:#0f172a;
+    cursor:pointer; box-shadow:0 2px 8px rgba(15,23,42,.06);
+  }
+  .pbtn:active{ transform:translateY(1px); }
+  .pbtn-strong{ background:#111827; color:#fff; border-color:#111827; }
+  .pbtn-alt{ background:#e7f0ff; color:#0b4aa2; border-color:#a7c1ff; }
+
+  .pbtn-locked{
+    background:#f3f4f6; color:#64748b; border-color:#e5e7eb;
+    box-shadow:none;
+  }
+
+  /* Practice meters (Free) */
+  #prac-meters{
+    max-width:720px; 
+    margin:0 auto 8px;
+    padding:0 12px;
+    display:flex;
+    flex-direction:row;
+    gap:10px;
+    align-items:center;
+    justify-content:center;
+    flex-wrap:wrap;
+    box-sizing:border-box;
+  }
+  #prac-meters .meter-row{
+    display:flex; align-items:center; gap:10px;
+    background:#fff; border:1px solid #e2e8f0; border-radius:10px;
+    padding:8px 12px; box-shadow:0 6px 16px rgba(15,23,42,.06);
+  }
+  .meter-label{ font-weight:800; font-size:14px; color:#0f172a; }
+  .stones{ display:flex; gap:6px; }
+  .stone{
+    width:18px; height:18px; border-radius:50%;
+    background: radial-gradient(circle at 30% 30%, #3b3b3d 0%, #121317 65%, #000 100%);
+    box-shadow: inset 0 0 2px rgba(255,255,255,.18), 0 1px 2px rgba(0,0,0,.25);
+  }
+  .stone.empty{
+    background:none;
+    border:2px solid rgba(0,0,0,.35);
+    box-shadow: inset 0 0 0 2px rgba(255,255,255,.12);
+    opacity:.55;
+  }
+  .hints-num{
+    font-weight:800; font-size:14px; color:#0f172a;
+    min-width:1.5ch; text-align:right;
+  }
+
+  /* DOM hint ring */
+  .hint-ring{
+    position:absolute; pointer-events:none; border-radius:50%;
+    border:3px solid rgba(11,74,162,.95);
+    background:rgba(231,240,255,.45);
+    animation: pracPulse 0.9s ease-in-out infinite alternate;
+    box-shadow: 0 0 0 2px rgba(11,74,162,.18), 0 0 12px rgba(11,74,162,.35) inset;
+    z-index: 10000;
+  }
+  @keyframes pracPulse{
+    from{ transform:scale(.92); opacity:.65; }
+    to  { transform:scale(1.05); opacity:1; }
+  }
+
+  /* Practice-only fullscreen overlay */
+  #go-zoom-overlay-prac{
+    position:fixed; inset:0; z-index:99998;
+    display:none; align-items:center; justify-content:center;
+    background:rgba(0,0,0,.75);
+    -webkit-tap-highlight-color:transparent;
+  }
+  #go-zoom-stage-prac{
+    width:100vw; height:100vh;
+    display:flex; align-items:center; justify-content:center;
+    touch-action:none;
+  }
+
+  /* Board drop shadow */
+  #go-board-prac{
+    box-shadow:
+      0 18px 40px rgba(0,0,0,.32),
+      0 6px 16px rgba(0,0,0,.22) !important;
+    border-radius: 10px;
+  }
+  #go-board-prac.is-fullscreen{
+    box-shadow: none !important;
+  }
+</style>
+
+<style>
+  /* Practice Board buttons — Back style, no shadow */
+  #prac-ctrls .pbtn,
+  #prac-ctrls .pbtn-strong,
+  #prac-ctrls .pbtn-alt{
+    padding:12px 16px;
+    border-radius:12px;
+    font-weight:800;
+    font-size:15px;
+    line-height:1;
+    cursor:pointer;
+
+    background: rgba(37,99,235,.22);
+    color:#e6f3ff;
+    border:2px solid rgba(37,99,235,.75);
+
+    box-shadow: none !important;
+    transition: transform .06s, background .15s;
+  }
+  #prac-ctrls .pbtn:hover{
+    background: rgba(37,99,235,.26);
+  }
+  #prac-ctrls .pbtn:active{
+    background: rgba(37,99,235,.32);
+    transform: translateY(1px);
+  }
+  #prac-ctrls .pbtn:focus-visible{
+    outline: 2px solid rgba(255,255,255,.85);
+    outline-offset: 2px;
+  }
+</style>
+
+<!-- Stone SFX (local, guarded) -->
+<script>
+if (!window.StoneSFX) {
+  window.StoneSFX = (() => {
+    let pool = [], i = 0, unlocked = false;
+    function init(url, voices = 5, volume = 0.35){
+      pool = Array.from({ length: voices }, () => {
+        const a = new Audio(url); a.preload = 'auto'; a.volume = volume; return a;
+      });
+      const unlock = () => {
+        if (unlocked) return;
+        for (const a of pool) { try { a.play().then(()=>a.pause()).catch(()=>{}); a.currentTime = 0; } catch(e){} }
+        unlocked = true;
+        window.removeEventListener('touchstart', unlock);
+        window.removeEventListener('mousedown',  unlock);
+      };
+      window.addEventListener('touchstart', unlock, { once:true });
+      window.addEventListener('mousedown',  unlock, { once:true });
+    }
+    function play(){ if (!pool.length) return; const a = pool[i++ % pool.length]; try { a.currentTime=0; a.playbackRate=0.97+Math.random()*0.06; a.play(); } catch(e){} }
+    return { init, play };
+  })();
+}
+if (!window._stoneSFXInit) {
+  // Local SFX file
+  StoneSFX.init("../sound/click.mp3");
+  window._stoneSFXInit = true;
+}
+(function(){
+  if (!window.StoneSFX || window._soundBridgeReady) return;
+  window._soundBridgeReady = true;
+
+  if (typeof StoneSFX.play === 'function' && !('_enabled' in StoneSFX)){
+    StoneSFX._enabled = (window.GoPrefs ? !!window.GoPrefs.soundOn : true);
+    const _origPlay = StoneSFX.play.bind(StoneSFX);
+    StoneSFX.play = function(){ if (StoneSFX._enabled) _origPlay(); };
+  }
+
+  window.JosekiSound   = window.JosekiSound   || {
+    isEnabled(){ return !!StoneSFX._enabled; },
+    setEnabled(v){ StoneSFX._enabled = !!v; }
+  };
+  window.PracticeSound = window.PracticeSound || window.JosekiSound;
+})();
+</script>
+
+<script>
+(function mountPracticeBoard(){
+  try {
+    if (!window.WGo) return setTimeout(mountPracticeBoard, 50);
+
+    var wrap  = document.getElementById('go-board-prac-wrap');
+    var mount = document.getElementById('go-board-prac');
+    if (!wrap || !mount) return setTimeout(mountPracticeBoard, 50);
+
+    /* Page background helper (wood) */
+    (function(){
+      if (!document.getElementById('site-bg-wood')){
+        var css = `
+:root{ --wood-url: url('../img/wood.jpg'); }
+html.bg-wood, body.bg-wood{
+  background-image: linear-gradient(rgba(0,0,0,.35), rgba(0,0,0,.45)), var(--wood-url);
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-attachment: fixed;
+  min-height:100%;
+}
+#bubble, .bubble-r-container, #page, .page, #root, [data-visual-element="Page"], .bubble-element.Page{
+  background: transparent !important;
+}
+html.no-wood, body.no-wood{ background: none !important; }
+        `;
+        var st = document.createElement('style');
+        st.id = 'site-bg-wood';
+        st.textContent = css;
+        document.head.appendChild(st);
+      }
+      function addBG(){
+        document.documentElement.classList.remove('no-wood');
+        document.body.classList.remove('no-wood');
+        document.documentElement.classList.add('bg-wood');
+        document.body.classList.add('bg-wood');
+      }
+      function removeBG(){
+        document.documentElement.classList.remove('bg-wood');
+        document.body.classList.remove('bg-wood');
+        document.documentElement.classList.add('no-wood');
+        document.body.classList.add('no-wood');
+      }
+      window.PageBG = window.PageBG || { add: addBG, remove: removeBG };
+    })();
+
+    var SIZE = 19, B='B', W='W';
+    var board = new WGo.Board(mount, { size: SIZE });
+    var grid  = Array.from({length:SIZE}, ()=>Array(SIZE).fill(null));
+    var history = [], current = 0, turn = B;
+
+    var highlightLastEnabled =
+      (window.GoPrefs && typeof window.GoPrefs.highlightLast !== 'undefined')
+        ? !!window.GoPrefs.highlightLast : true;
+
+    var lastX = null, lastY = null;
+
+    window.addEventListener('go:prefs-changed', function(e){
+      var d = e.detail || {};
+      if (d.key === 'highlightLast') {
+        highlightLastEnabled = !!d.value;
+        try { redraw(); } catch(_) {}
+      }
+    });
+
+    window.PracticeHighlight = {
+      isEnabled(){ return highlightLastEnabled; },
+      setEnabled(v){ highlightLastEnabled = !!v; try { redraw(); } catch(_) {} }
+    };
+
+    var hasSGF=false, sgfRootSeq=null, currentNode=null;
+    var rootAB=[], rootAW=[];
+    var level = 2;
+    var showSingleNext = false;
+    var tryIndex = 0;
+    var swapColorsThisRound = false;
+    var isAutoPlacing = false;
+    var AUTO_DELAY = 300;
+
+    var playerOnly = false;
+    var playerColor = null;
+    var l2HintConsumed = false;
+
+    /* Tier + quota */
+    var TierAPI = window.Tier || {
+      get: function(){ try { return (localStorage.getItem('go_tier') || 'free').toLowerCase(); } catch(_) { return 'free'; } }
+    };
+    function isPro(){ return String(TierAPI.get() || 'free').toLowerCase() === 'pro'; }
+    window.addEventListener('tier:changed', function(){
+      if (typeof refreshLivesUI  === 'function') refreshLivesUI();
+      if (typeof refreshHintsUI  === 'function') refreshHintsUI();
+    });
+
+    var QUOTA = (function(){
+      function todayKey(name){
+        var d = new Date();
+        var day = d.toISOString().slice(0,10);
+        return 'q:' + name + ':' + day;
+      }
+      function read(k){ try { return parseInt(localStorage.getItem(k)||'0',10) || 0; } catch(_){ return 0; } }
+      function write(k,v){ try { localStorage.setItem(k, String(v)); } catch(_){} }
+      function use(name, limit){
+        var k=todayKey(name), used=read(k);
+        if (used >= limit) return { ok:false, used:used, remaining:0 };
+        write(k, used+1);
+        return { ok:true, used:used+1, remaining: Math.max(0, limit-(used+1)) };
+      }
+      function peek(name, limit){
+        var k=todayKey(name), used=read(k);
+        return { used:used, remaining: Math.max(0, limit-used) };
+      }
+      return { use:use, peek:peek };
+    })();
+
+    var MAX_LIVES_FREE_L23 = 5;
+    var MAX_HINTS_FREE     = 3;
+
+    function refreshMetersContainer(){
+      var meters = document.getElementById('prac-meters');
+      if (!meters) return;
+      var rows = meters.querySelectorAll('.meter-row');
+      var any = false;
+      for (var i=0;i<rows.length;i++){
+        if (rows[i].style.display !== 'none'){ any = true; break; }
+      }
+      meters.style.display = any ? '' : 'none';
+    }
+
+    function canvasCssScale(){
+      var c = mount.querySelector('canvas');
+      if (!c) return 1;
+      var cssW = c.clientWidth || c.getBoundingClientRect().width || 0;
+      var intW = c.width || 0;
+      if (!cssW || !intW) return 1;
+      return cssW / intW;
+    }
+    function getXcss(i){ return board.getX(i) * canvasCssScale(); }
+    function getYcss(j){ return board.getY(j) * canvasCssScale(); }
+
+    (function(){
+      const LIVES_ID = 'meter-lives';
+      const ROW_ID   = 'row-lives';
+
+      function renderLives(rem){
+        const el = document.getElementById(LIVES_ID);
+        if (!el) return;
+        el.innerHTML = '';
+        for (let i = 0; i < MAX_LIVES_FREE_L23; i++){
+          const s = document.createElement('span');
+          s.className = 'stone' + (i < rem ? '' : ' empty');
+          el.appendChild(s);
+        }
+      }
+      window.refreshLivesUI = function(){
+        const row = document.getElementById(ROW_ID);
+        if (!row) return;
+        const visible = (!isPro()) && (level === 2 || level === 3);
+        row.style.display = visible ? '' : 'none';
+        if (visible){
+          const { remaining } = QUOTA.peek('prac:lives-l23', MAX_LIVES_FREE_L23);
+          renderLives(remaining);
+        }
+        refreshMetersContainer();
+      };
+    })();
+
+    (function(){
+      const ROW_ID = 'row-hints';
+      const NUM_ID = 'meter-hints';
+      window.refreshHintsUI = function(){
+        var row = document.getElementById(ROW_ID);
+        var num = document.getElementById(NUM_ID);
+        if (!row || !num) return;
+        var visible = !isPro();
+        row.style.display = visible ? '' : 'none';
+        if (visible){
+          var stats = QUOTA.peek('prac:hints', MAX_HINTS_FREE);
+          num.textContent = String(stats.remaining);
+        }
+        refreshMetersContainer();
+      };
+    })();
+
+    var hintXY = null, hintEl = null, forceHintMarker = false;
+    var zoomLayer = null;
+
+    function ensureHintEl(){
+      if (hintEl && hintEl.parentNode) return hintEl;
+      ensureZoomLayer();
+      hintEl = document.createElement('div');
+      hintEl.className = 'hint-ring';
+      hintEl.style.zIndex = '10000';
+      zoomLayer.appendChild(hintEl);
+      return hintEl;
+    }
+    function clearHint(){
+      hintXY = null; forceHintMarker = false;
+      if (hintEl && hintEl.parentNode) hintEl.parentNode.removeChild(hintEl);
+      hintEl = null;
+      try { redraw(); } catch(e){}
+    }
+    function positionHintEl(){
+      if (!hintXY || !board || !hintEl) return;
+      var px = getXcss(hintXY.x), py = getYcss(hintXY.y);
+      var r  = board.stoneRadius;
+      var d  = Math.round(r*2*0.95);
+      hintEl.style.width  = d+'px';
+      hintEl.style.height = d+'px';
+      hintEl.style.left   = Math.round(px - d/2)+'px';
+      hintEl.style.top    = Math.round(py - d/2)+'px';
+    }
+    function showHintAt(x,y){
+      hintXY = {x:x, y:y};
+      forceHintMarker = true;
+      ensureHintEl();
+      positionHintEl();
+      redraw();
+    }
+
+    function neighbors(x,y){ var ns=[]; if(x>0)ns.push([x-1,y]); if(x<SIZE-1)ns.push([x+1,y]); if(y>0)ns.push([x,y-1]); if(y<SIZE-1)ns.push([x,y+1]); return ns; }
+    function groupAndLiberties(x,y){
+      var color=grid[y][x]; if(!color) return {stones:[],liberties:0};
+      var st=[[x,y]], seen={}, stones=[], libs=0;
+      while(st.length){
+        var p=st.pop(), cx=p[0], cy=p[1], k=cx+':'+cy; if(seen[k]) continue;
+        seen[k]=1; stones.push([cx,cy]);
+        var ns=neighbors(cx,cy);
+        for(var i=0;i<ns.length;i++){
+          var nx=ns[i][0], ny=ns[i][1], v=grid[ny][nx];
+          if(v===null) libs++; else if(v===color && !seen[nx+':'+ny]) st.push([nx,ny]);
+        }
+      }
+      return {stones:stones, liberties:libs};
+    }
+    function attemptPlay(x,y,color){
+      if(grid[y][x]!==null) return {ok:false, captures:[]};
+      grid[y][x]=color;
+      var opp=(color===B?W:B), captures=[], ns=neighbors(x,y);
+      for(var i=0;i<ns.length;i++){
+        var nx=ns[i][0], ny=ns[i][1];
+        if(grid[ny][nx]===opp){
+          var g=groupAndLiberties(nx,ny);
+          if(g.liberties===0){
+            for(var j=0;j<g.stones.length;j++){ var s=g.stones[j]; grid[s[1]][s[0]]=null; captures.push([s[0],s[1]]); }
+          }
+        }
+      }
+      var self=groupAndLiberties(x,y);
+      if(captures.length===0 && self.liberties===0){ grid[y][x]=null; return {ok:false, captures:[]}; }
+      return {ok:true, captures:captures};
+    }
+    function addLB(x,y,text){ board.addObject({ x:x, y:y, type:'LB', text:text }); }
+
+    function nextIsPlayersTurn(){
+      if (!playerOnly) return false;
+      var opts = getNextCandidates(currentNode);
+      return (opts.length && opts[0].color === playerColor);
+    }
+
+    function shouldShowHint(){
+      if (!hasSGF) return false;
+      if (level === 1) return true;
+      if (level === 2) return nextIsPlayersTurn() && !l2HintConsumed;
+      if (level === 3) return false;
+      if (level === 4 || level === 5) return showSingleNext;
+      return false;
+    }
+
+    function redraw(){
+      board.removeAllObjects();
+      for (var y=0;y<SIZE;y++) for (var x=0;x<SIZE;x++){
+        var v=grid[y][x];
+        if (v===B) board.addObject({x:x,y:y,c:WGo.B});
+        else if (v===W) board.addObject({x:x,y:y,c:WGo.W});
+      }
+      if (shouldShowHint()){
+        var opts = getNextCandidates(currentNode);
+        if (opts.length){
+          var o = opts[0]; var xy = tfXY(o.xy.x, o.xy.y);
+          addLB(xy.x, xy.y, 'A');
+        }
+      }
+      if (forceHintMarker && hintXY){
+        board.addObject({ x: hintXY.x, y: hintXY.y, type: 'CR' });
+      }
+      if (highlightLastEnabled && lastX != null && lastY != null) {
+        board.addObject({ x: lastX, y: lastY, type: 'CR' });
+      }
+    }
+
+    function rebuildFromHistory(){
+      for (var y=0;y<SIZE;y++) grid[y].fill(null);
+      if (hasSGF){
+        for (var i=0;i<rootAB.length;i++){
+          var pb=rootAB[i]; var a=tfXY(pb.x,pb.y);
+          var color = swapColorsThisRound ? W : B;
+          grid[a.y][a.x]=color;
+        }
+        for (var j=0;j<rootAW.length;j++){
+          var pw=rootAW[j]; var b=tfXY(pw.x,pw.y);
+          var color2 = swapColorsThisRound ? B : W;
+          grid[b.y][b.x]=color2;
+        }
+      }
+      for (var k=0;k<current;k++){
+        var m=history[k]; attemptPlay(m.x,m.y,m.color);
+      }
+      turn = (current%2===0)?B:W; redraw();
+    }
+
+    function readBracket(str,i){ var out='',k=i; while(k<str.length){ var ch=str[k++]; if(ch==='\\'){ if(k<str.length) out+=str[k++]; continue; } if(ch===']') break; out+=ch; } return {text:out,next:k}; }
+    function parseGameTree(str,i){
+      var seq=[],node=null; if(str[i]!=='(') return {seq:[],next:i}; i++;
+      while(i<str.length){
+        var ch=str[i];
+        if(ch===';'){ node={}; seq.push(node); i++; }
+        else if((ch>='A'&&ch<='Z')||(ch>='a'&&ch<='z')){
+          var key=''; while(i<str.length){ var c=str[i]; if((c>='A'&&c<='Z')||(c>='a'&&c<='z')){ key+=c; i++; } else break; }
+          var vals=[]; while(i<str.length && str[i]==='['){ var r=readBracket(str,i+1); vals.push(r.text); i=r.next; }
+          if(!node){ node={}; seq.push(node); } node[key]=vals.length>1?vals:vals[0];
+        }
+        else if(ch==='('){ var child=parseGameTree(str,i); i=child.next; if(seq.length){ var p=seq[seq.length-1]; (p.variations||(p.variations=[])).push(child.seq); } }
+        else if(ch===')'){ i++; break; }
+        else i++;
+      }
+      for(var t=0;t<seq.length-1;t++) seq[t].next=seq[t+1];
+      return {seq:seq,next:i};
+    }
+    function sgfCoordToXY(s){ if(!s||s.length<2) return null; var x=s.charCodeAt(0)-97,y=s.charCodeAt(1)-97; if(x<0||y<0||x>=SIZE||y>=SIZE) return null; return {x:x,y:y}; }
+    function listCoords(prop){ var out=[], list=Array.isArray(prop)?prop:(prop?[prop]:[]); for(var i=0;i<list.length;i++){ var xy=sgfCoordToXY(list[i]); if(xy) out.push(xy); } return out; }
+    function linkify(seq,parent){
+      for(var i=0;i<seq.length;i++){
+        var n=seq[i];
+        n.prev=(i===0?parent:seq[i-1]);
+        n.next=(i<seq.length-1?seq[i+1]:null);
+        if(n.AB) n.AB_=listCoords(n.AB);
+        if(n.AW) n.AW_=listCoords(n.AW);
+        if(n.variations&&n.variations.length){
+          for(var v=0;v<n.variations.length;v++){
+            var childSeq=n.variations[v];
+            if(childSeq&&childSeq.length) linkify(childSeq,n);
+          }
+        }
+      }
+    }
+    function extractRoot(seq){
+      rootAB=[]; rootAW=[];
+      if(!seq||!seq.length) return;
+      var n=seq[0];
+      if(n.AB_) rootAB=n.AB_;
+      if(n.AW_) rootAW=n.AW_;
+    }
+    function nodeHasMove(n){ return !!(n && (n.B||n.W)); }
+    function nodeMoveXY(n){
+      var s=n.B||n.W; var xy=sgfCoordToXY(s); if(!xy) return null;
+      var color = n.B?B:W;
+      if (swapColorsThisRound) color = (color===B?W:B);
+      return {x:xy.x,y:xy.y,color:color};
+    }
+    function candidatesDedup(list){ var seen={},out=[]; for(var i=0;i<list.length;i++){ var mv=list[i],key=mv.xy.x+':'+mv.xy.y+':'+mv.color; if(!seen[key]){ seen[key]=1; out.push(mv); } } return out; }
+
+    function getRootCandidates(){
+      var out=[]; if(!sgfRootSeq||!sgfRootSeq.length) return out; var r=sgfRootSeq[0];
+      var n=r; while(n && !nodeHasMove(n)) n=n.next;
+      if(n && nodeHasMove(n)){ var mv=nodeMoveXY(n); if(mv) out.push({node:n,xy:{x:mv.x,y:mv.y},color:mv.color}); }
+      if(r.variations && r.variations.length){
+        for(var v=0; v<r.variations.length; v++){
+          var seq=r.variations[v];
+          if (seq && seq.length){
+            var m=seq[0]; while(m && !nodeHasMove(m)) m=m.next;
+            if(m && nodeHasMove(m)){ var mv2=nodeMoveXY(m); if(mv2) out.push({node:m,xy:{x:mv2.x,y:mv2.y},color:mv2.color}); }
+          }
+        }
+      }
+      return candidatesDedup(out);
+    }
+    function getNextCandidates(node){
+      if(!node) return getRootCandidates();
+      var arr=[];
+      if(node.next){
+        var n=node.next; while(n && !nodeHasMove(n)) n=n.next;
+        if(n && nodeHasMove(n)){ var mv=nodeMoveXY(n); if(mv) arr.push({node:n,xy:{x:mv.x,y:mv.y},color:mv.color}); }
+      }
+      if(node.variations && node.variations.length){
+        for(var v=0; v<node.variations.length; v++){
+          var seq=node.variations[v];
+          if (seq && seq.length){
+            var m=seq[0]; while(m && !nodeHasMove(m)) m=m.next;
+            if(m && nodeHasMove(m)){ var mv2=nodeMoveXY(m); if(mv2) arr.push({node:m,xy:{x:mv2.x,y:mv2.y},color:mv2.color}); }
+          }
+        }
+      }
+      return candidatesDedup(arr);
+    }
+    function pathTo(node){ var out=[],n=node; while(n){ out.push(n); n=n.prev; } out.reverse(); return out; }
+    function buildPositionTo(node){
+      clearHint();
+      lastX = lastY = null;
+      for (var y=0;y<SIZE;y++) grid[y].fill(null);
+      history.length = 0;
+
+      for (var i=0;i<rootAB.length;i++){ var pb=rootAB[i]; var ap=tfXY(pb.x,pb.y); var c = swapColorsThisRound?W:B; grid[ap.y][ap.x]=c; }
+      for (var j=0;j<rootAW.length;j++){ var pw=rootAW[j]; var bp=tfXY(pw.x,pw.y); var c2= swapColorsThisRound?B:W; grid[bp.y][bp.x]=c2; }
+
+      if(!node){ current=0; turn=B; redraw(); return; }
+
+      var path=pathTo(node);
+      for (var k=0;k<path.length;k++){
+        var nd=path[k];
+        if (nd.AB_) for (var a=0;a<nd.AB_.length;a++){ var p=nd.AB_[a]; var pa=tfXY(p.x,p.y); grid[pa.y][pa.x]= swapColorsThisRound?W:B; }
+        if (nd.AW_) for (var b=0;b<nd.AW_.length;b++){ var q=nd.AW_[b]; var qb=tfXY(q.x,q.y); grid[qb.y][qb.x]= swapColorsThisRound?B:W; }
+        if (nodeHasMove(nd)){
+          var mv=nodeMoveXY(nd);
+          if(mv){
+            var pos=tfXY(mv.x,mv.y);
+            var r=attemptPlay(pos.x,pos.y,mv.color);
+            if(r.ok) history.push({x:pos.x,y:pos.y,color:mv.color,captures:r.captures});
+            lastX = pos.x; lastY = pos.y;
+          }
+        }
+      }
+      current=history.length; turn=(current%2===0)?B:W; redraw();
+    }
+
+    function t_identity(p){ return {x:p.x,y:p.y}; }
+    function t_swap(p){ return {x:p.y, y:p.x}; }
+    function t_rot90(p){  return {x: SIZE-1 - p.y, y: p.x}; }
+    function t_rot180(p){ return {x: SIZE-1 - p.x, y: SIZE-1 - p.y}; }
+    function t_rot270(p){ return {x: p.y, y: SIZE-1 - p.x}; }
+    function compose(a,b){ return function(p){ return a(b(p)); }; }
+
+    var FLIP_NE = compose(t_swap, t_rot180);
+
+    var ORIENTS = [
+      { name:'Start',        tf: t_identity },
+      { name:'Next-1',       tf: t_rot90 },
+      { name:'Next-2',       tf: compose(t_rot90,  FLIP_NE) },
+      { name:'Across-1',     tf: t_rot180 },
+      { name:'Across-2',     tf: compose(t_rot180, FLIP_NE) },
+      { name:'Prev-1',       tf: t_rot270 },
+      { name:'Prev-2',       tf: compose(t_rot270, FLIP_NE) },
+      { name:'Start-Other',  tf: FLIP_NE }
+    ];
+
+    var startTF    = t_identity;
+    var startTFInv = t_identity;
+
+    (function(){
+      var ALL = [
+        t_identity, t_rot90, t_rot180, t_rot270,
+        FLIP_NE,
+        compose(t_rot90,  FLIP_NE),
+        compose(t_rot180, FLIP_NE),
+        compose(t_rot270, FLIP_NE)
+      ];
+      function isIdentity(f){
+        var pts = [{x:0,y:0},{x:SIZE-1,y:0},{x:0,y:SIZE-1},{x:5,y:7},{x:9,y:9}];
+        for (var i=0;i<pts.length;i++){ var p=pts[i], q=f(p); if (q.x!==p.x || q.y!==p.y) return false; }
+        return true;
+      }
+      function invertTF(tf){
+        for (var i=0;i<ALL.length;i++){ if (isIdentity(compose(ALL[i], tf))) return ALL[i]; }
+        return t_identity;
+      }
+
+      window.detectStartTF = function(){
+        var opts = getRootCandidates();
+        if (!opts.length){ startTF=t_identity; startTFInv=t_identity; return; }
+        var mv = {x:opts[0].xy.x, y:opts[0].xy.y};
+
+        function cornerOf(p){
+          var NE={x:SIZE-1,y:0}, SE={x:SIZE-1,y:SIZE-1}, SW={x:0,y:SIZE-1}, NW={x:0,y:0};
+          function d2(a){ var dx=a.x-p.x, dy=a.y-p.y; return dx*dx+dy*dy; }
+          var ds=[d2(NE),d2(SE),d2(SW),d2(NW)];
+          var k=0, best=ds[0]; for (var i=1;i<4;i++){ if (ds[i]<best){ best=ds[i]; k=i; } }
+          return k;
+        }
+        var corner = cornerOf(mv);
+        var rotToNE = (corner===0)?t_identity : (corner===1)?t_rot270 : (corner===2)?t_rot180 : t_rot90;
+
+        var q = rotToNE(mv);
+        var inwardX = (SIZE-1) - q.x;
+        var inwardY = q.y;
+        var needFlip = inwardY > inwardX;
+
+        startTF    = needFlip ? compose(FLIP_NE, rotToNE) : rotToNE;
+        startTFInv = invertTF(startTF);
+      };
+    })();
+
+    function tfXY(x,y){
+      var step = ORIENTS[tryIndex % ORIENTS.length].tf;
+      var p = startTF({x:x,y:y});
+      p = step(p);
+      p = startTFInv(p);
+      return {x:p.x, y:p.y};
+    }
+
+    var zoomEnabled = (window.GoPrefs && typeof window.GoPrefs.josekiZoom !== 'undefined')
+                      ? !!window.GoPrefs.josekiZoom : true;
+    var scale = 1, minScale = 1, maxScale = 2.6;
+    var baseW = 0;
+    var offsetX = 0, offsetY = 0;
+    var animId = 0;
+
+    var isFullscreen = false;
+    var overlay = null, stage = null, returnAnchor = null;
+    var prevOverflow = "";
+
+    function ensureZoomLayer(){
+      if (zoomLayer) return;
+      mount.style.position = 'relative';
+      mount.style.overflow = 'hidden';
+      zoomLayer = document.createElement('div');
+      zoomLayer.style.position = 'absolute';
+      zoomLayer.style.left = '0px';
+      zoomLayer.style.top  = '0px';
+      zoomLayer.style.willChange = 'left, top, width, height';
+      while (mount.firstChild) zoomLayer.appendChild(mount.firstChild);
+      mount.appendChild(zoomLayer);
+      zoomLayer.style.backgroundImage = "url('../img/wood.jpg')";
+      zoomLayer.style.backgroundSize = "cover";
+      zoomLayer.style.backgroundPosition = "center";
+      mount.style.backgroundImage = "none";
+    }
+    ensureZoomLayer();
+
+    function ensureOverlay(){
+      if (overlay) return;
+      overlay = document.getElementById('go-zoom-overlay-prac');
+      if (!overlay){
+        overlay = document.createElement('div');
+        overlay.id = 'go-zoom-overlay-prac';
+        overlay.innerHTML = '<div id="go-zoom-stage-prac"></div>';
+        document.body.appendChild(overlay);
+      }
+      stage = overlay.querySelector('#go-zoom-stage-prac');
+    }
+
+    function viewportSize(){
+      if (isFullscreen) {
+        return {
+          vw: mount.clientWidth  || window.innerWidth  || baseW || 1,
+          vh: mount.clientHeight || window.innerHeight || baseW || 1
+        };
+      }
+      return {
+        vw: mount.clientWidth || baseW || 1,
+        vh: mount.clientHeight || baseW || 1
+      };
+    }
+
+    function clampPan(){
+      const {vw, vh} = viewportSize();
+      const bw = Math.round(baseW * scale);
+      const bleedX = Math.ceil(vw * 0.5);
+      const bleedY = Math.ceil(vh * 0.5);
+      const minOX = -bleedX;
+      const maxOX = Math.max(0, bw - vw) + bleedX;
+      const minOY = -bleedY;
+      const maxOY = Math.max(0, bw - vh) + bleedY;
+      offsetX = Math.max(minOX, Math.min(offsetX, maxOX));
+      offsetY = Math.max(minOY, Math.min(offsetY, maxOY));
+    }
+
+    function applyPanAndSize(redrawAfter){
+      const {vw, vh} = viewportSize();
+      var targetW = Math.max(2, Math.round(baseW * scale));
+      board.setWidth(targetW);
+      zoomLayer.style.width  = targetW + 'px';
+      zoomLayer.style.height = targetW + 'px';
+      clampPan();
+      zoomLayer.style.left = (-offsetX) + 'px';
+      zoomLayer.style.top  = (-offsetY) + 'px';
+      if (isFullscreen){
+        mount.style.width  = '100vw';
+        mount.style.height = '100vh';
+      } else {
+        mount.style.width  = '';
+        mount.style.height = baseW + 'px';
+      }
+      if (redrawAfter) redraw();
+      try { positionHintEl(); } catch(e){}
+    }
+
+    function resetViewLocal(){
+      scale = 1; offsetX = 0; offsetY = 0;
+      applyPanAndSize(true);
+    }
+
+    function animateTo(targetScale, targetOffsetX, targetOffsetY){
+      targetScale = Math.max(minScale, Math.min(maxScale, targetScale));
+      var s0 = scale, ox0 = offsetX, oy0 = offsetY;
+      var s1 = targetScale, ox1 = targetOffsetX, oy1 = targetOffsetY;
+      var t0 = performance.now(), dur = 180;
+      cancelAnimationFrame(animId);
+      (function step(now){
+        var t = Math.min(1, (now - t0)/dur);
+        var e = t<.5 ? 2*t*t : -1+(4-2*t)*t;
+        scale   = s0  + (s1  - s0 )*e;
+        offsetX = ox0 + (ox1 - ox0)*e;
+        offsetY = oy0 + (oy1 - oy0)*e;
+        applyPanAndSize(true);
+        if (t < 1) animId = requestAnimationFrame(step);
+      })(t0);
+    }
+
+    function centerZoomAtGrid(i, j, factor){
+      const { vw, vh } = viewportSize();
+      const next = Math.max(minScale, Math.min(maxScale, scale * factor));
+      const px_curr = getXcss(i);
+      const py_curr = getYcss(j);
+      const px_world = px_curr / scale;
+      const py_world = py_curr / scale;
+      const newOX = px_world * next - vw / 2;
+      const newOY = py_world * next - vh / 2;
+      animateTo(next, newOX, newOY);
+    }
+
+    function enterFullscreenAtGrid(i, j){
+      if (isFullscreen) return;
+      ensureOverlay();
+      prevOverflow = document.documentElement.style.overflow || "";
+      document.documentElement.style.overflow = 'hidden';
+      returnAnchor = document.createElement('div');
+      returnAnchor.style.display = 'none';
+      mount.parentNode.insertBefore(returnAnchor, mount);
+      stage.appendChild(mount);
+      overlay.style.display = 'flex';
+      mount.classList.add('is-fullscreen');
+      isFullscreen = true;
+
+      const vwFS = window.innerWidth || document.documentElement.clientWidth || 800;
+      const vhFS = window.innerHeight || document.documentElement.clientHeight || 800;
+      baseW = Math.floor(Math.min(vwFS, vhFS));
+      if (baseW % 2) baseW--;
+      resetViewLocal();
+
+      requestAnimationFrame(function(){
+        const {vw, vh} = viewportSize();
+        const needToCover   = Math.max(vw, vh) / baseW;
+        const initialFactor = Math.max(1.8, needToCover + 0.02);
+        centerZoomAtGrid(i, j, initialFactor);
+      });
+    }
+
+    function exitFullscreen(){
+      mount.classList.remove('is-fullscreen');
+      if (!isFullscreen) return;
+      resetViewLocal();
+      if (returnAnchor && returnAnchor.parentNode){
+        returnAnchor.parentNode.insertBefore(mount, returnAnchor);
+        returnAnchor.parentNode.removeChild(returnAnchor);
+        returnAnchor = null;
+      }
+      mount.style.width = '';
+      mount.style.height = '';
+      if (overlay) overlay.style.display = 'none';
+      isFullscreen = false;
+      document.documentElement.style.overflow = prevOverflow;
+      fitBoard();
+      if (typeof refreshLivesUI  === 'function') refreshLivesUI();
+      if (typeof refreshHintsUI  === 'function') refreshHintsUI();
+    }
+
+    var isPanning = false, panStart = null, activePointerId = null, tapStart = null, suppressNextBoardClick = false;
+
+    function beginPan(e){
+      isPanning = false;
+      panStart = { x: e.clientX, y: e.clientY, ox: offsetX, oy: offsetY };
+      activePointerId = e.pointerId;
+      try { mount.setPointerCapture(e.pointerId); } catch(_) {}
+    }
+    function updatePan(e){
+      if (panStart == null) return;
+      if (!isFullscreen || scale <= 1) return;
+      const dx = e.clientX - panStart.x;
+      const dy = e.clientY - panStart.y;
+      if (!isPanning && (dx*dx + dy*dy) > 9){
+        isPanning = true;
+        suppressNextBoardClick = true;
+      }
+      if (!isPanning) return;
+      offsetX = panStart.ox - dx;
+      offsetY = panStart.oy - dy;
+      applyPanAndSize(true);
+      e.preventDefault();
+    }
+    function endPan(e){
+      if (activePointerId !== null){
+        try { mount.releasePointerCapture(activePointerId); } catch(_) {}
+      }
+      activePointerId = null;
+      panStart = null;
+      setTimeout(function(){ isPanning = false; }, 0);
+    }
+
+    mount.addEventListener('pointerdown', function(e){
+      if (!zoomEnabled) return;
+
+      const r  = mount.getBoundingClientRect();
+      const sx = e.clientX - r.left, sy = e.clientY - r.top;
+
+      const vx = sx + offsetX;
+      const vy = sy + offsetY;
+
+      let bestI = 0, bestJ = 0, bestDx = 1e9, bestDy = 1e9;
+      for (let i = 0; i < SIZE; i++){
+        const dx = Math.abs(getXcss(i) - vx);
+        if (dx < bestDx){ bestDx = dx; bestI = i; }
+      }
+      for (let j = 0; j < SIZE; j++){
+        const dy = Math.abs(getYcss(j) - vy);
+        if (dy < bestDy){ bestDy = dy; bestJ = j; }
+      }
+
+      tapStart = { x:e.clientX, y:e.clientY, t:performance.now(), gridI:bestI, gridJ:bestJ };
+      beginPan(e);
+    }, {passive:true});
+
+    mount.addEventListener('pointerup', function(e){
+      if (!zoomEnabled || !tapStart) { endPan(e); return; }
+      if (isPanning){ endPan(e); tapStart = null; return; }
+
+      const dt = performance.now() - tapStart.t;
+      const dx = e.clientX - tapStart.x;
+      const dy = e.clientY - tapStart.y;
+      const gi = tapStart.gridI, gj = tapStart.gridJ;
+
+      tapStart = null;
+      endPan(e);
+
+      if (dt < 250 && (dx*dx + dy*dy) < 9){
+        if (scale === 1 && !isFullscreen){
+          e.preventDefault(); e.stopPropagation(); e.stopImmediatePropagation && e.stopImmediatePropagation();
+          suppressNextBoardClick = true;
+          enterFullscreenAtGrid(gi, gj);
+        } else {
+          suppressNextBoardClick = false;
+        }
+      }
+    }, {passive:false, capture:true});
+
+    mount.addEventListener('pointermove', function(e){ if (!zoomEnabled) return; updatePan(e); }, {passive:false});
+    mount.addEventListener('pointercancel', endPan, {passive:true});
+    document.addEventListener('keydown', function(e){
+      if (e.key === 'Escape' && isFullscreen) exitFullscreen();
+    });
+
+    window.PracticeZoom = {
+      isEnabled(){ return zoomEnabled; },
+      setEnabled(v){ zoomEnabled = !!v; if (!zoomEnabled) { if (isFullscreen) exitFullscreen(); else resetViewLocal(); } },
+      resetView: function(){ if (isFullscreen) exitFullscreen(); else resetViewLocal(); },
+      isFullscreen: function(){ return isFullscreen; }
+    };
+
+    function fitBoard(){
+      if (isFullscreen){
+        const vwFS = window.innerWidth || document.documentElement.clientWidth || 800;
+        const vhFS = window.innerHeight || document.documentElement.clientHeight || 800;
+        baseW = Math.floor(Math.min(vwFS, vhFS));
+        if (baseW % 2) baseW--;
+        mount.style.width  = '100vw';
+        mount.style.height = '100vh';
+      } else {
+        var w = mount.getBoundingClientRect().width;
+        if (!w) {
+          var cs   = getComputedStyle(wrap);
+          var padX = (parseFloat(cs.paddingLeft) || 0) + (parseFloat(cs.paddingRight) || 0);
+          var wrapW = wrap.getBoundingClientRect().width || wrap.clientWidth || 400;
+          w = Math.max(0, wrapW - padX);
+        }
+        w = Math.floor(w);
+        if (w % 2) w--;
+        baseW = w;
+        mount.style.width  = '';
+        mount.style.height = baseW + 'px';
+      }
+      applyPanAndSize(true);
+    }
+    function refitSoon(){ fitBoard(); setTimeout(fitBoard,60); setTimeout(fitBoard,180); setTimeout(fitBoard,400); }
+    window.addEventListener('resize', fitBoard);
+    window.addEventListener('orientationchange', () => setTimeout(fitBoard,200));
+    fitBoard();
+
+    function nextIsPlayersTurn(){
+      if (!playerOnly) return false;
+      var opts = getNextCandidates(currentNode);
+      return (opts.length && opts[0].color === playerColor);
+    }
+
+    function primePractice(){
+      showSingleNext = false;
+      l2HintConsumed = false;
+      clearHint();
+      if (typeof refreshLivesUI === 'function') refreshLivesUI();
+      if (typeof refreshHintsUI === 'function') refreshHintsUI();
+
+      if (level === 1){
+        currentNode = null;
+        buildPositionTo(null);
+        return;
+      }
+
+      if (level === 2 || level === 3){
+        currentNode = null;
+        buildPositionTo(null);
+        autoPlaceOpponentIfNeeded();
+        return;
+      }
+
+      var opts = getRootCandidates();
+      if (opts.length){
+        currentNode = opts[0].node;
+        buildPositionTo(currentNode);
+        showSingleNext = true;
+        redraw();
+      } else {
+        currentNode = null;
+        buildPositionTo(null);
+      }
+    }
+
+    var wrongModal   = document.getElementById('prac-wrong');
+    var clearedModal = document.getElementById('prac-cleared');
+    var winModal     = document.getElementById('prac-win');
+    var winBackBtn   = document.getElementById('prac-win-back');
+    var winRetryBtn  = document.getElementById('prac-win-retry');
+    var winProgBtn   = document.getElementById('prac-win-progress');
+
+    function showLocked(){
+      if (zoomEnabled && (scale > 1 || isFullscreen)) { try { exitFullscreen(); } catch(e){} }
+      var m = document.getElementById('prac-locked');
+      if (m) m.style.display = 'flex';
+    }
+    function hideLocked(){ var m = document.getElementById('prac-locked'); if (m) m.style.display='none'; }
+
+    function showHintsOut(){
+      if (zoomEnabled && (scale > 1 || isFullscreen)) { try { exitFullscreen(); } catch(e){} }
+      var m = document.getElementById('prac-hints-out');
+      if (m) m.style.display = 'flex';
+    }
+    function hideHintsOut(){ var m = document.getElementById('prac-hints-out'); if (m) m.style.display='none'; }
+
+    function triggerHint(){
+      if (!hasSGF) return;
+      if (!isPro()){
+        var resH = QUOTA.use('prac:hints', MAX_HINTS_FREE);
+        if (typeof refreshHintsUI === 'function') refreshHintsUI();
+        if (!resH.ok){
+          showHintsOut();
+          return;
+        }
+      }
+      var cands = getNextCandidates(currentNode);
+      if (!cands.length) return;
+      if (playerOnly && cands[0].color !== playerColor){
+        autoPlaceOpponentIfNeeded();
+        setTimeout(triggerHint, AUTO_DELAY + 30);
+        return;
+      }
+      var p = tfXY(cands[0].xy.x, cands[0].xy.y);
+      showHintAt(p.x, p.y);
+    }
+
+    var hoBack = document.getElementById('prac-hints-back');
+    var hoPro  = document.getElementById('prac-hints-pro');
+    if (hoBack) hoBack.addEventListener('click', function(){ hideHintsOut(); });
+    if (hoPro)  hoPro.addEventListener('click', function(){
+      if (window.Paywall && typeof Paywall.open === 'function'){ Paywall.open(); }
+      else if (window.GoPlans && typeof GoPlans.open === 'function'){ GoPlans.open(); }
+      else alert('Pro unlocks unlimited hints.');
+    });
+
+    function autoPlaceOpponentIfNeeded(){
+      if (!playerOnly || isAutoPlacing) return;
+      var nexts = getNextCandidates(currentNode);
+      if (!nexts.length){ showClearedOrWin(); return; }
+      var cand = nexts[0];
+      if (cand.color === playerColor){ redraw(); return; }
+      isAutoPlacing = true;
+      setTimeout(function(){
+        currentNode = cand.node;
+        buildPositionTo(currentNode);
+        StoneSFX.play();
+        isAutoPlacing = false;
+        var after = getNextCandidates(currentNode);
+        if (!after.length){ showClearedOrWin(); return; }
+        if (playerOnly && after[0].color !== playerColor){
+          autoPlaceOpponentIfNeeded();
+        } else {
+          redraw();
+        }
+      }, AUTO_DELAY);
+    }
+
+    function showWrong(){
+      if (!isPro() && (level === 2 || level === 3)){
+        var res = QUOTA.use('prac:lives-l23', MAX_LIVES_FREE_L23);
+        if (typeof refreshLivesUI === 'function') refreshLivesUI();
+        if (!res.ok){ showLocked(); return; }
+      }
+      if (zoomEnabled && (scale > 1 || isFullscreen)) {
+        try { exitFullscreen(); } catch(e){}
+        setTimeout(function(){ if (wrongModal) wrongModal.style.display = 'flex'; }, 10);
+      } else {
+        if (wrongModal) wrongModal.style.display = 'flex';
+      }
+    }
+
+    function hideWrong(){ if (wrongModal) wrongModal.style.display = 'none'; }
+    function showCleared(){ if (clearedModal) clearedModal.style.display = 'flex'; }
+    function hideCleared(){ if (clearedModal) clearedModal.style.display = 'none'; }
+
+    function showClearedOrWin(){
+      if (tryIndex >= ORIENTS.length - 1){
+        showWin();
+      } else {
+        showCleared();
+      }
+    }
+
+    function configureWinModal(){
+      if (winRetryBtn) winRetryBtn.style.display = '';
+      if (!winProgBtn) return;
+      var next = null;
+      if (level === 1) next = 2;
+      else if (level === 2) next = 3;
+      else if (level === 3) next = 4;
+      else if (level === 4) next = 5;
+
+      if (next){
+        var proLocked = (!isPro() && next >= 4);
+        winProgBtn.textContent = proLocked ? ('Level ' + next + ' (Pro)') : ('Level ' + next);
+        winProgBtn.dataset.level = String(next);
+        winProgBtn.style.display = '';
+        if (proLocked) winProgBtn.classList.add('pbtn-locked');
+        else winProgBtn.classList.remove('pbtn-locked');
+      } else {
+        winProgBtn.style.display = 'none';
+      }
+    }
+    function showWin(){ configureWinModal(); if (winModal) winModal.style.display = 'flex'; }
+    function hideWin(){ if (winModal) winModal.style.display = 'none'; }
+
+    document.getElementById('prac-wrong-back').addEventListener('click', function(){ hideWrong(); redraw(); });
+    document.getElementById('prac-cleared-next').addEventListener('click', function(){
+      hideCleared();
+      tryIndex++;
+      swapColorsThisRound = (level === 5) ? (tryIndex % 2 === 1) : false;
+      if (tryIndex >= ORIENTS.length){ showWin(); return; }
+      primePractice();
+    });
+
+    winBackBtn.addEventListener('click', function(){
+      hideWin();
+      try { if (window.PracticeBoard && typeof window.PracticeBoard.exit === 'function') window.PracticeBoard.exit(); } catch(e){}
+      if (window.GoPractice && typeof GoPractice.open === 'function'){ GoPractice.open(); }
+      else window.GoMenu && typeof GoMenu.open === 'function' && GoMenu.open();
+    });
+
+    winProgBtn && winProgBtn.addEventListener('click', function(){
+      var target = parseInt(winProgBtn.dataset.level || '2', 10);
+      hideWin();
+      if (!isPro() && target >= 4){
+        if (window.GoPlans && typeof GoPlans.open === 'function'){ GoPlans.open(); }
+        else if (window.Paywall && typeof Paywall.open === 'function'){ Paywall.open(); }
+        else alert('Level ' + target + ' is a Pro level.');
+        return;
+      }
+      if (window.PracticeBoard && typeof window.PracticeBoard.load === 'function'){
+        window.PracticeBoard.load(null, null, { level: target });
+      }
+    });
+
+    var lockedBack   = document.getElementById('prac-locked-back');
+    var lockedProBtn = document.getElementById('prac-locked-pro');
+    if (lockedBack)   lockedBack.addEventListener('click', function(){ hideLocked(); });
+    if (lockedProBtn) lockedProBtn.addEventListener('click', function(){
+      if (window.Paywall && typeof Paywall.open === 'function'){ Paywall.open(); }
+      else if (window.GoPlans && typeof GoPlans.open === 'function'){ GoPlans.open(); }
+      else alert('Pro unlocks unlimited tries.');
+    });
+
+    board.addEventListener('click', function(x,y){
+      if (zoomEnabled && suppressNextBoardClick){ suppressNextBoardClick = false; return; }
+      if (!hasSGF || isAutoPlacing) return;
+
+      if (!isPro() && (level === 2 || level === 3)){
+        var peek = QUOTA.peek('prac:lives-l23', MAX_LIVES_FREE_L23);
+        if (peek.remaining <= 0){ showLocked(); return; }
+      }
+
+      var opts = getNextCandidates(currentNode);
+      for (var i=0;i<opts.length;i++){
+        var cand = opts[i];
+        var pos = tfXY(cand.xy.x, cand.xy.y);
+        if (pos.x===x && pos.y===y){
+          if (playerOnly && cand.color !== playerColor){ showWrong(); return; }
+          if ((level === 4 || level === 5) && showSingleNext) showSingleNext = false;
+          if (level === 2 && !l2HintConsumed) l2HintConsumed = true;
+
+          currentNode = cand.node;
+          buildPositionTo(currentNode);
+          StoneSFX.play();
+
+          if (zoomEnabled && (scale > 1 || isFullscreen)) setTimeout(exitFullscreen, 10);
+
+          var nexts = getNextCandidates(currentNode);
+          if (!nexts.length){ showClearedOrWin(); return; }
+          if (playerOnly){ autoPlaceOpponentIfNeeded(); }
+          return;
+        }
+      }
+      showWrong();
+    });
+
+    function openMenuWithConfirm(){
+      if (window.BackConfirm && typeof BackConfirm.show === 'function'){
+        BackConfirm.show();
+        return;
+      }
+      if (window.GoMenu && typeof GoMenu.open === 'function'){
+        GoMenu.open();
+        return;
+      }
+    }
+    var menuBtn  = document.getElementById('pbtn-menu');
+    var hintBtn  = document.getElementById('pbtn-hint');
+    var resetBtn = document.getElementById('pbtn-reset');
+
+    if (menuBtn)  menuBtn.addEventListener('click', openMenuWithConfirm);
+    if (resetBtn) resetBtn.addEventListener('click', function(){ clearHint(); primePractice(); if (isFullscreen) exitFullscreen(); });
+    if (hintBtn)  hintBtn.addEventListener('click', triggerHint);
+
+    function hook(id, fn){
+      var el = document.getElementById(id);
+      if (el) el.addEventListener('click', fn);
+      else setTimeout(function(){ hook(id, fn); }, 50);
+    }
+    hook('btnBack',   function(){ if (!hasSGF || isAutoPlacing) return; if (currentNode){ currentNode = currentNode.prev || null; buildPositionTo(currentNode); } });
+    hook('btnForward',function(){ if (!hasSGF || isAutoPlacing) return; var c=getNextCandidates(currentNode); if(c.length){ currentNode=c[0].node; buildPositionTo(currentNode); } });
+    hook('btnReset',  function(){ if (!hasSGF) return; primePractice(); if (isFullscreen) exitFullscreen(); });
+
+function getParam(name){ 
+  try { return new URLSearchParams(location.search).get(name); } catch(e){ return null; } 
+}
+
+// Optional SGF via URL param (for debugging); no default file
+var SGF_URL = getParam('sgf');
+
+
+    function _sgfCoord(p){
+      return String.fromCharCode(97 + p.x) + String.fromCharCode(97 + p.y);
+    }
+    function _buildSingleLineSGF(sel){
+      const size = Math.max(2, Math.min(52, parseInt(sel.size || 19, 10) || 19));
+      let sgf = '(;GM[1]FF[4]CA[UTF-8]SZ[' + size + ']';
+      if (Array.isArray(sel.rootAB) && sel.rootAB.length){
+        sgf += 'AB' + sel.rootAB.map(p => '[' + _sgfCoord(p) + ']').join('');
+      }
+      if (Array.isArray(sel.rootAW) && sel.rootAW.length){
+        sgf += 'AW' + sel.rootAW.map(p => '[' + _sgfCoord(p) + ']').join('');
+      }
+      if (Array.isArray(sel.moves)){
+        for (const m of sel.moves){
+          const color = (m.color === 'W') ? 'W' : 'B';
+          sgf += ';' + color + '[' + _sgfCoord(m) + ']';
+        }
+      }
+      sgf += ')';
+      return sgf;
+    }
+
+    function loadSGFText(txt){
+      try{
+        if (txt.charCodeAt && txt.charCodeAt(0)===0xFEFF) txt = txt.slice(1);
+        var parsed = parseGameTree(txt, txt.indexOf('('));
+        var rootSeq = parsed.seq && parsed.seq.length ? parsed.seq : [];
+        if (!rootSeq.length){ hasSGF=false; redraw(); return; }
+        linkify(rootSeq, null); sgfRootSeq=rootSeq; extractRoot(rootSeq);
+        detectStartTF();
+        hasSGF=true; currentNode=null;
+        swapColorsThisRound = (level === 5) ? (tryIndex % 2 === 1) : false;
+        primePractice();
+      }catch(e){ console.error('SGF parse error (practice):', e); hasSGF=false; redraw(); }
+    }
+    function fetchAndLoadSGF(url){
+      fetch(url, { cache:'no-cache' })
+        .then(r=>r.text()).then(loadSGFText)
+        .catch(err=>console.error('SGF load failed (practice):', err));
+    }
+
+    function setHidden(el, hidden){
+      if (!el) return;
+      if (hidden) el.setAttribute('data-hidden','1');
+      else el.removeAttribute('data-hidden');
+    }
+
+    function hideJosekiEverything(){ /* no-op on standalone */ }
+    function showJosekiEverything(){ /* no-op on standalone */ }
+
+    function showPracticeUI(){
+      if (window.PageBG && typeof PageBG.add === 'function') PageBG.add();
+      setHidden(wrap, false);
+      wrap.setAttribute('data-hidden','0');
+      refitSoon();
+      try { wrap.scrollIntoView({ behavior:'smooth', block:'start' }); } catch(e){}
+    }
+    function hidePracticeUI(){
+      setHidden(wrap, true);
+      wrap.setAttribute('data-hidden','1');
+      showJosekiEverything();
+    }
+
+    window.PracticeBoard = {
+      load: function(url, name, opts){
+        try { if (window.PracticeUI    && typeof PracticeUI.close    === 'function') PracticeUI.close(); } catch(e){}
+        try { if (window.PracticeLevel && typeof PracticeLevel.close === 'function') PracticeLevel.close(); } catch(e){}
+
+        if (opts && typeof opts.level !== 'undefined') level = parseInt(opts.level,10) || 2;
+        else if (window.PracticeConfig && window.PracticeConfig.level) level = parseInt(window.PracticeConfig.level,10) || 2;
+        else level = 2;
+
+        if (!isPro() && level >= 4){
+          if (window.GoPlans && typeof GoPlans.open === 'function'){ GoPlans.open(); }
+          else if (window.Paywall && typeof Paywall.open === 'function'){ Paywall.open(); }
+          else alert('Level ' + level + ' is a Pro level.');
+          return;
+        }
+
+        playerOnly = (level === 2 || level === 3);
+        playerColor = playerOnly ? (level === 2 ? B : W) : null;
+        l2HintConsumed = false;
+
+        tryIndex = 0;
+        swapColorsThisRound = (level === 5) ? (tryIndex % 2 === 1) : false;
+
+        if (window.PracticeConfig && window.PracticeConfig.selectedLine){
+          const single = _buildSingleLineSGF(window.PracticeConfig.selectedLine);
+          loadSGFText(single);
+        } else if (typeof url === 'string' && url) {
+          fetchAndLoadSGF(url);
+        } else {
+          fetchAndLoadSGF(SGF_URL);
+        }
+
+        showPracticeUI();
+      },
+      exit: function(){ hidePracticeUI(); }
+    };
+
+    var backYes = document.getElementById('back-yes');
+    if (backYes){
+      backYes.addEventListener('click', function(){ try{ window.PracticeBoard.exit(); }catch(e){} }, { passive:true });
+    }
+
+    // Try to restore PracticeConfig from localStorage if present
+    if (!window.PracticeConfig){
+      try{
+        var stored = localStorage.getItem('go_practice_config');
+        if (stored) window.PracticeConfig = JSON.parse(stored);
+      }catch(e){}
+    }
+
+    // Auto-load practice board on standalone page
+    window.addEventListener('load', function(){
+      var opts = null;
+      if (window.PracticeConfig && window.PracticeConfig.level){
+        opts = { level: window.PracticeConfig.level };
+      }
+      window.PracticeBoard.load(null, null, opts);
+    });
+
+  } catch(err){
+    console.error('Practice mount failed:', err);
+  }
+})();
+</script>
+
+</body>
+</html>
