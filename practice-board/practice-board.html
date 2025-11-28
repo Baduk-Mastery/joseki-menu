@@ -59,6 +59,20 @@
     <button id="pbtn-reset" class="pbtn pbtn-alt"   type="button">Reset</button>
   </div>
 </div>
+<!-- In-app "Back to menu" confirmation (same UX as Joseki board) -->
+<div id="menu-confirm-overlay" aria-hidden="true">
+  <div class="menu-confirm-dialog" role="dialog" aria-modal="true" aria-labelledby="menuConfirmTitle">
+    <div class="menu-confirm-title" id="menuConfirmTitle">Back to menu?</div>
+    <div class="menu-confirm-text">
+      Do you want to leave this practice view and return to the main menu?
+    </div>
+    <div class="menu-confirm-actions">
+      <button type="button" id="menuConfirmCancel" class="mc-btn mc-btn-secondary">Stay here</button>
+      <button type="button" id="menuConfirmOk" class="mc-btn mc-btn-primary">Yes, go to menu</button>
+    </div>
+  </div>
+</div>
+
 
 <!-- Wrong Move Modal -->
 <div id="prac-wrong" style="display:none;position:fixed;inset:0;z-index:99999;align-items:center;justify-content:center;">
@@ -266,6 +280,79 @@
     outline-offset: 2px;
   }
 </style>
+<style>
+  /* In-app "Back to menu" dialog (same style as Joseki board) */
+  #menu-confirm-overlay{
+    position:fixed;
+    inset:0;
+    display:none;
+    align-items:center;
+    justify-content:center;
+    background:rgba(15,23,42,.78);
+    z-index:99999;
+    -webkit-tap-highlight-color:transparent;
+  }
+  #menu-confirm-overlay.is-open{
+    display:flex;
+  }
+
+  .menu-confirm-dialog{
+    width:min(92vw,360px);
+    border-radius:16px;
+    padding:18px 16px 14px;
+    background:#020617;
+    border:1px solid rgba(148,163,184,.75);
+    box-shadow:0 18px 40px rgba(15,23,42,.7);
+    color:#e5edff;
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  }
+  .menu-confirm-title{
+    font-size:18px;
+    font-weight:700;
+    margin-bottom:6px;
+  }
+  .menu-confirm-text{
+    font-size:14px;
+    opacity:.9;
+    margin-bottom:12px;
+  }
+  .menu-confirm-actions{
+    display:flex;
+    gap:10px;
+    margin-top:4px;
+  }
+
+  .mc-btn{
+    flex:1 1 0;
+    padding:10px 12px;
+    border-radius:999px;
+    border:1px solid rgba(148,163,184,.9);
+    font-size:14px;
+    font-weight:600;
+    cursor:pointer;
+    background:rgba(15,23,42,.9);
+    color:#e5edff;
+    -webkit-tap-highlight-color:transparent;
+    transition:background .12s, transform .06s, box-shadow .12s;
+  }
+  .mc-btn:active{
+    transform:translateY(1px);
+  }
+
+  .mc-btn-primary{
+    background:rgba(37,99,235,.26);
+    border-color:rgba(37,99,235,.85);
+    box-shadow:0 8px 20px rgba(15,23,42,.65), inset 0 0 0 1px rgba(255,255,255,.05);
+  }
+  .mc-btn-primary:hover{
+    background:rgba(37,99,235,.32);
+  }
+
+  .mc-btn-secondary{
+    background:rgba(15,23,42,.85);
+  }
+</style>
+
 <!-- Shared Go prefs (same key as Joseki board + Settings) -->
 <script>
 (function(){
@@ -1379,7 +1466,62 @@ window.addEventListener('go:prefs-changed', function(e){
       showWrong();
     });
 
+    // In-app "Back to menu" dialog wiring (same as Joseki board)
+    var menuConfirmOverlay = document.getElementById('menu-confirm-overlay');
+    var menuConfirmCancel  = document.getElementById('menuConfirmCancel');
+    var menuConfirmOk      = document.getElementById('menuConfirmOk');
+
+    function closeMenuConfirm(){
+      if (!menuConfirmOverlay) return;
+      menuConfirmOverlay.classList.remove('is-open');
+    }
+
+    if (menuConfirmOverlay){
+      // Click outside dialog closes it
+      menuConfirmOverlay.addEventListener('click', function(e){
+        if (e.target === menuConfirmOverlay) {
+          closeMenuConfirm();
+        }
+      });
+    }
+
+    if (menuConfirmCancel){
+      menuConfirmCancel.addEventListener('click', function(e){
+        e.stopPropagation();
+        closeMenuConfirm();
+      });
+    }
+
+    if (menuConfirmOk){
+      menuConfirmOk.addEventListener('click', function(e){
+        e.stopPropagation();
+        closeMenuConfirm();
+        // Actual navigation/menu bridge
+        if (window.GoMenu && typeof GoMenu.open === 'function'){
+          GoMenu.open();
+        } else if (window.BackConfirm && typeof BackConfirm.show === 'function'){
+          // Fallback: if some global confirm exists instead
+          BackConfirm.show();
+        } else {
+          // Last-resort fallback (just reload menu URL if defined there)
+          try { window.location.href = "../joseki-menu/index.html"; } catch(e){}
+        }
+      });
+    }
+
+    document.addEventListener('keydown', function(e){
+      if (e.key === 'Escape') {
+        closeMenuConfirm();
+      }
+    });
+
     function openMenuWithConfirm(){
+      // Prefer our own in-app dialog
+      if (menuConfirmOverlay){
+        menuConfirmOverlay.classList.add('is-open');
+        return;
+      }
+      // Fallbacks if dialog not present
       if (window.BackConfirm && typeof BackConfirm.show === 'function'){
         BackConfirm.show();
         return;
@@ -1389,11 +1531,18 @@ window.addEventListener('go:prefs-changed', function(e){
         return;
       }
     }
+
     var menuBtn  = document.getElementById('pbtn-menu');
     var hintBtn  = document.getElementById('pbtn-hint');
     var resetBtn = document.getElementById('pbtn-reset');
 
     if (menuBtn)  menuBtn.addEventListener('click', openMenuWithConfirm);
+    if (resetBtn) resetBtn.addEventListener('click', function(){
+      clearHint();
+      primePractice();
+      if (isFullscreen) exitFullscreen();
+    });
+    if (hintBtn)  hintBtn.addEventListener('click', triggerHint);
     if (resetBtn) resetBtn.addEventListener('click', function(){ clearHint(); primePractice(); if (isFullscreen) exitFullscreen(); });
     if (hintBtn)  hintBtn.addEventListener('click', triggerHint);
 
