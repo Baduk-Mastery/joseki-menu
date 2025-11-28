@@ -636,11 +636,15 @@ window.addEventListener('go:prefs-changed', function(e){
       };
     })();
 
-       var hintXY = null;
+    var hintXY = null;
     var forceHintMarker = false;
     var hintPulsePhase = 0;
     var hintPulseTimer = null;
     var zoomLayer = null;
+
+    // Grid coordinates (0..18) of “virtual hint” used for zoom
+    var zoomHintAnchor = null;
+
 
     // Canvas draw handler for the pulsating hint ring
     var HINT_DRAW = {
@@ -755,51 +759,60 @@ window.addEventListener('go:prefs-changed', function(e){
       return false;
     }
     // Use the exact same board point that Hint would highlight
+    // Just return the anchor we maintain in redraw()
     function getHintAnchorPoint(){
-      if (!hasSGF) return null;
-
-      var cands = getNextCandidates(currentNode);
-      if (!cands || !cands.length) return null;
-
-      var chosen = null;
-
-      // In player-only levels (2 & 3), prefer the player's move as anchor
-      if (playerOnly){
-        for (var i = 0; i < cands.length; i++){
-          if (cands[i].color === playerColor){
-            chosen = cands[i];
-            break;
-          }
-        }
-      }
-
-      // Fallback: first candidate (same as the "A" hint normally)
-      if (!chosen) chosen = cands[0];
-
-      var p = tfXY(chosen.xy.x, chosen.xy.y);
-      return { x: p.x, y: p.y };
+      return zoomHintAnchor;
     }
 
     function redraw(){
       board.removeAllObjects();
-      for (var y=0;y<SIZE;y++) for (var x=0;x<SIZE;x++){
-        var v=grid[y][x];
-        if (v===B) board.addObject({x:x,y:y,c:WGo.B});
-        else if (v===W) board.addObject({x:x,y:y,c:WGo.W});
-      }
-      if (shouldShowHint()){
-        var opts = getNextCandidates(currentNode);
-        if (opts.length){
-          var o = opts[0]; var xy = tfXY(o.xy.x, o.xy.y);
-          addLB(xy.x, xy.y, 'A');
+
+      // Draw stones
+      for (var y = 0; y < SIZE; y++){
+        for (var x = 0; x < SIZE; x++){
+          var v = grid[y][x];
+          if (v === B)      board.addObject({ x:x, y:y, c:WGo.B });
+          else if (v === W) board.addObject({ x:x, y:y, c:WGo.W });
         }
       }
+
+      // Recompute the “virtual hint” anchor for the current state,
+      // even if the level doesn’t actually show a visible hint.
+      zoomHintAnchor = null;
+      if (hasSGF){
+        var cands = getNextCandidates(currentNode) || [];
+        if (cands.length){
+          var chosen = null;
+
+          // In player-only levels, prefer the player's move if present
+          if (playerOnly){
+            for (var i = 0; i < cands.length; i++){
+              if (cands[i].color === playerColor){
+                chosen = cands[i];
+                break;
+              }
+            }
+          }
+          if (!chosen) chosen = cands[0];
+
+          var p = tfXY(chosen.xy.x, chosen.xy.y);
+          zoomHintAnchor = { x:p.x, y:p.y };
+
+          // Only draw the "A" label if this level actually wants a visible hint
+          if (shouldShowHint()){
+            addLB(p.x, p.y, 'A');
+          }
+        }
+      }
+
+      // Pulsing ring from the Hint button (if active)
       if (forceHintMarker && hintXY){
         board.addObject({ x: hintXY.x, y: hintXY.y, type: HINT_DRAW });
       }
 
-      if (highlightLastEnabled && lastX != null && lastY != null) {
-        board.addObject({ x: lastX, y: lastY, type: 'CR' });
+      // Last-move circle
+      if (highlightLastEnabled && lastX != null && lastY != null){
+        board.addObject({ x:lastX, y:lastY, type:'CR' });
       }
     }
 
