@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <title>Joseki Master – Plans</title>
+  <title>Plans</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <style>
@@ -210,7 +210,7 @@
   <!-- ===== Plans Overlay (used here as full page) ===== -->
   <div id="plans-overlay" aria-modal="true" role="dialog" style="display:none">
     <div class="s-inner">
-      <!-- Header: back + title on row 1; status on row 2 -->
+      <!-- Header: back + title; status -->
       <div class="pl-header">
         <button id="pl-back" class="s-back" type="button" aria-label="Back to menu">← Back</button>
         <h1 class="s-title">Choose Plan</h1>
@@ -252,7 +252,8 @@
             <li><strong>Drills:</strong> select up to <strong>10</strong> joseki variations; <strong>unlimited</strong> runs/day</li>
           </ul>
           <div class="pl-cta">
-            <button id="pl-pro-activate" class="pl-btn pl-strong" type="button">Go Pro</button>
+            <!-- pl-strong will be added/removed by JS depending on current plan -->
+            <button id="pl-pro-activate" class="pl-btn" type="button">Go Pro</button>
           </div>
         </section>
       </div>
@@ -266,10 +267,12 @@
   (function(){
     if (window.GoPlans && window.GoPlans.__ready) return;
 
-    var panel = document.getElementById('plans-overlay');
+    var panel    = document.getElementById('plans-overlay');
     if (!panel) return;
 
     var statusEl = document.getElementById('pl-status-plan');
+    var freeBtn  = document.getElementById('pl-free-keep');
+    var proBtn   = document.getElementById('pl-pro-activate');
 
     // Fallback Tier store (until /shared/tier.js takes over)
     var Tier = window.Tier || {
@@ -316,10 +319,33 @@
       return (String(s || 'free').toLowerCase() === 'pro') ? 'Pro' : 'Free';
     }
 
+    // Update button labels and visual emphasis based on current plan
+    function updateButtonStates(){
+      if (!freeBtn || !proBtn) return;
+      var tier = Tier.get();
+
+      if (tier === 'pro'){
+        // Current plan = Pro
+        freeBtn.textContent = 'Go Free';
+        proBtn.textContent  = 'Keep Pro';
+
+        freeBtn.classList.remove('pl-strong');
+        proBtn.classList.add('pl-strong');
+      } else {
+        // Current plan = Free
+        freeBtn.textContent = 'Keep Free';
+        proBtn.textContent  = 'Go Pro';
+
+        freeBtn.classList.add('pl-strong');
+        proBtn.classList.remove('pl-strong');
+      }
+    }
+
     function refreshStatus(){
       if (statusEl){
         statusEl.textContent = niceName(Tier.get());
       }
+      updateButtonStates();
       emitLimitsChanged();
     }
 
@@ -370,30 +396,52 @@
     });
 
     // Keep status in sync if someone else changes tier
-    window.addEventListener('tier:changed', refreshStatus);
+    window.addEventListener('tier:changed', function(){
+      refreshStatus();
+    });
 
-    // CTA wiring (Paywall later)
-    var keepFreeBtn = document.getElementById('pl-free-keep');
-    if (keepFreeBtn){
-      keepFreeBtn.addEventListener('click', function(){
-        Tier.set('free');
-        refreshStatus();
-        close();
-        goBackToMenu();
+    // Free button behavior
+    if (freeBtn){
+      freeBtn.addEventListener('click', function(){
+        var tier = Tier.get();
+
+        if (tier === 'free'){
+          // Keep Free: no change, just go back
+          refreshStatus();
+          close();
+          goBackToMenu();
+        } else {
+          // Go Free: switch tier, update UI, go back
+          Tier.set('free');
+          refreshStatus();
+          close();
+          goBackToMenu();
+        }
       });
     }
 
-    var goProBtn = document.getElementById('pl-pro-activate');
-    if (goProBtn){
-      goProBtn.addEventListener('click', function(){
-        if (window.Paywall && typeof window.Paywall.open === 'function'){
-          window.Paywall.open();
-          return;
+    // Pro button behavior
+    if (proBtn){
+      proBtn.addEventListener('click', function(){
+        var tier = Tier.get();
+
+        if (tier === 'pro'){
+          // Keep Pro: no change, just go back
+          refreshStatus();
+          close();
+          goBackToMenu();
+        } else {
+          // Go Pro: upgrade
+          if (window.Paywall && typeof window.Paywall.open === 'function'){
+            // In real app, Paywall would handle the upgrade process.
+            window.Paywall.open();
+            return;
+          }
+          Tier.set('pro');
+          refreshStatus();
+          close();
+          goBackToMenu();
         }
-        Tier.set('pro');
-        refreshStatus();
-        close();
-        goBackToMenu();
       });
     }
 
