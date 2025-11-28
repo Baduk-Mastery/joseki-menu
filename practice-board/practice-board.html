@@ -5,13 +5,13 @@
   <title>Joseki Master – Practice Board</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <style>
-  html, body{
-    margin:0;
-    padding:0;
-    font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
-  }
-</style>
-
+    html, body{
+      margin:0;
+      padding:0;
+      min-height:100%;
+      font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+    }
+  </style>
 
   <!-- Simple global menu bridge for Practice Board -->
   <script>
@@ -26,8 +26,7 @@
   <!-- WGo (local) -->
   <script src="../lib/wgo.min.js"></script>
 </head>
-<body style="min-height:100vh;display:flex;flex-direction:column;justify-content:center;align-items:center;margin:0;">
-
+<body>
 
 <noscript>
   <p>
@@ -256,37 +255,65 @@
 </style>
 
 <style>
-  /* Practice Board buttons — Back style, no shadow */
+  /* NEW Wooden Style Buttons */
   #prac-ctrls .pbtn,
   #prac-ctrls .pbtn-strong,
-  #prac-ctrls .pbtn-alt{
-    padding:12px 16px;
-    border-radius:12px;
-    font-weight:800;
-    font-size:15px;
-    line-height:1;
-    cursor:pointer;
+  #prac-ctrls .pbtn-alt {
+    padding: 12px 20px; /* Slightly wider for a better look */
+    border-radius: 8px; /* Slightly squarer corners look more like wood blocks */
+    font-weight: 800;
+    font-size: 16px;
+    line-height: 1;
+    cursor: pointer;
+    text-transform: uppercase; /* Optional: makes text look like the mockups */
+    
+    /* Spacing between buttons */
+    margin: 0 6px; 
 
-    background: rgba(37,99,235,.22);
-    color:#e6f3ff;
-    border:2px solid rgba(37,99,235,.75);
+    /* THE WOOD LOOK */
+    background: linear-gradient(to bottom, #eecfa1 5%, #cd9b5e 100%);
+    background-color: #eecfa1; /* Fallback color */
+    color: #4a3b2a; /* Dark Brown text for contrast */
+    
+    /* The 3D Bevel and Shadow */
+    border: 1px solid #b38b59;
+    box-shadow: 
+        inset 0 1px 0 0 #fff6e5, /* Tiny highlight at the very top edge */
+        0 4px 0 0 #8f6b4e,      /* The thick "bottom" 3D edge */
+        0 5px 8px 0 rgba(0,0,0,0.35); /* The drop shadow on the board */
+    
+    text-shadow: 0 1px 0 rgba(255,255,255,0.4); /* Makes text look "etched" or printed */
+    transition: all 0.1s;
+  }
 
-    box-shadow: none !important;
-    transition: transform .06s, background .15s;
+  /* Hover Effect (When mouse is over it) */
+  #prac-ctrls .pbtn:hover {
+    background: linear-gradient(to bottom, #f5dcb3 5%, #dcb076 100%);
+    transform: translateY(-1px); /* Moves up slightly */
   }
-  #prac-ctrls .pbtn:hover{
-    background: rgba(37,99,235,.26);
+
+  /* Active Effect (When clicked) */
+  #prac-ctrls .pbtn:active {
+    position: relative;
+    
+    /* Pushes button down to hide the 3D edge */
+    transform: translateY(4px); 
+    
+    /* Removes the thick bottom edge and shadow to look "flat/pressed" */
+    box-shadow: 
+        inset 0 2px 4px rgba(0,0,0,0.2), /* Inner shadow to look pressed in */
+        0 0 0 0 #8f6b4e, 
+        0 0 0 0 rgba(0,0,0,0);
+        
+    background: #cd9b5e; /* Slightly darker when pressed */
   }
-  #prac-ctrls .pbtn:active{
-    background: rgba(37,99,235,.32);
-    transform: translateY(1px);
-  }
-  #prac-ctrls .pbtn:focus-visible{
-    outline: 2px solid rgba(255,255,255,.85);
+
+  /* Focus Ring (For accessibility/tabbing) */
+  #prac-ctrls .pbtn:focus-visible {
+    outline: 2px solid #ffffff;
     outline-offset: 2px;
   }
-</style>
-<style>
+</style><style>
   /* In-app "Back to menu" dialog (same style as Joseki board) */
   #menu-confirm-overlay{
     position:fixed;
@@ -356,34 +383,6 @@
 
   .mc-btn-secondary{
     background:rgba(15,23,42,.85);
-  }
-</style>
-<style>
-  /* Center Practice layout on the page */
-  html, body{
-    margin:0;
-    padding:0;
-  }
-
-  body{
-    min-height:100vh;
-    display:flex;
-    flex-direction:column;
-    align-items:center;   /* horizontal centering of the 720px column */
-    justify-content:center; /* vertical centering of the board + buttons */
-    font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
-  }
-
-  /* Make sure the wrapper is a normal block again
-     (in case we previously set it to display:flex to push buttons down) */
-  #go-board-prac-wrap{
-    display:block;
-  }
-
-  /* Normal spacing under the board, not pinned to bottom */
-  #prac-ctrls{
-    margin-top:10px;
-    margin-bottom:0;
   }
 </style>
 
