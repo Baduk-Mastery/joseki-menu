@@ -1065,17 +1065,22 @@ var isZoomAnimating = false; // new: track when we are animating zoom
 
     ensureZoomLayer();
 
-    function ensureOverlay(){
-      if (overlay) return;
-      overlay = document.getElementById('go-zoom-overlay-prac');
-      if (!overlay){
-        overlay = document.createElement('div');
-        overlay.id = 'go-zoom-overlay-prac';
-        overlay.innerHTML = '<div id="go-zoom-stage-prac"></div>';
-        document.body.appendChild(overlay);
-      }
-      stage = overlay.querySelector('#go-zoom-stage-prac');
-    }
+  function ensureOverlay(){
+  if (overlay) return;
+  overlay = document.getElementById('go-zoom-overlay-prac');
+  if (!overlay){
+    overlay = document.createElement('div');
+    overlay.id = 'go-zoom-overlay-prac';
+    overlay.innerHTML = '<div id="go-zoom-stage-prac"></div>';
+    document.body.appendChild(overlay);
+  }
+  stage = overlay.querySelector('#go-zoom-stage-prac');
+
+  // Add a smooth opacity transition for fade out
+  overlay.style.transition = 'opacity 0.18s ease-out';
+  overlay.style.opacity    = '1';
+}
+
 
     function viewportSize(){
       if (isFullscreen) {
@@ -1271,6 +1276,45 @@ function centerZoomAtGrid(i, j, factor, tapClientX, tapClientY){
       if (typeof refreshLivesUI  === 'function') refreshLivesUI();
       if (typeof refreshHintsUI  === 'function') refreshHintsUI();
     }
+// Fade the overlay out, then actually exit fullscreen (snap happens while invisible)
+function fadeExitFullscreen(){
+  if (!isFullscreen){
+    return;
+  }
+  if (!overlay){
+    // Fallback: just exit if for some reason overlay is missing
+    exitFullscreen();
+    return;
+  }
+
+  let finished = false;
+
+  function done(){
+    if (finished) return;
+    finished = true;
+    overlay.removeEventListener('transitionend', done);
+    // Reset for next time
+    overlay.style.opacity = '1';
+    // Now do the real exit (snap happens while overlay is invisible)
+    exitFullscreen();
+  }
+
+  // Make sure overlay is visible at the start of fade
+  overlay.style.display = 'flex';
+  overlay.style.opacity = '1';
+
+  // Force reflow so the transition will run
+  void overlay.offsetWidth;
+
+  // Start fade to transparent
+  overlay.style.opacity = '0';
+
+  // When fade ends, run exit
+  overlay.addEventListener('transitionend', done);
+  // Fallback in case transitionend doesn’t fire
+  setTimeout(done, 260);
+}
+
 
     var isPanning = false, panStart = null, activePointerId = null,
     tapStart = null, suppressNextBoardClick = false;
@@ -1693,7 +1737,7 @@ function smoothZoomOutAndExit(){
     if (t < 1){
       animId = requestAnimationFrame(step);
     } else {
-      // Final snap to a clean base state
+           // Final snap to a clean base state
       scale   = 1;
       offsetX = 0;
       offsetY = 0;
@@ -1701,9 +1745,9 @@ function smoothZoomOutAndExit(){
 
       applyPanAndSize(true);
 
-      // If we were in fullscreen, now leave it
+      // If we were in fullscreen, now leave it, but hide the snap with a fade
       if (isFullscreen){
-        exitFullscreen();
+        fadeExitFullscreen();
       }
     }
   }
