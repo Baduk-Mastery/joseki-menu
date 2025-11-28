@@ -1026,10 +1026,12 @@ window.addEventListener('go:prefs-changed', function(e){
 
     var zoomEnabled = (window.GoPrefs && typeof window.GoPrefs.josekiZoom !== 'undefined')
                       ? !!window.GoPrefs.josekiZoom : true;
-    var scale = 1, minScale = 1, maxScale = 2.6;
-    var baseW = 0;
-    var offsetX = 0, offsetY = 0;
-    var animId = 0;
+var scale = 1, minScale = 1, maxScale = 2.6;
+var baseW = 0;
+var offsetX = 0, offsetY = 0;
+var animId = 0;
+var isZoomAnimating = false; // new: track when we are animating zoom
+
     var isAnimatingZoom = false; // new: avoid pan clamping during zoom animation
 
 
@@ -1080,18 +1082,23 @@ window.addEventListener('go:prefs-changed', function(e){
       };
     }
 
-    function clampPan(){
-      const {vw, vh} = viewportSize();
-      const bw = Math.round(baseW * scale);
-      const bleedX = Math.ceil(vw * 0.5);
-      const bleedY = Math.ceil(vh * 0.5);
-      const minOX = -bleedX;
-      const maxOX = Math.max(0, bw - vw) + bleedX;
-      const minOY = -bleedY;
-      const maxOY = Math.max(0, bw - vh) + bleedY;
-      offsetX = Math.max(minOX, Math.min(offsetX, maxOX));
-      offsetY = Math.max(minOY, Math.min(offsetY, maxOY));
-    }
+function clampPan(){
+  // Don’t clamp while zooming, so the anchor stays perfectly stable
+  if (isZoomAnimating) return;
+
+  const {vw, vh} = viewportSize();
+  const bw = Math.round(baseW * scale);
+  const bleedX = Math.ceil(vw * 0.5);
+  const bleedY = Math.ceil(vh * 0.5);
+  const minOX = -bleedX;
+  const maxOX = Math.max(0, bw - vw) + bleedX;
+  const minOY = -bleedY;
+  const maxOY = Math.max(0, bw - vh) + bleedY;
+
+  offsetX = Math.max(minOX, Math.min(offsetX, maxOX));
+  offsetY = Math.max(minOY, Math.min(offsetY, maxOY));
+}
+
 
     function applyPanAndSize(redrawAfter){
       const {vw, vh} = viewportSize();
@@ -1124,78 +1131,72 @@ window.addEventListener('go:prefs-changed', function(e){
       applyPanAndSize(true);
     }
 
-    function animateTo(targetScale, targetOffsetX, targetOffsetY){
-      targetScale = Math.max(minScale, Math.min(maxScale, targetScale));
+ // Anchor-based zoom animation: keeps the tapped grid point fixed on screen
+function animateTo(targetScale, pxWorld, pyWorld, sxTarget, syTarget){
+  targetScale = Math.max(minScale, Math.min(maxScale, targetScale));
 
-      const s0  = scale;
-      const ox0 = offsetX;
-      const oy0 = offsetY;
+  const s0  = scale;
+  const t0  = performance.now();
+  const dur = 200; // still quick, but smooth
 
-      const s1  = targetScale;
-      const ox1 = targetOffsetX;
-      const oy1 = targetOffsetY;
+  cancelAnimationFrame(animId);
+  isZoomAnimating = true;
 
-      const t0  = performance.now();
-      const dur = 220; // slightly longer + smoother
+  // Make sure we start from a state that already respects the anchor
+  offsetX = pxWorld * s0 - sxTarget;
+  offsetY = pyWorld * s0 - syTarget;
+  applyPanAndSize(false);
 
-      cancelAnimationFrame(animId);
-      isAnimatingZoom = true;
+  (function step(now){
+    let t = (now - t0) / dur;
+    if (t > 1) t = 1;
 
-      (function step(now){
-        let t = (now - t0) / dur;
-        if (t > 1) t = 1;
+    // cubic ease-out
+    const e = 1 - Math.pow(1 - t, 3);
+    const s = s0 + (targetScale - s0) * e;
 
-        // Smooth start and end (no jump at t=0)
-        // “smoothstep” easing: ease-in-out
-        const e = t * t * (3 - 2 * t);
+    scale   = s;
+    offsetX = pxWorld * s - sxTarget;
+    offsetY = pyWorld * s - syTarget;
 
-        scale   = s0  + (s1  - s0 ) * e;
-        offsetX = ox0 + (ox1 - ox0) * e;
-        offsetY = oy0 + (oy1 - oy0) * e;
+    // No clamping during animation, so the anchor doesn’t wobble
+    applyPanAndSize(false);
 
-        applyPanAndSize(false);
-
-        if (t < 1){
-          animId = requestAnimationFrame(step);
-        } else {
-          isAnimatingZoom = false;
-          // Final redraw + pan clamp at the very end
-          applyPanAndSize(true);
-        }
-      })(t0);
+    if (t < 1){
+      animId = requestAnimationFrame(step);
+    } else {
+      isZoomAnimating = false;
+      // One final redraw + clamp when everything is settled
+      applyPanAndSize(true);
     }
+  })(t0);
+}
 
 
-    function centerZoomAtGrid(i, j, factor, tapClientX, tapClientY){
-      const next = Math.max(minScale, Math.min(maxScale, scale * factor));
+function centerZoomAtGrid(i, j, factor, tapClientX, tapClientY){
+  const targetScale = Math.max(minScale, Math.min(maxScale, scale * factor));
 
-      // Board coordinates of this grid point at current scale
-      const px_curr = getXcss(i);
-      const py_curr = getYcss(j);
-      const px_world = px_curr / scale;
-      const py_world = py_curr / scale;
+  // Board coordinates of this grid point at current scale
+  const px_curr  = getXcss(i);
+  const py_curr  = getYcss(j);
+  const px_world = px_curr / scale;
+  const py_world = py_curr / scale;
 
-      // Where should this point end up inside the board element?
-      // Default: center; if we know the tap position, keep it under the tap.
-      const rect = mount.getBoundingClientRect();
-      let sx_target = rect.width  / 2;
-      let sy_target = rect.height / 2;
+  // Default: center; if we know the tap position, keep it under the tap
+  const rect = mount.getBoundingClientRect();
+  let sx_target = rect.width  / 2;
+  let sy_target = rect.height / 2;
 
-      if (typeof tapClientX === 'number' && typeof tapClientY === 'number'){
-        sx_target = tapClientX - rect.left;
-        sy_target = tapClientY - rect.top;
+  if (typeof tapClientX === 'number' && typeof tapClientY === 'number'){
+    sx_target = tapClientX - rect.left;
+    sy_target = tapClientY - rect.top;
+    sx_target = Math.max(0, Math.min(sx_target, rect.width));
+    sy_target = Math.max(0, Math.min(sy_target, rect.height));
+  }
 
-        // Clamp so we don’t end up outside the visible board
-        sx_target = Math.max(0, Math.min(sx_target, rect.width));
-        sy_target = Math.max(0, Math.min(sy_target, rect.height));
-      }
-
-      const newOX = px_world * next - sx_target;
-      const newOY = py_world * next - sy_target;
-
-      animateTo(next, newOX, newOY);
-    }
-
+  // Now animate with the anchor locked to (sx_target, sy_target)
+  animateTo(targetScale, px_world, py_world, sx_target, sy_target);
+}
 
      function enterFullscreenAtGrid(i, j, tapClientX, tapClientY){
       if (isFullscreen) return;
