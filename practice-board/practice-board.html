@@ -255,33 +255,66 @@
 </style>
 
 <style>
-  /* Practice Board buttons — Back style, no shadow */
+  /* Practice Board buttons – wood style like screenshot */
   #prac-ctrls .pbtn,
   #prac-ctrls .pbtn-strong,
-  #prac-ctrls .pbtn-alt{
-    padding:12px 16px;
-    border-radius:12px;
-    font-weight:800;
-    font-size:15px;
-    line-height:1;
-    cursor:pointer;
+  #prac-ctrls .pbtn-alt {
+    padding: 12px 20px;
+    border-radius: 16px;
+    border: 1px solid #c07b35;
+    font-weight: 800;
+    font-size: 15px;
+    line-height: 1;
+    cursor: pointer;
 
-    background: rgba(37,99,235,.22);
-    color:#e6f3ff;
-    border:2px solid rgba(37,99,235,.75);
+    color: #fff9e8;
+    text-shadow: 0 1px 2px rgba(120, 60, 20, 0.7);
 
-    box-shadow: none !important;
-    transition: transform .06s, background .15s;
+    background-image: linear-gradient(
+      to bottom,
+      #f6c787 0%,
+      #e6a659 45%,
+      #d1843a 100%
+    );
+
+    box-shadow:
+      0 4px 0 rgba(130, 72, 26, 0.95),          /* bottom edge */
+      0 6px 10px rgba(0, 0, 0, 0.35),           /* drop shadow */
+      inset 0 1px 0 rgba(255, 255, 255, 0.85),  /* top highlight */
+      inset 0 -2px 0 rgba(150, 86, 34, 0.75);   /* bottom inner edge */
+
+    transition:
+      transform 0.08s ease-out,
+      box-shadow 0.08s ease-out,
+      background-image 0.12s ease-out;
   }
-  #prac-ctrls .pbtn:hover{
-    background: rgba(37,99,235,.26);
+
+  #prac-ctrls .pbtn:hover,
+  #prac-ctrls .pbtn-strong:hover,
+  #prac-ctrls .pbtn-alt:hover {
+    background-image: linear-gradient(
+      to bottom,
+      #f9cf94 0%,
+      #e9ae63 45%,
+      #d78c42 100%
+    );
   }
-  #prac-ctrls .pbtn:active{
-    background: rgba(37,99,235,.32);
-    transform: translateY(1px);
+
+  #prac-ctrls .pbtn:active,
+  #prac-ctrls .pbtn-strong:active,
+  #prac-ctrls .pbtn-alt:active {
+    transform: translateY(2px);
+    box-shadow:
+      0 2px 0 rgba(130, 72, 26, 0.95),
+      0 3px 6px rgba(0, 0, 0, 0.35),
+      inset 0 1px 0 rgba(255, 255, 255, 0.7),
+      inset 0 -1px 0 rgba(150, 86, 34, 0.7);
   }
-  #prac-ctrls .pbtn:focus-visible{
-    outline: 2px solid rgba(255,255,255,.85);
+
+  #prac-ctrls .pbtn:focus-visible,
+  #prac-ctrls .pbtn-strong:focus-visible,
+  #prac-ctrls .pbtn-alt:focus-visible {
+    outline: 2px solid rgba(255, 255, 255, 0.9);
     outline-offset: 2px;
   }
 </style>
