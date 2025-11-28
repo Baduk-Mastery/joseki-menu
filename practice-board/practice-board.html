@@ -754,6 +754,31 @@ window.addEventListener('go:prefs-changed', function(e){
       if (level === 4 || level === 5) return showSingleNext;
       return false;
     }
+    // Use the exact same board point that Hint would highlight
+    function getHintAnchorPoint(){
+      if (!hasSGF) return null;
+
+      var cands = getNextCandidates(currentNode);
+      if (!cands || !cands.length) return null;
+
+      var chosen = null;
+
+      // In player-only levels (2 & 3), prefer the player's move as anchor
+      if (playerOnly){
+        for (var i = 0; i < cands.length; i++){
+          if (cands[i].color === playerColor){
+            chosen = cands[i];
+            break;
+          }
+        }
+      }
+
+      // Fallback: first candidate (same as the "A" hint normally)
+      if (!chosen) chosen = cands[0];
+
+      var p = tfXY(chosen.xy.x, chosen.xy.y);
+      return { x: p.x, y: p.y };
+    }
 
     function redraw(){
       board.removeAllObjects();
@@ -1221,14 +1246,31 @@ window.addEventListener('go:prefs-changed', function(e){
 
       if (dt < 250 && (dx*dx + dy*dy) < 9){
         if (scale === 1 && !isFullscreen){
-          e.preventDefault(); e.stopPropagation(); e.stopImmediatePropagation && e.stopImmediatePropagation();
+          // Primary: use the exact point Hint logic would use (from SGF)
+          var target = null;
+          try {
+            target = getHintAnchorPoint && getHintAnchorPoint();
+          } catch (_) {
+            target = null;
+          }
+
+          // Fallback: if no SGF / no candidates, use tapped grid
+          if (!target){
+            target = { x: gi, y: gj };
+          }
+
+          e.preventDefault();
+          e.stopPropagation();
+          if (e.stopImmediatePropagation) e.stopImmediatePropagation();
+
           suppressNextBoardClick = true;
-          enterFullscreenAtGrid(gi, gj);
+          enterFullscreenAtGrid(target.x, target.y);
         } else {
           suppressNextBoardClick = false;
         }
       }
     }, {passive:false, capture:true});
+
 
     mount.addEventListener('pointermove', function(e){ if (!zoomEnabled) return; updatePan(e); }, {passive:false});
     mount.addEventListener('pointercancel', endPan, {passive:true});
@@ -1333,6 +1375,7 @@ window.addEventListener('go:prefs-changed', function(e){
 
     function triggerHint(){
       if (!hasSGF) return;
+
       if (!isPro()){
         var resH = QUOTA.use('prac:hints', MAX_HINTS_FREE);
         if (typeof refreshHintsUI === 'function') refreshHintsUI();
@@ -1341,16 +1384,23 @@ window.addEventListener('go:prefs-changed', function(e){
           return;
         }
       }
+
+      // If it's not the player's turn in player-only levels, auto-place opponent first
       var cands = getNextCandidates(currentNode);
-      if (!cands.length) return;
+      if (!cands || !cands.length) return;
+
       if (playerOnly && cands[0].color !== playerColor){
         autoPlaceOpponentIfNeeded();
         setTimeout(triggerHint, AUTO_DELAY + 30);
         return;
       }
-      var p = tfXY(cands[0].xy.x, cands[0].xy.y);
-      showHintAt(p.x, p.y);
+
+      var anchor = getHintAnchorPoint();
+      if (!anchor) return;
+
+      showHintAt(anchor.x, anchor.y);
     }
+
 
     var hoBack = document.getElementById('prac-hints-back');
     var hoPro  = document.getElementById('prac-hints-pro');
