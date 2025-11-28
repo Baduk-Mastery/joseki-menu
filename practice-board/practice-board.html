@@ -636,67 +636,75 @@ window.addEventListener('go:prefs-changed', function(e){
       };
     })();
 
-    var hintXY = null, hintEl = null, forceHintMarker = false;
+       var hintXY = null;
+    var forceHintMarker = false;
+    var hintPulsePhase = 0;
+    var hintPulseTimer = null;
     var zoomLayer = null;
 
-    function ensureHintEl(){
-      if (hintEl && hintEl.parentNode) return hintEl;
-      ensureZoomLayer();
-      hintEl = document.createElement('div');
-      hintEl.className = 'hint-ring';
-      hintEl.style.zIndex = '10000';
-      zoomLayer.appendChild(hintEl);
-      return hintEl;
+    // Canvas draw handler for the pulsating hint ring
+    var HINT_DRAW = {
+      stone: {
+        draw: function(args, board) {
+          // Same coordinates the black circle uses
+          var cx = board.getX(args.x);
+          var cy = board.getY(args.y);
+          var sr = board.stoneRadius;
+
+          // Simple pulse based on a phase value
+          var scale = 0.94 + 0.08 * Math.sin(hintPulsePhase);
+          var rOuter = sr * scale;
+
+          this.save();
+          this.beginPath();
+          this.arc(cx - 0.5, cy - 0.5, rOuter, 0, 2 * Math.PI, true);
+          this.strokeStyle  = 'rgba(11,74,162,0.95)';
+          this.lineWidth    = Math.max(2, board.lineWidth * 1.6);
+          this.shadowColor  = 'rgba(11,74,162,0.35)';
+          this.shadowBlur   = sr * 0.7;
+          this.globalAlpha  = 0.85;
+          this.stroke();
+
+          // Soft inner fill, similar to the DOM hint ring
+          this.beginPath();
+          this.arc(cx - 0.5, cy - 0.5, rOuter - this.lineWidth * 0.4, 0, 2 * Math.PI, true);
+          this.fillStyle = 'rgba(231,240,255,0.30)';
+          this.fill();
+
+          this.restore();
+        }
+      }
+    };
+
+    function startHintPulse(){
+      if (hintPulseTimer) return;
+      hintPulsePhase = 0;
+      hintPulseTimer = setInterval(function(){
+        hintPulsePhase += 0.25;
+        redraw();
+      }, 80);  // ~12.5 fps, smooth enough but light
     }
+
+    function stopHintPulse(){
+      if (!hintPulseTimer) return;
+      clearInterval(hintPulseTimer);
+      hintPulseTimer = null;
+    }
+
     function clearHint(){
-      hintXY = null; forceHintMarker = false;
-      if (hintEl && hintEl.parentNode) hintEl.parentNode.removeChild(hintEl);
-      hintEl = null;
+      hintXY = null;
+      forceHintMarker = false;
+      stopHintPulse();
       try { redraw(); } catch(e){}
     }
-    function positionHintEl(){
-      if (!hintXY || !board || !hintEl || !zoomLayer) return;
-
-      var c = mount.querySelector('canvas');
-      if (!c) return;
-
-      var rectCanvas = c.getBoundingClientRect();
-      var rectLayer  = zoomLayer.getBoundingClientRect();
-
-      var scaleX = rectCanvas.width  / (c.width  || rectCanvas.width  || 1);
-      var scaleY = rectCanvas.height / (c.height || rectCanvas.height || 1);
-
-      // Center of intersection in canvas coordinates
-      var cx = board.getX(hintXY.x);
-      var cy = board.getY(hintXY.y);
-
-      // Convert to CSS coords relative to zoomLayer
-      var px = (rectCanvas.left - rectLayer.left) + cx * scaleX;
-      var py = (rectCanvas.top  - rectLayer.top)  + cy * scaleY;
-
-      // Grid spacing in CSS pixels (from board, same scaling)
-      var spacingX = Math.abs(board.getX(1) - board.getX(0)) * scaleX || 0;
-      var spacingY = Math.abs(board.getY(1) - board.getY(0)) * scaleY || 0;
-      var spacing  = spacingX && spacingY ? Math.min(spacingX, spacingY)
-                                          : (spacingX || spacingY || 24);
-
-      var d = spacing * 0.62;  // keep your current size factor
-
-      hintEl.style.width  = d + 'px';
-      hintEl.style.height = d + 'px';
-      hintEl.style.left   = (px - d / 2) + 'px';
-      hintEl.style.top    = (py - d / 2) + 'px';
-    }
-
-
 
     function showHintAt(x,y){
-      hintXY = {x:x, y:y};
+      hintXY = { x:x, y:y };
       forceHintMarker = true;
-      ensureHintEl();
-      positionHintEl();
+      startHintPulse();
       redraw();
     }
+
 
     function neighbors(x,y){ var ns=[]; if(x>0)ns.push([x-1,y]); if(x<SIZE-1)ns.push([x+1,y]); if(y>0)ns.push([x,y-1]); if(y<SIZE-1)ns.push([x,y+1]); return ns; }
     function groupAndLiberties(x,y){
@@ -762,8 +770,9 @@ window.addEventListener('go:prefs-changed', function(e){
         }
       }
       if (forceHintMarker && hintXY){
-        board.addObject({ x: hintXY.x, y: hintXY.y, type: 'CR' });
+        board.addObject({ x: hintXY.x, y: hintXY.y, type: HINT_DRAW });
       }
+
       if (highlightLastEnabled && lastX != null && lastY != null) {
         board.addObject({ x: lastX, y: lastY, type: 'CR' });
       }
@@ -1061,7 +1070,6 @@ window.addEventListener('go:prefs-changed', function(e){
         mount.style.height = baseW + 'px';
       }
       if (redrawAfter) redraw();
-      try { positionHintEl(); } catch(e){}
     }
 
     function resetViewLocal(){
