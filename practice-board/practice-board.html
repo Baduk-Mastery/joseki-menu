@@ -1030,6 +1030,8 @@ window.addEventListener('go:prefs-changed', function(e){
     var baseW = 0;
     var offsetX = 0, offsetY = 0;
     var animId = 0;
+    var isAnimatingZoom = false; // new: avoid pan clamping during zoom animation
+
 
     var isFullscreen = false;
     var overlay = null, stage = null, returnAnchor = null;
@@ -1097,9 +1099,15 @@ window.addEventListener('go:prefs-changed', function(e){
       board.setWidth(targetW);
       zoomLayer.style.width  = targetW + 'px';
       zoomLayer.style.height = targetW + 'px';
-      clampPan();
+
+      // During zoom animation, don’t clamp pan – avoids that initial “snap”
+      if (!isAnimatingZoom) {
+        clampPan();
+      }
+
       zoomLayer.style.left = (-offsetX) + 'px';
       zoomLayer.style.top  = (-offsetY) + 'px';
+
       if (isFullscreen){
         mount.style.width  = '100vw';
         mount.style.height = '100vh';
@@ -1110,50 +1118,52 @@ window.addEventListener('go:prefs-changed', function(e){
       if (redrawAfter) redraw();
     }
 
+
     function resetViewLocal(){
       scale = 1; offsetX = 0; offsetY = 0;
       applyPanAndSize(true);
     }
 
-function animateTo(targetScale, targetOffsetX, targetOffsetY){
-  targetScale = Math.max(minScale, Math.min(maxScale, targetScale));
+    function animateTo(targetScale, targetOffsetX, targetOffsetY){
+      targetScale = Math.max(minScale, Math.min(maxScale, targetScale));
 
-  const s0  = scale;
-  const ox0 = offsetX;
-  const oy0 = offsetY;
+      const s0  = scale;
+      const ox0 = offsetX;
+      const oy0 = offsetY;
 
-  const s1  = targetScale;
-  const ox1 = targetOffsetX;
-  const oy1 = targetOffsetY;
+      const s1  = targetScale;
+      const ox1 = targetOffsetX;
+      const oy1 = targetOffsetY;
 
-  const t0  = performance.now();
-  const dur = 180; // faster than 260ms
+      const t0  = performance.now();
+      const dur = 220; // slightly longer + smoother
 
-  cancelAnimationFrame(animId);
+      cancelAnimationFrame(animId);
+      isAnimatingZoom = true;
 
-  (function step(now){
-    let t = (now - t0) / dur;
-    if (t > 1) t = 1;
+      (function step(now){
+        let t = (now - t0) / dur;
+        if (t > 1) t = 1;
 
-    // Snappier but still smooth: cubic ease-out
-    const e = 1 - Math.pow(1 - t, 3);
+        // Smooth start and end (no jump at t=0)
+        // “smoothstep” easing: ease-in-out
+        const e = t * t * (3 - 2 * t);
 
-    scale   = s0  + (s1  - s0 ) * e;
-    offsetX = ox0 + (ox1 - ox0) * e;
-    offsetY = oy0 + (oy1 - oy0) * e;
+        scale   = s0  + (s1  - s0 ) * e;
+        offsetX = ox0 + (ox1 - ox0) * e;
+        offsetY = oy0 + (oy1 - oy0) * e;
 
-    // No heavy redraws during animation
-    applyPanAndSize(false);
+        applyPanAndSize(false);
 
-    if (t < 1){
-      animId = requestAnimationFrame(step);
-    } else {
-      // One final redraw at the end so markers/hints stay in sync
-      applyPanAndSize(true);
+        if (t < 1){
+          animId = requestAnimationFrame(step);
+        } else {
+          isAnimatingZoom = false;
+          // Final redraw + pan clamp at the very end
+          applyPanAndSize(true);
+        }
+      })(t0);
     }
-  })(t0);
-}
-
 
 
     function centerZoomAtGrid(i, j, factor, tapClientX, tapClientY){
