@@ -1115,22 +1115,38 @@ window.addEventListener('go:prefs-changed', function(e){
       applyPanAndSize(true);
     }
 
-    function animateTo(targetScale, targetOffsetX, targetOffsetY){
-      targetScale = Math.max(minScale, Math.min(maxScale, targetScale));
-      var s0 = scale, ox0 = offsetX, oy0 = offsetY;
-      var s1 = targetScale, ox1 = targetOffsetX, oy1 = targetOffsetY;
-      var t0 = performance.now(), dur = 180;
-      cancelAnimationFrame(animId);
-      (function step(now){
-        var t = Math.min(1, (now - t0)/dur);
-        var e = t<.5 ? 2*t*t : -1+(4-2*t)*t;
-        scale   = s0  + (s1  - s0 )*e;
-        offsetX = ox0 + (ox1 - ox0)*e;
-        offsetY = oy0 + (oy1 - oy0)*e;
-        applyPanAndSize(true);
-        if (t < 1) animId = requestAnimationFrame(step);
-      })(t0);
+ function animateTo(targetScale, targetOffsetX, targetOffsetY){
+  targetScale = Math.max(minScale, Math.min(maxScale, targetScale));
+  var s0 = scale, ox0 = offsetX, oy0 = offsetY;
+  var s1 = targetScale, ox1 = targetOffsetX, oy1 = targetOffsetY;
+
+  // Slightly longer for smoother motion
+  var t0  = performance.now();
+  var dur = 260;
+
+  cancelAnimationFrame(animId);
+
+  (function step(now){
+    var t = Math.min(1, (now - t0) / dur);
+    // Ease-in-out
+    var e = t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t;
+
+    scale   = s0  + (s1  - s0 ) * e;
+    offsetX = ox0 + (ox1 - ox0) * e;
+    offsetY = oy0 + (oy1 - oy0) * e;
+
+    // During animation, only resize/pan – no costly redraw
+    applyPanAndSize(false);
+
+    if (t < 1){
+      animId = requestAnimationFrame(step);
+    } else {
+      // One final redraw at the end, so labels / hint ring stay correct
+      applyPanAndSize(true);
     }
+  })(t0);
+}
+
 
     function centerZoomAtGrid(i, j, factor, tapClientX, tapClientY){
       const next = Math.max(minScale, Math.min(maxScale, scale * factor));
