@@ -1153,7 +1153,8 @@ function clampPan(){
     }
 
  // Anchor-based zoom animation: keeps the tapped grid point fixed on screen
-function animateTo(targetScale, pxWorld, pyWorld, sxTarget, syTarget){
+// Anchor-based zoom animation: keeps the tapped grid point fixed on screen
+function animateTo(targetScale, pxWorld, pyWorld, sxTarget, syTarget, onDone){
   targetScale = Math.max(minScale, Math.min(maxScale, targetScale));
 
   const s0  = scale;
@@ -1189,6 +1190,9 @@ function animateTo(targetScale, pxWorld, pyWorld, sxTarget, syTarget){
       isZoomAnimating = false;
       // One final redraw + clamp when everything is settled
       applyPanAndSize(true);
+      if (typeof onDone === 'function') {
+        onDone();
+      }
     }
   })(t0);
 }
@@ -1649,7 +1653,31 @@ mount.addEventListener('pointercancel', function(e){
       else alert('Pro unlocks unlimited tries.');
     });
 
-        // Centralised handler for "play at board coordinate (x,y)"
+ // Smooth zoom-out back to full-board view, then exit fullscreen if needed
+function smoothZoomOutAndExit(){
+  if (!zoomEnabled) return;
+  if (scale <= 1 && !isFullscreen) return;
+
+  const {vw, vh} = viewportSize();
+  const sxTarget = vw / 2;
+  const syTarget = vh / 2;
+
+  // World coordinates of the point currently under the screen center
+  const pxWorld = (offsetX + sxTarget) / scale;
+  const pyWorld = (offsetY + syTarget) / scale;
+
+  // Animate back to scale 1 while keeping that point fixed
+  animateTo(1, pxWorld, pyWorld, sxTarget, syTarget, function(){
+    if (isFullscreen){
+      // After the smooth zoom-out, leave fullscreen normally
+      exitFullscreen();
+    } else {
+      // Non-fullscreen safety fallback
+      resetViewLocal();
+    }
+  });
+}
+
     function handlePracticeClick(x, y){
       if (!hasSGF || isAutoPlacing) return;
 
@@ -1679,14 +1707,15 @@ mount.addEventListener('pointercancel', function(e){
           if ((level === 4 || level === 5) && showSingleNext) showSingleNext = false;
           if (level === 2 && !l2HintConsumed) l2HintConsumed = true;
 
-          currentNode = cand.node;
+                    currentNode = cand.node;
           buildPositionTo(currentNode);
           StoneSFX.play();
 
-          // Auto-exit zoom when a correct move is played
+          // Auto zoom-out when a correct move is played (smooth, like zoom-in)
           if (zoomEnabled && (scale > 1 || isFullscreen)){
-            setTimeout(exitFullscreen, 10);
+            setTimeout(smoothZoomOutAndExit, 10);
           }
+
 
           var nexts = getNextCandidates(currentNode);
           if (!nexts.length){
