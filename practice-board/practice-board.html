@@ -255,7 +255,7 @@
 </style>
 
 <style>
-  /* Practice controls row (unchanged, just here for completeness) */
+  /* Row layout (you can keep your existing version if you prefer) */
   .prac-ctrls{
     max-width:720px;
     margin:10px auto 0;
@@ -266,98 +266,78 @@
     flex-wrap:wrap;
   }
 
-  /* Wood buttons */
+  /* Wood-style buttons */
   #prac-ctrls .pbtn,
   #prac-ctrls .pbtn-strong,
   #prac-ctrls .pbtn-alt{
-    position:relative;
-    display:inline-flex;
-    align-items:center;
-    justify-content:center;
-    padding:10px 18px;
-
-    border:none;
-    border-radius:10px;           /* a bit sharper than before */
-    background:transparent;
+    padding:10px 22px;
+    border-radius:10px;                 /* similar corner roundness to screenshot */
+    border:1px solid #c2792c;
     cursor:pointer;
 
     font-weight:800;
     font-size:15px;
     line-height:1;
-    color:#fff7e0;
+    color:#fff8de;
+    text-shadow:0 1px 1px rgba(0,0,0,.35);
 
-    text-shadow:0 1px 1px rgba(0,0,0,.25);
-    -webkit-tap-highlight-color:transparent;
-
-    box-shadow:none;
-    transition:transform .06s ease-out;
-  }
-
-  /* Actual wooden “slab” */
-  #prac-ctrls .pbtn::before,
-  #prac-ctrls .pbtn-strong::before,
-  #prac-ctrls .pbtn-alt::before{
-    content:"";
-    position:absolute;
-    inset:0;
-    border-radius:10px;
-
-    /* own wood texture, rotated 180° + lightened */
     background-image:
-      linear-gradient(to bottom,
-        rgba(255,255,255,.30),
-        rgba(145,88,34,.3),
-        rgba(110,60,20,.5)
+      /* light top highlight + darker bottom for carved effect */
+      linear-gradient(
+        to bottom,
+        rgba(255,255,255,.80) 0%,
+        rgba(255,255,255,.30) 6%,
+        rgba(240,186,104,1)   45%,
+        rgba(201,131,55,1)    100%
       ),
+      /* same wood texture, a bit zoomed so it looks like its own block */
       url("../img/wood.jpg");
-    background-size:180% 180%;
+    background-size: 220% 220%, 200% 200%;
     background-position:center;
     background-repeat:no-repeat;
-    transform:scale(-1,-1);              /* 180° flip of the texture */
-    filter:brightness(1.25) saturate(1.05);
+    filter:brightness(1.15) saturate(1.05); /* slightly lighter than board */
 
     box-shadow:
-      0 3px 0 rgba(140,78,26,.9),
-      0 4px 9px rgba(0,0,0,.45),
-      inset 0 1px 1px rgba(255,255,255,.7);
+      0 3px 0 rgba(140,78,26,.95),        /* “edge” under the button */
+      0 4px 9px rgba(0,0,0,.45),          /* drop shadow */
+      inset 0 1px 1px rgba(255,255,255,.7); /* top inner highlight */
 
-    z-index:-1;
+    -webkit-tap-highlight-color:transparent;
+    outline:none;
+    transition:
+      transform .06s ease-out,
+      box-shadow .08s ease-out,
+      filter .10s ease-out;
   }
 
-  /* Hover: very subtle, mainly for desktop */
-  #prac-ctrls .pbtn:hover::before,
-  #prac-ctrls .pbtn-strong:hover::before,
-  #prac-ctrls .pbtn-alt:hover::before{
-    filter:brightness(1.32) saturate(1.06);
+  /* Hover (desktop) */
+  #prac-ctrls .pbtn:hover,
+  #prac-ctrls .pbtn-strong:hover,
+  #prac-ctrls .pbtn-alt:hover{
+    filter:brightness(1.20) saturate(1.06);
   }
 
-  /* Pressed state – darker + slight push down, reverts on release */
+  /* Pressed – short-lived while mouse/touch is down, then auto-reverts */
   #prac-ctrls .pbtn:active,
   #prac-ctrls .pbtn-strong:active,
   #prac-ctrls .pbtn-alt:active{
-    transform:translateY(1px);
-  }
-  #prac-ctrls .pbtn:active::before,
-  #prac-ctrls .pbtn-strong:active::before,
-  #prac-ctrls .pbtn-alt:active::before{
-    filter:brightness(1.12) saturate(1.02);
+    transform:translateY(2px);
     box-shadow:
       0 1px 0 rgba(140,78,26,.95),
-      0 2px 5px rgba(0,0,0,.5),
+      0 3px 6px rgba(0,0,0,.45),
       inset 0 1px 1px rgba(255,255,255,.55);
+    filter:brightness(1.05) saturate(1.0);
   }
 
-  /* “Locked” variant – washed-out wood */
+  /* Locked variant for “Pro only” buttons if you use it */
   #prac-ctrls .pbtn-locked{
+    opacity:.65;
     cursor:default;
-    opacity:.8;
-  }
-  #prac-ctrls .pbtn-locked::before{
-    filter:brightness(1.05) saturate(.7);
     box-shadow:
       0 2px 0 rgba(120,80,50,.6),
       0 3px 6px rgba(0,0,0,.35),
       inset 0 1px 1px rgba(255,255,255,.6);
+    filter:brightness(1.0) saturate(.8);
   }
 </style>
 <style>
