@@ -1357,33 +1357,33 @@
   };
 
   lvlOverlay.addEventListener('click', function(e){
-    const card = e.target.closest('.level-card');
-    if (!card) return;
+  const card = e.target.closest('.level-card');
+  if (!card) return;
 
-    if (card.getAttribute('aria-disabled') === 'true'){
-      // Show in-app Pro notification instead of external alert/paywall directly
-      showProToast();
-      return;
-    }
+  if (card.getAttribute('aria-disabled') === 'true'){
+    // Show in-app Pro notification instead of external alert/paywall directly
+    showProToast();
+    return;
+  }
 
-    const lvl = parseInt(card.getAttribute('data-level') || '2', 10) || 2;
-    window.PracticeConfig = window.PracticeConfig || {};
-    window.PracticeConfig.level = lvl;
+  const lvl = parseInt(card.getAttribute('data-level') || '2', 10) || 2;
+  window.PracticeConfig = window.PracticeConfig || {};
+  window.PracticeConfig.level = lvl;
 
-    // Persist full config (selectedLine + level)
-    savePracticeConfig();
+  // Persist full config (selectedLine + level)
+  savePracticeConfig();
 
-    LevelUI.close();
+  // Extra safety: only go to board if a line was actually selected
+  if (!window.PracticeConfig.selectedLine){
+    console.warn('[Practice] Level picked but no selectedLine in PracticeConfig; not opening board.');
+    return;
+  }
 
-    // Extra safety: only go to board if a line was actually selected
-    if (!window.PracticeConfig.selectedLine){
-      console.warn('[Practice] Level picked but no selectedLine in PracticeConfig; not opening board.');
-      return;
-    }
+  // Don’t close overlays here – it causes the flicker back to categories.
+  // Just navigate to the board page; this page will unload anyway.
+  window.location.href = "../practice-board/practice-board.html";
+});
 
-    // Open practice board page
-    window.location.href = "../practice-board/practice-board.html";
-  });
 
 
   backBtn && backBtn.addEventListener('click', ()=>{
