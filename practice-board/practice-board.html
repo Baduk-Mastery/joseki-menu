@@ -266,49 +266,54 @@
     flex-wrap:wrap;
   }
 
-  #prac-ctrls .pbtn,
-  #prac-ctrls .pbtn-strong,
-  #prac-ctrls .pbtn-alt{
-    position:relative;
-    min-width:90px;
-    padding:8px 24px;
+#prac-ctrls .pbtn,
+#prac-ctrls .pbtn-strong,
+#prac-ctrls .pbtn-alt{
+  position:relative;
+  min-width:90px;
+  padding:8px 24px;
 
-    /* corners a bit sharper (less pill-like) */
-    border-radius:10px;
-    border:1px solid rgba(255,255,255,.45);
+  border-radius:10px;
+  border:1px solid rgba(255,255,255,.45);
 
-    font-size:16px;
-    font-weight:800;
-    line-height:1.1;
-    color:#fff3cf;
-    text-shadow:0 1px 0 rgba(120,60,20,.7);
-    cursor:pointer;
+  font-size:16px;
+  font-weight:800;
+  line-height:1.1;
+  color:#fff3cf;
+  text-shadow:0 1px 0 rgba(120,60,20,.7);
+  cursor:pointer;
 
-    /* much softer highlight – no big white band */
-    background-image:
-      linear-gradient(
-        to bottom,
-        rgba(255,255,255,.18),
-        rgba(255,255,255,.06) 38%,
-        rgba(0,0,0,.10) 100%
-      ),
-      url('../img/wood.jpg');
-    background-size:100% 100%, cover;
-    background-position:center;
-    background-repeat:no-repeat;
+  /* ⬇️ prevent the “marking / selecting” effect */
+  user-select:none;
+  -webkit-user-select:none;
+  -moz-user-select:none;
+  -ms-user-select:none;
+  -webkit-tap-highlight-color:transparent;
 
-    /* make wood a bit lighter than page background, closer to board */
-    filter:brightness(1.18) saturate(.98);
+  background-image:
+    linear-gradient(
+      to bottom,
+      rgba(255,255,255,.18),
+      rgba(255,255,255,.06) 38%,
+      rgba(0,0,0,.10) 100%
+    ),
+    url('../img/wood.jpg');
+  background-size:100% 100%, cover;
+  background-position:center;
+  background-repeat:no-repeat;
 
-    box-shadow:
-      0 3px 0 rgba(133,74,26,.9),
-      0 8px 14px rgba(0,0,0,.5);
+  filter:brightness(1.18) saturate(.98);
 
-    transition:
-      transform .08s ease-out,
-      box-shadow .08s ease-out,
-      filter .12s ease-out;
-  }
+  box-shadow:
+    0 3px 0 rgba(133,74,26,.9),
+    0 8px 14px rgba(0,0,0,.5);
+
+  transition:
+    transform .08s ease-out,
+    box-shadow .08s ease-out,
+    filter .12s ease-out;
+}
+
 
   /* Hover: tiny brightness bump, still minimal gloss */
   #prac-ctrls .pbtn:hover,
