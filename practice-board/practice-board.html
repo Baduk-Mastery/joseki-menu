@@ -1132,26 +1132,47 @@ window.addEventListener('go:prefs-changed', function(e){
       })(t0);
     }
 
-    function centerZoomAtGrid(i, j, factor){
-      const { vw, vh } = viewportSize();
+    function centerZoomAtGrid(i, j, factor, tapClientX, tapClientY){
       const next = Math.max(minScale, Math.min(maxScale, scale * factor));
+
+      // Board coordinates of this grid point at current scale
       const px_curr = getXcss(i);
       const py_curr = getYcss(j);
       const px_world = px_curr / scale;
       const py_world = py_curr / scale;
-      const newOX = px_world * next - vw / 2;
-      const newOY = py_world * next - vh / 2;
+
+      // Where should this point end up inside the board element?
+      // Default: center; if we know the tap position, keep it under the tap.
+      const rect = mount.getBoundingClientRect();
+      let sx_target = rect.width  / 2;
+      let sy_target = rect.height / 2;
+
+      if (typeof tapClientX === 'number' && typeof tapClientY === 'number'){
+        sx_target = tapClientX - rect.left;
+        sy_target = tapClientY - rect.top;
+
+        // Clamp so we don’t end up outside the visible board
+        sx_target = Math.max(0, Math.min(sx_target, rect.width));
+        sy_target = Math.max(0, Math.min(sy_target, rect.height));
+      }
+
+      const newOX = px_world * next - sx_target;
+      const newOY = py_world * next - sy_target;
+
       animateTo(next, newOX, newOY);
     }
 
-    function enterFullscreenAtGrid(i, j){
+
+     function enterFullscreenAtGrid(i, j, tapClientX, tapClientY){
       if (isFullscreen) return;
       ensureOverlay();
       prevOverflow = document.documentElement.style.overflow || "";
       document.documentElement.style.overflow = 'hidden';
+
       returnAnchor = document.createElement('div');
       returnAnchor.style.display = 'none';
       mount.parentNode.insertBefore(returnAnchor, mount);
+
       stage.appendChild(mount);
       overlay.style.display = 'flex';
       mount.classList.add('is-fullscreen');
@@ -1167,9 +1188,10 @@ window.addEventListener('go:prefs-changed', function(e){
         const {vw, vh} = viewportSize();
         const needToCover   = Math.max(vw, vh) / baseW;
         const initialFactor = Math.max(1.8, needToCover + 0.02);
-        centerZoomAtGrid(i, j, initialFactor);
+        centerZoomAtGrid(i, j, initialFactor, tapClientX, tapClientY);
       });
     }
+
 
     function exitFullscreen(){
       mount.classList.remove('is-fullscreen');
@@ -1245,44 +1267,37 @@ window.addEventListener('go:prefs-changed', function(e){
       beginPan(e);
     }, {passive:true});
 
-    mount.addEventListener('pointerup', function(e){
+      mount.addEventListener('pointerup', function(e){
       if (!zoomEnabled || !tapStart) { endPan(e); return; }
       if (isPanning){ endPan(e); tapStart = null; return; }
 
       const dt = performance.now() - tapStart.t;
       const dx = e.clientX - tapStart.x;
       const dy = e.clientY - tapStart.y;
-      const gi = tapStart.gridI, gj = tapStart.gridJ;
+
+      const gi = tapStart.gridI;
+      const gj = tapStart.gridJ;
+      const tapClientX = tapStart.x;
+      const tapClientY = tapStart.y;
 
       tapStart = null;
       endPan(e);
 
       if (dt < 250 && (dx*dx + dy*dy) < 9){
         if (scale === 1 && !isFullscreen){
-          // Primary: use the exact point Hint logic would use (from SGF)
-          var target = null;
-          try {
-            target = getHintAnchorPoint && getHintAnchorPoint();
-          } catch (_) {
-            target = null;
-          }
-
-          // Fallback: if no SGF / no candidates, use tapped grid
-          if (!target){
-            target = { x: gi, y: gj };
-          }
-
           e.preventDefault();
           e.stopPropagation();
           if (e.stopImmediatePropagation) e.stopImmediatePropagation();
 
           suppressNextBoardClick = true;
-          enterFullscreenAtGrid(target.x, target.y);
+          // Always zoom to where the user actually tapped
+          enterFullscreenAtGrid(gi, gj, tapClientX, tapClientY);
         } else {
           suppressNextBoardClick = false;
         }
       }
     }, {passive:false, capture:true});
+
 
 
     mount.addEventListener('pointermove', function(e){ if (!zoomEnabled) return; updatePan(e); }, {passive:false});
