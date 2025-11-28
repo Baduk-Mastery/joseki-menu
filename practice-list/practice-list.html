@@ -100,7 +100,7 @@
     color:#e6f3ff; -webkit-tap-highlight-color:transparent;
     background-image:
       linear-gradient(rgba(0,0,0,.35), rgba(0,0,0,.45)),
-      url('https://3d85c7a311526e02aeeeb19e952d0c09.cdn.bubble.io/f1755870506985x437178801728222500/wood.jpg');
+      url('../img/wood.jpg');
     background-size:cover; background-position:center;
   }
   #practice-overlay .s-inner, #level-overlay .s-inner{
@@ -178,7 +178,7 @@
     position: relative;
     background-image:
       linear-gradient(rgba(0,0,0,.04), rgba(0,0,0,.06)),
-      url('https://3d85c7a311526e02aeeeb19e952d0c09.cdn.bubble.io/f1755870506985x437178801728222500/wood.jpg');
+      url('../img/wood.jpg');
     background-size:cover; background-position:center;
     border:2px solid rgba(37,99,235,.65);
     box-shadow: inset 0 0 0 1px rgba(255,255,255,.06);
@@ -252,7 +252,7 @@
     pointer-events:auto;
     background-image:
       linear-gradient(rgba(0,0,0,.35), rgba(0,0,0,.45)),
-      url('https://3d85c7a311526e02aeeeb19e952d0c09.cdn.bubble.io/f1755870506985x437178801728222500/wood.jpg');
+      url('../img/wood.jpg');
     background-size:cover; background-position:center;
     border:2px solid rgba(37,99,235,.75);
     border-radius:12px;
@@ -273,7 +273,8 @@
 
 <script>
 (function(){
-  const SGF_URL   = "https://3d85c7a311526e02aeeeb19e952d0c09.cdn.bubble.io/f1756283064420x481184906507390100/game%20%281%29.sgf";
+  // Update this path if your SGF is in a different folder/name
+  const SGF_URL   = "../sgf/library-1.sgf";
   const MIN_MOVES = 6;  // Only show variations with at least this many moves
 
   const overlay    = document.getElementById('practice-overlay');
@@ -353,6 +354,7 @@
       const ch=str[k++];
       if(ch==='\\'){
         if(k<str.length) out+=str[k++];
+
         continue;
       }
       if(ch===']') break;
