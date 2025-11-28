@@ -1268,15 +1268,19 @@ function centerZoomAtGrid(i, j, factor, tapClientX, tapClientY){
       if (typeof refreshHintsUI  === 'function') refreshHintsUI();
     }
 
-    var isPanning = false, panStart = null, activePointerId = null, tapStart = null, suppressNextBoardClick = false;
+    var isPanning = false, panStart = null, activePointerId = null,
+    tapStart = null, suppressNextBoardClick = false;
 
-    function beginPan(e){
-      isPanning = false;
-      panStart = { x: e.clientX, y: e.clientY, ox: offsetX, oy: offsetY };
-      activePointerId = e.pointerId;
-      try { mount.setPointerCapture(e.pointerId); } catch(_) {}
-    }
+function beginPan(e){
+  isPanning = false;
+  panStart = { x: e.clientX, y: e.clientY, ox: offsetX, oy: offsetY };
+  activePointerId = e.pointerId;
+  try { mount.setPointerCapture(e.pointerId); } catch(_) {}
+}
+
 function updatePan(e){
+  // Only handle real touch pointers (phones/tablets)
+  if (e.pointerType && e.pointerType !== 'touch') return;
   if (panStart == null) return;
   if (!isFullscreen || scale <= 1) return;
 
@@ -1292,89 +1296,112 @@ function updatePan(e){
   offsetX = panStart.ox - dx;
   offsetY = panStart.oy - dy;
 
-  // was: applyPanAndSize(true);
-  applyPanAndSize(false);   // NEW: transforms only, no canvas redraw
-
+  applyPanAndSize(false);
   e.preventDefault();
 }
 
-    function endPan(e){
-      if (activePointerId !== null){
-        try { mount.releasePointerCapture(activePointerId); } catch(_) {}
-      }
-      activePointerId = null;
-      panStart = null;
-      setTimeout(function(){ isPanning = false; }, 0);
+function endPan(e){
+  if (activePointerId !== null){
+    try { mount.releasePointerCapture(activePointerId); } catch(_) {}
+  }
+  activePointerId = null;
+  panStart = null;
+  setTimeout(function(){ isPanning = false; }, 0);
+}
+
+// TOUCH-ONLY pointer handlers (real phones/tablets).
+// Mouse clicks keep using WGo's own click handling.
+mount.addEventListener('pointerdown', function(e){
+  if (!zoomEnabled) return;
+  if (e.pointerType && e.pointerType !== 'touch') return;
+
+  // Prevent synthetic mouse "click" so WGo doesn't also fire
+  e.preventDefault();
+
+  const r  = mount.getBoundingClientRect();
+  const sx = e.clientX - r.left;
+  const sy = e.clientY - r.top;
+
+  // Convert from screen → board coordinates (undo translate/scale)
+  const boardX = (sx + offsetX) / scale;
+  const boardY = (sy + offsetY) / scale;
+
+  let bestI = 0, bestJ = 0, bestDx = 1e9, bestDy = 1e9;
+  for (let i = 0; i < SIZE; i++){
+    const dx = Math.abs(getXcss(i) - boardX);
+    if (dx < bestDx){ bestDx = dx; bestI = i; }
+  }
+  for (let j = 0; j < SIZE; j++){
+    const dy = Math.abs(getYcss(j) - boardY);
+    if (dy < bestDy){ bestDy = dy; bestJ = j; }
+  }
+
+  tapStart = {
+    x: e.clientX,
+    y: e.clientY,
+    t: performance.now(),
+    gridI: bestI,
+    gridJ: bestJ
+  };
+
+  beginPan(e);
+}, {passive:false});
+
+mount.addEventListener('pointerup', function(e){
+  if (!zoomEnabled || !tapStart) { endPan(e); return; }
+  if (e.pointerType && e.pointerType !== 'touch') {
+    endPan(e);
+    tapStart = null;
+    return;
+  }
+
+  if (isPanning){
+    endPan(e);
+    tapStart = null;
+    return;
+  }
+
+  const dt = performance.now() - tapStart.t;
+  const dx = e.clientX - tapStart.x;
+  const dy = e.clientY - tapStart.y;
+
+  const gi = tapStart.gridI;
+  const gj = tapStart.gridJ;
+  const tapClientX = tapStart.x;
+  const tapClientY = tapStart.y;
+
+  tapStart = null;
+  endPan(e);
+
+  if (dt < 250 && (dx*dx + dy*dy) < 9){
+    // We handled the tap; don't let WGo get a synthetic click.
+    e.preventDefault();
+    e.stopPropagation();
+    if (e.stopImmediatePropagation) e.stopImmediatePropagation();
+
+    if (scale === 1 && !isFullscreen){
+      // First tap: just zoom in, no stone yet.
+      suppressNextBoardClick = true;
+      enterFullscreenAtGrid(gi, gj, tapClientX, tapClientY);
+    } else {
+      // Already zoomed/fullscreen: treat as a real board tap at (gi, gj)
+      suppressNextBoardClick = false;
+      try { handlePracticeClick(gi, gj); } catch(_) {}
     }
+  }
+}, {passive:false, capture:true});
 
-    mount.addEventListener('pointerdown', function(e){
-      if (!zoomEnabled) return;
+mount.addEventListener('pointermove', function(e){
+  if (!zoomEnabled) return;
+  if (e.pointerType && e.pointerType !== 'touch') return;
+  updatePan(e);
+}, {passive:false});
 
-      const r  = mount.getBoundingClientRect();
-      const sx = e.clientX - r.left, sy = e.clientY - r.top;
+mount.addEventListener('pointercancel', function(e){
+  if (e.pointerType && e.pointerType !== 'touch') return;
+  endPan(e);
+}, {passive:true});
 
-      const vx = sx + offsetX;
-      const vy = sy + offsetY;
-
-      let bestI = 0, bestJ = 0, bestDx = 1e9, bestDy = 1e9;
-      for (let i = 0; i < SIZE; i++){
-        const dx = Math.abs(getXcss(i) - vx);
-        if (dx < bestDx){ bestDx = dx; bestI = i; }
-      }
-      for (let j = 0; j < SIZE; j++){
-        const dy = Math.abs(getYcss(j) - vy);
-        if (dy < bestDy){ bestDy = dy; bestJ = j; }
-      }
-
-      tapStart = { x:e.clientX, y:e.clientY, t:performance.now(), gridI:bestI, gridJ:bestJ };
-      beginPan(e);
-    }, {passive:true});
-
-          mount.addEventListener('pointerup', function(e){
-      if (!zoomEnabled || !tapStart) { endPan(e); return; }
-      if (isPanning){ endPan(e); tapStart = null; return; }
-
-      const dt = performance.now() - tapStart.t;
-      const dx = e.clientX - tapStart.x;
-      const dy = e.clientY - tapStart.y;
-
-      const gi = tapStart.gridI;
-      const gj = tapStart.gridJ;
-      const tapClientX = tapStart.x;
-      const tapClientY = tapStart.y;
-
-      tapStart = null;
-      endPan(e);
-
-      if (dt < 250 && (dx*dx + dy*dy) < 9){
-        if (scale === 1 && !isFullscreen){
-          // First tap: enter fullscreen / zoom, but don't play a move
-          e.preventDefault();
-          e.stopPropagation();
-          if (e.stopImmediatePropagation) e.stopImmediatePropagation();
-
-          suppressNextBoardClick = true;
-          enterFullscreenAtGrid(gi, gj, tapClientX, tapClientY);
-        } else {
-          // Already zoomed / fullscreen: treat this as a board tap at (gi, gj)
-          e.preventDefault();
-          e.stopPropagation();
-          if (e.stopImmediatePropagation) e.stopImmediatePropagation();
-
-          suppressNextBoardClick = false;
-
-          try {
-            handlePracticeClick(gi, gj);
-          } catch (_) {}
-        }
-      }
-    }, {passive:false, capture:true});
-
-
-
-
-    mount.addEventListener('pointermove', function(e){ if (!zoomEnabled) return; updatePan(e); }, {passive:false});
-    mount.addEventListener('pointercancel', endPan, {passive:true});
     document.addEventListener('keydown', function(e){
       if (e.key === 'Escape' && isFullscreen) exitFullscreen();
     });
