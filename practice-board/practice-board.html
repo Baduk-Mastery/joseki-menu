@@ -1199,28 +1199,20 @@ function animateTo(targetScale, pxWorld, pyWorld, sxTarget, syTarget, onDone){
 
 
 function centerZoomAtGrid(i, j, factor, tapClientX, tapClientY){
+  // Clamp target scale
   const targetScale = Math.max(minScale, Math.min(maxScale, scale * factor));
 
-  // Board coordinates of this grid point at current scale
-  const px_curr  = getXcss(i);
-  const py_curr  = getYcss(j);
-  const px_world = px_curr / scale;
-  const py_world = py_curr / scale;
+  // World coordinates of the grid point in zoomLayer space
+  const wx = getXcss(i);
+  const wy = getYcss(j);
 
-  // Default: center; if we know the tap position, keep it under the tap
-  const rect = mount.getBoundingClientRect();
-  let sx_target = rect.width  / 2;
-  let sy_target = rect.height / 2;
+  // Where this point currently appears on screen
+  // (given transform: translate3d(-offsetX, -offsetY, 0) scale(scale))
+  const sxTarget = scale * wx - offsetX;
+  const syTarget = scale * wy - offsetY;
 
-  if (typeof tapClientX === 'number' && typeof tapClientY === 'number'){
-    sx_target = tapClientX - rect.left;
-    sy_target = tapClientY - rect.top;
-    sx_target = Math.max(0, Math.min(sx_target, rect.width));
-    sy_target = Math.max(0, Math.min(sy_target, rect.height));
-  }
-
-  // Now animate with the anchor locked to (sx_target, sy_target)
-  animateTo(targetScale, px_world, py_world, sx_target, sy_target);
+  // Animate while keeping that point fixed on screen
+  animateTo(targetScale, wx, wy, sxTarget, syTarget);
 }
 
      function enterFullscreenAtGrid(i, j, tapClientX, tapClientY){
