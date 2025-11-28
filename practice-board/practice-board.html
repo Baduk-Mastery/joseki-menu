@@ -211,18 +211,21 @@
   }
 
   /* DOM hint ring */
-  .hint-ring{
-    position:absolute; pointer-events:none; border-radius:50%;
+   .hint-ring{
+    position:absolute;
+    pointer-events:none;
+    border-radius:50%;
     border:3px solid rgba(11,74,162,.95);
-    background:rgba(231,240,255,.45);
+    background:rgba(231,240,255,.35);
     animation: pracPulse 0.9s ease-in-out infinite alternate;
-    box-shadow: 0 0 0 2px rgba(11,74,162,.18), 0 0 12px rgba(11,74,162,.35) inset;
+    box-shadow: 0 0 0 1px rgba(11,74,162,.18), 0 0 10px rgba(11,74,162,.35) inset;
     z-index: 10000;
   }
   @keyframes pracPulse{
-    from{ transform:scale(.92); opacity:.65; }
-    to  { transform:scale(1.05); opacity:1; }
+    from{ transform:scale(.92); opacity:.7; }
+    to  { transform:scale(1.04); opacity:1; }
   }
+
 
   /* Practice-only fullscreen overlay */
   #go-zoom-overlay-prac{
@@ -650,16 +653,38 @@ window.addEventListener('go:prefs-changed', function(e){
       hintEl = null;
       try { redraw(); } catch(e){}
     }
-    function positionHintEl(){
+       function positionHintEl(){
       if (!hintXY || !board || !hintEl) return;
-      var px = getXcss(hintXY.x), py = getYcss(hintXY.y);
-      var r  = board.stoneRadius;
-      var d  = Math.round(r*2*0.95);
-      hintEl.style.width  = d+'px';
-      hintEl.style.height = d+'px';
-      hintEl.style.left   = Math.round(px - d/2)+'px';
-      hintEl.style.top    = Math.round(py - d/2)+'px';
+
+      // Canvas → CSS scale factor
+      var scale = canvasCssScale();
+
+      // Center of the intersection in CSS pixels
+      var px = getXcss(hintXY.x);
+      var py = getYcss(hintXY.y);
+
+      // Stone radius in CSS pixels
+      var r = (board.stoneRadius || 0) * scale;
+
+      // Fallback if stoneRadius is not ready for some reason
+      if (!r) {
+        try {
+          var dx = (board.getX(1) - board.getX(0)) * scale;
+          r = dx * 0.5;
+        } catch(_) {
+          r = 12; // safe default
+        }
+      }
+
+      // Diameter: about same as the stone, slight extra for the ring
+      var d = Math.round(r * 2 * 1.02);
+
+      hintEl.style.width  = d + 'px';
+      hintEl.style.height = d + 'px';
+      hintEl.style.left   = Math.round(px - d / 2) + 'px';
+      hintEl.style.top    = Math.round(py - d / 2) + 'px';
     }
+
     function showHintAt(x,y){
       hintXY = {x:x, y:y};
       forceHintMarker = true;
