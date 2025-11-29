@@ -200,54 +200,62 @@ if (!window.StoneSFX) {
     return (t || 'free').toLowerCase() === 'pro';
   }
 
-  /* ===== Run cap (Start + Retry), respects plan ===== */
-  const DEFAULT_RUN_LIMIT = 2;
+    /* ===== Run cap (Start + Retry)
+     - Free: 2 runs per browser session
+     - Pro:  unlimited
+  ================================= */
+  const RUN_LIMIT_FREE = 2;
   const RUNS_KEY = 'go:drill_runs_session_count';
 
   function getRunLimit(){
-    try{
-      if (window.GoLimits && typeof window.GoLimits.get === 'function'){
-        var lim = window.GoLimits.get();
-        if (lim && lim.drills){
-          if (typeof lim.drills.triesPerDay === 'number'){
-            if (lim.drills.triesPerDay === Number.POSITIVE_INFINITY) return Infinity;
-            return Math.max(0, lim.drills.triesPerDay|0);
-          }
-          if (typeof lim.drills.runLimit === 'number'){
-            return Math.max(0, lim.drills.runLimit|0);
-          }
-        }
-      }
-    }catch(e){}
-    if (isPro()) return Infinity;
-    return DEFAULT_RUN_LIMIT;
+    // Pro → unlimited, Free → fixed cap
+    return isPro() ? Infinity : RUN_LIMIT_FREE;
   }
 
   function getRuns(){
-    try { return parseInt(sessionStorage.getItem(RUNS_KEY) || '0', 10) || 0; }
-    catch(e){ return 0; }
+    try {
+      return parseInt(sessionStorage.getItem(RUNS_KEY) || '0', 10) || 0;
+    } catch(e){
+      return 0;
+    }
   }
+
+  function setRuns(n){
+    try {
+      sessionStorage.setItem(RUNS_KEY, String(Math.max(0, n | 0)));
+    } catch(e){}
+  }
+
   function canStart(){
-    var limit = getRunLimit();
-    if (!isFinite(limit)) return true;     // unlimited for Pro
-    return getRuns() < limit;
+    const limit = getRunLimit();
+    if (!Number.isFinite(limit)) return true;    // Pro: always allowed
+    return getRuns() < limit;                    // Free: compare vs 2
   }
+
   function incRuns(){
-    var limit = getRunLimit();
-    if (!isFinite(limit)) return;          // don’t count Pro runs
-    try { sessionStorage.setItem(RUNS_KEY, String(getRuns()+1)); } catch(e){}
+    const limit = getRunLimit();
+    if (!Number.isFinite(limit)) return;         // Pro: don't count runs
+    setRuns(getRuns() + 1);
   }
+
   function runsLeft(){
-    var limit = getRunLimit();
-    if (!isFinite(limit)) return Infinity;
-    var left = limit - getRuns();
-    return left < 0 ? 0 : left;
+    const limit = getRunLimit();
+    if (!Number.isFinite(limit)) return Infinity;
+    return Math.max(0, limit - getRuns());
   }
+
 
   // NEW overlay references
   const capM   = document.getElementById('drill-cap');
   const capOK  = document.getElementById('drill-cap-ok');
-  function showCapMsg(){ if (capM){ capM.style.display = 'flex'; } }
+  function showCapMsg(){
+    if (capM){
+      capM.style.display = 'flex';
+    } else {
+      alert('You’ve reached your current drills limit.');
+    }
+  }
+
   if (capOK){
     capOK.addEventListener('click', ()=> capM.style.display='none');
     if (capM){
