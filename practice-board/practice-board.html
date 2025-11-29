@@ -26,7 +26,7 @@
   <!-- WGo (local) -->
   <script src="../lib/wgo.min.js"></script>
 </head>
-<body class="practice-center">
+<body>
 
 <noscript>
   <p>
@@ -36,7 +36,6 @@
 </noscript>
 
 <!-- Practice Board (standalone page) -->
-<div id="practice-shell">
 <div id="go-board-prac-wrap" data-hidden="1" style="width:100%;max-width:720px;margin:0 auto;box-sizing:border-box;">
   <!-- Practice meters (Free plan) -->
   <div id="prac-meters" aria-live="polite" style="display:none;">
@@ -44,7 +43,6 @@
       <span class="meter-label">Lives</span>
       <div id="meter-lives" class="stones" role="img" aria-label="Lives remaining"></div>
     </div>
-</div>
     <div class="meter-row" id="row-hints">
       <span class="meter-label">Hints</span>
       <span id="meter-hints" class="hints-num" role="text">3</span>
@@ -413,31 +411,6 @@
 
   .mc-btn-secondary{
     background:rgba(15,23,42,.85);
-  }
-</style>
-<style>
-  /* Let the page body just hold the background */
-  body.practice-center{
-    margin: 0;
-    padding: 0;
-  }
-
-  /* Vertically center the practice board on this page */
-  #practice-shell{
-    min-height: 100vh;
-    display: flex;
-    flex-direction: column;
-    align-items: center;      /* horizontal centering of the board */
-    justify-content: center;  /* vertical centering in viewport */
-    padding: 16px 0 24px;
-    box-sizing: border-box;
-  }
-
-  /* On short screens, keep it nearer the top so it doesn't feel cramped */
-  @media (max-height: 720px){
-    #practice-shell{
-      justify-content: flex-start;
-    }
   }
 </style>
 
@@ -2103,3 +2076,6 @@ window.PracticeBoard = {
 
 </body>
 </html>
+
+
+
