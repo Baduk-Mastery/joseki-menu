@@ -1333,7 +1333,7 @@ function animateTo(targetScale, pxWorld, pyWorld, sxTarget, syTarget, onDone){
 }
 
 
-function centerZoomAtGrid(i, j, factor, tapLocalX, tapLocalY){
+function centerZoomAtGrid(i, j, factor, tapClientX, tapClientY){
   const targetScale = Math.max(minScale, Math.min(maxScale, scale * factor));
 
   // Board coordinates of this grid point at current scale
@@ -1342,34 +1342,31 @@ function centerZoomAtGrid(i, j, factor, tapLocalX, tapLocalY){
   const px_world = px_curr / scale;
   const py_world = py_curr / scale;
 
+  // Default: center; if we know the tap position, keep it under the tap
   const rect = mount.getBoundingClientRect();
-  // Fallback: center if we don't know the tap position
   let sx_target = rect.width  / 2;
   let sy_target = rect.height / 2;
 
-  // If we have board-local tap coords, use them directly (no rect.left/top)
-  if (typeof tapLocalX === 'number' && typeof tapLocalY === 'number'){
-    sx_target = Math.max(0, Math.min(tapLocalX, rect.width));
-    sy_target = Math.max(0, Math.min(tapLocalY, rect.height));
+  if (typeof tapClientX === 'number' && typeof tapClientY === 'number'){
+    sx_target = tapClientX - rect.left;
+    sy_target = tapClientY - rect.top;
+    sx_target = Math.max(0, Math.min(sx_target, rect.width));
+    sy_target = Math.max(0, Math.min(sy_target, rect.height));
   }
 
+  // Now animate with the anchor locked to (sx_target, sy_target)
   animateTo(targetScale, px_world, py_world, sx_target, sy_target);
 }
 
-    function enterFullscreenAtGrid(i, j, tapClientX, tapClientY){
-      if (!zoomEnabled) return;
+     function enterFullscreenAtGrid(i, j, tapClientX, tapClientY){
       if (isFullscreen) return;
-
       ensureOverlay();
       prevOverflow = document.documentElement.style.overflow || "";
       document.documentElement.style.overflow = 'hidden';
 
-      // Leave the centered wrapper in place and move only the board.
       returnAnchor = document.createElement('div');
       returnAnchor.style.display = 'none';
-      if (mount.parentNode) {
-        mount.parentNode.insertBefore(returnAnchor, mount);
-      }
+      mount.parentNode.insertBefore(returnAnchor, mount);
 
       stage.appendChild(mount);
       overlay.style.display = 'flex';
@@ -1377,53 +1374,42 @@ function centerZoomAtGrid(i, j, factor, tapLocalX, tapLocalY){
       mount.classList.add('is-fullscreen');
       isFullscreen = true;
 
-      // IMPORTANT: do NOT change baseW here any more.
-      // We keep the same logical board size that the centered layout uses.
-      resetViewLocal();  // scale = 1, offsets = 0 for the existing baseW
+
+      const vwFS = window.innerWidth || document.documentElement.clientWidth || 800;
+      const vhFS = window.innerHeight || document.documentElement.clientHeight || 800;
+      baseW = Math.floor(Math.min(vwFS, vhFS));
+      if (baseW % 2) baseW--;
+      resetViewLocal();
 
       requestAnimationFrame(function(){
-        const vwFS = window.innerWidth  || document.documentElement.clientWidth  || baseW || 1;
-        const vhFS = window.innerHeight || document.documentElement.clientHeight || baseW || 1;
-        const needToCover   = Math.max(vwFS, vhFS) / (baseW || 1);
+        const {vw, vh} = viewportSize();
+        const needToCover   = Math.max(vw, vh) / baseW;
         const initialFactor = Math.max(1.8, needToCover + 0.02);
         centerZoomAtGrid(i, j, initialFactor, tapClientX, tapClientY);
       });
     }
 
 
-    // Smooth exit from fullscreen; if skipReset is true we don't call resetViewLocal()
-    function exitFullscreen(skipReset){
+    function exitFullscreen(){
       mount.classList.remove('is-fullscreen');
       if (!isFullscreen) return;
-
-      // Only do a hard reset when we're NOT coming from smoothZoomOutAndExit
-      if (!skipReset){
-        resetViewLocal(); // sets scale=1, offsets=0 and applies transform for fullscreen baseW
-      }
-
-      // Move board back into its normal wrapper
+      resetViewLocal();
       if (returnAnchor && returnAnchor.parentNode){
         returnAnchor.parentNode.insertBefore(mount, returnAnchor);
         returnAnchor.parentNode.removeChild(returnAnchor);
         returnAnchor = null;
       }
-
-      mount.style.width  = '';
+      mount.style.width = '';
       mount.style.height = '';
-
+      if (overlay) overlay.style.display = 'none';
+      if (zoomExitBtn) zoomExitBtn.style.display = 'none';
       isFullscreen = false;
       document.documentElement.style.overflow = prevOverflow;
-
-      // Re-fit the board in the centered container *before* the overlay disappears
       fitBoard();
-
-      // Now hide the dark overlay
-      if (overlay) overlay.style.display = 'none';
 
       if (typeof refreshLivesUI  === 'function') refreshLivesUI();
       if (typeof refreshHintsUI  === 'function') refreshHintsUI();
     }
-
 
     var isPanning = false, panStart = null, activePointerId = null,
     tapStart = null, suppressNextBoardClick = false;
@@ -1498,11 +1484,8 @@ mount.addEventListener('pointerdown', function(e){
     y: e.clientY,
     t: performance.now(),
     gridI: bestI,
-    gridJ: bestJ,
-    localX: sx,   // NEW: position inside the board
-    localY: sy    // NEW: position inside the board
+    gridJ: bestJ
   };
-
 
   beginPan(e);
 }, {passive:false});
@@ -1527,8 +1510,8 @@ mount.addEventListener('pointerup', function(e){
 
   const gi = tapStart.gridI;
   const gj = tapStart.gridJ;
-  const tapLocalX = tapStart.localX;  // NEW
-  const tapLocalY = tapStart.localY;  // NEW
+  const tapClientX = tapStart.x;
+  const tapClientY = tapStart.y;
 
   tapStart = null;
   endPan(e);
@@ -1542,9 +1525,9 @@ mount.addEventListener('pointerup', function(e){
     if (scale === 1 && !isFullscreen){
       // First tap: just zoom in, no stone yet.
       suppressNextBoardClick = true;
-      // Pass board-local coords instead of clientX/Y:
-      enterFullscreenAtGrid(gi, gj, tapLocalX, tapLocalY);
+      enterFullscreenAtGrid(gi, gj, tapClientX, tapClientY);
     } else {
+      // Already zoomed/fullscreen: treat as a real board tap at (gi, gj)
       suppressNextBoardClick = false;
       try { handlePracticeClick(gi, gj); } catch(_) {}
     }
@@ -1574,23 +1557,29 @@ mount.addEventListener('pointercancel', function(e){
     };
 
     function fitBoard(){
-      // Always measure the original centered wrapper, even while the board
-      // itself is temporarily inside the fullscreen overlay. This keeps one
-      // consistent "home" board size (baseW), so zoom-out has no jump.
-      var wrapW = wrap.getBoundingClientRect().width || wrap.clientWidth || 400;
-      var cs    = getComputedStyle(wrap);
-      var padX  = (parseFloat(cs.paddingLeft) || 0) + (parseFloat(cs.paddingRight) || 0);
-      var w     = Math.max(0, wrapW - padX);
-
-      w = Math.floor(w);
-      if (w % 2) w--;
-      if (w < 2) w = 2;
-      baseW = w;
-
-      // applyPanAndSize will handle mount width/height depending on isFullscreen
+      if (isFullscreen){
+        const vwFS = window.innerWidth || document.documentElement.clientWidth || 800;
+        const vhFS = window.innerHeight || document.documentElement.clientHeight || 800;
+        baseW = Math.floor(Math.min(vwFS, vhFS));
+        if (baseW % 2) baseW--;
+        mount.style.width  = '100vw';
+        mount.style.height = '100vh';
+      } else {
+        var w = mount.getBoundingClientRect().width;
+        if (!w) {
+          var cs   = getComputedStyle(wrap);
+          var padX = (parseFloat(cs.paddingLeft) || 0) + (parseFloat(cs.paddingRight) || 0);
+          var wrapW = wrap.getBoundingClientRect().width || wrap.clientWidth || 400;
+          w = Math.max(0, wrapW - padX);
+        }
+        w = Math.floor(w);
+        if (w % 2) w--;
+        baseW = w;
+        mount.style.width  = '';
+        mount.style.height = baseW + 'px';
+      }
       applyPanAndSize(true);
     }
-
     function refitSoon(){ fitBoard(); setTimeout(fitBoard,60); setTimeout(fitBoard,180); setTimeout(fitBoard,400); }
     window.addEventListener('resize', fitBoard);
     window.addEventListener('orientationchange', () => setTimeout(fitBoard,200));
@@ -1852,11 +1841,9 @@ function smoothZoomOutAndExit(){
       applyPanAndSize(true);
 
       // If we were in fullscreen, now leave it
-      // true = skip extra reset, we already animated back to scale 1 / centered
       if (isFullscreen){
-        exitFullscreen(true);
+        exitFullscreen();
       }
-
     }
   }
 
@@ -2172,6 +2159,8 @@ window.PracticeBoard = {
 
 </body>
 </html>
+
+
 
 
 
