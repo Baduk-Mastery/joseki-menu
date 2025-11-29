@@ -26,7 +26,7 @@
   <!-- WGo (local) -->
   <script src="../lib/wgo.min.js"></script>
 </head>
-<body>
+<body class="practice-center">
 
 <noscript>
   <p>
@@ -413,6 +413,26 @@
     background:rgba(15,23,42,.85);
   }
 </style>
+<style>
+  /* Center the practice board vertically on this page */
+  body.practice-center{
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;   /* vertical centering */
+    padding: 16px 0 24px;
+    box-sizing: border-box;
+  }
+
+  /* On short screens, keep it nearer the top so it doesn't feel cramped */
+  @media (max-height: 720px){
+    body.practice-center{
+      justify-content: flex-start;
+    }
+  }
+</style>
+
 
 <!-- Shared Go prefs (same key as Joseki board + Settings) -->
 <script>
