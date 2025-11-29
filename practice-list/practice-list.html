@@ -201,6 +201,14 @@
       0 1px 0 rgba(120,60,20,.9),
       0 4px 8px rgba(0,0,0,.55);
   }
+/* Slimmer header buttons (Back + Favorites) */
+#practice-overlay .s-header .s-back,
+#practice-overlay .s-header .s-fav{
+  padding:6px 12px;
+  font-size:14px;
+  border-radius:8px;
+}
+
 
   /* Star / favorite button: same design, compact square */
   .fav-toggle{
@@ -305,6 +313,11 @@
 
   .prac-cta{
     margin-top:auto; display:flex; align-items:center; gap:8px;
+  }
+  /* Make the Open button fill the available width inside the card meta */
+  .prac-cta .open-btn{
+    flex:1 1 auto;
+    justify-content:center;
   }
 
   .level-grid{
@@ -1230,7 +1243,7 @@
 
       title.textContent=`First two: ${t1} → ${t2}`;
       desc.textContent  = `${cat.lineIdx.length} variation${cat.lineIdx.length>1?'s':''} (≥ ${MIN_MOVES} moves)`;
-      cta.innerHTML     = '<span class="s-btn">Open</span>';
+cta.innerHTML     = '<span class="s-btn open-btn">Open</span>';
 
       meta.appendChild(title);
       meta.appendChild(desc);
