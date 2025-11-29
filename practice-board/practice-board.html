@@ -256,30 +256,36 @@
     touch-action:none;
   }
   /* Small zoom-out square (visible only while zoomed/fullscreen) */
+    /* Small zoom-out square (bigger, like in screenshot) */
   #go-zoom-exit-prac{
     position:fixed;
     left:14px;
     bottom:14px;
-    width:30px;
-    height:30px;
-    border-radius:7px;
-    background:rgba(148,163,184,.35); /* slightly grey & transparent */
+
+    width:60px;        /* wider */
+    height:36px;       /* a bit taller */
+    border-radius:9px;
+
+    background:rgba(148,163,184,.35);
     border:1px solid rgba(148,163,184,.85);
     box-shadow:0 6px 16px rgba(0,0,0,.55);
-    display:none;                       /* toggled in JS */
+
+    display:none;      /* toggled in JS */
     cursor:pointer;
     z-index:99999;
     backdrop-filter:blur(2px);
     -webkit-tap-highlight-color:transparent;
+
     color:#e5e7eb;
     font-size:18px;
     font-weight:600;
-    line-height:30px;
+    line-height:36px;  /* vertical centering for the “x” */
     text-align:center;
   }
   #go-zoom-exit-prac::before{
-    content:"×"; /* small hint that it closes zoom */
+    content:"×";
   }
+
 
   /* Board drop shadow */
   #go-board-prac{
