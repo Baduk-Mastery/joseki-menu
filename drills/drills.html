@@ -436,12 +436,13 @@
     }, true);
   });
 
-startBtn.addEventListener('click', function(e){
-  e.stopPropagation();
-  e.preventDefault();
-  window.location.href = '../drills-board/drills-board.html';
-});
-
+  // Start button now always calls startDrillNow(), which handles both
+  // Bubble-style inline DrillBoard and the new drills-board.html page.
+  startBtn.addEventListener('click', function(e){
+    e.stopPropagation();
+    e.preventDefault();
+    startDrillNow();
+  });
 
   /* Notice (centered) */
   var notice     = root.querySelector('#drills-notice');
@@ -1395,16 +1396,31 @@ startBtn.addEventListener('click', function(e){
     if (e.key === 'go_favorites'  && state.view === 'fav') buildFavoritesList();
   });
 
-  /* PRO unlimited runs (same behavior as Bubble; no separate board page yet) */
+  /* Start Drills:
+     - If DrillBoard is present on this page (Bubble-style), use it.
+     - Otherwise, redirect to the dedicated drills-board.html page (Vercel). */
   function startDrillNow(){
+    // Close the overlay if open
     try{
       if (window.GoDrills && typeof window.GoDrills.close === 'function') GoDrills.close();
-      var cap = document.getElementById('drill-cap'); if (cap) cap.style.display='none';
+    }catch(_){}
+
+    // Bubble-style inline DrillBoard (original behavior)
+    try{
+      var cap = document.getElementById('drill-cap');
+      if (cap) cap.style.display='none';
       if (window.DrillBoard && typeof window.DrillBoard.load === 'function'){
         DrillBoard.load(null, { perJoseki: 3 });
+        return;
       }
     }catch(_){}
+
+    // Static/Vercel: go to dedicated board page
+    try{
+      window.location.href = '../drills-board/drills-board.html';
+    }catch(_){}
   }
+
   function captureProStart(e){
     if (!isPro()) return;
     if (state.mode !== 'complete') return;
@@ -1421,6 +1437,7 @@ startBtn.addEventListener('click', function(e){
     try{ var done = document.getElementById('drill-done'); if (done) done.style.display='none'; }catch(_){}
     startDrillNow();
   }
+
   document.addEventListener('click', function(e){
     var start = e.target && e.target.closest ? e.target.closest('#drills-start') : null;
     if (start) captureProStart(e);
@@ -1461,6 +1478,3 @@ startBtn.addEventListener('click', function(e){
 
 </body>
 </html>
-
-
-
