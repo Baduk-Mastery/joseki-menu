@@ -5,19 +5,41 @@
   <title>Joseki Master – Drills</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <style>
-    html, body {
-      margin: 0;
-      padding: 0;
-      min-height: 100%;
-      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      background: radial-gradient(circle at top, #020617 0, #000 55%, #020617 100%);
-      color: #e6f3ff;
+    html, body{
+      margin:0;
+      padding:0;
+      min-height:100%;
+      font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+
+      /* Prevent white flash / viewport bounce */
+      background:#000;
+      overscroll-behavior:none;
     }
   </style>
 </head>
 <body>
 
-<!-- ============== DRILLS (Bubble HTML element content) ============== -->
+<noscript>
+  <p>
+    JavaScript is required to use Drills.
+    <a href="../joseki-menu/index.html">Back to menu</a>
+  </p>
+</noscript>
+
+<!-- Simple global menu bridge for back navigation -->
+<script>
+  window.GoMenu = window.GoMenu || {
+    open: function(){
+      // From /drills/drills.html go back to main menu
+      window.location.href = "../joseki-menu/index.html";
+    },
+    close: function(){
+      // No-op on this page
+    }
+  };
+</script>
+
+<!-- ============== DRILLS ROOT ============== -->
 <div id="drills-root">
   <!-- Drills overlay -->
   <div id="drills-overlay" aria-modal="true" role="dialog" style="display:none">
@@ -27,7 +49,7 @@
         <h1 class="s-title">Drills</h1>
       </div>
 
-      <!-- NEW: Mode chooser (first layer) -->
+      <!-- Mode chooser (first layer) -->
       <div id="drills-mode-view" style="display:none">
         <div class="s-card info" style="margin-top:6px">
           <div class="info-title">Choose a mode</div>
@@ -54,7 +76,7 @@
       <div class="s-card info" id="drills-intro">
         <div class="info-title">How Complete drills work</div>
         <div class="info-desc">
-         Complete drills drop you into a random point of each selected joseki/pattern (10+ moves only). Three drills per joseki, with random corner and color. Your task: finish the sequence correctly.
+          Complete drills drop you into a random point of each selected joseki/pattern (10+ moves only). Three drills per joseki, with random corner and color. Your task: finish the sequence correctly.
         </div>
       </div>
 
@@ -123,7 +145,7 @@
     </div>
   </div>
 
-  <!-- Centered notice (OK-only), matching "My Patterns" notice look -->
+  <!-- Centered notice (OK-only) -->
   <div id="drills-notice" role="alert" aria-live="polite" style="display:none">
     <div class="s-inner">
       <div class="s-card drills-notice-card">
@@ -140,11 +162,13 @@
 <style>
   /* Scope to this element */
   #drills-root{
-    --wood:url('https://3d85c7a311526e02aeeeb19e952d0c09.cdn.bubble.io/f1755870506985x437178801728222500/wood.jpg');
+    /* Use your local wood texture (same as other pages) */
+    --wood:url('../img/wood.jpg');
     --maxw:720px;
     color:#e6f3ff;
   }
-  /* Overlay shell (match Practice/My Patterns) */
+
+  /* Overlay shell */
   #drills-root #drills-overlay{
     position:fixed; inset:0; z-index:100000; display:none;
     align-items:flex-start; justify-content:center;
@@ -153,6 +177,10 @@
       linear-gradient(rgba(0,0,0,.35), rgba(0,0,0,.45)),
       var(--wood);
     background-size:cover; background-position:center;
+
+    /* Keep scroll bounce inside overlay, avoid white flashes */
+    overscroll-behavior:contain;
+    background-color:#000;
   }
   #drills-root .s-inner{
     width:min(92vw,var(--maxw)); padding:16px 24px 22px; text-align:left; margin:0 auto; position:relative;
@@ -160,7 +188,9 @@
   #drills-root .s-header{
     display:grid; grid-template-columns:auto 1fr; align-items:center; column-gap:14px; margin:6px 0 10px;
   }
-  #drills-root .s-title{ margin:0; font-size:24px; line-height:1.15; font-weight:800; text-shadow:0 1px 2px rgba(0,0,0,.35); }
+  #drills-root .s-title{
+    margin:0; font-size:24px; line-height:1.15; font-weight:800; text-shadow:0 1px 2px rgba(0,0,0,.35);
+  }
 
   /* Buttons + cards (shared look) */
   #drills-root .s-back,
@@ -206,7 +236,7 @@
   #drills-root .drill-desc, #drills-root .joseki-desc{ display:none !important; }
   #drills-root .drill-cta{ margin-top:10px; display:flex; flex-wrap:wrap; gap:8px; }
 
-  /* ===== Library, Favorites & Own lists ===== */
+  /* Lists (Library, Favorites, Own) */
   #drills-root .drill-list-grid{
     display:grid; grid-template-columns:1fr; gap:12px; margin-top:12px;
   }
@@ -219,7 +249,7 @@
   }
   #drills-root .joseki-card:active{ transform:translateY(1px); }
 
-  /* UPDATED: thumbnail look matches Practice (wood + canvas board) */
+  /* Thumbnail (matches Practice) */
   #drills-root .drill-thumb{
     width:132px; height:132px; border-radius:10px; overflow:hidden; flex:none;
     position: relative;
@@ -235,7 +265,9 @@
     display:block; pointer-events:none;
   }
 
-  #drills-root .joseki-meta{ flex:1; min-width:0; display:flex; flex-direction:column; }
+  #drills-root .joseki-meta{
+    flex:1; min-width:0; display:flex; flex-direction:column;
+  }
   #drills-root .joseki-title{ font-weight:800; font-size:18px; line-height:1.3; }
 
   /* Tickbox */
@@ -322,7 +354,7 @@
     #drills-root .s-inner{ padding:16px 12px 22px; }
   }
 
-  /* === Mode cards: push the button to the right === */
+  /* Mode cards: push the button to the right */
   #drills-root #drills-mode-view .drill-meta{
     display:flex; align-items:center; gap:12px;
   }
@@ -345,7 +377,7 @@
   var titleEl   = root.querySelector('.s-title');
   var introCard = root.querySelector('#drills-intro');
 
-  /* NEW: Mode view elements */
+  /* Mode view elements */
   var modeView  = root.querySelector('#drills-mode-view');
   var modeGrid  = root.querySelector('#drills-mode-grid');
 
@@ -379,7 +411,7 @@
   var ownClear  = root.querySelector('#drill-own-clear');
   var ownCount  = root.querySelector('#drill-own-count');
 
-  /* Start Drill floating button (initially hidden) */
+  /* Start Drill floating button */
   var startBtn = document.createElement('button');
   startBtn.id = 'drills-start';
   startBtn.type = 'button';
@@ -417,7 +449,7 @@
   noticeOk && noticeOk.addEventListener('click', hideNotice);
   window.addEventListener('keydown', function(e){ if (e.key==='Escape' && root.classList.contains('notice-open')) hideNotice(); });
 
-  /* ===== State ===== */
+  /* State */
   var state = {
     mode:'complete', // 'complete' | 'blitz'
     view:'mode',
@@ -439,7 +471,6 @@
       FAV_SEL_KEY = 'drills_blitz_fav_selection';
       OWN_SEL_KEY = 'drills_blitz_own_selection_ids';
       MAX_TOTAL = 1; // single select, plans ignored
-      // Tweak intro content
       var t = introCard.querySelector('.info-title');
       var d = introCard.querySelector('.info-desc');
       if (t) t.textContent = 'How Blitz drills work';
@@ -449,7 +480,6 @@
       LIB_SEL_KEY = 'drills_lib_selection';
       FAV_SEL_KEY = 'drills_fav_selection';
       OWN_SEL_KEY = 'drills_own_selection_ids';
-      // restore plan-based cap for Complete
       setLimitFromPlan();
       var t2 = introCard.querySelector('.info-title');
       var d2 = introCard.querySelector('.info-desc');
@@ -470,7 +500,7 @@
     state.selectedOwnIds = loadSelection(OWN_SEL_KEY);
   }
 
-  /* ====== PLAN LIMITS via Plans API (GoLimits) — ignored for Blitz ====== */
+  /* Plan limits */
   var Tier = window.Tier || {
     get: function(){ try { return (localStorage.getItem('go_tier') || 'free').toLowerCase(); } catch(_) { return 'free'; } }
   };
@@ -486,7 +516,7 @@
 
   var MAX_TOTAL = 10;
   function setLimitFromPlan(){
-    if (state.mode === 'blitz'){ // blitz ignores plans
+    if (state.mode === 'blitz'){
       MAX_TOTAL = 1;
     } else {
       try{
@@ -509,7 +539,7 @@
   }
   setLimitFromPlan();
 
-  /* ===== Overlay API + overlayOpen gating ===== */
+  /* Overlay API */
   var overlayOpen = false;
 
   function showMode(){
@@ -543,7 +573,7 @@
     startBtn.style.display='none';
     startBtn.setAttribute('aria-hidden','true');
     startBtn.disabled = true;
-    try { window.dispatchEvent(new Event('resize')); } catch(_) {}
+    try { window.dispatchEvent(new Event('resize')); } catch(_){}
   }
   window.GoDrills = {
     open, close, __ready:true,
@@ -560,7 +590,7 @@
     }
   };
 
-  /* ===== Navigation helpers ===== */
+  /* Navigation helpers */
   function showOptions(whichMode){
     setMode(whichMode || 'complete');
     state.view='options';
@@ -631,9 +661,14 @@
     buildOwnList();
   }
 
-  /* Menu button (optional) */
+  /* Optional menu button hook (not used on this page, but kept for compatibility) */
   var menuBtn = document.getElementById('menu-drills');
-  if (menuBtn){ menuBtn.addEventListener('click', function(){ if (window.GoMenu?.close) window.GoMenu.close(); open(); }); }
+  if (menuBtn){
+    menuBtn.addEventListener('click', function(){
+      if (window.GoMenu && typeof window.GoMenu.close === 'function') window.GoMenu.close();
+      open();
+    });
+  }
 
   /* Back button behavior */
   backBtn && backBtn.addEventListener('click', function(){
@@ -655,11 +690,11 @@
     }
     if (state.view === 'mode'){
       close();
-      if (window.GoMenu?.open) window.GoMenu.open();
+      if (window.GoMenu && typeof window.GoMenu.open === 'function') window.GoMenu.open();
       return;
     }
     close();
-    if (window.GoMenu?.open) window.GoMenu.open();
+    if (window.GoMenu && typeof window.GoMenu.open === 'function') window.GoMenu.open();
   });
 
   /* Mode click -> routes */
@@ -681,9 +716,10 @@
     else if (type === 'own'){ showOwn(); }
   });
 
-  /* ===== Common helpers (SGF + thumbs + keys) ===== */
-  var SGF_URL = "https://3d85c7a311526e02aeeeb19e952d0c09.cdn.bubble.io/f1756283064420x481184906507390100/game%20%281%29.sgf";
-  var MIN_MOVES = 10; // drills rule
+  /* SGF + thumbnails + keys */
+  /* Update this path to your drills SGF file if needed */
+  var SGF_URL = "../sgf/library-1.sgf";
+  var MIN_MOVES = 10;
 
   function rb(str,i){ let out='',k=i; while(k<str.length){ const ch=str[k++]; if(ch==='\\'){ if(k<str.length) out+=str[k++]; continue; } if(ch===']') break; out+=ch; } return {t:out,n:k}; }
   function parseTree(str,i){
@@ -741,7 +777,7 @@
     return `${size}|${seq}`;
   }
 
-  /* ===== Canvas thumbnail renderer (matches Practice) ===== */
+  /* Canvas thumbnails */
   function hoshiPoints(size){
     if (size === 19) return [3,9,15];
     if (size === 13) return [3,6,9];
@@ -913,13 +949,13 @@
     drawBoardThumb(el, size, stones, { crop:true });
   }
 
-  /* ===== LIMIT logic ===== */
+  /* LIMIT logic */
   function totalSelectedCount(){
     var uniqueKeys = new Set([...state.selectedLib, ...state.selectedFav]);
     return uniqueKeys.size + state.selectedOwnIds.size;
   }
 
-  /* ===== Tick helpers ===== */
+  /* Tick helpers */
   function escAttr(v){ return String(v).replace(/"/g,'\\"'); }
   function isOnLineKey(key){ return state.selectedLib.has(key) || state.selectedFav.has(key); }
   function setTickForLineKey(key){
@@ -931,10 +967,9 @@
     root.querySelectorAll('.joseki-card[data-own-id="'+escAttr(id)+'"] .tickbox').forEach(function(t){ t.setAttribute('aria-checked', on); });
   }
 
-  /* ===== Select/Deselect ===== */
+  /* Select/Deselect */
   function maybeAutoReplaceIfBlitz(){
     if (state.mode !== 'blitz') return false;
-    // If something is already selected, clear it to allow selecting another one (smooth UX)
     if (totalSelectedCount() >= 1){
       clearAllSelections();
       return true;
@@ -1009,7 +1044,7 @@
     } catch(_){}
   }
 
-  /* Clear helpers (clears current mode’s selections only) */
+  /* Clear helpers */
   function clearAllSelections(){
     state.selectedLib.clear();
     state.selectedFav.clear();
@@ -1044,7 +1079,7 @@
     updateLibCount(); updateFavCount(); updateOwnCount();
   }
 
-  /* ===== Library: build, categories, variations ===== */
+  /* Library build and render */
   function updateStartButton(){
     var n = totalSelectedCount();
     var shouldShow = overlayOpen && state.view !== 'mode' && n > 0 && n <= MAX_TOTAL;
@@ -1128,7 +1163,6 @@
       const meta=document.createElement('div'); meta.className='joseki-meta';
       const title=document.createElement('div'); title.className='joseki-title';
 
-      /* NEW: headline shows how many ≥ MIN_MOVES variations are in the category */
       const count = cat.lineIdx.length;
       title.textContent = `${count} variation${count!==1?'s':''} (≥ ${MIN_MOVES} moves)`;
 
@@ -1136,7 +1170,6 @@
       card.appendChild(thumb); card.appendChild(meta);
       libCatsGrid.appendChild(card);
 
-      /* Keep the two-move thumbnail preview */
       renderTwoMoveThumb(thumb, cat.size||19, cat.firstTwo);
       card.addEventListener('click', function(){ showLibCategory(cat.key); });
     });
@@ -1186,10 +1219,10 @@
     });
   }
 
-  /* Clear LIBRARY — clears current mode */
+  /* Clear LIBRARY */
   libClear && libClear.addEventListener('click', clearAllSelections);
 
-  /* ===== Favorites list ===== */
+  /* Favorites */
   const FAV_KEY = 'go_favorites';
   function readFavs(){
     try { return JSON.parse(localStorage.getItem(FAV_KEY) || '{}') || {}; } catch(_){ return {}; }
@@ -1264,10 +1297,10 @@
     updateFavCount();
   }
 
-  /* Clear FAVORITES — clears current mode */
+  /* Clear FAVORITES */
   favClear && favClear.addEventListener('click', clearAllSelections);
 
-  /* ===== My Patterns (OWN) ===== */
+  /* My Patterns (OWN) */
   function updateOwnCount(){
     const n = totalSelectedCount();
     if (ownCount) ownCount.textContent = n + ' / ' + MAX_TOTAL + ' selected';
@@ -1275,7 +1308,7 @@
   }
 
   function buildOwnList(){
-    state.selectedOwnIds = loadSelection(OWN_SEL_KEY); // IDs
+    state.selectedOwnIds = loadSelection(OWN_SEL_KEY);
     ownGrid.innerHTML='';
 
     const items = loadOwnPatterns().filter(p => Array.isArray(p?.moves) && p.moves.length >= MIN_MOVES);
@@ -1343,17 +1376,16 @@
     updateOwnCount();
   }
 
-  /* Clear OWN — clears current mode */
+  /* Clear OWN */
   ownClear && ownClear.addEventListener('click', clearAllSelections);
 
-  /* Live-refresh if localStorage changes from another tab */
+  /* Live-refresh if localStorage changes */
   window.addEventListener('storage', function(e){
     if (e.key === 'go:ownpatterns' && state.view === 'own') buildOwnList();
     if (e.key === 'go_favorites'  && state.view === 'fav') buildFavoritesList();
   });
 
-  /* ========= PRO UNLIMITED RUNS: start/retry bypass =========
-     NOTE: Disabled for Blitz mode (only active in Complete). */
+  /* PRO unlimited runs (same behavior as Bubble; no separate board page yet) */
   function startDrillNow(){
     try{
       if (window.GoDrills && typeof window.GoDrills.close === 'function') GoDrills.close();
@@ -1365,14 +1397,14 @@
   }
   function captureProStart(e){
     if (!isPro()) return;
-    if (state.mode !== 'complete') return; // prevent in Blitz
+    if (state.mode !== 'complete') return;
     if (!e) return;
     e.preventDefault(); e.stopImmediatePropagation(); e.stopPropagation();
     startDrillNow();
   }
   function captureProRetry(e){
     if (!isPro()) return;
-    if (state.mode !== 'complete') return; // prevent in Blitz
+    if (state.mode !== 'complete') return;
     var btn = e && e.target && e.target.closest ? e.target.closest('#drill-done-retry') : null;
     if (!btn) return;
     e.preventDefault(); e.stopImmediatePropagation(); e.stopPropagation();
@@ -1403,12 +1435,18 @@
   }
   setInterval(autoHideCapIfPro, 800);
 
-  // Default to Complete keys; will switch when user taps Blitz
+  /* Default to Complete */
   setMode('complete');
-
-  // Auto-open overlay on this standalone page
-  open();
 })();
+</script>
+
+<!-- Auto-open drills when page loads -->
+<script>
+  window.addEventListener('load', function(){
+    if (window.GoDrills && typeof window.GoDrills.open === 'function'){
+      window.GoDrills.open();
+    }
+  });
 </script>
 
 </body>
