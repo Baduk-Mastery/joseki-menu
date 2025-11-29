@@ -100,7 +100,7 @@
     color:#e6f3ff; -webkit-tap-highlight-color:transparent;
     background-image:
       linear-gradient(rgba(0,0,0,.35), rgba(0,0,0,.45)),
-      url('../img/wood.jpg');
+      url('https://3d85c7a311526e02aeeeb19e952d0c09.cdn.bubble.io/f1755870506985x437178801728222500/wood.jpg');
     background-size:cover; background-position:center;
   }
   #practice-overlay .s-inner, #level-overlay .s-inner{
@@ -128,59 +128,33 @@
     grid-row:2; grid-column:3; justify-self:end;
   }
 
-  /* Buttons (matching practice-board back / favorites / open) */
-  .s-back,
+  .s-back{
+    padding:8px 12px; border-radius:12px; cursor:pointer; font-weight:800; line-height:1;
+    background: rgba(37,99,235,.22); color:#e6f3ff;
+    border:2px solid rgba(37,99,235,.75);
+    box-shadow:0 8px 20px rgba(2,6,23,.45), inset 0 0 0 1px rgba(255,255,255,.08);
+    transition:transform .06s, background .15s, box-shadow .15s;
+  }
+  .s-back:hover{  background: rgba(37,99,235,.26); }
+  .s-back:active{ background: rgba(37,99,235,.32); transform:translateY(1px); }
+
   .s-fav{
-    padding:8px 14px;
-    border-radius:999px;
-    cursor:pointer;
-    font-weight:800;
-    line-height:1;
-    font-size:14px;
+    padding:8px 12px; border-radius:12px; cursor:pointer; font-weight:800; line-height:1;
+    background: rgba(37,99,235,.22); color:#e6f3ff;
+    border:2px solid rgba(37,99,235,.75);
+    box-shadow:0 8px 20px rgba(2,6,23,.45), inset 0 0 0 1px rgba(255,255,255,.08);
+    transition:transform .06s, background .15s, box-shadow .15s;
+  }
+  .s-fav:hover{  background: rgba(37,99,235,.26); }
+  .s-fav:active{ background: rgba(37,99,235,.32); transform:translateY(1px); }
 
-    background: rgba(37,99,235,.22);
-    color:#e6f3ff;
-    border:2px solid rgba(37,99,235,.78);
-    box-shadow:
-      0 8px 20px rgba(2,6,23,.45),
-      inset 0 0 0 1px rgba(255,255,255,.08);
-
-    text-shadow:0 1px 1px rgba(15,23,42,.65);
-    transition:
-      transform .06s,
-      background .15s,
-      box-shadow .15s,
-      filter .12s;
-  }
-  .s-back:hover,
-  .s-fav:hover{
-    background: rgba(37,99,235,.27);
-    filter:brightness(1.05);
-  }
-  .s-back:active,
-  .s-fav:active{
-    background: rgba(37,99,235,.34);
-    transform:translateY(1px);
-    box-shadow:
-      0 4px 14px rgba(2,6,23,.55),
-      inset 0 0 0 1px rgba(255,255,255,.06);
-  }
-
-  .s-title{
-    margin:0;
-    font-size:24px;
-    line-height:1.15;
-    font-weight:800;
-    text-shadow:0 1px 2px rgba(0,0,0,.35);
-  }
+  .s-title{ margin:0; font-size:24px; line-height:1.15; font-weight:800; text-shadow:0 1px 2px rgba(0,0,0,.35); }
 
   .s-card{
-    background: rgba(15,23,42,.60);
-    border:1px solid rgba(148,163,184,.65);
+    background: rgba(37,99,235,.22);
+    border:2px solid rgba(37,99,235,.75);
     border-radius:12px;
-    box-shadow:
-      0 10px 26px rgba(15,23,42,.75),
-      inset 0 0 0 1px rgba(255,255,255,.06);
+    box-shadow:0 8px 20px rgba(2,6,23,.45), inset 0 0 0 1px rgba(255,255,255,.08);
     color:#e6f3ff;
   }
 
@@ -194,122 +168,55 @@
 
   .prac-card{
     display:flex; align-items:stretch; gap:12px; width:100%; text-align:left; padding:10px; cursor:pointer;
-    transition:transform .06s, background .15s, box-shadow .15s, filter .12s;
+    transition:transform .06s, background .15s;
     user-select:none; -webkit-user-select:none;
-  }
-  .prac-card:hover{
-    filter:brightness(1.04);
-    box-shadow:
-      0 14px 30px rgba(15,23,42,.85),
-      inset 0 0 0 1px rgba(255,255,255,.08);
   }
   .prac-card:active{ transform:translateY(1px); }
 
-  /* Thumbnail holders – wood, slightly transparent, a bit darker than menu buttons */
   .prac-thumb{
-    width:132px; height:132px;
-    border-radius:10px;
-    overflow:hidden;
-    flex:none;
+    width:132px; height:132px; border-radius:10px; overflow:hidden; flex:none;
     position: relative;
-
-    background:none;
-    border:1px solid rgba(248,250,252,.45);
-    box-shadow:
-      0 10px 22px rgba(0,0,0,.55),
-      inset 0 0 0 1px rgba(255,255,255,.04);
-  }
-  .prac-thumb::before{
-    content:"";
-    position:absolute;
-    inset:0;
-    border-radius:inherit;
     background-image:
-      linear-gradient(
-        to bottom,
-        rgba(0,0,0,.48),
-        rgba(0,0,0,.72)
-      ),
-      url('../img/wood.jpg');
-    background-size:cover;
-    background-position:center;
-    opacity:0.70; /* a bit less bright than menu buttons (~0.82) */
+      linear-gradient(rgba(0,0,0,.04), rgba(0,0,0,.06)),
+      url('https://3d85c7a311526e02aeeeb19e952d0c09.cdn.bubble.io/f1755870506985x437178801728222500/wood.jpg');
+    background-size:cover; background-position:center;
+    border:2px solid rgba(37,99,235,.65);
+    box-shadow: inset 0 0 0 1px rgba(255,255,255,.06);
   }
   .prac-thumb canvas.prac-canvas{
-    position:absolute; inset:0;
-    width:100%; height:100%;
-    display:block;
-    pointer-events:none;
-    z-index:1;
+    position:absolute; inset:0; width:100%; height:100%;
+    display:block; pointer-events:none;
   }
 
   .prac-meta{
     flex:1; min-width:0; display:flex; flex-direction:column; height:100%;
   }
-  .prac-title{
-    font-weight:800;
-    font-size:18px;
-    line-height:1.3;
-    text-shadow:0 1px 1px rgba(15,23,42,.8);
-  }
-  .prac-desc{
-    margin-top:6px;
-    font-size:13px;
-    line-height:1.5;
-    color:#e6f3ff;
-    opacity:.92;
-  }
+  .prac-title{ font-weight:800; font-size:18px; line-height:1.3; }
+  .prac-desc{ margin-top:6px; font-size:13px; line-height:1.5; color:#e6f3ff; opacity:.92; }
 
   .prac-cta{
     margin-top:auto; display:flex; align-items:center; gap:8px;
   }
-
-  /* “Open / Select / Confirm” chip – same language as back / favorites */
   .s-btn{
-    display:inline-block;
-    padding:8px 13px;
-    border-radius:999px;
-    font-weight:800;
-    font-size:14px;
-    cursor:pointer;
-
+    display:inline-block; padding:10px 12px; border-radius:12px; font-weight:800; font-size:13px; cursor:pointer;
     background: rgba(37,99,235,.22);
-    color:#e6f3ff;
-    border:2px solid rgba(37,99,235,.78);
-    box-shadow:
-      0 8px 20px rgba(2,6,23,.45),
-      inset 0 0 0 1px rgba(255,255,255,.08);
-
-    text-shadow:0 1px 1px rgba(15,23,42,.65);
-    transition:
-      transform .06s,
-      background .15s,
-      box-shadow .15s,
-      filter .12s;
+    color:#e6f3ff; border:2px solid rgba(37,99,235,.75);
+    box-shadow:0 8px 20px rgba(2,6,23,.45), inset 0 0 0 1px rgba(255,255,255,.08);
+    transition:transform .06s, background .15s, box-shadow .15s;
   }
-  .s-btn:hover{
-    background: rgba(37,99,235,.27);
-    filter:brightness(1.05);
-  }
-  .s-btn:active{
-    transform:translateY(1px);
-    background: rgba(37,99,235,.34);
-    box-shadow:
-      0 4px 14px rgba(2,6,23,.55),
-      inset 0 0 0 1px rgba(255,255,255,.06);
-  }
+  .s-btn:active{ transform:translateY(1px); }
 
   .prac-cta .fav-icon{
     display:inline-grid; place-items:center;
     padding:0; margin-left:auto;
-    line-height:1; border-radius:12px;
+    line-height:1; border-radius:10px;
     min-width:34px; min-height:34px;
     font-size:20px;
   }
 
   .s-btn.s-btn-danger{
     background: rgba(220,38,38,.22);
-    border-color: rgba(220,38,38,.78);
+    border-color: rgba(220,38,38,.75);
   }
 
   .fav-toggle[aria-pressed="true"]{
@@ -345,7 +252,7 @@
     pointer-events:auto;
     background-image:
       linear-gradient(rgba(0,0,0,.35), rgba(0,0,0,.45)),
-      url('../img/wood.jpg');
+      url('https://3d85c7a311526e02aeeeb19e952d0c09.cdn.bubble.io/f1755870506985x437178801728222500/wood.jpg');
     background-size:cover; background-position:center;
     border:2px solid rgba(37,99,235,.75);
     border-radius:12px;
@@ -362,40 +269,11 @@
     margin-top:10px; display:flex; gap:10px; justify-content:center; flex-wrap:wrap;
   }
   #practice-overlay.toast-open .s-inner{ pointer-events:none; }
-
-  /* Pro-level toast inside Level overlay */
-  #level-overlay .level-toast{
-    position:fixed; left:50%; top:50%; transform:translate(-50%,-50%);
-    z-index:100002; display:none; pointer-events:none;
-  }
-  #level-overlay .level-toast .level-toast-card{
-    pointer-events:auto;
-    background-image:
-      linear-gradient(rgba(0,0,0,.35), rgba(0,0,0,.45)),
-      url('../img/wood.jpg');
-    background-size:cover; background-position:center;
-    border:2px solid rgba(37,99,235,.75);
-    border-radius:12px;
-    box-shadow:0 8px 20px rgba(2,6,23,.45), inset 0 0 0 1px rgba(255,255,255,.08);
-    padding:10px 12px;
-    min-width:280px; max-width:min(92vw, 420px);
-    max-height:calc(100vh - 32px); overflow:auto;
-    text-shadow:0 1px 2px rgba(0,0,0,.35);
-  }
-  #level-overlay .level-toast .level-toast-text{
-    font-weight:800; font-size:14px; line-height:1.35; color:#e6f3ff;
-  }
-  #level-overlay .level-toast .level-toast-actions{
-    margin-top:10px; display:flex; gap:10px; justify-content:center; flex-wrap:wrap;
-  }
-  #level-overlay.toast-open .s-inner{ pointer-events:none; }
 </style>
 
 <script>
 (function(){
-  // Update this path if your SGF is in a different folder/name
-  const SGF_URL   = "../sgf/library-1.sgf";
-
+  const SGF_URL   = "https://3d85c7a311526e02aeeeb19e952d0c09.cdn.bubble.io/f1756283064420x481184906507390100/game%20%281%29.sgf";
   const MIN_MOVES = 6;  // Only show variations with at least this many moves
 
   const overlay    = document.getElementById('practice-overlay');
@@ -409,13 +287,6 @@
   function isVisible(el){ return el && el.style.display !== 'none'; }
   function setFavHeaderVisible(show){
     if (favHeader) favHeader.style.display = show ? '' : 'none';
-  }
-  const PRACTICE_CFG_KEY = 'go_practice_config';
-
-  function savePracticeConfig(){
-    try {
-      localStorage.setItem(PRACTICE_CFG_KEY, JSON.stringify(window.PracticeConfig || {}));
-    } catch(e){}
   }
 
   function goBackToMenu(){
@@ -473,56 +344,6 @@
     close(){ lvlOverlay.style.display='none'; }
   };
   window.PracticeLevel = LevelUI;
-
-  /* Pro-level toast (in-app notification for locked levels) */
-
-  let proToast = null, proText = null, proLaterBtn = null, proUpgradeBtn = null;
-  function ensureProToast(){
-    if (proToast) return;
-    proToast = document.createElement('div');
-    proToast.className = 'level-toast';
-    proToast.setAttribute('role','alertdialog');
-    proToast.setAttribute('aria-modal','true');
-    proToast.innerHTML =
-      '<div class="s-card level-toast-card">' +
-        '<div class="level-toast-text">Levels 4 and 5 are part of Joseki Master Pro.</div>' +
-        '<div class="level-toast-actions">' +
-          '<button type="button" class="s-btn" id="level-pro-later">Maybe later</button>' +
-          '<button type="button" class="s-btn" id="level-pro-upgrade">View Pro</button>' +
-        '</div>' +
-      '</div>';
-    lvlOverlay.appendChild(proToast);
-
-    proText       = proToast.querySelector('.level-toast-text');
-    proLaterBtn   = proToast.querySelector('#level-pro-later');
-    proUpgradeBtn = proToast.querySelector('#level-pro-upgrade');
-
-    proLaterBtn.addEventListener('click', hideProToast);
-    proUpgradeBtn.addEventListener('click', function(){
-      if (window.GoPlans && typeof window.GoPlans.open === 'function') {
-        window.GoPlans.open();
-      } else if (window.Paywall && typeof Paywall.open === 'function') {
-        Paywall.open();
-      }
-      hideProToast();
-    });
-  }
-  function isProToastOpen(){
-    return !!(proToast && proToast.style.display !== 'none');
-  }
-  function showProToast(){
-    ensureProToast();
-    proToast.style.display = 'block';
-    lvlOverlay.classList.add('toast-open');
-    setTimeout(function(){
-      try { proLaterBtn && proLaterBtn.focus(); } catch(_){}
-    }, 30);
-  }
-  function hideProToast(){
-    if (!proToast) return;
-    proToast.style.display = 'none';
-    lvlOverlay.classList.remove('toast-open');
-  }
 
   /* SGF parsing for thumbnails */
 
@@ -1124,16 +945,12 @@
       moves:  (line.moves || []).map(m => ({ x:m.x, y:m.y, color:m.color }))
     };
 
-    // persist for the Practice Board page
-    savePracticeConfig();
-
     if (lvlOverlay){
       LevelUI.open();
     } else {
       console.log('[Practice] Selected line (no board wired yet):', window.PracticeConfig.selectedLine);
     }
   }
-
 
   /* Build data */
 
@@ -1450,34 +1267,25 @@
   };
 
   lvlOverlay.addEventListener('click', function(e){
-  const card = e.target.closest('.level-card');
-  if (!card) return;
+    const card = e.target.closest('.level-card');
+    if (!card) return;
 
-  if (card.getAttribute('aria-disabled') === 'true'){
-    // Show in-app Pro notification instead of external alert/paywall directly
-    showProToast();
-    return;
-  }
+    if (card.getAttribute('aria-disabled') === 'true'){
+      if (window.GoPlans && typeof window.GoPlans.open === 'function') window.GoPlans.open();
+      else if (window.Paywall && typeof Paywall.open === 'function') window.Paywall.open();
+      else alert('This level is available on Pro.');
+      return;
+    }
 
-  const lvl = parseInt(card.getAttribute('data-level') || '2', 10) || 2;
-  window.PracticeConfig = window.PracticeConfig || {};
-  window.PracticeConfig.level = lvl;
+    const lvl = parseInt(card.getAttribute('data-level') || '2', 10) || 2;
+    window.PracticeConfig = window.PracticeConfig || {};
+    window.PracticeConfig.level = lvl;
 
-  // Persist full config (selectedLine + level)
-  savePracticeConfig();
+    LevelUI.close();
 
-  // Extra safety: only go to board if a line was actually selected
-  if (!window.PracticeConfig.selectedLine){
-    console.warn('[Practice] Level picked but no selectedLine in PracticeConfig; not opening board.');
-    return;
-  }
-
-  // Don’t close overlays here – it causes the flicker back to categories.
-  // Just navigate to the board page; this page will unload anyway.
-  window.location.href = "../practice-board/practice-board.html";
-});
-
-
+    console.log('[Practice] Selected level (no board wired yet):', lvl, window.PracticeConfig);
+    // In the next step we will navigate to the Practice Board page from here.
+  });
 
   backBtn && backBtn.addEventListener('click', ()=>{
     if (overlay.classList.contains('toast-open')){
@@ -1500,10 +1308,6 @@
   window.addEventListener('keydown', (e)=>{
     if (e.key === 'Escape'){
       if (isVisible(lvlOverlay)) {
-        if (isProToastOpen()){
-          hideProToast();
-          return;
-        }
         LevelUI.close();
       } else if (isVisible(overlay)){
         if (overlay.classList.contains('toast-open')) {
@@ -1535,3 +1339,6 @@
 
 </body>
 </html>
+
+
+
