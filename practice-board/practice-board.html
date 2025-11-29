@@ -255,6 +255,31 @@
     display:flex; align-items:center; justify-content:center;
     touch-action:none;
   }
+  /* Small zoom-out square (visible only while zoomed/fullscreen) */
+  #go-zoom-exit-prac{
+    position:fixed;
+    left:14px;
+    bottom:14px;
+    width:30px;
+    height:30px;
+    border-radius:7px;
+    background:rgba(148,163,184,.35); /* slightly grey & transparent */
+    border:1px solid rgba(148,163,184,.85);
+    box-shadow:0 6px 16px rgba(0,0,0,.55);
+    display:none;                       /* toggled in JS */
+    cursor:pointer;
+    z-index:99999;
+    backdrop-filter:blur(2px);
+    -webkit-tap-highlight-color:transparent;
+    color:#e5e7eb;
+    font-size:18px;
+    font-weight:600;
+    line-height:30px;
+    text-align:center;
+  }
+  #go-zoom-exit-prac::before{
+    content:"×"; /* small hint that it closes zoom */
+  }
 
   /* Board drop shadow */
   #go-board-prac{
@@ -1108,8 +1133,9 @@ var isZoomAnimating = false; // new: track when we are animating zoom
 
 
     var isFullscreen = false;
-    var overlay = null, stage = null, returnAnchor = null;
+    var overlay = null, stage = null, returnAnchor = null, zoomExitBtn = null;
     var prevOverflow = "";
+
 
  function ensureZoomLayer(){
   if (zoomLayer) return;
@@ -1137,16 +1163,48 @@ var isZoomAnimating = false; // new: track when we are animating zoom
     ensureZoomLayer();
 
     function ensureOverlay(){
-      if (overlay) return;
+      if (overlay) {
+        stage      = overlay.querySelector('#go-zoom-stage-prac');
+        zoomExitBtn = overlay.querySelector('#go-zoom-exit-prac');
+        if (zoomExitBtn && !zoomExitBtn._bound) {
+          zoomExitBtn._bound = true;
+          zoomExitBtn.addEventListener('click', function(e){
+            e.stopPropagation();
+            smoothZoomOutAndExit();    // zoom out without placing a stone
+          });
+        }
+        return;
+      }
+
       overlay = document.getElementById('go-zoom-overlay-prac');
       if (!overlay){
         overlay = document.createElement('div');
         overlay.id = 'go-zoom-overlay-prac';
-        overlay.innerHTML = '<div id="go-zoom-stage-prac"></div>';
+        overlay.innerHTML =
+          '<div id="go-zoom-stage-prac"></div>' +
+          '<div id="go-zoom-exit-prac" aria-label="Zoom out"></div>';
         document.body.appendChild(overlay);
+      } else {
+        // If overlay exists but button is missing, add it
+        if (!overlay.querySelector('#go-zoom-exit-prac')){
+          var exitDiv = document.createElement('div');
+          exitDiv.id = 'go-zoom-exit-prac';
+          overlay.appendChild(exitDiv);
+        }
       }
-      stage = overlay.querySelector('#go-zoom-stage-prac');
+
+      stage       = overlay.querySelector('#go-zoom-stage-prac');
+      zoomExitBtn = overlay.querySelector('#go-zoom-exit-prac');
+
+      if (zoomExitBtn && !zoomExitBtn._bound){
+        zoomExitBtn._bound = true;
+        zoomExitBtn.addEventListener('click', function(e){
+          e.stopPropagation();
+          smoothZoomOutAndExit();      // use your existing smooth zoom-out
+        });
+      }
     }
+
 
     function viewportSize(){
       if (isFullscreen) {
@@ -1306,8 +1364,10 @@ function centerZoomAtGrid(i, j, factor, tapClientX, tapClientY){
 
       stage.appendChild(mount);
       overlay.style.display = 'flex';
+      if (zoomExitBtn) zoomExitBtn.style.display = 'block';
       mount.classList.add('is-fullscreen');
       isFullscreen = true;
+
 
       const vwFS = window.innerWidth || document.documentElement.clientWidth || 800;
       const vhFS = window.innerHeight || document.documentElement.clientHeight || 800;
@@ -1336,9 +1396,11 @@ function centerZoomAtGrid(i, j, factor, tapClientX, tapClientY){
       mount.style.width = '';
       mount.style.height = '';
       if (overlay) overlay.style.display = 'none';
+      if (zoomExitBtn) zoomExitBtn.style.display = 'none';
       isFullscreen = false;
       document.documentElement.style.overflow = prevOverflow;
       fitBoard();
+
       if (typeof refreshLivesUI  === 'function') refreshLivesUI();
       if (typeof refreshHintsUI  === 'function') refreshHintsUI();
     }
