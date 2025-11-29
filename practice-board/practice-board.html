@@ -1333,7 +1333,7 @@ function animateTo(targetScale, pxWorld, pyWorld, sxTarget, syTarget, onDone){
 }
 
 
-function centerZoomAtGrid(i, j, factor, tapClientX, tapClientY){
+function centerZoomAtGrid(i, j, factor, tapLocalX, tapLocalY){
   const targetScale = Math.max(minScale, Math.min(maxScale, scale * factor));
 
   // Board coordinates of this grid point at current scale
@@ -1342,19 +1342,17 @@ function centerZoomAtGrid(i, j, factor, tapClientX, tapClientY){
   const px_world = px_curr / scale;
   const py_world = py_curr / scale;
 
-  // Default: center; if we know the tap position, keep it under the tap
   const rect = mount.getBoundingClientRect();
+  // Fallback: center if we don't know the tap position
   let sx_target = rect.width  / 2;
   let sy_target = rect.height / 2;
 
-  if (typeof tapClientX === 'number' && typeof tapClientY === 'number'){
-    sx_target = tapClientX - rect.left;
-    sy_target = tapClientY - rect.top;
-    sx_target = Math.max(0, Math.min(sx_target, rect.width));
-    sy_target = Math.max(0, Math.min(sy_target, rect.height));
+  // If we have board-local tap coords, use them directly (no rect.left/top)
+  if (typeof tapLocalX === 'number' && typeof tapLocalY === 'number'){
+    sx_target = Math.max(0, Math.min(tapLocalX, rect.width));
+    sy_target = Math.max(0, Math.min(tapLocalY, rect.height));
   }
 
-  // Now animate with the anchor locked to (sx_target, sy_target)
   animateTo(targetScale, px_world, py_world, sx_target, sy_target);
 }
 
@@ -1500,8 +1498,11 @@ mount.addEventListener('pointerdown', function(e){
     y: e.clientY,
     t: performance.now(),
     gridI: bestI,
-    gridJ: bestJ
+    gridJ: bestJ,
+    localX: sx,   // NEW: position inside the board
+    localY: sy    // NEW: position inside the board
   };
+
 
   beginPan(e);
 }, {passive:false});
@@ -1526,8 +1527,8 @@ mount.addEventListener('pointerup', function(e){
 
   const gi = tapStart.gridI;
   const gj = tapStart.gridJ;
-  const tapClientX = tapStart.x;
-  const tapClientY = tapStart.y;
+  const tapLocalX = tapStart.localX;  // NEW
+  const tapLocalY = tapStart.localY;  // NEW
 
   tapStart = null;
   endPan(e);
@@ -1541,9 +1542,9 @@ mount.addEventListener('pointerup', function(e){
     if (scale === 1 && !isFullscreen){
       // First tap: just zoom in, no stone yet.
       suppressNextBoardClick = true;
-      enterFullscreenAtGrid(gi, gj, tapClientX, tapClientY);
+      // Pass board-local coords instead of clientX/Y:
+      enterFullscreenAtGrid(gi, gj, tapLocalX, tapLocalY);
     } else {
-      // Already zoomed/fullscreen: treat as a real board tap at (gi, gj)
       suppressNextBoardClick = false;
       try { handlePracticeClick(gi, gj); } catch(_) {}
     }
