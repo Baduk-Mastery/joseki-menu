@@ -436,10 +436,12 @@
     }, true);
   });
 
-  startBtn.addEventListener('click', function(e){
-    e.stopPropagation();
-    showNotice('Drill board coming soon.', 'Start Drill');
-  });
+startBtn.addEventListener('click', function(e){
+  e.stopPropagation();
+  e.preventDefault();
+  window.location.href = '../drills-board/drills-board.html';
+});
+
 
   /* Notice (centered) */
   var notice     = root.querySelector('#drills-notice');

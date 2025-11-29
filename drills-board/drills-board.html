@@ -1,3 +1,60 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Joseki Master – Drills Board</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <style>
+    html, body{
+      margin:0;
+      padding:0;
+      min-height:100%;
+      font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+      background-image:
+        linear-gradient(rgba(0,0,0,.35), rgba(0,0,0,.45)),
+        url("../img/wood.jpg");
+      background-size:cover;
+      background-position:center;
+      background-repeat:no-repeat;
+      overscroll-behavior:none;
+    }
+
+    @media (max-width: 480px){
+      #go-board-drill-wrap { padding:8px 12px 0; }
+    }
+    #go-board-drill-wrap[data-hidden="1"]{
+      position:fixed !important; left:-200vw !important; top:-200vh !important;
+      opacity:0 !important; pointer-events:none !important;
+    }
+    #go-board-drill canvas{ display:block; margin:0 auto; }
+
+    .prac-ctrls{
+      max-width:720px; margin:10px auto 0;
+      padding:8px 12px; display:flex; gap:10px; justify-content:center; flex-wrap:wrap;
+    }
+    .pbtn{
+      padding:12px 16px; border-radius:12px; border:1px solid #cbd5e1;
+      background:#fff; font-weight:800; font-size:15px; color:#0f172a;
+      cursor:pointer; box-shadow:0 2px 8px rgba(15,23,42,.06);
+    }
+    .pbtn:active{ transform:translateY(1px); }
+    .pbtn-strong{ background:#111827; color:#fff; border-color:#111827; }
+    .pbtn-alt{ background:#e7f0ff; color:#0b4aa2; border-color:#a7c1ff; }
+
+    /* Blitz timer chip */
+    #blitz-timer{
+      position:absolute; right:10px; top:10px; z-index:4;
+      padding:6px 10px; border-radius:10px;
+      font-weight:900; font-family:ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      background:rgba(15,23,42,.88); color:#e6f3ff; border:1px solid rgba(148,163,184,.35);
+      box-shadow:0 6px 16px rgba(2,6,23,.35);
+      letter-spacing:0.5px;
+    }
+  </style>
+</head>
+<body>
+
 <!-- ================= DRILL BOARD (adds Blitz mode) ================= -->
 <div id="go-board-drill-wrap" data-hidden="1" style="width:100%;max-width:720px;margin:0 auto;box-sizing:border-box;">
   <div id="go-board-drill"
@@ -70,40 +127,6 @@
   </div>
 </div>
 
-<style>
-  @media (max-width: 480px){
-    #go-board-drill-wrap { padding:8px 12px 0; }
-  }
-  #go-board-drill-wrap[data-hidden="1"]{
-    position:fixed !important; left:-200vw !important; top:-200vh !important;
-    opacity:0 !important; pointer-events:none !important;
-  }
-  #go-board-drill canvas{ display:block; margin:0 auto; }
-
-  .prac-ctrls{
-    max-width:720px; margin:10px auto 0;
-    padding:8px 12px; display:flex; gap:10px; justify-content:center; flex-wrap:wrap;
-  }
-  .pbtn{
-    padding:12px 16px; border-radius:12px; border:1px solid #cbd5e1;
-    background:#fff; font-weight:800; font-size:15px; color:#0f172a;
-    cursor:pointer; box-shadow:0 2px 8px rgba(15,23,42,.06);
-  }
-  .pbtn:active{ transform:translateY(1px); }
-  .pbtn-strong{ background:#111827; color:#fff; border-color:#111827; }
-  .pbtn-alt{ background:#e7f0ff; color:#0b4aa2; border-color:#a7c1ff; }
-
-  /* Blitz timer chip */
-  #blitz-timer{
-    position:absolute; right:10px; top:10px; z-index:4;
-    padding:6px 10px; border-radius:10px;
-    font-weight:900; font-family:ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-    background:rgba(15,23,42,.88); color:#e6f3ff; border:1px solid rgba(148,163,184,.35);
-    box-shadow:0 6px 16px rgba(2,6,23,.35);
-    letter-spacing:0.5px;
-  }
-</style>
-
 <!-- WGo (if not already loaded) -->
 <script>
 if (!window.WGo) {
@@ -151,9 +174,8 @@ if (!window.StoneSFX) {
     setEnabled(v){ StoneSFX._enabled = !!v; }
   };
 })();
-</script>
 
-<script>
+/* MAIN DRILL BOARD SCRIPT – adapted for standalone drills-board.html */
 (function DrillBoardMount(){
   const SGF_URL = "https://3d85c7a311526e02aeeeb19e952d0c09.cdn.bubble.io/f1756283064420x481184906507390100/game%20(1).sgf";
   const MIN_MOVES = 10;
@@ -166,13 +188,15 @@ if (!window.StoneSFX) {
   function incRuns(){ try { sessionStorage.setItem(RUNS_KEY, String(getRuns()+1)); } catch(e){} }
   function runsLeft(){ return Math.max(0, RUN_LIMIT - getRuns()); }
 
-  // NEW overlay references
+  // Run-cap overlay
   const capM   = document.getElementById('drill-cap');
   const capOK  = document.getElementById('drill-cap-ok');
   function showCapMsg(){ if (capM){ capM.style.display = 'flex'; } }
   if (capOK){
     capOK.addEventListener('click', ()=> capM.style.display='none');
-    capM.addEventListener('click', (e)=>{ if (e.target === capM) capM.style.display='none'; });
+    if (capM){
+      capM.addEventListener('click', (e)=>{ if (e.target === capM) capM.style.display='none'; });
+    }
   }
 
   // --- SGF utils ---
@@ -294,8 +318,7 @@ if (!window.StoneSFX) {
   let timerEl = null;
   let timerMs = 0;
   let timerId = null;
-  let blitzCornerPlannedMoves = 0; // N for current corner (count of required user moves)
-  let blitzAddedForCorner = false; // we add +1.5*N once per corner
+  let blitzCornerPlannedMoves = 0; // N for current corner (required user moves)
   let timeUp = false;
 
   function ensureTimerEl(){
@@ -373,7 +396,7 @@ if (!window.StoneSFX) {
   function resetGrid(){ grid = Array.from({length:SIZE}, ()=>Array(SIZE).fill(null)); }
   function addStone(x,y,color){ grid[y][x]=color; }
 
-  // liberties/captures (minimal, same as before)
+  // liberties/captures (minimal)
   function inside(x,y){ return x>=0 && y>=0 && x<SIZE && y<SIZE; }
   function neigh4(x,y){ return [{x:x+1,y:y},{x:x-1,y:y},{x:x,y:y+1},{x:x,y:y-1}].filter(p=>inside(p.x,p.y)); }
   function groupAndLiberties(x,y){
@@ -410,11 +433,10 @@ if (!window.StoneSFX) {
   function playMove(x,y,color, silent=false){
     addStone(x,y,color);
     resolveCapturesAfterPlacing(x,y,color);
-    if (!silent) StoneSFX.play();
+    if (!silent && window.StoneSFX) StoneSFX.play();
     redraw();
   }
 
-  // redraw (add Blitz markers after stones)
   function redraw(){
     if (!board) return;
     board.removeAllObjects();
@@ -428,27 +450,23 @@ if (!window.StoneSFX) {
 
   // ========== BLITZ MARKERS (A/a/A) ==========
   function isCornerHoshi(pt,S){
-    const a = 3, b = S-4; // zero-based 4-4 points: (3,3), (S-4,3), (3,S-4), (S-4,S-4)
+    const a = 3, b = S-4;
     return ( (pt.x===a || pt.x===b) && (pt.y===a || pt.y===b) );
   }
   function corner33BelowOfHoshi(h,S){
-    // toward the corner from the hoshi
     const dx = (h.x===3) ? -1 : +1;
     const dy = (h.y===3) ? -1 : +1;
-    return { x: h.x + dx, y: h.y + dy }; // (2,2) / (16,2) / (2,16) / (16,16)
+    return { x: h.x + dx, y: h.y + dy };
   }
   function drawBlitzMarkers(){
-    // Always mark first move with 'A'
     if (!currentTransformed || !Array.isArray(currentTransformed.moves) || currentTransformed.moves.length < 1) return;
     const m1 = currentTransformed.moves[0];
     board.addObject({ x:m1.x, y:m1.y, type:'LB', text:'A' });
 
-    // If first is a 4-4 hoshi, mark second with 'a'
     if (currentTransformed.moves.length >= 2 && isCornerHoshi(m1, SIZE)){
       const m2 = currentTransformed.moves[1];
       board.addObject({ x:m2.x, y:m2.y, type:'LB', text:'a' });
 
-      // If second is the 3-3 "below" that hoshi, also mark third with 'A'
       if (currentTransformed.moves.length >= 3){
         const below = corner33BelowOfHoshi(m1, SIZE);
         if (m2.x === below.x && m2.y === below.y){
@@ -462,7 +480,6 @@ if (!window.StoneSFX) {
   // ---------- variant planning ----------
   function shuffle(a){ for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } return a; }
   function range(a,b){ const out=[]; for(let i=a;i<=b;i++) out.push(i); return out; }
-  function sampleDistinct(pool,k){ const arr=pool.slice(); if(k>=arr.length) return shuffle(arr); shuffle(arr); return arr.slice(0,k); }
 
   function mixSlotsFairly(slotList){
     const buckets = new Map();
@@ -499,10 +516,12 @@ if (!window.StoneSFX) {
 
   function buildRunPlanForLine(key, line, slotIdxs){
     const L = line.moves.length, k = slotIdxs.length;
-    // Blitz: always from the beginning + random corner rotation only
     if (blitzMode){
-      const orientIdxs = sampleDistinct(ROT_IDX_ONLY, k);
-      let nSwap = Math.round(k * 0.5), swaps = Array(k).fill(false); for (let i=0;i<nSwap;i++) swaps[i]=true; swaps = shuffle(swaps);
+      const orientIdxs = shuffle(ROT_IDX_ONLY.slice()).slice(0, k || 1);
+      let swaps = Array(k).fill(false);
+      let nSwap = Math.round(k * 0.5);
+      for (let i=0;i<nSwap;i++) swaps[i]=true;
+      swaps = shuffle(swaps);
       const plan = new Map(), shuffledSlots = shuffle(slotIdxs.slice());
       for (let i=0;i<k;i++){
         plan.set(shuffledSlots[i], { orientIdx: orientIdxs[i % orientIdxs.length], startIndex: 0, swap: swaps[i] });
@@ -510,14 +529,21 @@ if (!window.StoneSFX) {
       return plan;
     }
 
-    // Complete: previous behavior (random mid start)
     const startsPool = (function allowedStartRange(L){ const min = Math.max(4,0); const max = Math.max(min, L-2); return range(min,max); })(L);
-    const orientIdxs = sampleDistinct(range(0,7), k);
-    const chosenStarts = sampleDistinct(startsPool, k);
-    let nSwap = Math.round(k * 0.5), swaps = Array(k).fill(false); for (let i=0;i<nSwap;i++) swaps[i]=true; swaps = shuffle(swaps);
+    const orientIdxs = shuffle(range(0,7)).slice(0, slotIdxs.length || 1);
+    const chosenStarts = shuffle(startsPool.slice());
+    let swaps = Array(slotIdxs.length).fill(false);
+    let nSwap = Math.round(slotIdxs.length * 0.5);
+    for (let i=0;i<nSwap;i++) swaps[i]=true;
+    swaps = shuffle(swaps);
+
     const plan = new Map(), shuffledSlots = shuffle(slotIdxs.slice());
-    for (let i=0;i<k;i++){
-      plan.set(shuffledSlots[i], { orientIdx: orientIdxs[i % orientIdxs.length], startIndex: chosenStarts[i % chosenStarts.length], swap: swaps[i] });
+    for (let i=0;i<slotIdxs.length;i++){
+      plan.set(shuffledSlots[i], {
+        orientIdx: orientIdxs[i % orientIdxs.length],
+        startIndex: chosenStarts[i % chosenStarts.length],
+        swap: swaps[i]
+      });
     }
     return plan;
   }
@@ -554,7 +580,7 @@ if (!window.StoneSFX) {
   }
 
   // Keep a snapshot for Blitz restart (same corner)
-  let blitzCornerState = null; // { tline, startIndex, baseSetupFn, plannedN }
+  let blitzCornerState = null;
 
   function prepareCorner(tline, startIndex){
     resetGrid();
@@ -581,17 +607,12 @@ if (!window.StoneSFX) {
 
     prepareCorner(tline, variant.startIndex);
 
-    // Blitz per-corner time allocation
     blitzCornerPlannedMoves = remain.length;
-    blitzAddedForCorner = false;
     if (blitzMode){
-      if (!timerEl) ensureTimerEl();
-      // add +1.5s per required user move (once per corner)
+      ensureTimerEl();
       timerMs += blitzCornerPlannedMoves * 1500;
       if (!timerId) startTimer();
       if (timerEl) timerEl.textContent = fmtMs(timerMs);
-
-      // store reset recipe for restarts
       blitzCornerState = {
         tline,
         startIndex: variant.startIndex,
@@ -606,8 +627,6 @@ if (!window.StoneSFX) {
   function restartSameCornerBlitz(){
     if (!blitzMode || !blitzCornerState) return;
     prepareCorner(blitzCornerState.tline, blitzCornerState.startIndex);
-    // DO NOT grant extra time on restart
-    blitzAddedForCorner = true; // prevent any re-adds
     locked = false;
   }
 
@@ -624,7 +643,6 @@ if (!window.StoneSFX) {
 
       if (!remain.length){
         solvedCount++;
-        // On corner completion: +0.5s per *required* move (only once)
         if (blitzMode){
           timerMs += blitzCornerPlannedMoves * 500;
           if (timerEl) timerEl.textContent = fmtMs(timerMs);
@@ -638,9 +656,9 @@ if (!window.StoneSFX) {
     } else {
       failedCount++;
       if (blitzMode){
-        showWrongThenRestart();  // same corner, timer keeps ticking
+        showWrongThenRestart();
       } else {
-        showWrongAuto();         // complete-mode behavior: advance
+        showWrongAuto();
       }
     }
   }
@@ -706,10 +724,10 @@ if (!window.StoneSFX) {
     if (blitzMode) stopTimer();
   }
 
+  // Back from "All done" → go to drills selection page
   doneBack.addEventListener('click', function(){
     doneM.style.display='none';
-    try{ DrillBoard.exit(); }catch(e){}
-    if (window.GoDrills && typeof GoDrills.open === 'function'){ GoDrills.open(); }
+    try { window.location.href = '../drills/drills.html'; } catch(_){}
   });
 
   function reshuffleSlots(){
@@ -741,22 +759,25 @@ if (!window.StoneSFX) {
     blitzCornerState = null;
     timeUp = false;
     if (blitzMode){
-      // keep remaining timer (classic blitz); or reset? We reset to 0 for a clean run.
       timerMs = 0;
-      if (timerEl) timerEl.textContent = fmtMs(timerMs);
+      ensureTimerEl();
+      timerEl.textContent = fmtMs(timerMs);
       startTimer();
+    } else {
+      if (timerEl) timerEl.style.display = 'none';
+      stopTimer();
     }
     if (slots.length){ startDrill(0); }
   });
 
   btnNext.addEventListener('click',  function(){
     if (!slots.length) return;
-    // In Blitz, Next just skips (no bonus time)
     startDrill(index+1);
   });
+
+  // Back button → drills selection page
   btnMenu.addEventListener('click',  function(){
-    try{ DrillBoard.exit(); }catch(e){}
-    if (window.GoDrills && typeof GoDrills.open === 'function'){ GoDrills.open(); }
+    try { window.location.href = '../drills/drills.html'; } catch(_){}
   });
 
   // === Selection sources ===
@@ -773,6 +794,47 @@ if (!window.StoneSFX) {
       rootAW: Array.isArray(obj.rootAW)?obj.rootAW:[],
       moves:  (obj.moves||[]).map(m => ({ x:m.x, y:m.y, color:(m.color==='W'?'W':'B') }))
     };
+  }
+
+  // Read selection sets from localStorage (from drills.html)
+  function loadSelectionSet(key){
+    try {
+      const raw = localStorage.getItem(key);
+      if (!raw) return new Set();
+      const arr = JSON.parse(raw);
+      if (!Array.isArray(arr)) return new Set();
+      return new Set(arr);
+    } catch(e){
+      return new Set();
+    }
+  }
+
+  function getCurrentSelections(){
+    const libComplete = loadSelectionSet('drills_lib_selection');
+    const favComplete = loadSelectionSet('drills_fav_selection');
+    const ownComplete = loadSelectionSet('drills_own_selection_ids');
+
+    const libBlitz = loadSelectionSet('drills_blitz_lib_selection');
+    const favBlitz = loadSelectionSet('drills_blitz_fav_selection');
+    const ownBlitz = loadSelectionSet('drills_blitz_own_selection_ids');
+
+    const hasBlitz = libBlitz.size || favBlitz.size || ownBlitz.size;
+
+    if (hasBlitz){
+      return {
+        mode:'blitz',
+        library:Array.from(libBlitz),
+        favorites:Array.from(favBlitz),
+        own:Array.from(ownBlitz)
+      };
+    } else {
+      return {
+        mode:'complete',
+        library:Array.from(libComplete),
+        favorites:Array.from(favComplete),
+        own:Array.from(ownComplete)
+      };
+    }
   }
 
   function fetchLibraryLines(){
@@ -800,12 +862,8 @@ if (!window.StoneSFX) {
     load: function(linesOrNull, opts){
       PER = Math.max(1, parseInt((opts && opts.perJoseki) || 3, 10) || 3);
 
-      // Detect mode from GoDrills selection
-      let selMode = 'complete';
-      if (window.GoDrills && typeof GoDrills.getSelections === 'function'){
-        try { selMode = (GoDrills.getSelections().mode || 'complete'); } catch(_){}
-      }
-      blitzMode = (selMode === 'blitz');
+      const sel = getCurrentSelections();
+      blitzMode = (sel.mode === 'blitz');
 
       function buildSlots(baseLines){
         const raw = [];
@@ -834,14 +892,11 @@ if (!window.StoneSFX) {
         newRunPlan();
 
         wrap.setAttribute('data-hidden','0');
-        try{
-          const gp = document.getElementById('group-practice'); if (gp) gp.setAttribute('data-hidden','1');
-          const gj = document.getElementById('group-joseki');  if (gj) gj.setAttribute('data-hidden','1');
-        }catch(_){}
         resetStats();
         index=0;
+        blitzCornerState = null;
+        timeUp = false;
 
-        // Blitz timer reset & show
         if (blitzMode){
           timerMs = 0;
           ensureTimerEl();
@@ -859,36 +914,28 @@ if (!window.StoneSFX) {
 
       if (Array.isArray(linesOrNull)){ go(linesOrNull); return; }
 
-      if (window.GoDrills && typeof GoDrills.getSelections === 'function'){
-        const sel = GoDrills.getSelections();
-        const favMap = readFavs();
-        const favLines = Object.values(favMap).map(normalizeLineLike);
-        const favPick  = favLines.filter(l => (sel.favorites||[]).includes(lineKey(l)));
+      const favMap = readFavs();
+      const favLines = Object.values(favMap).map(normalizeLineLike);
+      const favPick = favLines.filter(l => sel.favorites.includes(lineKey(l)));
 
-        const ownAll = loadOwnPatterns();
-        const ownPick = ownAll.filter(p => (sel.own||[]).includes(p.id)).map(normalizeLineLike);
+      const ownAll = loadOwnPatterns();
+      const ownPick = ownAll
+        .filter(p => sel.own.includes(p.id))
+        .map(normalizeLineLike);
 
-        if ((sel.library||[]).length){
-          fetchLibraryLines().then(allLib=>{
-            const libPick = allLib.filter(l => (sel.library||[]).includes(lineKey(l)));
-            go([ ...libPick, ...favPick, ...ownPick ]);
-          }).catch(()=> go([ ...favPick, ...ownPick ]));
-        } else {
-          go([ ...favPick, ...ownPick ]);
-        }
-        return;
+      if (sel.library.length){
+        fetchLibraryLines().then(allLib=>{
+          const libPick = allLib.filter(l => sel.library.includes(lineKey(l)));
+          go([ ...libPick, ...favPick, ...ownPick ]);
+        }).catch(()=> go([ ...favPick, ...ownPick ]));
+      } else {
+        go([ ...favPick, ...ownPick ]);
       }
-
-      fetchLibraryLines().then(go).catch(()=>alert('Could not load drills.'));
     },
 
     exit: function(){
       wrap.setAttribute('data-hidden','1');
       stopTimer();
-      try{
-        const jWrap = document.getElementById('drills-overlay');
-        if (jWrap) jWrap.style.display='flex';
-      }catch(_){}
     }
   };
   window.DrillBoard = DrillBoard;
@@ -896,60 +943,29 @@ if (!window.StoneSFX) {
   // Auto-fit and lazy board init
   if (mount && !board) initBoard();
 
-  // Hook the Drills “Start” button (same as before)
-  function hookStart(){
-    const s = document.getElementById('drills-start');
-    if (!s) return setTimeout(hookStart, 150);
-    if (s.__dbHooked) return;
-    s.__dbHooked = true;
-
-    function ensureDrillWins(){
-      try{
-        const gj = document.getElementById('group-joseki');
-        if (gj) gj.setAttribute('data-hidden','1');
-      }catch(_){}
-      wrap.setAttribute('data-hidden','0');
+  // Auto-start when drills-board.html loads (standalone page)
+  function autoStartOnStandalone(){
+    const sel = getCurrentSelections();
+    if (!sel.library.length && !sel.favorites.length && !sel.own.length){
+      // Nothing selected – go back to drills selection
+      try { window.location.href = '../drills/drills.html'; } catch(_) {}
+      return;
     }
-
-    function startNow(e){
-      if (s.disabled || s.getAttribute('aria-hidden') === 'true' || s.style.display === 'none') return;
-
-      // Enforce run cap BEFORE closing overlays
-      if (!canStart()){
-        if (e){ e.preventDefault(); e.stopImmediatePropagation(); e.stopPropagation(); }
-        showCapMsg();
-        return;
-      }
-      incRuns();
-
-      if (e){
-        e.preventDefault();
-        e.stopImmediatePropagation();
-        e.stopPropagation();
-      }
-
-      if (window.GoDrills && typeof GoDrills.close === 'function'){
-        GoDrills.close();
-      } else {
-        const over = document.getElementById('drills-overlay');
-        if (over) over.style.display = 'none';
-      }
-
-      setTimeout(()=>{ DrillBoard.load(null, { perJoseki: 3 }); }, 30);
-      setTimeout(ensureDrillWins, 120);
-      setTimeout(ensureDrillWins, 350);
+    if (!canStart()){
+      showCapMsg();
+      return;
     }
-
-    s.addEventListener('click',     startNow, true);
-    s.addEventListener('pointerup', startNow, true);
-    s.addEventListener('touchend',  startNow, { capture:true, passive:false });
-
-    document.addEventListener('click', function docCap(e){
-      const t = e.target && e.target.closest ? e.target.closest('#drills-start') : null;
-      if (!t) return;
-      startNow(e);
-    }, true);
+    incRuns();
+    DrillBoard.load(null, { perJoseki: 3 });
   }
-  hookStart();
+
+  if (document.readyState === 'loading'){
+    document.addEventListener('DOMContentLoaded', autoStartOnStandalone);
+  } else {
+    autoStartOnStandalone();
+  }
 })();
 </script>
+
+</body>
+</html>
