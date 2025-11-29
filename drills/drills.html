@@ -1,208 +1,4 @@
-<!doctype html>
-<html lang="en">
-<head>
-  <meta charset="utf-8" />
-  <title>Joseki Master – Drills</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-
-  <style>
-    /* Base page look, same vibe as other pages */
-    html, body {
-      margin: 0;
-      padding: 0;
-      min-height: 100%;
-      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      color: #e6f3ff;
-      background:
-        linear-gradient(rgba(0,0,0,.35), rgba(0,0,0,.55)),
-        url("https://3d85c7a311526e02aeeeb19e952d0c09.cdn.bubble.io/f1755870506985x437178801728222500/wood.jpg");
-      background-size: cover;
-      background-position: center;
-      background-attachment: fixed;
-    }
-
-    /* All the original Drills styles, scoped to drills-root */
-    #drills-root{
-      --wood:url('https://3d85c7a311526e02aeeeb19e952d0c09.cdn.bubble.io/f1755870506985x437178801728222500/wood.jpg');
-      --maxw:720px;
-      color:#e6f3ff;
-    }
-    #drills-root #drills-overlay{
-      position:fixed; inset:0; z-index:100000; display:none;
-      align-items:flex-start; justify-content:center;
-      padding:12px 0; overflow:auto; -webkit-overflow-scrolling:touch;
-      background-image:
-        linear-gradient(rgba(0,0,0,.35), rgba(0,0,0,.45)),
-        var(--wood);
-      background-size:cover; background-position:center;
-    }
-    #drills-root .s-inner{
-      width:min(92vw,var(--maxw)); padding:16px 24px 22px; text-align:left; margin:0 auto; position:relative;
-    }
-    #drills-root .s-header{
-      display:grid; grid-template-columns:auto 1fr; align-items:center; column-gap:14px; margin:6px 0 10px;
-    }
-    #drills-root .s-title{ margin:0; font-size:24px; line-height:1.15; font-weight:800; text-shadow:0 1px 2px rgba(0,0,0,.35); }
-
-    #drills-root .s-back,
-    #drills-root .s-btn,
-    #drills-root .s-card{
-      background: rgba(37,99,235,.22);
-      color:#e6f3ff;
-      border:2px solid rgba(37,99,235,.75);
-      border-radius:12px;
-      box-shadow:0 8px 20px rgba(2,6,23,.45), inset 0 0 0 1px rgba(255,255,255,.08);
-    }
-    #drills-root .s-back{
-      padding:8px 12px; cursor:pointer; font-weight:800; line-height:1;
-      transition:transform .06s, background .15s, box-shadow .15s;
-    }
-    #drills-root .s-back:hover{  background: rgba(37,99,235,.26); }
-    #drills-root .s-back:active{ background: rgba(37,99,235,.32); transform:translateY(1px); }
-
-    #drills-root .s-card{ padding:12px; box-sizing:border-box; overflow:hidden; }
-    #drills-root .info-title{ font-weight:900; font-size:16px; margin-bottom:4px; }
-    #drills-root .info-desc{ font-size:13px; line-height:1.5; opacity:.96; }
-
-    #drills-root .s-btn{
-      display:inline-block; padding:10px 12px; font-weight:800; font-size:13px; cursor:pointer;
-      transition:transform .06s, background .15s, box-shadow .15s;
-    }
-    #drills-root .s-btn.s-btn-lg{ font-size:16px; padding:14px 18px; }
-    #drills-root .s-btn:active{ transform:translateY(1px); }
-
-    #drills-root .drill-grid{ display:grid; grid-template-columns:1fr; gap:12px; margin-top:14px; }
-    @media (min-width: 720px){ #drills-root .drill-grid{ grid-template-columns:1fr 1fr; } }
-
-    #drills-root .drill-card{
-      display:flex; align-items:center; gap:12px; width:100%; text-align:left; padding:10px; cursor:pointer;
-      transition:transform .06s, background .15s; user-select:none; -webkit-user-select:none;
-    }
-    #drills-root .drill-card:active{ transform:translateY(1px); }
-    #drills-root .drill-meta{ flex:1; min-width:0; }
-    #drills-root .drill-title{ font-weight:800; font-size:18px; line-height:1.3; }
-
-    #drills-root .drill-desc, #drills-root .joseki-desc{ display:none !important; }
-    #drills-root .drill-cta{ margin-top:10px; display:flex; flex-wrap:wrap; gap:8px; }
-
-    #drills-root .drill-list-grid{
-      display:grid; grid-template-columns:1fr; gap:12px; margin-top:12px;
-    }
-    @media (min-width: 720px){ #drills-root .drill-list-grid{ grid-template-columns:1fr 1fr; } }
-
-    #drills-root .joseki-card{
-      position:relative; display:flex; align-items:center; gap:12px; width:100%;
-      text-align:left; padding:10px; cursor:pointer;
-      transition:transform .06s, background .15s; user-select:none; -webkit-user-select:none;
-    }
-    #drills-root .joseki-card:active{ transform:translateY(1px); }
-
-    #drills-root .drill-thumb{
-      width:132px; height:132px; border-radius:10px; overflow:hidden; flex:none;
-      position: relative;
-      background-image:
-        linear-gradient(rgba(0,0,0,.04), rgba(0,0,0,.06)),
-        var(--wood);
-      background-size:cover; background-position:center;
-      border:2px solid rgba(37,99,235,.65);
-      box-shadow: inset 0 0 0 1px rgba(255,255,255,.06);
-    }
-    #drills-root .drill-thumb canvas.prac-canvas{
-      position:absolute; inset:0; width:100%; height:100%;
-      display:block; pointer-events:none;
-    }
-
-    #drills-root .joseki-meta{ flex:1; min-width:0; display:flex; flex-direction:column; }
-    #drills-root .joseki-title{ font-weight:800; font-size:18px; line-height:1.3; }
-
-    #drills-root .tickbox{
-      position:absolute; top:10px; right:10px; width:24px; height:24px; border-radius:8px;
-      display:flex; align-items:center; justify-content:center;
-      border:2px solid rgba(37,99,235,.75); background: rgba(37,99,235,.18);
-      font-weight:900; font-size:16px; line-height:1;
-      box-shadow: inset 0 0 0 1px rgba(255,255,255,.08); user-select:none;
-    }
-    #drills-root .tickbox::after{ content:""; }
-    #drills-root .tickbox[aria-checked="true"]{ background: rgba(37,99,235,.35); border-color:#60a5fa; }
-    #drills-root .tickbox[aria-checked="true"]::after{ content:"✓"; }
-
-    #drills-root .drill-actions{
-      display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin-top:12px; justify-content:flex-start; padding:8px 0;
-    }
-    #drills-root .drill-count{ margin-left:auto; opacity:.95; font-size:13px; }
-
-    #drills-root .floating-clear{
-      position:fixed;
-      left:calc(env(safe-area-inset-left, 0px) + 12px);
-      bottom:calc(env(safe-area-inset-bottom, 0px) + 28px);
-      z-index:100003;
-    }
-    @media (max-width:480px){
-      #drills-root .floating-clear{
-        left:calc(env(safe-area-inset-left, 0px) + 8px);
-        bottom:calc(env(safe-area-inset-bottom, 0px) + 20px);
-      }
-    }
-
-    #drills-root .floating-start{
-      position:fixed;
-      left:50%;
-      bottom:calc(env(safe-area-inset-bottom, 0px) + 28px);
-      transform:translate(-50%, 0);
-      z-index:100010;
-      display:none;
-      white-space:nowrap;
-      pointer-events:auto;
-      touch-action:manipulation;
-    }
-    #drills-root .floating-start:active{ transform:translate(-50%, 0); }
-    @media (max-width:480px){
-      #drills-root .floating-start{
-        bottom:calc(env(safe-area-inset-bottom, 0px) + 20px);
-      }
-    }
-
-    #drills-root #drills-notice{
-      position:fixed; left:50%; top:50%; transform:translate(-50%,-50%);
-      z-index:100001; display:none; padding:0; background:transparent;
-      pointer-events:none;
-    }
-    #drills-root #drills-notice .s-inner{ width:auto; padding:0; margin:0; display:block; }
-    #drills-root #drills-notice .drills-notice-card{
-      pointer-events:auto;
-      background:none;
-      background-image:
-        linear-gradient(rgba(0,0,0,.35), rgba(0,0,0,.45)),
-        var(--wood);
-      background-size:cover; background-position:center;
-      border:2px solid rgba(37,99,235,.75);
-      border-radius:12px;
-      box-shadow:0 8px 20px rgba(2,6,23,.45), inset 0 0 0 1px rgba(255,255,255,.08);
-      min-width:280px; max-width:min(92vw, 420px);
-      max-height:calc(100vh - 32px); overflow:auto;
-      text-shadow:0 1px 2px rgba(0,0,0,.35);
-      padding:10px 12px;
-    }
-    #drills-root #drills-notice .actions{
-      margin-top:10px; display:flex; gap:10px; justify-content:center; flex-wrap:wrap;
-    }
-
-    #drills-root.notice-open #drills-overlay .s-inner{ pointer-events:none; }
-
-    @media (max-width:480px){
-      #drills-root .s-inner{ padding:16px 12px 22px; }
-    }
-
-    #drills-root #drills-mode-view .drill-meta{
-      display:flex; align-items:center; gap:12px;
-    }
-    #drills-root #drills-mode-view .drill-cta{
-      margin-top:0; margin-left:auto;
-    }
-  </style>
-</head>
-<body>
-
+<!-- ============== DRILLS (Overlay + selection UI) ============== -->
 <div id="drills-root">
   <!-- Drills overlay -->
   <div id="drills-overlay" aria-modal="true" role="dialog" style="display:none">
@@ -212,7 +8,7 @@
         <h1 class="s-title">Drills</h1>
       </div>
 
-      <!-- Mode chooser -->
+      <!-- NEW: Mode chooser (first layer) -->
       <div id="drills-mode-view" style="display:none">
         <div class="s-card info" style="margin-top:6px">
           <div class="info-title">Choose a mode</div>
@@ -235,16 +31,15 @@
         </div>
       </div>
 
-      <!-- Intro card -->
+      <!-- Short description card (compact) -->
       <div class="s-card info" id="drills-intro">
         <div class="info-title">How Complete drills work</div>
         <div class="info-desc">
-          Complete drills drop you into a random point of each selected joseki/pattern (10+ moves only).
-          Three drills per joseki, with random corner and color. Your task: finish the sequence correctly.
+          Complete drills drop you into a random point of each selected joseki/pattern (10+ moves only). Three drills per joseki, with random corner and color. Your task: finish the sequence correctly.
         </div>
       </div>
 
-      <!-- Options -->
+      <!-- Options (first screen for COMPLETE/BLITZ) -->
       <div class="drill-grid" id="drills-options">
         <button class="s-card drill-card" data-type="library" type="button" aria-label="Drills from Library Josekis">
           <div class="drill-meta">
@@ -268,7 +63,7 @@
         </button>
       </div>
 
-      <!-- Library -->
+      <!-- LIBRARY (Categories + Variations) -->
       <div id="drills-lib-view" style="display:none">
         <div class="s-card info" id="drill-lib-info" style="margin-top:6px">
           <div class="info-title">Select a category</div>
@@ -281,7 +76,7 @@
         </div>
       </div>
 
-      <!-- Favorites -->
+      <!-- FAVORITES SELECTION -->
       <div id="drills-fav-view" style="display:none">
         <div class="s-card info" style="margin-top:6px">
           <div class="info-title">Select favorite josekis</div>
@@ -294,7 +89,7 @@
         </div>
       </div>
 
-      <!-- Own patterns -->
+      <!-- MY PATTERNS SELECTION -->
       <div id="drills-own-view" style="display:none">
         <div class="s-card info" style="margin-top:6px">
           <div class="info-title">Select your patterns</div>
@@ -309,7 +104,7 @@
     </div>
   </div>
 
-  <!-- Centered notice -->
+  <!-- Centered notice (OK-only), matching "My Patterns" notice look -->
   <div id="drills-notice" role="alert" aria-live="polite" style="display:none">
     <div class="s-inner">
       <div class="s-card drills-notice-card">
@@ -323,7 +118,205 @@
   </div>
 </div>
 
+<style>
+  /* Scope to this element */
+  #drills-root{
+    --wood:url('https://3d85c7a311526e02aeeeb19e952d0c09.cdn.bubble.io/f1755870506985x437178801728222500/wood.jpg');
+    --maxw:720px;
+    color:#e6f3ff;
+  }
+  /* Overlay shell (match Practice/My Patterns) */
+  #drills-root #drills-overlay{
+    position:fixed; inset:0; z-index:100000; display:none;
+    align-items:flex-start; justify-content:center;
+    padding:12px 0; overflow:auto; -webkit-overflow-scrolling:touch;
+    background-image:
+      linear-gradient(rgba(0,0,0,.35), rgba(0,0,0,.45)),
+      var(--wood);
+    background-size:cover; background-position:center;
+  }
+  #drills-root .s-inner{
+    width:min(92vw,var(--maxw)); padding:16px 24px 22px; text-align:left; margin:0 auto; position:relative;
+  }
+  #drills-root .s-header{
+    display:grid; grid-template-columns:auto 1fr; align-items:center; column-gap:14px; margin:6px 0 10px;
+  }
+  #drills-root .s-title{ margin:0; font-size:24px; line-height:1.15; font-weight:800; text-shadow:0 1px 2px rgba(0,0,0,.35); }
+
+  /* Buttons + cards (shared look) */
+  #drills-root .s-back,
+  #drills-root .s-btn,
+  #drills-root .s-card{
+    background: rgba(37,99,235,.22);
+    color:#e6f3ff;
+    border:2px solid rgba(37,99,235,.75);
+    border-radius:12px;
+    box-shadow:0 8px 20px rgba(2,6,23,.45), inset 0 0 0 1px rgba(255,255,255,.08);
+  }
+  #drills-root .s-back{
+    padding:8px 12px; cursor:pointer; font-weight:800; line-height:1;
+    transition:transform .06s, background .15s, box-shadow .15s;
+  }
+  #drills-root .s-back:hover{  background: rgba(37,99,235,.26); }
+  #drills-root .s-back:active{ background: rgba(37,99,235,.32); transform:translateY(1px); }
+
+  #drills-root .s-card{ padding:12px; box-sizing:border-box; overflow:hidden; }
+  #drills-root .info-title{ font-weight:900; font-size:16px; margin-bottom:4px; }
+  #drills-root .info-desc{ font-size:13px; line-height:1.5; opacity:.96; }
+
+  #drills-root .s-btn{
+    display:inline-block; padding:10px 12px; font-weight:800; font-size:13px; cursor:pointer;
+    transition:transform .06s, background .15s, box-shadow .15s;
+  }
+  #drills-root .s-btn.s-btn-lg{ font-size:16px; padding:14px 18px; }
+  #drills-root .s-btn:active{ transform:translateY(1px); }
+
+  /* Options grid */
+  #drills-root .drill-grid{ display:grid; grid-template-columns:1fr; gap:12px; margin-top:14px; }
+  @media (min-width: 720px){ #drills-root .drill-grid{ grid-template-columns:1fr 1fr; } }
+
+  /* Option card layout */
+  #drills-root .drill-card{
+    display:flex; align-items:center; gap:12px; width:100%; text-align:left; padding:10px; cursor:pointer;
+    transition:transform .06s, background .15s; user-select:none; -webkit-user-select:none;
+  }
+  #drills-root .drill-card:active{ transform:translateY(1px); }
+  #drills-root .drill-meta{ flex:1; min-width:0; }
+  #drills-root .drill-title{ font-weight:800; font-size:18px; line-height:1.3; }
+  /* Remove per-card descriptions across Drills UI */
+  #drills-root .drill-desc, #drills-root .joseki-desc{ display:none !important; }
+  #drills-root .drill-cta{ margin-top:10px; display:flex; flex-wrap:wrap; gap:8px; }
+
+  /* ===== Library, Favorites & Own lists ===== */
+  #drills-root .drill-list-grid{
+    display:grid; grid-template-columns:1fr; gap:12px; margin-top:12px;
+  }
+  @media (min-width: 720px){ #drills-root .drill-list-grid{ grid-template-columns:1fr 1fr; } }
+
+  #drills-root .joseki-card{
+    position:relative; display:flex; align-items:center; gap:12px; width:100%;
+    text-align:left; padding:10px; cursor:pointer;
+    transition:transform .06s, background .15s; user-select:none; -webkit-user-select:none;
+  }
+  #drills-root .joseki-card:active{ transform:translateY(1px); }
+
+  /* UPDATED: thumbnail look matches Practice (wood + canvas board) */
+  #drills-root .drill-thumb{
+    width:132px; height:132px; border-radius:10px; overflow:hidden; flex:none;
+    position: relative;
+    background-image:
+      linear-gradient(rgba(0,0,0,.04), rgba(0,0,0,.06)),
+      var(--wood);
+    background-size:cover; background-position:center;
+    border:2px solid rgba(37,99,235,.65);
+    box-shadow: inset 0 0 0 1px rgba(255,255,255,.06);
+  }
+  #drills-root .drill-thumb canvas.prac-canvas{
+    position:absolute; inset:0; width:100%; height:100%;
+    display:block; pointer-events:none;
+  }
+
+  #drills-root .joseki-meta{ flex:1; min-width:0; display:flex; flex-direction:column; }
+  #drills-root .joseki-title{ font-weight:800; font-size:18px; line-height:1.3; }
+
+  /* Tickbox */
+  #drills-root .tickbox{
+    position:absolute; top:10px; right:10px; width:24px; height:24px; border-radius:8px;
+    display:flex; align-items:center; justify-content:center;
+    border:2px solid rgba(37,99,235,.75); background: rgba(37,99,235,.18);
+    font-weight:900; font-size:16px; line-height:1;
+    box-shadow: inset 0 0 0 1px rgba(255,255,255,.08); user-select:none;
+  }
+  #drills-root .tickbox::after{ content:""; }
+  #drills-root .tickbox[aria-checked="true"]{ background: rgba(37,99,235,.35); border-color:#60a5fa; }
+  #drills-root .tickbox[aria-checked="true"]::after{ content:"✓"; }
+
+  /* Footer actions */
+  #drills-root .drill-actions{
+    display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin-top:12px; justify-content:flex-start; padding:8px 0;
+  }
+  #drills-root .drill-count{ margin-left:auto; opacity:.95; font-size:13px; }
+
+  /* Floating Clear button */
+  #drills-root .floating-clear{
+    position:fixed;
+    left:calc(env(safe-area-inset-left, 0px) + 12px);
+    bottom:calc(env(safe-area-inset-bottom, 0px) + 28px);
+    z-index:100003;
+  }
+  @media (max-width:480px){
+    #drills-root .floating-clear{
+      left:calc(env(safe-area-inset-left, 0px) + 8px);
+      bottom:calc(env(safe-area-inset-bottom, 0px) + 20px);
+    }
+  }
+
+  /* Floating Start button (bottom center) */
+  #drills-root .floating-start{
+    position:fixed;
+    left:50%;
+    bottom:calc(env(safe-area-inset-bottom, 0px) + 28px);
+    transform:translate(-50%, 0);
+    z-index:100010;
+    display:none;
+    white-space:nowrap;
+    pointer-events:auto;
+    touch-action:manipulation;
+  }
+  #drills-root .floating-start:active{ transform:translate(-50%, 0); }
+  @media (max-width:480px){
+    #drills-root .floating-start{
+      bottom:calc(env(safe-area-inset-bottom, 0px) + 20px);
+    }
+  }
+
+  /* Centered notice */
+  #drills-root #drills-notice{
+    position:fixed; left:50%; top:50%; transform:translate(-50%,-50%);
+    z-index:100001; display:none; padding:0; background:transparent;
+    pointer-events:none;
+  }
+  #drills-root #drills-notice .s-inner{ width:auto; padding:0; margin:0; display:block; }
+  #drills-root #drills-notice .drills-notice-card{
+    pointer-events:auto;
+    background:none;
+    background-image:
+      linear-gradient(rgba(0,0,0,.35), rgba(0,0,0,.45)),
+      var(--wood);
+    background-size:cover; background-position:center;
+    border:2px solid rgba(37,99,235,.75);
+    border-radius:12px;
+    box-shadow:0 8px 20px rgba(2,6,23,.45), inset 0 0 0 1px rgba(255,255,255,.08);
+    min-width:280px; max-width:min(92vw, 420px);
+    max-height:calc(100vh - 32px); overflow:auto;
+    text-shadow:0 1px 2px rgba(0,0,0,.35);
+    padding:10px 12px;
+  }
+  #drills-root #drills-notice .actions{
+    margin-top:10px; display:flex; gap:10px; justify-content:center; flex-wrap:wrap;
+  }
+
+  /* Lock interactions while notice open */
+  #drills-root.notice-open #drills-overlay .s-inner{ pointer-events:none; }
+
+  @media (max-width:480px){
+    #drills-root .s-inner{ padding:16px 12px 22px; }
+  }
+
+  /* Mode cards: push the button to the right */
+  #drills-root #drills-mode-view .drill-meta{
+    display:flex; align-items:center; gap:12px;
+  }
+  #drills-root #drills-mode-view .drill-cta{
+    margin-top:0; margin-left:auto;
+  }
+</style>
+
 <script>
+/* Drills overlay with Blitz mode (single select) added.
+   - Blitz uses its own saved selections and hard cap = 1 (ignores plans).
+   - UI & flows mirror Complete.
+   - Start button launches external drills board in Complete mode. */
 (function(){
   var root   = document.getElementById('drills-root');
   if (!root) return;
@@ -333,10 +326,13 @@
   var titleEl   = root.querySelector('.s-title');
   var introCard = root.querySelector('#drills-intro');
 
+  /* Mode view elements */
   var modeView  = root.querySelector('#drills-mode-view');
   var modeGrid  = root.querySelector('#drills-mode-grid');
+
   var options   = root.querySelector('#drills-options');
 
+  /* Library view elements */
   var libView   = root.querySelector('#drills-lib-view');
   var libInfo   = libView.querySelector('#drill-lib-info');
   var libInfoTitle = libInfo.querySelector('.info-title');
@@ -352,16 +348,19 @@
   var libClear  = root.querySelector('#drill-lib-clear');
   var libCount  = root.querySelector('#drill-lib-count');
 
+  /* Favorites view elements */
   var favView   = root.querySelector('#drills-fav-view');
   var favGrid   = root.querySelector('#drill-fav-grid');
   var favClear  = root.querySelector('#drill-fav-clear');
   var favCount  = root.querySelector('#drill-fav-count');
 
+  /* Own patterns view elements */
   var ownView   = root.querySelector('#drills-own-view');
   var ownGrid   = root.querySelector('#drill-own-grid');
   var ownClear  = root.querySelector('#drill-own-clear');
   var ownCount  = root.querySelector('#drill-own-count');
 
+  /* Start Drill floating button (initially hidden) */
   var startBtn = document.createElement('button');
   startBtn.id = 'drills-start';
   startBtn.type = 'button';
@@ -378,11 +377,23 @@
     }, true);
   });
 
+  // Updated start button handler: Blitz = coming soon, Complete = go to external drills board
   startBtn.addEventListener('click', function(e){
     e.stopPropagation();
-    showNotice('Drill board coming soon.', 'Start Drill');
+    e.preventDefault();
+
+    if (state.mode === 'blitz') {
+      showNotice(
+        'Blitz drills board is not ready yet. For now, you can use Complete drills with the same selections.',
+        'Blitz coming soon'
+      );
+      return;
+    }
+
+    launchDrillBoard();
   });
 
+  /* Notice (centered) */
   var notice     = root.querySelector('#drills-notice');
   var noticeText = root.querySelector('#drills-notice-text');
   var noticeOk   = root.querySelector('#drills-notice-ok');
@@ -398,8 +409,9 @@
   noticeOk && noticeOk.addEventListener('click', hideNotice);
   window.addEventListener('keydown', function(e){ if (e.key==='Escape' && root.classList.contains('notice-open')) hideNotice(); });
 
+  /* State */
   var state = {
-    mode:'complete',
+    mode:'complete', // 'complete' | 'blitz'
     view:'mode',
     builtLib:false, linesLib:[], libCats:[], currentCatKey:null, selectedLib:new Set(),
     builtFav:false, linesFav:[], selectedFav:new Set(),
@@ -408,7 +420,39 @@
     ownIdToKey:new Map()
   };
 
+  /* Persist selections (keys depend on mode) */
   var LIB_SEL_KEY, FAV_SEL_KEY, OWN_SEL_KEY;
+
+  function setMode(newMode){
+    state.mode = (newMode === 'blitz') ? 'blitz' : 'complete';
+
+    if (state.mode === 'blitz'){
+      LIB_SEL_KEY = 'drills_blitz_lib_selection';
+      FAV_SEL_KEY = 'drills_blitz_fav_selection';
+      OWN_SEL_KEY = 'drills_blitz_own_selection_ids';
+      MAX_TOTAL = 1; // single select, plans ignored
+
+      var t = introCard.querySelector('.info-title');
+      var d = introCard.querySelector('.info-desc');
+      if (t) t.textContent = 'How Blitz drills work';
+      if (d) d.textContent = 'Pick exactly one joseki/pattern (10+ moves). Quick-fire training. (Start coming soon.)';
+      startBtn.textContent = 'Start Blitz';
+    } else {
+      LIB_SEL_KEY = 'drills_lib_selection';
+      FAV_SEL_KEY = 'drills_fav_selection';
+      OWN_SEL_KEY = 'drills_own_selection_ids';
+
+      setLimitFromPlan();
+      var t2 = introCard.querySelector('.info-title');
+      var d2 = introCard.querySelector('.info-desc');
+      if (t2) t2.textContent = 'How Complete drills work';
+      if (d2) d2.textContent = 'Complete drills drop you into a random point of each selected joseki/pattern (10+ moves only). Three drills per joseki, with random corner and color. Your task: finish the sequence correctly.';
+      startBtn.textContent = 'Start Drill';
+    }
+    reloadAllSelections();
+    updateLibCount(); updateFavCount(); updateOwnCount(); updateStartButton();
+    if (noticeText) noticeText.textContent = 'You can add a maximum of ' + MAX_TOTAL + ' patterns.';
+  }
 
   function loadSelection(key){ try { return new Set(JSON.parse(localStorage.getItem(key) || '[]')); } catch(_){ return new Set(); } }
   function saveSelection(key, set){ try { localStorage.setItem(key, JSON.stringify(Array.from(set))); } catch(_){ } }
@@ -418,6 +462,7 @@
     state.selectedOwnIds = loadSelection(OWN_SEL_KEY);
   }
 
+  /* Plan limits via GoLimits/Tier (ignored for Blitz) */
   var Tier = window.Tier || {
     get: function(){ try { return (localStorage.getItem('go_tier') || 'free').toLowerCase(); } catch(_) { return 'free'; } }
   };
@@ -454,7 +499,9 @@
     updateLibCount(); updateFavCount(); updateOwnCount(); updateStartButton();
     if (noticeText) noticeText.textContent = 'You can add a maximum of ' + MAX_TOTAL + ' patterns.';
   }
+  setLimitFromPlan();
 
+  /* Overlay API + gating */
   var overlayOpen = false;
 
   function showMode(){
@@ -481,12 +528,15 @@
     showMode();
     if (noticeText) noticeText.textContent = 'You can add a maximum of ' + MAX_TOTAL + ' patterns.';
   }
-
-  // changed for standalone page: closing = go back to main menu
   function close(){
-    window.location.href = '../joseki-menu/index.html';
+    if (!overlay) return;
+    overlay.style.display='none';
+    overlayOpen = false;
+    startBtn.style.display='none';
+    startBtn.setAttribute('aria-hidden','true');
+    startBtn.disabled = true;
+    try { window.dispatchEvent(new Event('resize')); } catch(_) {}
   }
-
   window.GoDrills = {
     open, close, __ready:true,
     getLibrarySelection(){ return Array.from(state.selectedLib); },
@@ -502,35 +552,7 @@
     }
   };
 
-  function setMode(newMode){
-    state.mode = (newMode === 'blitz') ? 'blitz' : 'complete';
-
-    if (state.mode === 'blitz'){
-      LIB_SEL_KEY = 'drills_blitz_lib_selection';
-      FAV_SEL_KEY = 'drills_blitz_fav_selection';
-      OWN_SEL_KEY = 'drills_blitz_own_selection_ids';
-      MAX_TOTAL = 1;
-      var t = introCard.querySelector('.info-title');
-      var d = introCard.querySelector('.info-desc');
-      if (t) t.textContent = 'How Blitz drills work';
-      if (d) d.textContent = 'Pick exactly one joseki/pattern (10+ moves). Quick-fire training. (Start coming soon.)';
-      startBtn.textContent = 'Start Blitz';
-    } else {
-      LIB_SEL_KEY = 'drills_lib_selection';
-      FAV_SEL_KEY = 'drills_fav_selection';
-      OWN_SEL_KEY = 'drills_own_selection_ids';
-      setLimitFromPlan();
-      var t2 = introCard.querySelector('.info-title');
-      var d2 = introCard.querySelector('.info-desc');
-      if (t2) t2.textContent = 'How Complete drills work';
-      if (d2) d2.textContent = 'Complete drills drop you into a random point of each selected joseki/pattern (10+ moves only). Three drills per joseki, with random corner and color. Your task: finish the sequence correctly.';
-      startBtn.textContent = 'Start Drill';
-    }
-    reloadAllSelections();
-    updateLibCount(); updateFavCount(); updateOwnCount(); updateStartButton();
-    if (noticeText) noticeText.textContent = 'You can add a maximum of ' + MAX_TOTAL + ' patterns.';
-  }
-
+  /* Navigation helpers */
   function showOptions(whichMode){
     setMode(whichMode || 'complete');
     state.view='options';
@@ -584,6 +606,7 @@
     libView.style.display='none';
     ownView.style.display='none';
     favView.style.display='block';
+
     buildFavoritesList();
   }
   function showOwn(){
@@ -596,10 +619,18 @@
     libView.style.display='none';
     favView.style.display='none';
     ownView.style.display='block';
+
     buildOwnList();
   }
 
-  // back button: within drills, navigate states; from top level, go back to menu
+  var menuBtn = document.getElementById('menu-drills');
+  if (menuBtn){
+    menuBtn.addEventListener('click', function(){
+      if (window.GoMenu && typeof window.GoMenu.close === 'function') window.GoMenu.close();
+      open();
+    });
+  }
+
   backBtn && backBtn.addEventListener('click', function(){
     if (state.view === 'libVars'){
       state.currentCatKey = null;
@@ -617,8 +648,13 @@
     if (state.view === 'options'){
       showMode(); return;
     }
-    // from mode or any fallback: leave page
+    if (state.view === 'mode'){
+      close();
+      if (window.GoMenu && typeof window.GoMenu.open === 'function') window.GoMenu.open();
+      return;
+    }
     close();
+    if (window.GoMenu && typeof window.GoMenu.open === 'function') window.GoMenu.open();
   });
 
   modeGrid && modeGrid.addEventListener('click', function(e){
@@ -638,6 +674,7 @@
     else if (type === 'own'){ showOwn(); }
   });
 
+  /* SGF helpers etc */
   var SGF_URL = "https://3d85c7a311526e02aeeeb19e952d0c09.cdn.bubble.io/f1756283064420x481184906507390100/game%20%281%29.sgf";
   var MIN_MOVES = 10;
 
@@ -651,8 +688,10 @@
         let key=''; while(/[A-Za-z]/.test(str[i]||'')) key+=str[i++]; const vals=[];
         while(str[i]==='['){ const r=rb(str,i+1); vals.push(r.t); i=r.n; }
         if(!node){ node={}; seq.push(node); } node[key]=vals.length>1?vals:vals[0];
-      } else if(ch==='('){ const child=parseTree(str,i); i=child.n; if(seq.length){ const p=seq[seq.length-1]; (p.variations||(p.variations=[])).push(child.seq); } }
-      else if(ch===')'){ i++; break; } else i++;
+      } else if(ch==='('){
+        const child=parseTree(str,i); i=child.n;
+        if(seq.length){ const p=seq[seq.length-1]; (p.variations||(p.variations=[])).push(child.seq); }
+      } else if(ch===')'){ i++; break; } else i++;
     }
     for(let k=0;k<seq.length-1;k++) seq[k].next=seq[k+1];
     return {seq,n:i};
@@ -673,10 +712,19 @@
   function xy(s,S){ if(!s||s.length<2) return null; const x=s.charCodeAt(0)-97,y=s.charCodeAt(1)-97; if(x<0||y<0||x>=S||y>=S) return null; return {x,y}; }
   function nodeMove(n,S){ if(!n) return null; if(n.B){ const p=xy(n.B,S); if(p) return {x:p.x,y:p.y,color:'B'}; } if(n.W){ const p=xy(n.W,S); if(p) return {x:p.x,y:p.y,color:'W'}; } return null; }
   function listCoords(prop,S){ const arr=Array.isArray(prop)?prop:(prop?[prop]:[]); const out=[]; for(const v of arr){ const p=xy(v,S); if(p) out.push(p); } return out; }
-  function linkify(seq,parent){ for(let i=0;i<seq.length;i++){ const n=seq[i]; n.prev=(i===0?parent:seq[i-1]); n.next=(i<seq.length-1?seq[i+1]:null); if(n.variations) for(const v of n.variations) if(v&&v.length) linkify(v,n); } }
+  function linkify(seq,parent){
+    for(let i=0;i<seq.length;i++){
+      const n=seq[i];
+      n.prev=(i===0?parent:seq[i-1]);
+      n.next=(i<seq.length-1?seq[i+1]:null);
+      if(n.variations) for(const v of n.variations) if(v&&v.length) linkify(v,n);
+    }
+  }
   function enumerateLines(seq,S){
-    const lines=[]; let start=seq&&seq[0]; while(start && !nodeMove(start,S) && !start.variations) start=start.next;
-    function dfs(node,acc){ if(!node){ lines.push(acc.slice()); return; }
+    const lines=[]; let start=seq&&seq[0];
+    while(start && !nodeMove(start,S) && !start.variations) start=start.next;
+    function dfs(node,acc){
+      if(!node){ lines.push(acc.slice()); return; }
       acc.push(node);
       if(node.variations && node.variations.length){
         for(const v of node.variations){
@@ -684,11 +732,14 @@
           if(f) dfs(f,acc.slice());
         }
       }
-      if(node.next){ let nx=node.next; while(nx && !nodeMove(nx,S) && !nx.variations) nx=nx.next;
-        if(nx) dfs(nx,acc); else lines.push(acc.slice()); }
-      else lines.push(acc.slice());
+      if(node.next){
+        let nx=node.next; while(nx && !nodeMove(nx,S) && !nx.variations) nx=nx.next;
+        if(nx) dfs(nx,acc); else lines.push(acc.slice());
+      } else {
+        lines.push(acc.slice());
+      }
     }
-    if(start) dfs(start,[]); 
+    if(start) dfs(start,[]);
     return lines.map(nodes=>nodes.map(n=>nodeMove(n,S)).filter(Boolean));
   }
   function lineKey(line){
@@ -697,6 +748,7 @@
     return size + '|' + seq;
   }
 
+  /* Canvas thumbnail renderer */
   function hoshiPoints(size){
     if (size === 19) return [3,9,15];
     if (size === 13) return [3,6,9];
@@ -721,17 +773,36 @@
     ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI*2); ctx.clip();
     var hx = cx - r*0.28, hy = cy - r*0.28;
     var body = ctx.createRadialGradient(hx, hy, r*0.12, cx, cy, r);
-    if (isBlack){ body.addColorStop(0.00, '#686868'); body.addColorStop(0.65, '#141414'); body.addColorStop(1.00, '#000'); }
-    else { body.addColorStop(0.00, '#fff'); body.addColorStop(0.70, '#f2f2f2'); body.addColorStop(1.00, '#e4e4e4'); }
+    if (isBlack){
+      body.addColorStop(0.00, '#686868');
+      body.addColorStop(0.65, '#141414');
+      body.addColorStop(1.00, '#000');
+    } else {
+      body.addColorStop(0.00, '#fff');
+      body.addColorStop(0.70, '#f2f2f2');
+      body.addColorStop(1.00, '#e4e4e4');
+    }
     ctx.fillStyle = body; ctx.fillRect(cx-r, cy-r, 2*r, 2*r);
+
     var edge = Math.max(0.6, r*0.08);
     var rim = ctx.createRadialGradient(cx, cy, r-edge, cx, cy, r);
-    if (isBlack){ rim.addColorStop(0,'rgba(255,255,255,0)'); rim.addColorStop(1,'rgba(255,255,255,0.12)'); }
-    else { rim.addColorStop(0,'rgba(0,0,0,0)'); rim.addColorStop(1,'rgba(0,0,0,0.18)'); }
+    if (isBlack){
+      rim.addColorStop(0,'rgba(255,255,255,0)');
+      rim.addColorStop(1,'rgba(255,255,255,0.12)');
+    } else {
+      rim.addColorStop(0,'rgba(0,0,0,0)');
+      rim.addColorStop(1,'rgba(0,0,0,0.18)');
+    }
     ctx.fillStyle = rim; ctx.fillRect(cx-r, cy-r, 2*r, 2*r);
+
     var spec = ctx.createRadialGradient(hx, hy, 0, hx, hy, r*0.55);
-    if (isBlack){ spec.addColorStop(0,'rgba(255,255,255,0.10)'); spec.addColorStop(1,'rgba(255,255,255,0)'); }
-    else { spec.addColorStop(0,'rgba(255,255,255,0.22)'); spec.addColorStop(1,'rgba(255,255,255,0)'); }
+    if (isBlack){
+      spec.addColorStop(0,'rgba(255,255,255,0.10)');
+      spec.addColorStop(1,'rgba(255,255,255,0)');
+    } else {
+      spec.addColorStop(0,'rgba(255,255,255,0.22)');
+      spec.addColorStop(1,'rgba(255,255,255,0)');
+    }
     ctx.fillStyle = spec; ctx.fillRect(cx-r, cy-r, 2*r, 2*r);
     ctx.restore();
   }
@@ -765,12 +836,21 @@
       var c=m.color==='W'?W:B, o=c===B?W:B; set(x,y,c);
       var oppN=[]; for (const n of neigh(x,y)) if(at(n[0],n[1])===o) oppN.push(n);
       var captured=0;
-      for (const n of oppN){ var info=groupAndLibs(n[0],n[1]); if(info && info.libs===0){ removeGroup(info.group); captured+=info.group.length; } }
-      var mine=groupAndLibs(x,y); if(mine && mine.libs===0 && captured===0) removeGroup(mine.group);
+      for (const n of oppN){
+        var info=groupAndLibs(n[0],n[1]);
+        if(info && info.libs===0){ removeGroup(info.group); captured+=info.group.length; }
+      }
+      var mine=groupAndLibs(x,y);
+      if(mine && mine.libs===0 && captured===0) removeGroup(mine.group);
     }
     (Array.isArray(moves)?moves:[]).forEach(play);
-    var out=[]; for (var yy=0; yy<N; yy++) for (var xx=0; xx<N; xx++){
-      var v=board[yy][xx]; if(v===B) out.push({x:xx,y:yy,color:'B'}); else if(v===W) out.push({x:xx,y:yy,color:'W'});
+    var out=[];
+    for (var yy=0; yy<N; yy++){
+      for (var xx=0; xx<N; xx++){
+        var v=board[yy][xx];
+        if(v===B) out.push({x:xx,y:yy,color:'B'});
+        else if(v===W) out.push({x:xx,y:yy,color:'W'});
+      }
     }
     return out;
   }
@@ -790,31 +870,47 @@
     var pad = Math.round(w*0.10);
     var inner = w - pad*2;
     var step  = inner / (size - 1);
-    var getX  = i => pad + i*step;
-    var getY  = j => pad + j*step;
+    var getX  = function(i){ return pad + i*step; };
+    var getY  = function(j){ return pad + j*step; };
 
     var minX=0,minY=0,maxX=size-1,maxY=size-1;
     if (crop && stones && stones.length){
       minX=maxX=stones[0].x; minY=maxY=stones[0].y;
-      for (const s of stones){ if(s.x<minX)minX=s.x; if(s.x>maxX)maxX=s.x; if(s.y<minY)minY=s.y; if(s.y>maxY)maxY=s.y; }
+      for (const s of stones){
+        if(s.x<minX)minX=s.x;
+        if(s.x>maxX)maxX=s.x;
+        if(s.y<minY)minY=s.y;
+        if(s.y>maxY)maxY=s.y;
+      }
       var MARGIN=1;
       minX=Math.max(0,minX-MARGIN); minY=Math.max(0,minY-MARGIN);
       maxX=Math.min(size-1,maxX+MARGIN); maxY=Math.min(size-1,maxY+MARGIN);
+
       var EDGE_NEAR=6;
       var pinLeft=(minX<=EDGE_NEAR), pinTop=(minY<=EDGE_NEAR), pinRight=(maxX>=size-1-EDGE_NEAR), pinBottom=(maxY>=size-1-EDGE_NEAR);
-      if(pinLeft)minX=0; if(pinTop)minY=0; if(pinRight)maxX=size-1; if(pinBottom)maxY=size-1;
+      if(pinLeft)minX=0;
+      if(pinTop)minY=0;
+      if(pinRight)maxX=size-1;
+      if(pinBottom)maxY=size-1;
+
       var wG=(maxX-minX+1), hG=(maxY-minY+1), target=Math.max(wG,hG);
       if (hG<target){
         var need=target-hG;
         if (pinTop && !pinBottom) maxY=Math.min(size-1,maxY+need);
         else if (pinBottom && !pinTop) minY=Math.max(0,minY-need);
-        else { var up=Math.ceil(need/2), dn=Math.floor(need/2); minY=Math.max(0,minY-up); maxY=Math.min(size-1,maxY+dn); }
+        else {
+          var up=Math.ceil(need/2), dn=Math.floor(need/2);
+          minY=Math.max(0,minY-up); maxY=Math.min(size-1,maxY+dn);
+        }
       }
       if (wG<target){
         var need2=target-wG;
         if (pinLeft && !pinRight) maxX=Math.min(size-1,maxX+need2);
         else if (pinRight && !pinLeft) minX=Math.max(0,minX-need2);
-        else { var lf=Math.ceil(need2/2), rt=Math.floor(need2/2); minX=Math.max(0,minX-lf); maxX=Math.min(size-1,maxX+rt); }
+        else {
+          var lf=Math.ceil(need2/2), rt=Math.floor(need2/2);
+          minX=Math.max(0,minX-lf); maxX=Math.min(size-1,maxX+rt);
+        }
       }
     }
 
@@ -868,6 +964,7 @@
     drawBoardThumb(el, size, stones, { crop:true });
   }
 
+  /* Selection / ticks / limits */
   function totalSelectedCount(){
     var uniqueKeys = new Set([...state.selectedLib, ...state.selectedFav]);
     return uniqueKeys.size + state.selectedOwnIds.size;
@@ -877,11 +974,15 @@
   function isOnLineKey(key){ return state.selectedLib.has(key) || state.selectedFav.has(key); }
   function setTickForLineKey(key){
     var on = isOnLineKey(key) ? 'true' : 'false';
-    root.querySelectorAll('.joseki-card[data-key="'+escAttr(key)+'"] .tickbox').forEach(function(t){ t.setAttribute('aria-checked', on); });
+    root.querySelectorAll('.joseki-card[data-key="'+escAttr(key)+'"] .tickbox').forEach(function(t){
+      t.setAttribute('aria-checked', on);
+    });
   }
   function setTickForOwnId(id){
     var on = state.selectedOwnIds.has(id) ? 'true' : 'false';
-    root.querySelectorAll('.joseki-card[data-own-id="'+escAttr(id)+'"] .tickbox').forEach(function(t){ t.setAttribute('aria-checked', on); });
+    root.querySelectorAll('.joseki-card[data-own-id="'+escAttr(id)+'"] .tickbox').forEach(function(t){
+      t.setAttribute('aria-checked', on);
+    });
   }
 
   function maybeAutoReplaceIfBlitz(){
@@ -930,7 +1031,7 @@
     }
   }
 
-  const OWN_STORE_KEY = 'go:ownpatterns';
+  var OWN_STORE_KEY = 'go:ownpatterns';
   function loadOwnPatterns(){ try { return JSON.parse(localStorage.getItem(OWN_STORE_KEY) || '[]'); } catch(_){ return []; } }
   function refreshOwnLookupFromLines(){
     state.keyToOwnIds = new Map();
@@ -948,7 +1049,7 @@
     state.keyToOwnIds = new Map();
     state.ownIdToKey  = new Map();
     try {
-      const items = loadOwnPatterns().filter(p => Array.isArray(p?.moves) && p.moves.length >= MIN_MOVES);
+      const items = loadOwnPatterns().filter(p => Array.isArray(p && p.moves) && p.moves.length >= MIN_MOVES);
       items.forEach(function(p){
         if (!p.id) return;
         const key = lineKey({ size: p.size || 19, moves: (p.moves||[]).map(m=>({x:m.x,y:m.y,color:m.color})) });
@@ -966,7 +1067,9 @@
     saveSelection(LIB_SEL_KEY, state.selectedLib);
     saveSelection(FAV_SEL_KEY, state.selectedFav);
     saveSelection(OWN_SEL_KEY, state.selectedOwnIds);
-    root.querySelectorAll('.joseki-card .tickbox[aria-checked="true"]').forEach(function(t){ t.setAttribute('aria-checked','false'); });
+    root.querySelectorAll('.joseki-card .tickbox[aria-checked="true"]').forEach(function(t){
+      t.setAttribute('aria-checked','false');
+    });
     updateLibCount(); updateFavCount(); updateOwnCount();
   }
   function clearKeysAcrossAll(keysIterable){
@@ -1018,18 +1121,18 @@
     libCatsGrid.appendChild(loading);
 
     fetch(SGF_URL, { cache:'no-cache' })
-      .then(r=>r.text())
-      .then(txt=>{
+      .then(function(r){ return r.text(); })
+      .then(function(txt){
         const trees=parseAllTrees(txt);
         const lines=[];
         for (const seq of trees){
           linkify(seq,null);
-          const size=parseSZ(seq[0]?.SZ);
-          const rootAB=listCoords(seq[0]?.AB, size);
-          const rootAW=listCoords(seq[0]?.AW, size);
+          const size=parseSZ(seq[0] && seq[0].SZ);
+          const rootAB=listCoords(seq[0] && seq[0].AB, size);
+          const rootAW=listCoords(seq[0] && seq[0].AW, size);
           const paths=enumerateLines(seq,size);
           for (const moves of paths){
-            if ((moves?.length||0) >= MIN_MOVES){
+            if ((moves && moves.length) >= MIN_MOVES){
               lines.push({ size, rootAB, rootAW, moves });
             }
           }
@@ -1040,19 +1143,20 @@
         for (let i=0;i<lines.length;i++){
           const mv = lines[i].moves; if (mv.length < 2) continue;
           const s = lines[i].size || 19, m1 = mv[0], m2 = mv[1];
-          const key = `${s}|${m1.color}:${m1.x},${m1.y}|${m2.color}:${m2.x},${m2.y}`;
+          const key = s + '|' + m1.color + ':' + m1.x + ',' + m1.y + '|' + m2.color + ':' + m2.x + ',' + m2.y;
           if (!catMap.has(key)) catMap.set(key, { key, size:s, firstTwo:[m1,m2], lineIdx:[] });
           catMap.get(key).lineIdx.push(i);
         }
         state.libCats = Array.from(catMap.values());
+
         renderLibCategories();
         state.builtLib = true;
       })
-      .catch(err=>{
+      .catch(function(err){
         libCatsGrid.innerHTML='';
         const errEl=document.createElement('div');
         errEl.className='s-card';
-        errEl.innerHTML='<div class="info-title">Could not load SGF</div><div class="info-desc">'+(err?.message||'Unknown error')+'</div>';
+        errEl.innerHTML='<div class="info-title">Could not load SGF</div><div class="info-desc">'+(err && err.message || 'Unknown error')+'</div>';
         libCatsGrid.appendChild(errEl);
       });
   }
@@ -1069,14 +1173,14 @@
       libCatsGrid.appendChild(empty); return;
     }
 
-    state.libCats.forEach(cat=>{
+    state.libCats.forEach(function(cat){
       const card=document.createElement('button'); card.type='button'; card.className='s-card joseki-card'; card.dataset.key=cat.key;
       const thumb=document.createElement('div'); thumb.className='drill-thumb';
       const meta=document.createElement('div'); meta.className='joseki-meta';
       const title=document.createElement('div'); title.className='joseki-title';
 
       const count = cat.lineIdx.length;
-      title.textContent = `${count} variation${count!==1?'s':''} (≥ ${MIN_MOVES} moves)`;
+      title.textContent = count + ' variation' + (count!==1?'s':'') + ' (≥ ' + MIN_MOVES + ' moves)';
 
       meta.appendChild(title);
       card.appendChild(thumb); card.appendChild(meta);
@@ -1089,7 +1193,7 @@
 
   function renderLibVariations(catKey){
     libVarsGrid.innerHTML='';
-    const cat = state.libCats.find(c=>c.key===catKey);
+    const cat = state.libCats.find(function(c){ return c.key===catKey; });
     if (!cat){ renderLibCategories(); return; }
 
     if (!cat.lineIdx.length){
@@ -1099,7 +1203,7 @@
       libVarsGrid.appendChild(empty); return;
     }
 
-    cat.lineIdx.forEach((idx,i)=>{
+    cat.lineIdx.forEach(function(idx,i){
       const line = state.linesLib[idx];
       const key  = lineKey(line);
 
@@ -1111,7 +1215,7 @@
       const title=document.createElement('div'); title.className='joseki-title';
       const tick=document.createElement('span'); tick.className='tickbox'; tick.setAttribute('role','checkbox'); tick.setAttribute('tabindex','0');
 
-      title.textContent = `Variation ${i+1} (${line.moves.length} moves)`;
+      title.textContent = 'Variation ' + (i+1) + ' (' + line.moves.length + ' moves)';
       tick.setAttribute('aria-checked', isOnLineKey(key) ? 'true' : 'false');
 
       meta.appendChild(title);
@@ -1121,16 +1225,21 @@
       renderVariationThumb(thumb, line);
 
       function toggle(){
-        const on = tick.getAttribute('aria-checked') === 'true';
+        var on = tick.getAttribute('aria-checked') === 'true';
         if (on){ deselectLineKeyGlobal(key); }
         else   { selectLineKeyIn('lib', key); }
       }
       card.addEventListener('click', toggle);
       tick.addEventListener('click', function(e){ e.stopPropagation(); toggle(); });
-      tick.addEventListener('keydown', function(e){ if (e.key===' '||e.key==='Enter'){ e.preventDefault(); e.stopPropagation(); toggle(); }});
+      tick.addEventListener('keydown', function(e){
+        if (e.key===' '||e.key==='Enter'){ e.preventDefault(); e.stopPropagation(); toggle(); }
+      });
     });
   }
 
+  libClear && libClear.addEventListener('click', clearAllSelections);
+
+  /* Favorites list */
   const FAV_KEY = 'go_favorites';
   function readFavs(){
     try { return JSON.parse(localStorage.getItem(FAV_KEY) || '{}') || {}; } catch(_){ return {}; }
@@ -1145,7 +1254,7 @@
     state.selectedFav = loadSelection(FAV_SEL_KEY);
     favGrid.innerHTML='';
     const map = readFavs();
-    const list = Object.values(map).filter(line => Array.isArray(line?.moves) && line.moves.length >= MIN_MOVES);
+    const list = Object.values(map).filter(function(line){ return Array.isArray(line && line.moves) && line.moves.length >= MIN_MOVES; });
 
     if (!list.length){
       const empty=document.createElement('div');
@@ -1155,12 +1264,14 @@
       state.linesFav = []; state.builtFav = true; updateFavCount(); return;
     }
 
-    state.linesFav = list.map(l => ({
-      size: l.size || 19,
-      rootAB: Array.isArray(l.rootAB)?l.rootAB:[],
-      rootAW: Array.isArray(l.rootAW)?l.rootAW:[],
-      moves:  (l.moves||[]).map(m => ({x:m.x,y:m.y,color:m.color}))
-    }));
+    state.linesFav = list.map(function(l){
+      return {
+        size: l.size || 19,
+        rootAB: Array.isArray(l.rootAB)?l.rootAB:[],
+        rootAW: Array.isArray(l.rootAW)?l.rootAW:[],
+        moves:  (l.moves||[]).map(function(m){ return {x:m.x,y:m.y,color:m.color}; })
+      };
+    });
 
     renderFavGrid(); state.builtFav = true;
   }
@@ -1174,7 +1285,7 @@
       favGrid.appendChild(empty); updateFavCount(); return;
     }
 
-    state.linesFav.forEach((line, i)=>{
+    state.linesFav.forEach(function(line, i){
       const key = lineKey(line);
       const card=document.createElement('button'); card.type='button';
       card.className='s-card joseki-card'; card.dataset.key=key;
@@ -1184,7 +1295,7 @@
       const title=document.createElement('div'); title.className='joseki-title';
       const tick=document.createElement('span'); tick.className='tickbox'; tick.setAttribute('role','checkbox'); tick.setAttribute('tabindex','0');
 
-      title.textContent = `Favorite ${i+1} (${line.moves.length} moves)`;
+      title.textContent = 'Favorite ' + (i+1) + ' (' + line.moves.length + ' moves)';
       tick.setAttribute('aria-checked', isOnLineKey(key) ? 'true' : 'false');
 
       meta.appendChild(title);
@@ -1194,17 +1305,22 @@
       renderVariationThumb(thumb, line);
 
       function toggle(){
-        const on = tick.getAttribute('aria-checked') === 'true';
+        var on = tick.getAttribute('aria-checked') === 'true';
         if (on){ deselectLineKeyGlobal(key); }
         else   { selectLineKeyIn('fav', key); }
       }
       card.addEventListener('click', toggle);
       tick.addEventListener('click', function(e){ e.stopPropagation(); toggle(); });
-      tick.addEventListener('keydown', function(e){ if (e.key===' '||e.key==='Enter'){ e.preventDefault(); e.stopPropagation(); toggle(); }});
+      tick.addEventListener('keydown', function(e){
+        if (e.key===' '||e.key==='Enter'){ e.preventDefault(); e.stopPropagation(); toggle(); }
+      });
     });
     updateFavCount();
   }
 
+  favClear && favClear.addEventListener('click', clearAllSelections);
+
+  /* My Patterns (OWN) */
   function updateOwnCount(){
     const n = totalSelectedCount();
     if (ownCount) ownCount.textContent = n + ' / ' + MAX_TOTAL + ' selected';
@@ -1215,7 +1331,7 @@
     state.selectedOwnIds = loadSelection(OWN_SEL_KEY);
     ownGrid.innerHTML='';
 
-    const items = loadOwnPatterns().filter(p => Array.isArray(p?.moves) && p.moves.length >= MIN_MOVES);
+    const items = loadOwnPatterns().filter(function(p){ return Array.isArray(p && p.moves) && p.moves.length >= MIN_MOVES; });
 
     if (!items.length){
       const empty=document.createElement('div');
@@ -1225,14 +1341,16 @@
       state.linesOwn = []; state.builtOwn = true; updateOwnCount(); return;
     }
 
-    state.linesOwn = items.map(p => ({
-      __id: p.id || ('own-'+Math.random().toString(36).slice(2)),
-      title: p.title || 'My Pattern',
-      size: p.size || 19,
-      rootAB: Array.isArray(p.rootAB) ? p.rootAB : [],
-      rootAW: Array.isArray(p.rootAW) ? p.rootAW : [],
-      moves: (p.moves||[]).map(m => ({ x:m.x, y:m.y, color:m.color }))
-    }));
+    state.linesOwn = items.map(function(p){
+      return {
+        __id: p.id || ('own-'+Math.random().toString(36).slice(2)),
+        title: p.title || 'My Pattern',
+        size: p.size || 19,
+        rootAB: Array.isArray(p.rootAB) ? p.rootAB : [],
+        rootAW: Array.isArray(p.rootAW) ? p.rootAW : [],
+        moves: (p.moves||[]).map(function(m){ return { x:m.x, y:m.y, color:m.color }; })
+      };
+    });
 
     refreshOwnLookupFromLines();
     renderOwnGrid(); state.builtOwn = true;
@@ -1247,7 +1365,7 @@
       ownGrid.appendChild(empty); updateOwnCount(); return;
     }
 
-    state.linesOwn.forEach((line, i)=>{
+    state.linesOwn.forEach(function(line, i){
       const id   = line.__id;
       const key  = lineKey(line);
 
@@ -1259,7 +1377,7 @@
       const title=document.createElement('div'); title.className='joseki-title';
       const tick=document.createElement('span'); tick.className='tickbox'; tick.setAttribute('role','checkbox'); tick.setAttribute('tabindex','0');
 
-      title.textContent = `Pattern ${i+1}: ${line.moves.length} Moves`;
+      title.textContent = 'Pattern ' + (i+1) + ': ' + line.moves.length + ' Moves';
       tick.setAttribute('aria-checked', state.selectedOwnIds.has(id) ? 'true' : 'false');
 
       meta.appendChild(title);
@@ -1269,19 +1387,19 @@
       renderVariationThumb(thumb, line);
 
       function toggle(){
-        const on = tick.getAttribute('aria-checked') === 'true';
+        var on = tick.getAttribute('aria-checked') === 'true';
         if (on){ deselectOwnId(id); }
         else   { selectOwnId(id); }
       }
       card.addEventListener('click', toggle);
       tick.addEventListener('click', function(e){ e.stopPropagation(); toggle(); });
-      tick.addEventListener('keydown', function(e){ if (e.key===' '||e.key==='Enter'){ e.preventDefault(); e.stopPropagation(); toggle(); }});
+      tick.addEventListener('keydown', function(e){
+        if (e.key===' '||e.key==='Enter'){ e.preventDefault(); e.stopPropagation(); toggle(); }
+      });
     });
     updateOwnCount();
   }
 
-  libClear && libClear.addEventListener('click', clearAllSelections);
-  favClear && favClear.addEventListener('click', clearAllSelections);
   ownClear && ownClear.addEventListener('click', clearAllSelections);
 
   window.addEventListener('storage', function(e){
@@ -1289,15 +1407,41 @@
     if (e.key === 'go_favorites'  && state.view === 'fav') buildFavoritesList();
   });
 
-  function startDrillNow(){
-    try{
-      if (window.GoDrills && typeof window.GoDrills.close === 'function') GoDrills.close();
-      var cap = document.getElementById('drill-cap'); if (cap) cap.style.display='none';
-      if (window.DrillBoard && typeof window.DrillBoard.load === 'function'){
-        DrillBoard.load(null, { perJoseki: 3 });
+  /* This function is the bridge to drills-board/drills-board.html */
+  function launchDrillBoard() {
+    var selection = {
+      mode: state.mode,
+      library: Array.from(state.selectedLib || []),
+      favorites: Array.from(state.selectedFav || []),
+      own: Array.from(state.selectedOwnIds || [])
+    };
+
+    try {
+      localStorage.setItem('go:drills:pendingSelection', JSON.stringify(selection));
+    } catch (_) {}
+
+    try {
+      if (window.GoDrills && typeof window.GoDrills.close === 'function') {
+        window.GoDrills.close();
       }
-    }catch(_){}
+    } catch (_) {}
+
+    // Adjust this path if your file lives elsewhere
+    window.location.href = 'drills-board/drills-board.html';
   }
+
+  /* PRO unlimited runs: intercepts and uses launchDrillBoard in Complete mode */
+  function startDrillNow(){
+    if (state.mode === 'blitz') {
+      showNotice(
+        'Blitz drills board is not ready yet. For now, you can use Complete drills with the same selections.',
+        'Blitz coming soon'
+      );
+      return;
+    }
+    launchDrillBoard();
+  }
+
   function captureProStart(e){
     if (!isPro()) return;
     if (state.mode !== 'complete') return;
@@ -1311,9 +1455,13 @@
     var btn = e && e.target && e.target.closest ? e.target.closest('#drill-done-retry') : null;
     if (!btn) return;
     e.preventDefault(); e.stopImmediatePropagation(); e.stopPropagation();
-    try{ var done = document.getElementById('drill-done'); if (done) done.style.display='none'; }catch(_){}
+    try{
+      var done = document.getElementById('drill-done');
+      if (done) done.style.display='none';
+    }catch(_){}
     startDrillNow();
   }
+
   document.addEventListener('click', function(e){
     var start = e.target && e.target.closest ? e.target.closest('#drills-start') : null;
     if (start) captureProStart(e);
@@ -1338,12 +1486,6 @@
   }
   setInterval(autoHideCapIfPro, 800);
 
-  // default mode and auto-open on page load
   setMode('complete');
-  open();
 })();
 </script>
-</body>
-</html>
-
-
