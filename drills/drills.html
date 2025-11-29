@@ -618,35 +618,27 @@
   }
 
   /* Menu button (optional) */
+    // Attach to menu button if present
   var menuBtn = document.getElementById('menu-drills');
-  if (menuBtn){ menuBtn.addEventListener('click', function(){ if (window.GoMenu?.close) window.GoMenu.close(); open(); }); }
+  if (menuBtn) {
+    menuBtn.addEventListener('click', function (e) {
+      e.preventDefault();
+      openOverlay();
+    });
+  }
 
-  /* Back button */
-  backBtn && backBtn.addEventListener('click', function(){
-    if (state.view === 'libVars'){
-      state.currentCatKey = null;
-      titleEl.textContent='Choose a Category';
-      libInfoTitle.textContent = 'Select a category';
-      libInfoDesc.textContent  = 'Grouped by the first two moves. Tap a category to pick josekis (10+ moves).';
-      libVarsGrid.style.display='none';
-      libCatsGrid.style.display='grid';
-      state.view='libCats';
-      return;
-    }
-    if (state.view === 'libCats' || state.view === 'fav' || state.view === 'own'){
-      showOptions(state.mode); return;
-    }
-    if (state.view === 'options'){
-      showMode(); return;
-    }
-    if (state.view === 'mode'){
-      close();
-      if (window.GoMenu?.open) window.GoMenu.open();
-      return;
-    }
-    close();
-    if (window.GoMenu?.open) window.GoMenu.open();
-  });
+  // Expose a manual opener for other scripts
+  window.GoDrills = {
+    open: openOverlay
+  };
+
+  // If there is no menu button, assume this is a standalone drills page
+  // and open the overlay immediately so the user doesn't see a blank page.
+  if (!menuBtn) {
+    openOverlay();
+  }
+})();
+
 
   /* Mode click */
   modeGrid && modeGrid.addEventListener('click', function(e){
