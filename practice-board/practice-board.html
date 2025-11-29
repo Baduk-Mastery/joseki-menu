@@ -1358,15 +1358,20 @@ function centerZoomAtGrid(i, j, factor, tapClientX, tapClientY){
   animateTo(targetScale, px_world, py_world, sx_target, sy_target);
 }
 
-     function enterFullscreenAtGrid(i, j, tapClientX, tapClientY){
+    function enterFullscreenAtGrid(i, j, tapClientX, tapClientY){
+      if (!zoomEnabled) return;
       if (isFullscreen) return;
+
       ensureOverlay();
       prevOverflow = document.documentElement.style.overflow || "";
       document.documentElement.style.overflow = 'hidden';
 
+      // Leave the centered wrapper in place and move only the board.
       returnAnchor = document.createElement('div');
       returnAnchor.style.display = 'none';
-      mount.parentNode.insertBefore(returnAnchor, mount);
+      if (mount.parentNode) {
+        mount.parentNode.insertBefore(returnAnchor, mount);
+      }
 
       stage.appendChild(mount);
       overlay.style.display = 'flex';
@@ -1374,16 +1379,14 @@ function centerZoomAtGrid(i, j, factor, tapClientX, tapClientY){
       mount.classList.add('is-fullscreen');
       isFullscreen = true;
 
-
-      const vwFS = window.innerWidth || document.documentElement.clientWidth || 800;
-      const vhFS = window.innerHeight || document.documentElement.clientHeight || 800;
-      baseW = Math.floor(Math.min(vwFS, vhFS));
-      if (baseW % 2) baseW--;
-      resetViewLocal();
+      // IMPORTANT: do NOT change baseW here any more.
+      // We keep the same logical board size that the centered layout uses.
+      resetViewLocal();  // scale = 1, offsets = 0 for the existing baseW
 
       requestAnimationFrame(function(){
-        const {vw, vh} = viewportSize();
-        const needToCover   = Math.max(vw, vh) / baseW;
+        const vwFS = window.innerWidth  || document.documentElement.clientWidth  || baseW || 1;
+        const vhFS = window.innerHeight || document.documentElement.clientHeight || baseW || 1;
+        const needToCover   = Math.max(vwFS, vhFS) / (baseW || 1);
         const initialFactor = Math.max(1.8, needToCover + 0.02);
         centerZoomAtGrid(i, j, initialFactor, tapClientX, tapClientY);
       });
@@ -1570,29 +1573,23 @@ mount.addEventListener('pointercancel', function(e){
     };
 
     function fitBoard(){
-      if (isFullscreen){
-        const vwFS = window.innerWidth || document.documentElement.clientWidth || 800;
-        const vhFS = window.innerHeight || document.documentElement.clientHeight || 800;
-        baseW = Math.floor(Math.min(vwFS, vhFS));
-        if (baseW % 2) baseW--;
-        mount.style.width  = '100vw';
-        mount.style.height = '100vh';
-      } else {
-        var w = mount.getBoundingClientRect().width;
-        if (!w) {
-          var cs   = getComputedStyle(wrap);
-          var padX = (parseFloat(cs.paddingLeft) || 0) + (parseFloat(cs.paddingRight) || 0);
-          var wrapW = wrap.getBoundingClientRect().width || wrap.clientWidth || 400;
-          w = Math.max(0, wrapW - padX);
-        }
-        w = Math.floor(w);
-        if (w % 2) w--;
-        baseW = w;
-        mount.style.width  = '';
-        mount.style.height = baseW + 'px';
-      }
+      // Always measure the original centered wrapper, even while the board
+      // itself is temporarily inside the fullscreen overlay. This keeps one
+      // consistent "home" board size (baseW), so zoom-out has no jump.
+      var wrapW = wrap.getBoundingClientRect().width || wrap.clientWidth || 400;
+      var cs    = getComputedStyle(wrap);
+      var padX  = (parseFloat(cs.paddingLeft) || 0) + (parseFloat(cs.paddingRight) || 0);
+      var w     = Math.max(0, wrapW - padX);
+
+      w = Math.floor(w);
+      if (w % 2) w--;
+      if (w < 2) w = 2;
+      baseW = w;
+
+      // applyPanAndSize will handle mount width/height depending on isFullscreen
       applyPanAndSize(true);
     }
+
     function refitSoon(){ fitBoard(); setTimeout(fitBoard,60); setTimeout(fitBoard,180); setTimeout(fitBoard,400); }
     window.addEventListener('resize', fitBoard);
     window.addEventListener('orientationchange', () => setTimeout(fitBoard,200));
