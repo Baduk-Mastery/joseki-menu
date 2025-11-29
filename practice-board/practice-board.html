@@ -1794,60 +1794,26 @@ mount.addEventListener('pointercancel', function(e){
 
  // Smooth zoom-out back to full-board view, then exit fullscreen if needed
 // Smooth zoom-out back to full-board view, then exit fullscreen if needed
+// Reset straight back to the normal full-board view, then exit fullscreen if needed
 function smoothZoomOutAndExit(){
   if (!zoomEnabled) return;
 
-  // If we are already at base view and not fullscreen, nothing to do
-  if (scale <= 1 && !isFullscreen) return;
-
-  // Cancel any in-flight zoom animation
+  // Stop any in-flight animation
   cancelAnimationFrame(animId);
+  isZoomAnimating = false;
 
-  const startScale   = scale;
-  const startOffsetX = offsetX;
-  const startOffsetY = offsetY;
+  // Hard reset view: full board, no pan
+  scale   = 1;
+  offsetX = 0;
+  offsetY = 0;
 
-  const t0  = performance.now();
-  const dur = 230; // ~0.23s, quick but smooth
+  // Apply base transform so the board is exactly where it was before zoom
+  applyPanAndSize(true);
 
-  isZoomAnimating = true;
-
-  function step(now){
-    let t = (now - t0) / dur;
-    if (t > 1) t = 1;
-
-    // Cubic ease-out
-    const e = 1 - Math.pow(1 - t, 3);
-
-    // Interpolate scale back to 1
-    scale = startScale + (1 - startScale) * e;
-
-    // Bring pan offsets back to 0 (centered board)
-    offsetX = startOffsetX * (1 - e);
-    offsetY = startOffsetY * (1 - e);
-
-    // Apply transform without clamping while we animate
-    applyPanAndSize(false);
-
-    if (t < 1){
-      animId = requestAnimationFrame(step);
-    } else {
-      // Final snap to a clean base state
-      scale   = 1;
-      offsetX = 0;
-      offsetY = 0;
-      isZoomAnimating = false;
-
-      applyPanAndSize(true);
-
-      // If we were in fullscreen, now leave it
-      if (isFullscreen){
-        exitFullscreen();
-      }
-    }
+  // If we were in fullscreen, leave it (this will also refit the board width)
+  if (isFullscreen){
+    exitFullscreen();
   }
-
-  step(t0);
 }
 
 
