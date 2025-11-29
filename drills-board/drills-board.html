@@ -11,9 +11,7 @@
       padding:0;
       min-height:100%;
       font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
-      background-image:
-        linear-gradient(rgba(0,0,0,.35), rgba(0,0,0,.45)),
-        url("../img/wood.jpg");
+      background-image:url("../img/wood.jpg");
       background-size:cover;
       background-position:center;
       background-repeat:no-repeat;
@@ -23,10 +21,8 @@
     @media (max-width: 480px){
       #go-board-drill-wrap { padding:8px 12px 0; }
     }
-    #go-board-drill-wrap[data-hidden="1"]{
-      position:fixed !important; left:-200vw !important; top:-200vh !important;
-      opacity:0 !important; pointer-events:none !important;
-    }
+
+    /* we don’t hide the wrapper via data-hidden now, so it’s always visible */
     #go-board-drill canvas{ display:block; margin:0 auto; }
 
     .prac-ctrls{
@@ -56,7 +52,7 @@
 <body>
 
 <!-- ================= DRILL BOARD (adds Blitz mode) ================= -->
-<div id="go-board-drill-wrap" data-hidden="1" style="width:100%;max-width:720px;margin:0 auto;box-sizing:border-box;">
+<div id="go-board-drill-wrap" style="width:100%;max-width:720px;margin:0 auto;box-sizing:border-box;">
   <div id="go-board-drill"
        style="position:relative;width:100%;border-radius:10px;overflow:hidden;box-shadow:
         0 18px 40px rgba(0,0,0,.32),
@@ -175,7 +171,6 @@ if (!window.StoneSFX) {
   };
 })();
 
-/* MAIN DRILL BOARD SCRIPT – adapted for standalone drills-board.html */
 (function DrillBoardMount(){
   const SGF_URL = "https://3d85c7a311526e02aeeeb19e952d0c09.cdn.bubble.io/f1756283064420x481184906507390100/game%20(1).sgf";
   const MIN_MOVES = 10;
@@ -188,7 +183,7 @@ if (!window.StoneSFX) {
   function incRuns(){ try { sessionStorage.setItem(RUNS_KEY, String(getRuns()+1)); } catch(e){} }
   function runsLeft(){ return Math.max(0, RUN_LIMIT - getRuns()); }
 
-  // Run-cap overlay
+  // NEW overlay references
   const capM   = document.getElementById('drill-cap');
   const capOK  = document.getElementById('drill-cap-ok');
   function showCapMsg(){ if (capM){ capM.style.display = 'flex'; } }
@@ -270,7 +265,7 @@ if (!window.StoneSFX) {
       p=>t_rot90(p,S),
       p=>compose(t_swap,t_rot90,S)(p),
       p=>t_rot180(p,S),
-      p=>compose(t_swap,t_rot180,S)(p),
+      p=>compose(t_swap,t_rot180,S)(p)(p),
       p=>t_rot270(p,S),
       p=>compose(t_swap,t_rot270,S)(p)
     ];
@@ -318,7 +313,7 @@ if (!window.StoneSFX) {
   let timerEl = null;
   let timerMs = 0;
   let timerId = null;
-  let blitzCornerPlannedMoves = 0; // N for current corner (required user moves)
+  let blitzCornerPlannedMoves = 0;
   let timeUp = false;
 
   function ensureTimerEl(){
@@ -396,7 +391,6 @@ if (!window.StoneSFX) {
   function resetGrid(){ grid = Array.from({length:SIZE}, ()=>Array(SIZE).fill(null)); }
   function addStone(x,y,color){ grid[y][x]=color; }
 
-  // liberties/captures (minimal)
   function inside(x,y){ return x>=0 && y>=0 && x<SIZE && y<SIZE; }
   function neigh4(x,y){ return [{x:x+1,y:y},{x:x-1,y:y},{x:x,y:y+1},{x:x,y:y-1}].filter(p=>inside(p.x,p.y)); }
   function groupAndLiberties(x,y){
@@ -448,7 +442,6 @@ if (!window.StoneSFX) {
     if (blitzMode) drawBlitzMarkers();
   }
 
-  // ========== BLITZ MARKERS (A/a/A) ==========
   function isCornerHoshi(pt,S){
     const a = 3, b = S-4;
     return ( (pt.x===a || pt.x===b) && (pt.y===a || pt.y===b) );
@@ -477,7 +470,6 @@ if (!window.StoneSFX) {
     }
   }
 
-  // ---------- variant planning ----------
   function shuffle(a){ for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } return a; }
   function range(a,b){ const out=[]; for(let i=a;i<=b;i++) out.push(i); return out; }
 
@@ -579,7 +571,6 @@ if (!window.StoneSFX) {
     if (clearedTimer){ clearTimeout(clearedTimer); clearedTimer=null; }
   }
 
-  // Keep a snapshot for Blitz restart (same corner)
   let blitzCornerState = null;
 
   function prepareCorner(tline, startIndex){
@@ -724,10 +715,9 @@ if (!window.StoneSFX) {
     if (blitzMode) stopTimer();
   }
 
-  // Back from "All done" → go to drills selection page
   doneBack.addEventListener('click', function(){
     doneM.style.display='none';
-    try { window.location.href = '../drills/drills.html'; } catch(_){}
+    try{ window.location.href = '../drills/drills.html'; }catch(e){}
   });
 
   function reshuffleSlots(){
@@ -741,7 +731,6 @@ if (!window.StoneSFX) {
     }
   }
 
-  // RETRY
   doneRetry.addEventListener('click', function(){
     if (!canStart()){
       showCapMsg();
@@ -775,12 +764,10 @@ if (!window.StoneSFX) {
     startDrill(index+1);
   });
 
-  // Back button → drills selection page
   btnMenu.addEventListener('click',  function(){
-    try { window.location.href = '../drills/drills.html'; } catch(_){}
+    try{ window.location.href = '../drills/drills.html'; }catch(e){}
   });
 
-  // === Selection sources ===
   const OWN_STORE_KEY = 'go:ownpatterns';
   const FAV_KEY       = 'go_favorites';
 
@@ -794,47 +781,6 @@ if (!window.StoneSFX) {
       rootAW: Array.isArray(obj.rootAW)?obj.rootAW:[],
       moves:  (obj.moves||[]).map(m => ({ x:m.x, y:m.y, color:(m.color==='W'?'W':'B') }))
     };
-  }
-
-  // Read selection sets from localStorage (from drills.html)
-  function loadSelectionSet(key){
-    try {
-      const raw = localStorage.getItem(key);
-      if (!raw) return new Set();
-      const arr = JSON.parse(raw);
-      if (!Array.isArray(arr)) return new Set();
-      return new Set(arr);
-    } catch(e){
-      return new Set();
-    }
-  }
-
-  function getCurrentSelections(){
-    const libComplete = loadSelectionSet('drills_lib_selection');
-    const favComplete = loadSelectionSet('drills_fav_selection');
-    const ownComplete = loadSelectionSet('drills_own_selection_ids');
-
-    const libBlitz = loadSelectionSet('drills_blitz_lib_selection');
-    const favBlitz = loadSelectionSet('drills_blitz_fav_selection');
-    const ownBlitz = loadSelectionSet('drills_blitz_own_selection_ids');
-
-    const hasBlitz = libBlitz.size || favBlitz.size || ownBlitz.size;
-
-    if (hasBlitz){
-      return {
-        mode:'blitz',
-        library:Array.from(libBlitz),
-        favorites:Array.from(favBlitz),
-        own:Array.from(ownBlitz)
-      };
-    } else {
-      return {
-        mode:'complete',
-        library:Array.from(libComplete),
-        favorites:Array.from(favComplete),
-        own:Array.from(ownComplete)
-      };
-    }
   }
 
   function fetchLibraryLines(){
@@ -857,13 +803,15 @@ if (!window.StoneSFX) {
     });
   }
 
-  // =============== PUBLIC API =================
   const DrillBoard = {
     load: function(linesOrNull, opts){
       PER = Math.max(1, parseInt((opts && opts.perJoseki) || 3, 10) || 3);
 
-      const sel = getCurrentSelections();
-      blitzMode = (sel.mode === 'blitz');
+      let selMode = 'complete';
+      if (window.GoDrills && typeof GoDrills.getSelections === 'function'){
+        try { selMode = (GoDrills.getSelections().mode || 'complete'); } catch(_){}
+      }
+      blitzMode = (selMode === 'blitz');
 
       function buildSlots(baseLines){
         const raw = [];
@@ -891,7 +839,6 @@ if (!window.StoneSFX) {
         buildSlots(usable);
         newRunPlan();
 
-        wrap.setAttribute('data-hidden','0');
         resetStats();
         index=0;
         blitzCornerState = null;
@@ -914,43 +861,97 @@ if (!window.StoneSFX) {
 
       if (Array.isArray(linesOrNull)){ go(linesOrNull); return; }
 
-      const favMap = readFavs();
-      const favLines = Object.values(favMap).map(normalizeLineLike);
-      const favPick = favLines.filter(l => sel.favorites.includes(lineKey(l)));
+      if (window.GoDrills && typeof GoDrills.getSelections === 'function'){
+        const sel = GoDrills.getSelections();
+        const favMap = readFavs();
+        const favLines = Object.values(favMap).map(normalizeLineLike);
+        const favPick  = favLines.filter(l => (sel.favorites||[]).includes(lineKey(l)));
 
-      const ownAll = loadOwnPatterns();
-      const ownPick = ownAll
-        .filter(p => sel.own.includes(p.id))
-        .map(normalizeLineLike);
+        const ownAll = loadOwnPatterns();
+        const ownPick = ownAll.filter(p => (sel.own||[]).includes(p.id)).map(normalizeLineLike);
 
-      if (sel.library.length){
-        fetchLibraryLines().then(allLib=>{
-          const libPick = allLib.filter(l => sel.library.includes(lineKey(l)));
-          go([ ...libPick, ...favPick, ...ownPick ]);
-        }).catch(()=> go([ ...favPick, ...ownPick ]));
-      } else {
-        go([ ...favPick, ...ownPick ]);
+        if ((sel.library||[]).length){
+          fetchLibraryLines().then(allLib=>{
+            const libPick = allLib.filter(l => (sel.library||[]).includes(lineKey(l)));
+            go([ ...libPick, ...favPick, ...ownPick ]);
+          }).catch(()=> go([ ...favPick, ...ownPick ]));
+        } else {
+          go([ ...favPick, ...ownPick ]);
+        }
+        return;
       }
+
+      fetchLibraryLines().then(go).catch(()=>alert('Could not load drills.'));
     },
 
     exit: function(){
-      wrap.setAttribute('data-hidden','1');
       stopTimer();
     }
   };
   window.DrillBoard = DrillBoard;
 
-  // Auto-fit and lazy board init
   if (mount && !board) initBoard();
 
-  // Auto-start when drills-board.html loads (standalone page)
-  function autoStartOnStandalone(){
-    const sel = getCurrentSelections();
-    if (!sel.library.length && !sel.favorites.length && !sel.own.length){
-      // Nothing selected – go back to drills selection
-      try { window.location.href = '../drills/drills.html'; } catch(_) {}
-      return;
+  function hookStart(){
+    const s = document.getElementById('drills-start');
+    if (!s) return setTimeout(hookStart, 150);
+    if (s.__dbHooked) return;
+    s.__dbHooked = true;
+
+    function ensureDrillWins(){
+      try{
+        const gj = document.getElementById('group-joseki');
+        if (gj) gj.setAttribute('data-hidden','1');
+      }catch(_){}
     }
+
+    function startNow(e){
+      if (s.disabled || s.getAttribute('aria-hidden') === 'true' || s.style.display === 'none') return;
+
+      if (!canStart()){
+        if (e){ e.preventDefault(); e.stopImmediatePropagation(); e.stopPropagation(); }
+        showCapMsg();
+        return;
+      }
+      incRuns();
+
+      if (e){
+        e.preventDefault();
+        e.stopImmediatePropagation();
+        e.stopPropagation();
+      }
+
+      if (window.GoDrills && typeof GoDrills.close === 'function'){
+        GoDrills.close();
+      } else {
+        const over = document.getElementById('drills-overlay');
+        if (over) over.style.display = 'none';
+      }
+
+      setTimeout(()=>{ DrillBoard.load(null, { perJoseki: 3 }); }, 30);
+      setTimeout(ensureDrillWins, 120);
+      setTimeout(ensureDrillWins, 350);
+    }
+
+    s.addEventListener('click',     startNow, true);
+    s.addEventListener('pointerup', startNow, true);
+    s.addEventListener('touchend',  startNow, { capture:true, passive:false });
+
+    document.addEventListener('click', function docCap(e){
+      const t = e.target && e.target.closest ? e.target.closest('#drills-start') : null;
+      if (!t) return;
+      startNow(e);
+    }, true);
+  }
+  hookStart();
+
+  // Auto-start when used as standalone page (no drills overlay present)
+  function autoStartStandalone(){
+    const over = document.getElementById('drills-overlay');
+    const startBtn = document.getElementById('drills-start');
+    const isStandalone = !over && !startBtn;
+    if (!isStandalone) return;
+
     if (!canStart()){
       showCapMsg();
       return;
@@ -960,9 +961,9 @@ if (!window.StoneSFX) {
   }
 
   if (document.readyState === 'loading'){
-    document.addEventListener('DOMContentLoaded', autoStartOnStandalone);
+    document.addEventListener('DOMContentLoaded', autoStartStandalone);
   } else {
-    autoStartOnStandalone();
+    autoStartStandalone();
   }
 })();
 </script>
