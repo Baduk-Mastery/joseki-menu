@@ -871,15 +871,36 @@ if (!window.StoneSFX) {
       return lines;
     });
   }
+  // Helper: get selections either from GoDrills (inline/Bubble)
+  // or from sessionStorage (drills.html → drills-board.html bridge)
+  function getDrillSelections(){
+    // 1) If GoDrills exists (same-page integration), use it
+    if (window.GoDrills && typeof window.GoDrills.getSelections === 'function') {
+      try {
+        return window.GoDrills.getSelections();
+      } catch (e) {}
+    }
+
+    // 2) Otherwise, use the bridge from the list page
+    try {
+      if (typeof sessionStorage === 'undefined') return null;
+      var raw = sessionStorage.getItem('go:drills_next_selection');
+      if (!raw) return null;
+      var obj = JSON.parse(raw);
+      if (!obj || typeof obj !== 'object') return null;
+      return obj;
+    } catch (e) {
+      return null;
+    }
+  }
 
   const DrillBoard = {
     load: function(linesOrNull, opts){
       PER = Math.max(1, parseInt((opts && opts.perJoseki) || 3, 10) || 3);
 
-      let selMode = 'complete';
-      if (window.GoDrills && typeof GoDrills.getSelections === 'function'){
-        try { selMode = (GoDrills.getSelections().mode || 'complete'); } catch(_){}
-      }
+      // Read selections via helper (GoDrills on same page OR sessionStorage bridge)
+      const sel = getDrillSelections();
+      const selMode = (sel && sel.mode === 'blitz') ? 'blitz' : 'complete';
       blitzMode = (selMode === 'blitz');
 
       function buildSlots(baseLines){
@@ -928,29 +949,44 @@ if (!window.StoneSFX) {
         try{ (wrap).scrollIntoView({behavior:'smooth',block:'start'});}catch(_){}
       }
 
-      if (Array.isArray(linesOrNull)){ go(linesOrNull); return; }
+      if (Array.isArray(linesOrNull)){
+        go(linesOrNull);
+        return;
+      }
 
-      if (window.GoDrills && typeof GoDrills.getSelections === 'function'){
-        const sel = GoDrills.getSelections();
-        const favMap = readFavs();
+      // If we have a selection (from GoDrills or from sessionStorage),
+      // use ONLY those lines instead of the full library.
+      if (sel && (
+          (sel.library && sel.library.length) ||
+          (sel.favorites && sel.favorites.length) ||
+          (sel.own && sel.own.length)
+        )){
+
+        const favMap   = readFavs();
         const favLines = Object.values(favMap).map(normalizeLineLike);
-        const favPick  = favLines.filter(l => (sel.favorites||[]).includes(lineKey(l)));
+        const favPick  = favLines.filter(l => (sel.favorites || []).includes(lineKey(l)));
 
-        const ownAll = loadOwnPatterns();
-        const ownPick = ownAll.filter(p => (sel.own||[]).includes(p.id)).map(normalizeLineLike);
+        const ownAll   = loadOwnPatterns();
+        const ownPick  = ownAll
+          .filter(p => (sel.own || []).includes(p.id))
+          .map(normalizeLineLike);
 
-        if ((sel.library||[]).length){
-          fetchLibraryLines().then(allLib=>{
-            const libPick = allLib.filter(l => (sel.library||[]).includes(lineKey(l)));
+        if ((sel.library || []).length){
+          fetchLibraryLines().then(allLib => {
+            const libPick = allLib.filter(l => (sel.library || []).includes(lineKey(l)));
             go([ ...libPick, ...favPick, ...ownPick ]);
-          }).catch(()=> go([ ...favPick, ...ownPick ]));
+          }).catch(() => {
+            go([ ...favPick, ...ownPick ]);
+          });
         } else {
           go([ ...favPick, ...ownPick ]);
         }
         return;
       }
 
-      fetchLibraryLines().then(go).catch(()=>alert('Could not load drills.'));
+      // Fallback: no selection info → load full library (old behavior)
+      fetchLibraryLines().then(go).catch(() => alert('Could not load drills.'));
+
     },
 
     exit: function(){

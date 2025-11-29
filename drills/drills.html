@@ -1398,27 +1398,43 @@ startBtn.addEventListener('click', function(e){
 
   /* Start Drills:
      - If DrillBoard is present on this page (Bubble-style), use it.
-     - Otherwise, redirect to the dedicated drills-board.html page (Vercel). */
+     - Otherwise, redirect to the dedicated drills-board.html page (Vercel).
+     - Always store the current selections in sessionStorage so the board
+       page can load ONLY what was selected.
+  */
   function startDrillNow(){
-    // Close the overlay if open
-    try{
-      if (window.GoDrills && typeof window.GoDrills.close === 'function') GoDrills.close();
-    }catch(_){}
+    // 1) Capture current selections (mode + library + favorites + own IDs)
+    try {
+      if (window.GoDrills && typeof window.GoDrills.getSelections === 'function') {
+        var sel = window.GoDrills.getSelections();
+        // sel looks like: { library: [...], favorites: [...], own: [...], mode: 'complete'|'blitz' }
+        if (sel && typeof sessionStorage !== 'undefined') {
+          sessionStorage.setItem('go:drills_next_selection', JSON.stringify(sel));
+        }
+      }
+    } catch (_) {}
 
-    // Bubble-style inline DrillBoard (original behavior)
-    try{
+    // 2) Close the overlay if open
+    try {
+      if (window.GoDrills && typeof window.GoDrills.close === 'function') {
+        GoDrills.close();
+      }
+    } catch (_) {}
+
+    // 3) Bubble-style inline DrillBoard (original behavior)
+    try {
       var cap = document.getElementById('drill-cap');
-      if (cap) cap.style.display='none';
-      if (window.DrillBoard && typeof window.DrillBoard.load === 'function'){
+      if (cap) cap.style.display = 'none';
+      if (window.DrillBoard && typeof window.DrillBoard.load === 'function') {
         DrillBoard.load(null, { perJoseki: 3 });
         return;
       }
-    }catch(_){}
+    } catch (_) {}
 
-    // Static/Vercel: go to dedicated board page
-    try{
+    // 4) Static/Vercel: go to dedicated board page
+    try {
       window.location.href = '../drills-board/drills-board.html';
-    }catch(_){}
+    } catch (_) {}
   }
 
   function captureProStart(e){
