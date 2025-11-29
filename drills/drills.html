@@ -1,4 +1,23 @@
-<!-- ============== DRILLS (Overlay + selection UI) ============== -->
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Joseki Master – Drills</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      min-height: 100%;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: radial-gradient(circle at top, #020617 0, #000 55%, #020617 100%);
+      color: #e6f3ff;
+    }
+  </style>
+</head>
+<body>
+
+<!-- ============== DRILLS (Bubble HTML element content) ============== -->
 <div id="drills-root">
   <!-- Drills overlay -->
   <div id="drills-overlay" aria-modal="true" role="dialog" style="display:none">
@@ -35,7 +54,7 @@
       <div class="s-card info" id="drills-intro">
         <div class="info-title">How Complete drills work</div>
         <div class="info-desc">
-          Complete drills drop you into a random point of each selected joseki/pattern (10+ moves only). Three drills per joseki, with random corner and color. Your task: finish the sequence correctly.
+         Complete drills drop you into a random point of each selected joseki/pattern (10+ moves only). Three drills per joseki, with random corner and color. Your task: finish the sequence correctly.
         </div>
       </div>
 
@@ -303,7 +322,7 @@
     #drills-root .s-inner{ padding:16px 12px 22px; }
   }
 
-  /* Mode cards: push the button to the right */
+  /* === Mode cards: push the button to the right === */
   #drills-root #drills-mode-view .drill-meta{
     display:flex; align-items:center; gap:12px;
   }
@@ -316,7 +335,7 @@
 /* Drills overlay with Blitz mode (single select) added.
    - Blitz uses its own saved selections and hard cap = 1 (ignores plans).
    - UI & flows mirror Complete.
-   - Start button launches external drills board in Complete mode. */
+   - Start button does NOT launch in Blitz (shows notice). */
 (function(){
   var root   = document.getElementById('drills-root');
   if (!root) return;
@@ -326,7 +345,7 @@
   var titleEl   = root.querySelector('.s-title');
   var introCard = root.querySelector('#drills-intro');
 
-  /* Mode view elements */
+  /* NEW: Mode view elements */
   var modeView  = root.querySelector('#drills-mode-view');
   var modeGrid  = root.querySelector('#drills-mode-grid');
 
@@ -377,20 +396,9 @@
     }, true);
   });
 
-  // Updated start button handler: Blitz = coming soon, Complete = go to external drills board
   startBtn.addEventListener('click', function(e){
     e.stopPropagation();
-    e.preventDefault();
-
-    if (state.mode === 'blitz') {
-      showNotice(
-        'Blitz drills board is not ready yet. For now, you can use Complete drills with the same selections.',
-        'Blitz coming soon'
-      );
-      return;
-    }
-
-    launchDrillBoard();
+    showNotice('Drill board coming soon.', 'Start Drill');
   });
 
   /* Notice (centered) */
@@ -409,7 +417,7 @@
   noticeOk && noticeOk.addEventListener('click', hideNotice);
   window.addEventListener('keydown', function(e){ if (e.key==='Escape' && root.classList.contains('notice-open')) hideNotice(); });
 
-  /* State */
+  /* ===== State ===== */
   var state = {
     mode:'complete', // 'complete' | 'blitz'
     view:'mode',
@@ -431,7 +439,7 @@
       FAV_SEL_KEY = 'drills_blitz_fav_selection';
       OWN_SEL_KEY = 'drills_blitz_own_selection_ids';
       MAX_TOTAL = 1; // single select, plans ignored
-
+      // Tweak intro content
       var t = introCard.querySelector('.info-title');
       var d = introCard.querySelector('.info-desc');
       if (t) t.textContent = 'How Blitz drills work';
@@ -441,7 +449,7 @@
       LIB_SEL_KEY = 'drills_lib_selection';
       FAV_SEL_KEY = 'drills_fav_selection';
       OWN_SEL_KEY = 'drills_own_selection_ids';
-
+      // restore plan-based cap for Complete
       setLimitFromPlan();
       var t2 = introCard.querySelector('.info-title');
       var d2 = introCard.querySelector('.info-desc');
@@ -462,7 +470,7 @@
     state.selectedOwnIds = loadSelection(OWN_SEL_KEY);
   }
 
-  /* Plan limits via GoLimits/Tier (ignored for Blitz) */
+  /* ====== PLAN LIMITS via Plans API (GoLimits) — ignored for Blitz ====== */
   var Tier = window.Tier || {
     get: function(){ try { return (localStorage.getItem('go_tier') || 'free').toLowerCase(); } catch(_) { return 'free'; } }
   };
@@ -478,7 +486,7 @@
 
   var MAX_TOTAL = 10;
   function setLimitFromPlan(){
-    if (state.mode === 'blitz'){
+    if (state.mode === 'blitz'){ // blitz ignores plans
       MAX_TOTAL = 1;
     } else {
       try{
@@ -501,7 +509,7 @@
   }
   setLimitFromPlan();
 
-  /* Overlay API + gating */
+  /* ===== Overlay API + overlayOpen gating ===== */
   var overlayOpen = false;
 
   function showMode(){
@@ -552,7 +560,7 @@
     }
   };
 
-  /* Navigation helpers */
+  /* ===== Navigation helpers ===== */
   function showOptions(whichMode){
     setMode(whichMode || 'complete');
     state.view='options';
@@ -623,14 +631,11 @@
     buildOwnList();
   }
 
+  /* Menu button (optional) */
   var menuBtn = document.getElementById('menu-drills');
-  if (menuBtn){
-    menuBtn.addEventListener('click', function(){
-      if (window.GoMenu && typeof window.GoMenu.close === 'function') window.GoMenu.close();
-      open();
-    });
-  }
+  if (menuBtn){ menuBtn.addEventListener('click', function(){ if (window.GoMenu?.close) window.GoMenu.close(); open(); }); }
 
+  /* Back button behavior */
   backBtn && backBtn.addEventListener('click', function(){
     if (state.view === 'libVars'){
       state.currentCatKey = null;
@@ -650,13 +655,14 @@
     }
     if (state.view === 'mode'){
       close();
-      if (window.GoMenu && typeof window.GoMenu.open === 'function') window.GoMenu.open();
+      if (window.GoMenu?.open) window.GoMenu.open();
       return;
     }
     close();
-    if (window.GoMenu && typeof window.GoMenu.open === 'function') window.GoMenu.open();
+    if (window.GoMenu?.open) window.GoMenu.open();
   });
 
+  /* Mode click -> routes */
   modeGrid && modeGrid.addEventListener('click', function(e){
     var card = e.target.closest('.drill-card');
     if (!card) return;
@@ -665,6 +671,7 @@
     else if (mode === 'blitz'){ showOptions('blitz'); }
   });
 
+  /* Options click -> routes */
   options.addEventListener('click', function(e){
     var card = e.target.closest('.drill-card');
     if (!card) return;
@@ -674,9 +681,9 @@
     else if (type === 'own'){ showOwn(); }
   });
 
-  /* SGF helpers etc */
+  /* ===== Common helpers (SGF + thumbs + keys) ===== */
   var SGF_URL = "https://3d85c7a311526e02aeeeb19e952d0c09.cdn.bubble.io/f1756283064420x481184906507390100/game%20%281%29.sgf";
-  var MIN_MOVES = 10;
+  var MIN_MOVES = 10; // drills rule
 
   function rb(str,i){ let out='',k=i; while(k<str.length){ const ch=str[k++]; if(ch==='\\'){ if(k<str.length) out+=str[k++]; continue; } if(ch===']') break; out+=ch; } return {t:out,n:k}; }
   function parseTree(str,i){
@@ -688,10 +695,8 @@
         let key=''; while(/[A-Za-z]/.test(str[i]||'')) key+=str[i++]; const vals=[];
         while(str[i]==='['){ const r=rb(str,i+1); vals.push(r.t); i=r.n; }
         if(!node){ node={}; seq.push(node); } node[key]=vals.length>1?vals:vals[0];
-      } else if(ch==='('){
-        const child=parseTree(str,i); i=child.n;
-        if(seq.length){ const p=seq[seq.length-1]; (p.variations||(p.variations=[])).push(child.seq); }
-      } else if(ch===')'){ i++; break; } else i++;
+      } else if(ch==='('){ const child=parseTree(str,i); i=child.n; if(seq.length){ const p=seq[seq.length-1]; (p.variations||(p.variations=[])).push(child.seq); } }
+      else if(ch===')'){ i++; break; } else i++;
     }
     for(let k=0;k<seq.length-1;k++) seq[k].next=seq[k+1];
     return {seq,n:i};
@@ -712,19 +717,10 @@
   function xy(s,S){ if(!s||s.length<2) return null; const x=s.charCodeAt(0)-97,y=s.charCodeAt(1)-97; if(x<0||y<0||x>=S||y>=S) return null; return {x,y}; }
   function nodeMove(n,S){ if(!n) return null; if(n.B){ const p=xy(n.B,S); if(p) return {x:p.x,y:p.y,color:'B'}; } if(n.W){ const p=xy(n.W,S); if(p) return {x:p.x,y:p.y,color:'W'}; } return null; }
   function listCoords(prop,S){ const arr=Array.isArray(prop)?prop:(prop?[prop]:[]); const out=[]; for(const v of arr){ const p=xy(v,S); if(p) out.push(p); } return out; }
-  function linkify(seq,parent){
-    for(let i=0;i<seq.length;i++){
-      const n=seq[i];
-      n.prev=(i===0?parent:seq[i-1]);
-      n.next=(i<seq.length-1?seq[i+1]:null);
-      if(n.variations) for(const v of n.variations) if(v&&v.length) linkify(v,n);
-    }
-  }
+  function linkify(seq,parent){ for(let i=0;i<seq.length;i++){ const n=seq[i]; n.prev=(i===0?parent:seq[i-1]); n.next=(i<seq.length-1?seq[i+1]:null); if(n.variations) for(const v of n.variations) if(v&&v.length) linkify(v,n); } }
   function enumerateLines(seq,S){
-    const lines=[]; let start=seq&&seq[0];
-    while(start && !nodeMove(start,S) && !start.variations) start=start.next;
-    function dfs(node,acc){
-      if(!node){ lines.push(acc.slice()); return; }
+    const lines=[]; let start=seq&&seq[0]; while(start && !nodeMove(start,S) && !start.variations) start=start.next;
+    function dfs(node,acc){ if(!node){ lines.push(acc.slice()); return; }
       acc.push(node);
       if(node.variations && node.variations.length){
         for(const v of node.variations){
@@ -732,23 +728,20 @@
           if(f) dfs(f,acc.slice());
         }
       }
-      if(node.next){
-        let nx=node.next; while(nx && !nodeMove(nx,S) && !nx.variations) nx=nx.next;
-        if(nx) dfs(nx,acc); else lines.push(acc.slice());
-      } else {
-        lines.push(acc.slice());
-      }
+      if(node.next){ let nx=node.next; while(nx && !nodeMove(nx,S) && !nx.variations) nx=nx.next;
+        if(nx) dfs(nx,acc); else lines.push(acc.slice()); }
+      else lines.push(acc.slice());
     }
-    if(start) dfs(start,[]);
+    if(start) dfs(start,[]); 
     return lines.map(nodes=>nodes.map(n=>nodeMove(n,S)).filter(Boolean));
   }
   function lineKey(line){
     const size = line.size || 19;
     const seq = (line.moves||[]).map(m => (m.color||'B')[0]+':'+m.x+','+m.y).join('|');
-    return size + '|' + seq;
+    return `${size}|${seq}`;
   }
 
-  /* Canvas thumbnail renderer */
+  /* ===== Canvas thumbnail renderer (matches Practice) ===== */
   function hoshiPoints(size){
     if (size === 19) return [3,9,15];
     if (size === 13) return [3,6,9];
@@ -773,36 +766,17 @@
     ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI*2); ctx.clip();
     var hx = cx - r*0.28, hy = cy - r*0.28;
     var body = ctx.createRadialGradient(hx, hy, r*0.12, cx, cy, r);
-    if (isBlack){
-      body.addColorStop(0.00, '#686868');
-      body.addColorStop(0.65, '#141414');
-      body.addColorStop(1.00, '#000');
-    } else {
-      body.addColorStop(0.00, '#fff');
-      body.addColorStop(0.70, '#f2f2f2');
-      body.addColorStop(1.00, '#e4e4e4');
-    }
+    if (isBlack){ body.addColorStop(0.00, '#686868'); body.addColorStop(0.65, '#141414'); body.addColorStop(1.00, '#000'); }
+    else { body.addColorStop(0.00, '#fff'); body.addColorStop(0.70, '#f2f2f2'); body.addColorStop(1.00, '#e4e4e4'); }
     ctx.fillStyle = body; ctx.fillRect(cx-r, cy-r, 2*r, 2*r);
-
     var edge = Math.max(0.6, r*0.08);
     var rim = ctx.createRadialGradient(cx, cy, r-edge, cx, cy, r);
-    if (isBlack){
-      rim.addColorStop(0,'rgba(255,255,255,0)');
-      rim.addColorStop(1,'rgba(255,255,255,0.12)');
-    } else {
-      rim.addColorStop(0,'rgba(0,0,0,0)');
-      rim.addColorStop(1,'rgba(0,0,0,0.18)');
-    }
+    if (isBlack){ rim.addColorStop(0,'rgba(255,255,255,0)'); rim.addColorStop(1,'rgba(255,255,255,0.12)'); }
+    else { rim.addColorStop(0,'rgba(0,0,0,0)'); rim.addColorStop(1,'rgba(0,0,0,0.18)'); }
     ctx.fillStyle = rim; ctx.fillRect(cx-r, cy-r, 2*r, 2*r);
-
     var spec = ctx.createRadialGradient(hx, hy, 0, hx, hy, r*0.55);
-    if (isBlack){
-      spec.addColorStop(0,'rgba(255,255,255,0.10)');
-      spec.addColorStop(1,'rgba(255,255,255,0)');
-    } else {
-      spec.addColorStop(0,'rgba(255,255,255,0.22)');
-      spec.addColorStop(1,'rgba(255,255,255,0)');
-    }
+    if (isBlack){ spec.addColorStop(0,'rgba(255,255,255,0.10)'); spec.addColorStop(1,'rgba(255,255,255,0)'); }
+    else { spec.addColorStop(0,'rgba(255,255,255,0.22)'); spec.addColorStop(1,'rgba(255,255,255,0)'); }
     ctx.fillStyle = spec; ctx.fillRect(cx-r, cy-r, 2*r, 2*r);
     ctx.restore();
   }
@@ -836,21 +810,12 @@
       var c=m.color==='W'?W:B, o=c===B?W:B; set(x,y,c);
       var oppN=[]; for (const n of neigh(x,y)) if(at(n[0],n[1])===o) oppN.push(n);
       var captured=0;
-      for (const n of oppN){
-        var info=groupAndLibs(n[0],n[1]);
-        if(info && info.libs===0){ removeGroup(info.group); captured+=info.group.length; }
-      }
-      var mine=groupAndLibs(x,y);
-      if(mine && mine.libs===0 && captured===0) removeGroup(mine.group);
+      for (const n of oppN){ var info=groupAndLibs(n[0],n[1]); if(info && info.libs===0){ removeGroup(info.group); captured+=info.group.length; } }
+      var mine=groupAndLibs(x,y); if(mine && mine.libs===0 && captured===0) removeGroup(mine.group);
     }
     (Array.isArray(moves)?moves:[]).forEach(play);
-    var out=[];
-    for (var yy=0; yy<N; yy++){
-      for (var xx=0; xx<N; xx++){
-        var v=board[yy][xx];
-        if(v===B) out.push({x:xx,y:yy,color:'B'});
-        else if(v===W) out.push({x:xx,y:yy,color:'W'});
-      }
+    var out=[]; for (var yy=0; yy<N; yy++) for (var xx=0; xx<N; xx++){
+      var v=board[yy][xx]; if(v===B) out.push({x:xx,y:yy,color:'B'}); else if(v===W) out.push({x:xx,y:yy,color:'W'});
     }
     return out;
   }
@@ -870,47 +835,31 @@
     var pad = Math.round(w*0.10);
     var inner = w - pad*2;
     var step  = inner / (size - 1);
-    var getX  = function(i){ return pad + i*step; };
-    var getY  = function(j){ return pad + j*step; };
+    var getX  = i => pad + i*step;
+    var getY  = j => pad + j*step;
 
     var minX=0,minY=0,maxX=size-1,maxY=size-1;
     if (crop && stones && stones.length){
       minX=maxX=stones[0].x; minY=maxY=stones[0].y;
-      for (const s of stones){
-        if(s.x<minX)minX=s.x;
-        if(s.x>maxX)maxX=s.x;
-        if(s.y<minY)minY=s.y;
-        if(s.y>maxY)maxY=s.y;
-      }
+      for (const s of stones){ if(s.x<minX)minX=s.x; if(s.x>maxX)maxX=s.x; if(s.y<minY)minY=s.y; if(s.y>maxY)maxY=s.y; }
       var MARGIN=1;
       minX=Math.max(0,minX-MARGIN); minY=Math.max(0,minY-MARGIN);
       maxX=Math.min(size-1,maxX+MARGIN); maxY=Math.min(size-1,maxY+MARGIN);
-
       var EDGE_NEAR=6;
       var pinLeft=(minX<=EDGE_NEAR), pinTop=(minY<=EDGE_NEAR), pinRight=(maxX>=size-1-EDGE_NEAR), pinBottom=(maxY>=size-1-EDGE_NEAR);
-      if(pinLeft)minX=0;
-      if(pinTop)minY=0;
-      if(pinRight)maxX=size-1;
-      if(pinBottom)maxY=size-1;
-
+      if(pinLeft)minX=0; if(pinTop)minY=0; if(pinRight)maxX=size-1; if(pinBottom)maxY=size-1;
       var wG=(maxX-minX+1), hG=(maxY-minY+1), target=Math.max(wG,hG);
       if (hG<target){
         var need=target-hG;
         if (pinTop && !pinBottom) maxY=Math.min(size-1,maxY+need);
         else if (pinBottom && !pinTop) minY=Math.max(0,minY-need);
-        else {
-          var up=Math.ceil(need/2), dn=Math.floor(need/2);
-          minY=Math.max(0,minY-up); maxY=Math.min(size-1,maxY+dn);
-        }
+        else { var up=Math.ceil(need/2), dn=Math.floor(need/2); minY=Math.max(0,minY-up); maxY=Math.min(size-1,maxY+dn); }
       }
       if (wG<target){
         var need2=target-wG;
         if (pinLeft && !pinRight) maxX=Math.min(size-1,maxX+need2);
         else if (pinRight && !pinLeft) minX=Math.max(0,minX-need2);
-        else {
-          var lf=Math.ceil(need2/2), rt=Math.floor(need2/2);
-          minX=Math.max(0,minX-lf); maxX=Math.min(size-1,maxX+rt);
-        }
+        else { var lf=Math.ceil(need2/2), rt=Math.floor(need2/2); minX=Math.max(0,minX-lf); maxX=Math.min(size-1,maxX+rt); }
       }
     }
 
@@ -964,29 +913,28 @@
     drawBoardThumb(el, size, stones, { crop:true });
   }
 
-  /* Selection / ticks / limits */
+  /* ===== LIMIT logic ===== */
   function totalSelectedCount(){
     var uniqueKeys = new Set([...state.selectedLib, ...state.selectedFav]);
     return uniqueKeys.size + state.selectedOwnIds.size;
   }
 
+  /* ===== Tick helpers ===== */
   function escAttr(v){ return String(v).replace(/"/g,'\\"'); }
   function isOnLineKey(key){ return state.selectedLib.has(key) || state.selectedFav.has(key); }
   function setTickForLineKey(key){
     var on = isOnLineKey(key) ? 'true' : 'false';
-    root.querySelectorAll('.joseki-card[data-key="'+escAttr(key)+'"] .tickbox').forEach(function(t){
-      t.setAttribute('aria-checked', on);
-    });
+    root.querySelectorAll('.joseki-card[data-key="'+escAttr(key)+'"] .tickbox').forEach(function(t){ t.setAttribute('aria-checked', on); });
   }
   function setTickForOwnId(id){
     var on = state.selectedOwnIds.has(id) ? 'true' : 'false';
-    root.querySelectorAll('.joseki-card[data-own-id="'+escAttr(id)+'"] .tickbox').forEach(function(t){
-      t.setAttribute('aria-checked', on);
-    });
+    root.querySelectorAll('.joseki-card[data-own-id="'+escAttr(id)+'"] .tickbox').forEach(function(t){ t.setAttribute('aria-checked', on); });
   }
 
+  /* ===== Select/Deselect ===== */
   function maybeAutoReplaceIfBlitz(){
     if (state.mode !== 'blitz') return false;
+    // If something is already selected, clear it to allow selecting another one (smooth UX)
     if (totalSelectedCount() >= 1){
       clearAllSelections();
       return true;
@@ -1031,7 +979,8 @@
     }
   }
 
-  var OWN_STORE_KEY = 'go:ownpatterns';
+  /* Cross-section OWN lookup helpers */
+  const OWN_STORE_KEY = 'go:ownpatterns';
   function loadOwnPatterns(){ try { return JSON.parse(localStorage.getItem(OWN_STORE_KEY) || '[]'); } catch(_){ return []; } }
   function refreshOwnLookupFromLines(){
     state.keyToOwnIds = new Map();
@@ -1049,7 +998,7 @@
     state.keyToOwnIds = new Map();
     state.ownIdToKey  = new Map();
     try {
-      const items = loadOwnPatterns().filter(p => Array.isArray(p && p.moves) && p.moves.length >= MIN_MOVES);
+      const items = loadOwnPatterns().filter(p => Array.isArray(p?.moves) && p.moves.length >= MIN_MOVES);
       items.forEach(function(p){
         if (!p.id) return;
         const key = lineKey({ size: p.size || 19, moves: (p.moves||[]).map(m=>({x:m.x,y:m.y,color:m.color})) });
@@ -1060,6 +1009,7 @@
     } catch(_){}
   }
 
+  /* Clear helpers (clears current mode’s selections only) */
   function clearAllSelections(){
     state.selectedLib.clear();
     state.selectedFav.clear();
@@ -1067,9 +1017,7 @@
     saveSelection(LIB_SEL_KEY, state.selectedLib);
     saveSelection(FAV_SEL_KEY, state.selectedFav);
     saveSelection(OWN_SEL_KEY, state.selectedOwnIds);
-    root.querySelectorAll('.joseki-card .tickbox[aria-checked="true"]').forEach(function(t){
-      t.setAttribute('aria-checked','false');
-    });
+    root.querySelectorAll('.joseki-card .tickbox[aria-checked="true"]').forEach(function(t){ t.setAttribute('aria-checked','false'); });
     updateLibCount(); updateFavCount(); updateOwnCount();
   }
   function clearKeysAcrossAll(keysIterable){
@@ -1096,6 +1044,7 @@
     updateLibCount(); updateFavCount(); updateOwnCount();
   }
 
+  /* ===== Library: build, categories, variations ===== */
   function updateStartButton(){
     var n = totalSelectedCount();
     var shouldShow = overlayOpen && state.view !== 'mode' && n > 0 && n <= MAX_TOTAL;
@@ -1121,18 +1070,18 @@
     libCatsGrid.appendChild(loading);
 
     fetch(SGF_URL, { cache:'no-cache' })
-      .then(function(r){ return r.text(); })
-      .then(function(txt){
+      .then(r=>r.text())
+      .then(txt=>{
         const trees=parseAllTrees(txt);
         const lines=[];
         for (const seq of trees){
           linkify(seq,null);
-          const size=parseSZ(seq[0] && seq[0].SZ);
-          const rootAB=listCoords(seq[0] && seq[0].AB, size);
-          const rootAW=listCoords(seq[0] && seq[0].AW, size);
+          const size=parseSZ(seq[0]?.SZ);
+          const rootAB=listCoords(seq[0]?.AB, size);
+          const rootAW=listCoords(seq[0]?.AW, size);
           const paths=enumerateLines(seq,size);
           for (const moves of paths){
-            if ((moves && moves.length) >= MIN_MOVES){
+            if ((moves?.length||0) >= MIN_MOVES){
               lines.push({ size, rootAB, rootAW, moves });
             }
           }
@@ -1143,7 +1092,7 @@
         for (let i=0;i<lines.length;i++){
           const mv = lines[i].moves; if (mv.length < 2) continue;
           const s = lines[i].size || 19, m1 = mv[0], m2 = mv[1];
-          const key = s + '|' + m1.color + ':' + m1.x + ',' + m1.y + '|' + m2.color + ':' + m2.x + ',' + m2.y;
+          const key = `${s}|${m1.color}:${m1.x},${m1.y}|${m2.color}:${m2.x},${m2.y}`;
           if (!catMap.has(key)) catMap.set(key, { key, size:s, firstTwo:[m1,m2], lineIdx:[] });
           catMap.get(key).lineIdx.push(i);
         }
@@ -1152,11 +1101,11 @@
         renderLibCategories();
         state.builtLib = true;
       })
-      .catch(function(err){
+      .catch(err=>{
         libCatsGrid.innerHTML='';
         const errEl=document.createElement('div');
         errEl.className='s-card';
-        errEl.innerHTML='<div class="info-title">Could not load SGF</div><div class="info-desc">'+(err && err.message || 'Unknown error')+'</div>';
+        errEl.innerHTML='<div class="info-title">Could not load SGF</div><div class="info-desc">'+(err?.message||'Unknown error')+'</div>';
         libCatsGrid.appendChild(errEl);
       });
   }
@@ -1173,19 +1122,21 @@
       libCatsGrid.appendChild(empty); return;
     }
 
-    state.libCats.forEach(function(cat){
+    state.libCats.forEach(cat=>{
       const card=document.createElement('button'); card.type='button'; card.className='s-card joseki-card'; card.dataset.key=cat.key;
       const thumb=document.createElement('div'); thumb.className='drill-thumb';
       const meta=document.createElement('div'); meta.className='joseki-meta';
       const title=document.createElement('div'); title.className='joseki-title';
 
+      /* NEW: headline shows how many ≥ MIN_MOVES variations are in the category */
       const count = cat.lineIdx.length;
-      title.textContent = count + ' variation' + (count!==1?'s':'') + ' (≥ ' + MIN_MOVES + ' moves)';
+      title.textContent = `${count} variation${count!==1?'s':''} (≥ ${MIN_MOVES} moves)`;
 
       meta.appendChild(title);
       card.appendChild(thumb); card.appendChild(meta);
       libCatsGrid.appendChild(card);
 
+      /* Keep the two-move thumbnail preview */
       renderTwoMoveThumb(thumb, cat.size||19, cat.firstTwo);
       card.addEventListener('click', function(){ showLibCategory(cat.key); });
     });
@@ -1193,7 +1144,7 @@
 
   function renderLibVariations(catKey){
     libVarsGrid.innerHTML='';
-    const cat = state.libCats.find(function(c){ return c.key===catKey; });
+    const cat = state.libCats.find(c=>c.key===catKey);
     if (!cat){ renderLibCategories(); return; }
 
     if (!cat.lineIdx.length){
@@ -1203,7 +1154,7 @@
       libVarsGrid.appendChild(empty); return;
     }
 
-    cat.lineIdx.forEach(function(idx,i){
+    cat.lineIdx.forEach((idx,i)=>{
       const line = state.linesLib[idx];
       const key  = lineKey(line);
 
@@ -1215,7 +1166,7 @@
       const title=document.createElement('div'); title.className='joseki-title';
       const tick=document.createElement('span'); tick.className='tickbox'; tick.setAttribute('role','checkbox'); tick.setAttribute('tabindex','0');
 
-      title.textContent = 'Variation ' + (i+1) + ' (' + line.moves.length + ' moves)';
+      title.textContent = `Variation ${i+1} (${line.moves.length} moves)`;
       tick.setAttribute('aria-checked', isOnLineKey(key) ? 'true' : 'false');
 
       meta.appendChild(title);
@@ -1225,21 +1176,20 @@
       renderVariationThumb(thumb, line);
 
       function toggle(){
-        var on = tick.getAttribute('aria-checked') === 'true';
+        const on = tick.getAttribute('aria-checked') === 'true';
         if (on){ deselectLineKeyGlobal(key); }
         else   { selectLineKeyIn('lib', key); }
       }
       card.addEventListener('click', toggle);
       tick.addEventListener('click', function(e){ e.stopPropagation(); toggle(); });
-      tick.addEventListener('keydown', function(e){
-        if (e.key===' '||e.key==='Enter'){ e.preventDefault(); e.stopPropagation(); toggle(); }
-      });
+      tick.addEventListener('keydown', function(e){ if (e.key===' '||e.key==='Enter'){ e.preventDefault(); e.stopPropagation(); toggle(); }});
     });
   }
 
+  /* Clear LIBRARY — clears current mode */
   libClear && libClear.addEventListener('click', clearAllSelections);
 
-  /* Favorites list */
+  /* ===== Favorites list ===== */
   const FAV_KEY = 'go_favorites';
   function readFavs(){
     try { return JSON.parse(localStorage.getItem(FAV_KEY) || '{}') || {}; } catch(_){ return {}; }
@@ -1254,7 +1204,7 @@
     state.selectedFav = loadSelection(FAV_SEL_KEY);
     favGrid.innerHTML='';
     const map = readFavs();
-    const list = Object.values(map).filter(function(line){ return Array.isArray(line && line.moves) && line.moves.length >= MIN_MOVES; });
+    const list = Object.values(map).filter(line => Array.isArray(line?.moves) && line.moves.length >= MIN_MOVES);
 
     if (!list.length){
       const empty=document.createElement('div');
@@ -1264,14 +1214,12 @@
       state.linesFav = []; state.builtFav = true; updateFavCount(); return;
     }
 
-    state.linesFav = list.map(function(l){
-      return {
-        size: l.size || 19,
-        rootAB: Array.isArray(l.rootAB)?l.rootAB:[],
-        rootAW: Array.isArray(l.rootAW)?l.rootAW:[],
-        moves:  (l.moves||[]).map(function(m){ return {x:m.x,y:m.y,color:m.color}; })
-      };
-    });
+    state.linesFav = list.map(l => ({
+      size: l.size || 19,
+      rootAB: Array.isArray(l.rootAB)?l.rootAB:[],
+      rootAW: Array.isArray(l.rootAW)?l.rootAW:[],
+      moves:  (l.moves||[]).map(m => ({x:m.x,y:m.y,color:m.color}))
+    }));
 
     renderFavGrid(); state.builtFav = true;
   }
@@ -1285,7 +1233,7 @@
       favGrid.appendChild(empty); updateFavCount(); return;
     }
 
-    state.linesFav.forEach(function(line, i){
+    state.linesFav.forEach((line, i)=>{
       const key = lineKey(line);
       const card=document.createElement('button'); card.type='button';
       card.className='s-card joseki-card'; card.dataset.key=key;
@@ -1295,7 +1243,7 @@
       const title=document.createElement('div'); title.className='joseki-title';
       const tick=document.createElement('span'); tick.className='tickbox'; tick.setAttribute('role','checkbox'); tick.setAttribute('tabindex','0');
 
-      title.textContent = 'Favorite ' + (i+1) + ' (' + line.moves.length + ' moves)';
+      title.textContent = `Favorite ${i+1} (${line.moves.length} moves)`;
       tick.setAttribute('aria-checked', isOnLineKey(key) ? 'true' : 'false');
 
       meta.appendChild(title);
@@ -1305,22 +1253,21 @@
       renderVariationThumb(thumb, line);
 
       function toggle(){
-        var on = tick.getAttribute('aria-checked') === 'true';
+        const on = tick.getAttribute('aria-checked') === 'true';
         if (on){ deselectLineKeyGlobal(key); }
         else   { selectLineKeyIn('fav', key); }
       }
       card.addEventListener('click', toggle);
       tick.addEventListener('click', function(e){ e.stopPropagation(); toggle(); });
-      tick.addEventListener('keydown', function(e){
-        if (e.key===' '||e.key==='Enter'){ e.preventDefault(); e.stopPropagation(); toggle(); }
-      });
+      tick.addEventListener('keydown', function(e){ if (e.key===' '||e.key==='Enter'){ e.preventDefault(); e.stopPropagation(); toggle(); }});
     });
     updateFavCount();
   }
 
+  /* Clear FAVORITES — clears current mode */
   favClear && favClear.addEventListener('click', clearAllSelections);
 
-  /* My Patterns (OWN) */
+  /* ===== My Patterns (OWN) ===== */
   function updateOwnCount(){
     const n = totalSelectedCount();
     if (ownCount) ownCount.textContent = n + ' / ' + MAX_TOTAL + ' selected';
@@ -1328,10 +1275,10 @@
   }
 
   function buildOwnList(){
-    state.selectedOwnIds = loadSelection(OWN_SEL_KEY);
+    state.selectedOwnIds = loadSelection(OWN_SEL_KEY); // IDs
     ownGrid.innerHTML='';
 
-    const items = loadOwnPatterns().filter(function(p){ return Array.isArray(p && p.moves) && p.moves.length >= MIN_MOVES; });
+    const items = loadOwnPatterns().filter(p => Array.isArray(p?.moves) && p.moves.length >= MIN_MOVES);
 
     if (!items.length){
       const empty=document.createElement('div');
@@ -1341,16 +1288,14 @@
       state.linesOwn = []; state.builtOwn = true; updateOwnCount(); return;
     }
 
-    state.linesOwn = items.map(function(p){
-      return {
-        __id: p.id || ('own-'+Math.random().toString(36).slice(2)),
-        title: p.title || 'My Pattern',
-        size: p.size || 19,
-        rootAB: Array.isArray(p.rootAB) ? p.rootAB : [],
-        rootAW: Array.isArray(p.rootAW) ? p.rootAW : [],
-        moves: (p.moves||[]).map(function(m){ return { x:m.x, y:m.y, color:m.color }; })
-      };
-    });
+    state.linesOwn = items.map(p => ({
+      __id: p.id || ('own-'+Math.random().toString(36).slice(2)),
+      title: p.title || 'My Pattern',
+      size: p.size || 19,
+      rootAB: Array.isArray(p.rootAB) ? p.rootAB : [],
+      rootAW: Array.isArray(p.rootAW) ? p.rootAW : [],
+      moves: (p.moves||[]).map(m => ({ x:m.x, y:m.y, color:m.color }))
+    }));
 
     refreshOwnLookupFromLines();
     renderOwnGrid(); state.builtOwn = true;
@@ -1365,7 +1310,7 @@
       ownGrid.appendChild(empty); updateOwnCount(); return;
     }
 
-    state.linesOwn.forEach(function(line, i){
+    state.linesOwn.forEach((line, i)=>{
       const id   = line.__id;
       const key  = lineKey(line);
 
@@ -1377,7 +1322,7 @@
       const title=document.createElement('div'); title.className='joseki-title';
       const tick=document.createElement('span'); tick.className='tickbox'; tick.setAttribute('role','checkbox'); tick.setAttribute('tabindex','0');
 
-      title.textContent = 'Pattern ' + (i+1) + ': ' + line.moves.length + ' Moves';
+      title.textContent = `Pattern ${i+1}: ${line.moves.length} Moves`;
       tick.setAttribute('aria-checked', state.selectedOwnIds.has(id) ? 'true' : 'false');
 
       meta.appendChild(title);
@@ -1387,81 +1332,53 @@
       renderVariationThumb(thumb, line);
 
       function toggle(){
-        var on = tick.getAttribute('aria-checked') === 'true';
+        const on = tick.getAttribute('aria-checked') === 'true';
         if (on){ deselectOwnId(id); }
         else   { selectOwnId(id); }
       }
       card.addEventListener('click', toggle);
       tick.addEventListener('click', function(e){ e.stopPropagation(); toggle(); });
-      tick.addEventListener('keydown', function(e){
-        if (e.key===' '||e.key==='Enter'){ e.preventDefault(); e.stopPropagation(); toggle(); }
-      });
+      tick.addEventListener('keydown', function(e){ if (e.key===' '||e.key==='Enter'){ e.preventDefault(); e.stopPropagation(); toggle(); }});
     });
     updateOwnCount();
   }
 
+  /* Clear OWN — clears current mode */
   ownClear && ownClear.addEventListener('click', clearAllSelections);
 
+  /* Live-refresh if localStorage changes from another tab */
   window.addEventListener('storage', function(e){
     if (e.key === 'go:ownpatterns' && state.view === 'own') buildOwnList();
     if (e.key === 'go_favorites'  && state.view === 'fav') buildFavoritesList();
   });
 
-  /* This function is the bridge to drills-board/drills-board.html */
-  function launchDrillBoard() {
-    var selection = {
-      mode: state.mode,
-      library: Array.from(state.selectedLib || []),
-      favorites: Array.from(state.selectedFav || []),
-      own: Array.from(state.selectedOwnIds || [])
-    };
-
-    try {
-      localStorage.setItem('go:drills:pendingSelection', JSON.stringify(selection));
-    } catch (_) {}
-
-    try {
-      if (window.GoDrills && typeof window.GoDrills.close === 'function') {
-        window.GoDrills.close();
-      }
-    } catch (_) {}
-
-    // Adjust this path if your file lives elsewhere
-    window.location.href = 'drills-board/drills-board.html';
-  }
-
-  /* PRO unlimited runs: intercepts and uses launchDrillBoard in Complete mode */
+  /* ========= PRO UNLIMITED RUNS: start/retry bypass =========
+     NOTE: Disabled for Blitz mode (only active in Complete). */
   function startDrillNow(){
-    if (state.mode === 'blitz') {
-      showNotice(
-        'Blitz drills board is not ready yet. For now, you can use Complete drills with the same selections.',
-        'Blitz coming soon'
-      );
-      return;
-    }
-    launchDrillBoard();
+    try{
+      if (window.GoDrills && typeof window.GoDrills.close === 'function') GoDrills.close();
+      var cap = document.getElementById('drill-cap'); if (cap) cap.style.display='none';
+      if (window.DrillBoard && typeof window.DrillBoard.load === 'function'){
+        DrillBoard.load(null, { perJoseki: 3 });
+      }
+    }catch(_){}
   }
-
   function captureProStart(e){
     if (!isPro()) return;
-    if (state.mode !== 'complete') return;
+    if (state.mode !== 'complete') return; // prevent in Blitz
     if (!e) return;
     e.preventDefault(); e.stopImmediatePropagation(); e.stopPropagation();
     startDrillNow();
   }
   function captureProRetry(e){
     if (!isPro()) return;
-    if (state.mode !== 'complete') return;
+    if (state.mode !== 'complete') return; // prevent in Blitz
     var btn = e && e.target && e.target.closest ? e.target.closest('#drill-done-retry') : null;
     if (!btn) return;
     e.preventDefault(); e.stopImmediatePropagation(); e.stopPropagation();
-    try{
-      var done = document.getElementById('drill-done');
-      if (done) done.style.display='none';
-    }catch(_){}
+    try{ var done = document.getElementById('drill-done'); if (done) done.style.display='none'; }catch(_){}
     startDrillNow();
   }
-
   document.addEventListener('click', function(e){
     var start = e.target && e.target.closest ? e.target.closest('#drills-start') : null;
     if (start) captureProStart(e);
@@ -1486,6 +1403,13 @@
   }
   setInterval(autoHideCapIfPro, 800);
 
+  // Default to Complete keys; will switch when user taps Blitz
   setMode('complete');
+
+  // Auto-open overlay on this standalone page
+  open();
 })();
 </script>
+
+</body>
+</html>
