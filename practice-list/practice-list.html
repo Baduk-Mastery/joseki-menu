@@ -128,27 +128,136 @@
     grid-row:2; grid-column:3; justify-self:end;
   }
 
-  .s-back{
-    padding:8px 12px; border-radius:12px; cursor:pointer; font-weight:800; line-height:1;
-    background: rgba(37,99,235,.22); color:#e6f3ff;
-    border:2px solid rgba(37,99,235,.75);
-    box-shadow:0 8px 20px rgba(2,6,23,.45), inset 0 0 0 1px rgba(255,255,255,.08);
-    transition:transform .06s, background .15s, box-shadow .15s;
-  }
-  .s-back:hover{  background: rgba(37,99,235,.26); }
-  .s-back:active{ background: rgba(37,99,235,.32); transform:translateY(1px); }
+  /* Wood-style buttons – same look as Practice Board .pbtn */
+  .s-back,
+  .s-fav,
+  .s-btn,
+  .fav-toggle{
+    position:relative;
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    gap:6px;
 
-  .s-fav{
-    padding:8px 12px; border-radius:12px; cursor:pointer; font-weight:800; line-height:1;
-    background: rgba(37,99,235,.22); color:#e6f3ff;
-    border:2px solid rgba(37,99,235,.75);
-    box-shadow:0 8px 20px rgba(2,6,23,.45), inset 0 0 0 1px rgba(255,255,255,.08);
-    transition:transform .06s, background .15s, box-shadow .15s;
-  }
-  .s-fav:hover{  background: rgba(37,99,235,.26); }
-  .s-fav:active{ background: rgba(37,99,235,.32); transform:translateY(1px); }
+    padding:8px 18px;
+    border-radius:10px;
+    border:1px solid rgba(255,255,255,.40);
 
-  .s-title{ margin:0; font-size:24px; line-height:1.15; font-weight:800; text-shadow:0 1px 2px rgba(0,0,0,.35); }
+    font-size:16px;
+    font-weight:800;
+    line-height:1.1;
+    color:#fff3cf;
+    text-shadow:0 1px 0 rgba(120,60,20,.7);
+    cursor:pointer;
+
+    user-select:none;
+    -webkit-user-select:none;
+    -moz-user-select:none;
+    -ms-user-select:none;
+    -webkit-tap-highlight-color:transparent;
+
+    background-image:
+      linear-gradient(
+        to bottom,
+        rgba(255,255,255,.12),
+        rgba(255,255,255,.03) 38%,
+        rgba(0,0,0,.14) 100%
+      ),
+      url('../img/wood.jpg');
+    background-size:100% 100%, cover;
+    background-position:center;
+    background-repeat:no-repeat;
+
+    filter:brightness(1.08) saturate(.96);
+
+    box-shadow:
+      0 3px 0 rgba(133,74,26,.85),
+      0 8px 14px rgba(0,0,0,.45);
+
+    transition:
+      transform .08s ease-out,
+      box-shadow .08s ease-out,
+      filter .12s ease-out;
+  }
+
+  .s-back:hover,
+  .s-fav:hover,
+  .s-btn:hover,
+  .fav-toggle:hover{
+    filter:brightness(1.12) saturate(.98);
+    transform:translateY(-1px);
+    box-shadow:
+      0 4px 0 rgba(133,74,26,.9),
+      0 10px 16px rgba(0,0,0,.48);
+  }
+
+  .s-back:active,
+  .s-fav:active,
+  .s-btn:active,
+  .fav-toggle:active{
+    filter:brightness(.97) saturate(.96);
+    transform:translateY(2px);
+    box-shadow:
+      0 1px 0 rgba(120,60,20,.9),
+      0 4px 8px rgba(0,0,0,.55);
+  }
+
+  /* Star / favorite button: same design, compact square */
+  .fav-toggle{
+    padding:0;
+    min-width:34px;
+    min-height:34px;
+    border-radius:10px;
+    font-size:20px;
+    line-height:1;
+  }
+  .prac-cta .fav-icon{
+    display:inline-grid;
+    place-items:center;
+    margin-left:auto;
+  }
+
+  /* Slightly larger variant used in toasts */
+  .s-btn.s-btn-lg{
+    padding:10px 22px;
+    font-size:16px;
+  }
+
+  /* Danger variant (e.g. Remove) – red-tinted wood */
+  .s-btn.s-btn-danger{
+    background-image:
+      linear-gradient(
+        to bottom,
+        rgba(255,255,255,.10),
+        rgba(255,255,255,.03) 38%,
+        rgba(0,0,0,.18) 100%
+      ),
+      url('../img/wood.jpg');
+    background-size:100% 100%, cover;
+    background-position:center;
+    background-repeat:no-repeat;
+    background-color:rgba(220,38,38,.55);
+    border-color:rgba(248,113,113,.95);
+    box-shadow:
+      0 3px 0 rgba(120,30,20,.9),
+      0 8px 14px rgba(0,0,0,.50);
+  }
+
+  /* Pressed/active state for star when favorited */
+  .fav-toggle[aria-pressed="true"]{
+    filter:brightness(1.18) saturate(1.05);
+    box-shadow:
+      0 4px 0 rgba(147,92,36,.96),
+      0 12px 20px rgba(0,0,0,.58);
+  }
+
+  .s-title{
+    margin:0;
+    font-size:24px;
+    line-height:1.15;
+    font-weight:800;
+    text-shadow:0 1px 2px rgba(0,0,0,.35);
+  }
 
   .s-card{
     background: rgba(37,99,235,.22);
@@ -197,38 +306,16 @@
   .prac-cta{
     margin-top:auto; display:flex; align-items:center; gap:8px;
   }
-  .s-btn{
-    display:inline-block; padding:10px 12px; border-radius:12px; font-weight:800; font-size:13px; cursor:pointer;
-    background: rgba(37,99,235,.22);
-    color:#e6f3ff; border:2px solid rgba(37,99,235,.75);
-    box-shadow:0 8px 20px rgba(2,6,23,.45), inset 0 0 0 1px rgba(255,255,255,.08);
-    transition:transform .06s, background .15s, box-shadow .15s;
-  }
-  .s-btn:active{ transform:translateY(1px); }
 
-  .prac-cta .fav-icon{
-    display:inline-grid; place-items:center;
-    padding:0; margin-left:auto;
-    line-height:1; border-radius:10px;
-    min-width:34px; min-height:34px;
-    font-size:20px;
+  .level-grid{
+    display:grid; grid-template-columns:1fr; gap:12px; margin-top:8px;
   }
-
-  .s-btn.s-btn-danger{
-    background: rgba(220,38,38,.22);
-    border-color: rgba(220,38,38,.75);
-  }
-
-  .fav-toggle[aria-pressed="true"]{
-    background: rgba(37,99,235,.35);
-    border-color: #60a5fa;
-  }
-
-  .level-grid{ display:grid; grid-template-columns:1fr; gap:12px; margin-top:8px; }
   @media (min-width: 720px){
     .level-grid{ grid-template-columns:1fr 1fr; }
   }
-  .level-card{ position:relative; padding:12px; text-align:left; cursor:pointer; }
+  .level-card{
+    position:relative; padding:12px; text-align:left; cursor:pointer;
+  }
   .level-card:active{ transform:translateY(1px); }
   .level-title{ font-weight:900; font-size:16px; margin-bottom:4px; }
   .level-desc{ font-size:13px; line-height:1.5; opacity:.95; }
