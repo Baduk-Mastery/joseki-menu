@@ -1,4 +1,208 @@
-<!-- ============== DRILLS (selection overlay) ============== -->
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Joseki Master – Drills</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <style>
+    /* Base page look, same vibe as other pages */
+    html, body {
+      margin: 0;
+      padding: 0;
+      min-height: 100%;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      color: #e6f3ff;
+      background:
+        linear-gradient(rgba(0,0,0,.35), rgba(0,0,0,.55)),
+        url("https://3d85c7a311526e02aeeeb19e952d0c09.cdn.bubble.io/f1755870506985x437178801728222500/wood.jpg");
+      background-size: cover;
+      background-position: center;
+      background-attachment: fixed;
+    }
+
+    /* All the original Drills styles, scoped to drills-root */
+    #drills-root{
+      --wood:url('https://3d85c7a311526e02aeeeb19e952d0c09.cdn.bubble.io/f1755870506985x437178801728222500/wood.jpg');
+      --maxw:720px;
+      color:#e6f3ff;
+    }
+    #drills-root #drills-overlay{
+      position:fixed; inset:0; z-index:100000; display:none;
+      align-items:flex-start; justify-content:center;
+      padding:12px 0; overflow:auto; -webkit-overflow-scrolling:touch;
+      background-image:
+        linear-gradient(rgba(0,0,0,.35), rgba(0,0,0,.45)),
+        var(--wood);
+      background-size:cover; background-position:center;
+    }
+    #drills-root .s-inner{
+      width:min(92vw,var(--maxw)); padding:16px 24px 22px; text-align:left; margin:0 auto; position:relative;
+    }
+    #drills-root .s-header{
+      display:grid; grid-template-columns:auto 1fr; align-items:center; column-gap:14px; margin:6px 0 10px;
+    }
+    #drills-root .s-title{ margin:0; font-size:24px; line-height:1.15; font-weight:800; text-shadow:0 1px 2px rgba(0,0,0,.35); }
+
+    #drills-root .s-back,
+    #drills-root .s-btn,
+    #drills-root .s-card{
+      background: rgba(37,99,235,.22);
+      color:#e6f3ff;
+      border:2px solid rgba(37,99,235,.75);
+      border-radius:12px;
+      box-shadow:0 8px 20px rgba(2,6,23,.45), inset 0 0 0 1px rgba(255,255,255,.08);
+    }
+    #drills-root .s-back{
+      padding:8px 12px; cursor:pointer; font-weight:800; line-height:1;
+      transition:transform .06s, background .15s, box-shadow .15s;
+    }
+    #drills-root .s-back:hover{  background: rgba(37,99,235,.26); }
+    #drills-root .s-back:active{ background: rgba(37,99,235,.32); transform:translateY(1px); }
+
+    #drills-root .s-card{ padding:12px; box-sizing:border-box; overflow:hidden; }
+    #drills-root .info-title{ font-weight:900; font-size:16px; margin-bottom:4px; }
+    #drills-root .info-desc{ font-size:13px; line-height:1.5; opacity:.96; }
+
+    #drills-root .s-btn{
+      display:inline-block; padding:10px 12px; font-weight:800; font-size:13px; cursor:pointer;
+      transition:transform .06s, background .15s, box-shadow .15s;
+    }
+    #drills-root .s-btn.s-btn-lg{ font-size:16px; padding:14px 18px; }
+    #drills-root .s-btn:active{ transform:translateY(1px); }
+
+    #drills-root .drill-grid{ display:grid; grid-template-columns:1fr; gap:12px; margin-top:14px; }
+    @media (min-width: 720px){ #drills-root .drill-grid{ grid-template-columns:1fr 1fr; } }
+
+    #drills-root .drill-card{
+      display:flex; align-items:center; gap:12px; width:100%; text-align:left; padding:10px; cursor:pointer;
+      transition:transform .06s, background .15s; user-select:none; -webkit-user-select:none;
+    }
+    #drills-root .drill-card:active{ transform:translateY(1px); }
+    #drills-root .drill-meta{ flex:1; min-width:0; }
+    #drills-root .drill-title{ font-weight:800; font-size:18px; line-height:1.3; }
+
+    #drills-root .drill-desc, #drills-root .joseki-desc{ display:none !important; }
+    #drills-root .drill-cta{ margin-top:10px; display:flex; flex-wrap:wrap; gap:8px; }
+
+    #drills-root .drill-list-grid{
+      display:grid; grid-template-columns:1fr; gap:12px; margin-top:12px;
+    }
+    @media (min-width: 720px){ #drills-root .drill-list-grid{ grid-template-columns:1fr 1fr; } }
+
+    #drills-root .joseki-card{
+      position:relative; display:flex; align-items:center; gap:12px; width:100%;
+      text-align:left; padding:10px; cursor:pointer;
+      transition:transform .06s, background .15s; user-select:none; -webkit-user-select:none;
+    }
+    #drills-root .joseki-card:active{ transform:translateY(1px); }
+
+    #drills-root .drill-thumb{
+      width:132px; height:132px; border-radius:10px; overflow:hidden; flex:none;
+      position: relative;
+      background-image:
+        linear-gradient(rgba(0,0,0,.04), rgba(0,0,0,.06)),
+        var(--wood);
+      background-size:cover; background-position:center;
+      border:2px solid rgba(37,99,235,.65);
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,.06);
+    }
+    #drills-root .drill-thumb canvas.prac-canvas{
+      position:absolute; inset:0; width:100%; height:100%;
+      display:block; pointer-events:none;
+    }
+
+    #drills-root .joseki-meta{ flex:1; min-width:0; display:flex; flex-direction:column; }
+    #drills-root .joseki-title{ font-weight:800; font-size:18px; line-height:1.3; }
+
+    #drills-root .tickbox{
+      position:absolute; top:10px; right:10px; width:24px; height:24px; border-radius:8px;
+      display:flex; align-items:center; justify-content:center;
+      border:2px solid rgba(37,99,235,.75); background: rgba(37,99,235,.18);
+      font-weight:900; font-size:16px; line-height:1;
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,.08); user-select:none;
+    }
+    #drills-root .tickbox::after{ content:""; }
+    #drills-root .tickbox[aria-checked="true"]{ background: rgba(37,99,235,.35); border-color:#60a5fa; }
+    #drills-root .tickbox[aria-checked="true"]::after{ content:"✓"; }
+
+    #drills-root .drill-actions{
+      display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin-top:12px; justify-content:flex-start; padding:8px 0;
+    }
+    #drills-root .drill-count{ margin-left:auto; opacity:.95; font-size:13px; }
+
+    #drills-root .floating-clear{
+      position:fixed;
+      left:calc(env(safe-area-inset-left, 0px) + 12px);
+      bottom:calc(env(safe-area-inset-bottom, 0px) + 28px);
+      z-index:100003;
+    }
+    @media (max-width:480px){
+      #drills-root .floating-clear{
+        left:calc(env(safe-area-inset-left, 0px) + 8px);
+        bottom:calc(env(safe-area-inset-bottom, 0px) + 20px);
+      }
+    }
+
+    #drills-root .floating-start{
+      position:fixed;
+      left:50%;
+      bottom:calc(env(safe-area-inset-bottom, 0px) + 28px);
+      transform:translate(-50%, 0);
+      z-index:100010;
+      display:none;
+      white-space:nowrap;
+      pointer-events:auto;
+      touch-action:manipulation;
+    }
+    #drills-root .floating-start:active{ transform:translate(-50%, 0); }
+    @media (max-width:480px){
+      #drills-root .floating-start{
+        bottom:calc(env(safe-area-inset-bottom, 0px) + 20px);
+      }
+    }
+
+    #drills-root #drills-notice{
+      position:fixed; left:50%; top:50%; transform:translate(-50%,-50%);
+      z-index:100001; display:none; padding:0; background:transparent;
+      pointer-events:none;
+    }
+    #drills-root #drills-notice .s-inner{ width:auto; padding:0; margin:0; display:block; }
+    #drills-root #drills-notice .drills-notice-card{
+      pointer-events:auto;
+      background:none;
+      background-image:
+        linear-gradient(rgba(0,0,0,.35), rgba(0,0,0,.45)),
+        var(--wood);
+      background-size:cover; background-position:center;
+      border:2px solid rgba(37,99,235,.75);
+      border-radius:12px;
+      box-shadow:0 8px 20px rgba(2,6,23,.45), inset 0 0 0 1px rgba(255,255,255,.08);
+      min-width:280px; max-width:min(92vw, 420px);
+      max-height:calc(100vh - 32px); overflow:auto;
+      text-shadow:0 1px 2px rgba(0,0,0,.35);
+      padding:10px 12px;
+    }
+    #drills-root #drills-notice .actions{
+      margin-top:10px; display:flex; gap:10px; justify-content:center; flex-wrap:wrap;
+    }
+
+    #drills-root.notice-open #drills-overlay .s-inner{ pointer-events:none; }
+
+    @media (max-width:480px){
+      #drills-root .s-inner{ padding:16px 12px 22px; }
+    }
+
+    #drills-root #drills-mode-view .drill-meta{
+      display:flex; align-items:center; gap:12px;
+    }
+    #drills-root #drills-mode-view .drill-cta{
+      margin-top:0; margin-left:auto;
+    }
+  </style>
+</head>
+<body>
+
 <div id="drills-root">
   <!-- Drills overlay -->
   <div id="drills-overlay" aria-modal="true" role="dialog" style="display:none">
@@ -8,7 +212,7 @@
         <h1 class="s-title">Drills</h1>
       </div>
 
-      <!-- Mode chooser (first layer) -->
+      <!-- Mode chooser -->
       <div id="drills-mode-view" style="display:none">
         <div class="s-card info" style="margin-top:6px">
           <div class="info-title">Choose a mode</div>
@@ -31,15 +235,16 @@
         </div>
       </div>
 
-      <!-- Short description card (compact) -->
+      <!-- Intro card -->
       <div class="s-card info" id="drills-intro">
         <div class="info-title">How Complete drills work</div>
         <div class="info-desc">
-          Complete drills drop you into a random point of each selected joseki/pattern (10+ moves only). Three drills per joseki, with random corner and color. Your task: finish the sequence correctly.
+          Complete drills drop you into a random point of each selected joseki/pattern (10+ moves only).
+          Three drills per joseki, with random corner and color. Your task: finish the sequence correctly.
         </div>
       </div>
 
-      <!-- Options (first screen for COMPLETE/BLITZ) -->
+      <!-- Options -->
       <div class="drill-grid" id="drills-options">
         <button class="s-card drill-card" data-type="library" type="button" aria-label="Drills from Library Josekis">
           <div class="drill-meta">
@@ -63,7 +268,7 @@
         </button>
       </div>
 
-      <!-- LIBRARY (Categories + Variations) -->
+      <!-- Library -->
       <div id="drills-lib-view" style="display:none">
         <div class="s-card info" id="drill-lib-info" style="margin-top:6px">
           <div class="info-title">Select a category</div>
@@ -76,7 +281,7 @@
         </div>
       </div>
 
-      <!-- FAVORITES SELECTION -->
+      <!-- Favorites -->
       <div id="drills-fav-view" style="display:none">
         <div class="s-card info" style="margin-top:6px">
           <div class="info-title">Select favorite josekis</div>
@@ -89,7 +294,7 @@
         </div>
       </div>
 
-      <!-- MY PATTERNS SELECTION -->
+      <!-- Own patterns -->
       <div id="drills-own-view" style="display:none">
         <div class="s-card info" style="margin-top:6px">
           <div class="info-title">Select your patterns</div>
@@ -104,7 +309,7 @@
     </div>
   </div>
 
-  <!-- Centered notice (OK-only) -->
+  <!-- Centered notice -->
   <div id="drills-notice" role="alert" aria-live="polite" style="display:none">
     <div class="s-inner">
       <div class="s-card drills-notice-card">
@@ -118,219 +323,20 @@
   </div>
 </div>
 
-<style>
-  /* Scope to this element */
-  #drills-root{
-    --wood:url('https://3d85c7a311526e02aeeeb19e952d0c09.cdn.bubble.io/f1755870506985x437178801728222500/wood.jpg');
-    --maxw:720px;
-    color:#e6f3ff;
-  }
-  /* Overlay shell */
-  #drills-root #drills-overlay{
-    position:fixed; inset:0; z-index:100000; display:none;
-    align-items:flex-start; justify-content:center;
-    padding:12px 0; overflow:auto; -webkit-overflow-scrolling:touch;
-    background-image:
-      linear-gradient(rgba(0,0,0,.35), rgba(0,0,0,.45)),
-      var(--wood);
-    background-size:cover; background-position:center;
-  }
-  #drills-root .s-inner{
-    width:min(92vw,var(--maxw)); padding:16px 24px 22px; text-align:left; margin:0 auto; position:relative;
-  }
-  #drills-root .s-header{
-    display:grid; grid-template-columns:auto 1fr; align-items:center; column-gap:14px; margin:6px 0 10px;
-  }
-  #drills-root .s-title{ margin:0; font-size:24px; line-height:1.15; font-weight:800; text-shadow:0 1px 2px rgba(0,0,0,.35); }
-
-  /* Buttons + cards */
-  #drills-root .s-back,
-  #drills-root .s-btn,
-  #drills-root .s-card{
-    background: rgba(37,99,235,.22);
-    color:#e6f3ff;
-    border:2px solid rgba(37,99,235,.75);
-    border-radius:12px;
-    box-shadow:0 8px 20px rgba(2,6,23,.45), inset 0 0 0 1px rgba(255,255,255,.08);
-  }
-  #drills-root .s-back{
-    padding:8px 12px; cursor:pointer; font-weight:800; line-height:1;
-    transition:transform .06s, background .15s, box-shadow .15s;
-  }
-  #drills-root .s-back:hover{  background: rgba(37,99,235,.26); }
-  #drills-root .s-back:active{ background: rgba(37,99,235,.32); transform:translateY(1px); }
-
-  #drills-root .s-card{ padding:12px; box-sizing:border-box; overflow:hidden; }
-  #drills-root .info-title{ font-weight:900; font-size:16px; margin-bottom:4px; }
-  #drills-root .info-desc{ font-size:13px; line-height:1.5; opacity:.96; }
-
-  #drills-root .s-btn{
-    display:inline-block; padding:10px 12px; font-weight:800; font-size:13px; cursor:pointer;
-    transition:transform .06s, background .15s, box-shadow .15s;
-  }
-  #drills-root .s-btn.s-btn-lg{ font-size:16px; padding:14px 18px; }
-  #drills-root .s-btn:active{ transform:translateY(1px); }
-
-  /* Options grid */
-  #drills-root .drill-grid{ display:grid; grid-template-columns:1fr; gap:12px; margin-top:14px; }
-  @media (min-width: 720px){ #drills-root .drill-grid{ grid-template-columns:1fr 1fr; } }
-
-  /* Option card layout */
-  #drills-root .drill-card{
-    display:flex; align-items:center; gap:12px; width:100%; text-align:left; padding:10px; cursor:pointer;
-    transition:transform .06s, background .15s; user-select:none; -webkit-user-select:none;
-  }
-  #drills-root .drill-card:active{ transform:translateY(1px); }
-  #drills-root .drill-meta{ flex:1; min-width:0; }
-  #drills-root .drill-title{ font-weight:800; font-size:18px; line-height:1.3; }
-  #drills-root .drill-desc, #drills-root .joseki-desc{ display:none !important; }
-  #drills-root .drill-cta{ margin-top:10px; display:flex; flex-wrap:wrap; gap:8px; }
-
-  /* Library, Favorites & Own lists */
-  #drills-root .drill-list-grid{
-    display:grid; grid-template-columns:1fr; gap:12px; margin-top:12px;
-  }
-  @media (min-width: 720px){ #drills-root .drill-list-grid{ grid-template-columns:1fr 1fr; } }
-
-  #drills-root .joseki-card{
-    position:relative; display:flex; align-items:center; gap:12px; width:100%;
-    text-align:left; padding:10px; cursor:pointer;
-    transition:transform .06s, background .15s; user-select:none; -webkit-user-select:none;
-  }
-  #drills-root .joseki-card:active{ transform:translateY(1px); }
-
-  /* Thumbnail */
-  #drills-root .drill-thumb{
-    width:132px; height:132px; border-radius:10px; overflow:hidden; flex:none;
-    position: relative;
-    background-image:
-      linear-gradient(rgba(0,0,0,.04), rgba(0,0,0,.06)),
-      var(--wood);
-    background-size:cover; background-position:center;
-    border:2px solid rgba(37,99,235,.65);
-    box-shadow: inset 0 0 0 1px rgba(255,255,255,.06);
-  }
-  #drills-root .drill-thumb canvas.prac-canvas{
-    position:absolute; inset:0; width:100%; height:100%;
-    display:block; pointer-events:none;
-  }
-
-  #drills-root .joseki-meta{ flex:1; min-width:0; display:flex; flex-direction:column; }
-  #drills-root .joseki-title{ font-weight:800; font-size:18px; line-height:1.3; }
-
-  /* Tickbox */
-  #drills-root .tickbox{
-    position:absolute; top:10px; right:10px; width:24px; height:24px; border-radius:8px;
-    display:flex; align-items:center; justify-content:center;
-    border:2px solid rgba(37,99,235,.75); background: rgba(37,99,235,.18);
-    font-weight:900; font-size:16px; line-height:1;
-    box-shadow: inset 0 0 0 1px rgba(255,255,255,.08); user-select:none;
-  }
-  #drills-root .tickbox::after{ content:""; }
-  #drills-root .tickbox[aria-checked="true"]{ background: rgba(37,99,235,.35); border-color:#60a5fa; }
-  #drills-root .tickbox[aria-checked="true"]::after{ content:"✓"; }
-
-  /* Footer actions */
-  #drills-root .drill-actions{
-    display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin-top:12px; justify-content:flex-start; padding:8px 0;
-  }
-  #drills-root .drill-count{ margin-left:auto; opacity:.95; font-size:13px; }
-
-  /* Floating Clear button */
-  #drills-root .floating-clear{
-    position:fixed;
-    left:calc(env(safe-area-inset-left, 0px) + 12px);
-    bottom:calc(env(safe-area-inset-bottom, 0px) + 28px);
-    z-index:100003;
-  }
-  @media (max-width:480px){
-    #drills-root .floating-clear{
-      left:calc(env(safe-area-inset-left, 0px) + 8px);
-      bottom:calc(env(safe-area-inset-bottom, 0px) + 20px);
-    }
-  }
-
-  /* Floating Start button (bottom center) */
-  #drills-root .floating-start{
-    position:fixed;
-    left:50%;
-    bottom:calc(env(safe-area-inset-bottom, 0px) + 28px);
-    transform:translate(-50%, 0);
-    z-index:100010;
-    display:none;
-    white-space:nowrap;
-    pointer-events:auto;
-    touch-action:manipulation;
-  }
-  #drills-root .floating-start:active{ transform:translate(-50%, 0); }
-  @media (max-width:480px){
-    #drills-root .floating-start{
-      bottom:calc(env(safe-area-inset-bottom, 0px) + 20px);
-    }
-  }
-
-  /* Centered notice */
-  #drills-root #drills-notice{
-    position:fixed; left:50%; top:50%; transform:translate(-50%,-50%);
-    z-index:100001; display:none; padding:0; background:transparent;
-    pointer-events:none;
-  }
-  #drills-root #drills-notice .s-inner{ width:auto; padding:0; margin:0; display:block; }
-  #drills-root #drills-notice .drills-notice-card{
-    pointer-events:auto;
-    background:none;
-    background-image:
-      linear-gradient(rgba(0,0,0,.35), rgba(0,0,0,.45)),
-      var(--wood);
-    background-size:cover; background-position:center;
-    border:2px solid rgba(37,99,235,.75);
-    border-radius:12px;
-    box-shadow:0 8px 20px rgba(2,6,23,.45), inset 0 0 0 1px rgba(255,255,255,.08);
-    min-width:280px; max-width:min(92vw, 420px);
-    max-height:calc(100vh - 32px); overflow:auto;
-    text-shadow:0 1px 2px rgba(0,0,0,.35);
-    padding:10px 12px;
-  }
-  #drills-root #drills-notice .actions{
-    margin-top:10px; display:flex; gap:10px; justify-content:center; flex-wrap:wrap;
-  }
-
-  #drills-root.notice-open #drills-overlay .s-inner{ pointer-events:none; }
-
-  @media (max-width:480px){
-    #drills-root .s-inner{ padding:16px 12px 22px; }
-  }
-
-  /* Mode cards: push button to the right */
-  #drills-root #drills-mode-view .drill-meta{
-    display:flex; align-items:center; gap:12px;
-  }
-  #drills-root #drills-mode-view .drill-cta{
-    margin-top:0; margin-left:auto;
-  }
-</style>
-
 <script>
-/* Drills overlay with Blitz mode + localStorage bridge to a separate board page */
 (function(){
   var root   = document.getElementById('drills-root');
   if (!root) return;
-
-  // adjust this path to wherever your drill board HTML lives
-  var DRILL_BOARD_URL = '/drills-board/drills-board.html';
 
   var overlay   = root.querySelector('#drills-overlay');
   var backBtn   = root.querySelector('#drills-back');
   var titleEl   = root.querySelector('.s-title');
   var introCard = root.querySelector('#drills-intro');
 
-  /* Mode view elements */
   var modeView  = root.querySelector('#drills-mode-view');
   var modeGrid  = root.querySelector('#drills-mode-grid');
-
   var options   = root.querySelector('#drills-options');
 
-  /* Library view elements */
   var libView   = root.querySelector('#drills-lib-view');
   var libInfo   = libView.querySelector('#drill-lib-info');
   var libInfoTitle = libInfo.querySelector('.info-title');
@@ -346,19 +352,16 @@
   var libClear  = root.querySelector('#drill-lib-clear');
   var libCount  = root.querySelector('#drill-lib-count');
 
-  /* Favorites view elements */
   var favView   = root.querySelector('#drills-fav-view');
   var favGrid   = root.querySelector('#drill-fav-grid');
   var favClear  = root.querySelector('#drill-fav-clear');
   var favCount  = root.querySelector('#drill-fav-count');
 
-  /* Own patterns view elements */
   var ownView   = root.querySelector('#drills-own-view');
   var ownGrid   = root.querySelector('#drill-own-grid');
   var ownClear  = root.querySelector('#drill-own-clear');
   var ownCount  = root.querySelector('#drill-own-count');
 
-  /* Start Drill floating button (initially hidden) */
   var startBtn = document.createElement('button');
   startBtn.id = 'drills-start';
   startBtn.type = 'button';
@@ -375,22 +378,11 @@
     }, true);
   });
 
-  // new: save selection to localStorage and go to dedicated board page
   startBtn.addEventListener('click', function(e){
     e.stopPropagation();
-    e.preventDefault();
-
-    try {
-      if (window.GoDrills && typeof GoDrills.getSelections === 'function') {
-        var sel = GoDrills.getSelections();
-        localStorage.setItem('drills:session', JSON.stringify(sel));
-      }
-    } catch (_) {}
-
-    window.location.href = DRILL_BOARD_URL;
+    showNotice('Drill board coming soon.', 'Start Drill');
   });
 
-  /* Notice (centered) */
   var notice     = root.querySelector('#drills-notice');
   var noticeText = root.querySelector('#drills-notice-text');
   var noticeOk   = root.querySelector('#drills-notice-ok');
@@ -406,9 +398,8 @@
   noticeOk && noticeOk.addEventListener('click', hideNotice);
   window.addEventListener('keydown', function(e){ if (e.key==='Escape' && root.classList.contains('notice-open')) hideNotice(); });
 
-  /* State */
   var state = {
-    mode:'complete', // 'complete' | 'blitz'
+    mode:'complete',
     view:'mode',
     builtLib:false, linesLib:[], libCats:[], currentCatKey:null, selectedLib:new Set(),
     builtFav:false, linesFav:[], selectedFav:new Set(),
@@ -419,35 +410,6 @@
 
   var LIB_SEL_KEY, FAV_SEL_KEY, OWN_SEL_KEY;
 
-  function setMode(newMode){
-    state.mode = (newMode === 'blitz') ? 'blitz' : 'complete';
-
-    if (state.mode === 'blitz'){
-      LIB_SEL_KEY = 'drills_blitz_lib_selection';
-      FAV_SEL_KEY = 'drills_blitz_fav_selection';
-      OWN_SEL_KEY = 'drills_blitz_own_selection_ids';
-      MAX_TOTAL = 1;
-      var t = introCard.querySelector('.info-title');
-      var d = introCard.querySelector('.info-desc');
-      if (t) t.textContent = 'How Blitz drills work';
-      if (d) d.textContent = 'Pick exactly one joseki/pattern (10+ moves). Quick-fire training.';
-      startBtn.textContent = 'Start Blitz';
-    } else {
-      LIB_SEL_KEY = 'drills_lib_selection';
-      FAV_SEL_KEY = 'drills_fav_selection';
-      OWN_SEL_KEY = 'drills_own_selection_ids';
-      setLimitFromPlan();
-      var t2 = introCard.querySelector('.info-title');
-      var d2 = introCard.querySelector('.info-desc');
-      if (t2) t2.textContent = 'How Complete drills work';
-      if (d2) d2.textContent = 'Complete drills drop you into a random point of each selected joseki/pattern (10+ moves only). Three drills per joseki, with random corner and color. Your task: finish the sequence correctly.';
-      startBtn.textContent = 'Start Drill';
-    }
-    reloadAllSelections();
-    updateLibCount(); updateFavCount(); updateOwnCount(); updateStartButton();
-    if (noticeText) noticeText.textContent = 'You can add a maximum of ' + MAX_TOTAL + ' patterns.';
-  }
-
   function loadSelection(key){ try { return new Set(JSON.parse(localStorage.getItem(key) || '[]')); } catch(_){ return new Set(); } }
   function saveSelection(key, set){ try { localStorage.setItem(key, JSON.stringify(Array.from(set))); } catch(_){ } }
   function reloadAllSelections(){
@@ -456,7 +418,6 @@
     state.selectedOwnIds = loadSelection(OWN_SEL_KEY);
   }
 
-  /* Plan limits */
   var Tier = window.Tier || {
     get: function(){ try { return (localStorage.getItem('go_tier') || 'free').toLowerCase(); } catch(_) { return 'free'; } }
   };
@@ -493,9 +454,7 @@
     updateLibCount(); updateFavCount(); updateOwnCount(); updateStartButton();
     if (noticeText) noticeText.textContent = 'You can add a maximum of ' + MAX_TOTAL + ' patterns.';
   }
-  setLimitFromPlan();
 
-  /* Overlay API */
   var overlayOpen = false;
 
   function showMode(){
@@ -522,15 +481,12 @@
     showMode();
     if (noticeText) noticeText.textContent = 'You can add a maximum of ' + MAX_TOTAL + ' patterns.';
   }
+
+  // changed for standalone page: closing = go back to main menu
   function close(){
-    if (!overlay) return;
-    overlay.style.display='none';
-    overlayOpen = false;
-    startBtn.style.display='none';
-    startBtn.setAttribute('aria-hidden','true');
-    startBtn.disabled = true;
-    try { window.dispatchEvent(new Event('resize')); } catch(_) {}
+    window.location.href = '../joseki-menu/index.html';
   }
+
   window.GoDrills = {
     open, close, __ready:true,
     getLibrarySelection(){ return Array.from(state.selectedLib); },
@@ -546,7 +502,35 @@
     }
   };
 
-  /* Navigation helpers */
+  function setMode(newMode){
+    state.mode = (newMode === 'blitz') ? 'blitz' : 'complete';
+
+    if (state.mode === 'blitz'){
+      LIB_SEL_KEY = 'drills_blitz_lib_selection';
+      FAV_SEL_KEY = 'drills_blitz_fav_selection';
+      OWN_SEL_KEY = 'drills_blitz_own_selection_ids';
+      MAX_TOTAL = 1;
+      var t = introCard.querySelector('.info-title');
+      var d = introCard.querySelector('.info-desc');
+      if (t) t.textContent = 'How Blitz drills work';
+      if (d) d.textContent = 'Pick exactly one joseki/pattern (10+ moves). Quick-fire training. (Start coming soon.)';
+      startBtn.textContent = 'Start Blitz';
+    } else {
+      LIB_SEL_KEY = 'drills_lib_selection';
+      FAV_SEL_KEY = 'drills_fav_selection';
+      OWN_SEL_KEY = 'drills_own_selection_ids';
+      setLimitFromPlan();
+      var t2 = introCard.querySelector('.info-title');
+      var d2 = introCard.querySelector('.info-desc');
+      if (t2) t2.textContent = 'How Complete drills work';
+      if (d2) d2.textContent = 'Complete drills drop you into a random point of each selected joseki/pattern (10+ moves only). Three drills per joseki, with random corner and color. Your task: finish the sequence correctly.';
+      startBtn.textContent = 'Start Drill';
+    }
+    reloadAllSelections();
+    updateLibCount(); updateFavCount(); updateOwnCount(); updateStartButton();
+    if (noticeText) noticeText.textContent = 'You can add a maximum of ' + MAX_TOTAL + ' patterns.';
+  }
+
   function showOptions(whichMode){
     setMode(whichMode || 'complete');
     state.view='options';
@@ -600,7 +584,6 @@
     libView.style.display='none';
     ownView.style.display='none';
     favView.style.display='block';
-
     buildFavoritesList();
   }
   function showOwn(){
@@ -613,34 +596,31 @@
     libView.style.display='none';
     favView.style.display='none';
     ownView.style.display='block';
-
     buildOwnList();
   }
 
-  /* Menu button (optional) */
-    // Attach to menu button if present
-  var menuBtn = document.getElementById('menu-drills');
-  if (menuBtn) {
-    menuBtn.addEventListener('click', function (e) {
-      e.preventDefault();
-      openOverlay();
-    });
-  }
+  // back button: within drills, navigate states; from top level, go back to menu
+  backBtn && backBtn.addEventListener('click', function(){
+    if (state.view === 'libVars'){
+      state.currentCatKey = null;
+      titleEl.textContent='Choose a Category';
+      libInfoTitle.textContent = 'Select a category';
+      libInfoDesc.textContent  = 'Grouped by the first two moves. Tap a category to pick josekis (10+ moves).';
+      libVarsGrid.style.display='none';
+      libCatsGrid.style.display='grid';
+      state.view='libCats';
+      return;
+    }
+    if (state.view === 'libCats' || state.view === 'fav' || state.view === 'own'){
+      showOptions(state.mode); return;
+    }
+    if (state.view === 'options'){
+      showMode(); return;
+    }
+    // from mode or any fallback: leave page
+    close();
+  });
 
-  // Expose a manual opener for other scripts
-  window.GoDrills = {
-    open: openOverlay
-  };
-
-  // If there is no menu button, assume this is a standalone drills page
-  // and open the overlay immediately so the user doesn't see a blank page.
-  if (!menuBtn) {
-    openOverlay();
-  }
-})();
-
-
-  /* Mode click */
   modeGrid && modeGrid.addEventListener('click', function(e){
     var card = e.target.closest('.drill-card');
     if (!card) return;
@@ -649,7 +629,6 @@
     else if (mode === 'blitz'){ showOptions('blitz'); }
   });
 
-  /* Options click */
   options.addEventListener('click', function(e){
     var card = e.target.closest('.drill-card');
     if (!card) return;
@@ -659,7 +638,6 @@
     else if (type === 'own'){ showOwn(); }
   });
 
-  /* SGF helpers (for thumbnails) */
   var SGF_URL = "https://3d85c7a311526e02aeeeb19e952d0c09.cdn.bubble.io/f1756283064420x481184906507390100/game%20%281%29.sgf";
   var MIN_MOVES = 10;
 
@@ -719,7 +697,6 @@
     return size + '|' + seq;
   }
 
-  /* Canvas thumbnail renderer (matches Practice) */
   function hoshiPoints(size){
     if (size === 19) return [3,9,15];
     if (size === 13) return [3,6,9];
@@ -786,7 +763,7 @@
     function play(m){
       if(!m) return; var x=m.x,y=m.y; if(!inB(x,y)||at(x,y)!==E) return;
       var c=m.color==='W'?W:B, o=c===B?W:B; set(x,y,c);
-      var oppN=[]; for (const n of neigh(x,y)) if(at(n[1],n[0])===o) oppN.push(n);
+      var oppN=[]; for (const n of neigh(x,y)) if(at(n[0],n[1])===o) oppN.push(n);
       var captured=0;
       for (const n of oppN){ var info=groupAndLibs(n[0],n[1]); if(info && info.libs===0){ removeGroup(info.group); captured+=info.group.length; } }
       var mine=groupAndLibs(x,y); if(mine && mine.libs===0 && captured===0) removeGroup(mine.group);
@@ -955,7 +932,6 @@
 
   const OWN_STORE_KEY = 'go:ownpatterns';
   function loadOwnPatterns(){ try { return JSON.parse(localStorage.getItem(OWN_STORE_KEY) || '[]'); } catch(_){ return []; } }
-
   function refreshOwnLookupFromLines(){
     state.keyToOwnIds = new Map();
     state.ownIdToKey = new Map();
@@ -1064,12 +1040,11 @@
         for (let i=0;i<lines.length;i++){
           const mv = lines[i].moves; if (mv.length < 2) continue;
           const s = lines[i].size || 19, m1 = mv[0], m2 = mv[1];
-          const key = s + '|' + (m1.color||'B')[0] + ':' + m1.x + ',' + m1.y + '|' + (m2.color||'B')[0] + ':' + m2.x + ',' + m2.y;
+          const key = `${s}|${m1.color}:${m1.x},${m1.y}|${m2.color}:${m2.x},${m2.y}`;
           if (!catMap.has(key)) catMap.set(key, { key, size:s, firstTwo:[m1,m2], lineIdx:[] });
           catMap.get(key).lineIdx.push(i);
         }
         state.libCats = Array.from(catMap.values());
-
         renderLibCategories();
         state.builtLib = true;
       })
@@ -1101,7 +1076,7 @@
       const title=document.createElement('div'); title.className='joseki-title';
 
       const count = cat.lineIdx.length;
-      title.textContent = count + ' variation' + (count!==1?'s':'') + ' (≥ ' + MIN_MOVES + ' moves)';
+      title.textContent = `${count} variation${count!==1?'s':''} (≥ ${MIN_MOVES} moves)`;
 
       meta.appendChild(title);
       card.appendChild(thumb); card.appendChild(meta);
@@ -1136,7 +1111,7 @@
       const title=document.createElement('div'); title.className='joseki-title';
       const tick=document.createElement('span'); tick.className='tickbox'; tick.setAttribute('role','checkbox'); tick.setAttribute('tabindex','0');
 
-      title.textContent = 'Variation ' + (i+1) + ' (' + line.moves.length + ' moves)';
+      title.textContent = `Variation ${i+1} (${line.moves.length} moves)`;
       tick.setAttribute('aria-checked', isOnLineKey(key) ? 'true' : 'false');
 
       meta.appendChild(title);
@@ -1155,8 +1130,6 @@
       tick.addEventListener('keydown', function(e){ if (e.key===' '||e.key==='Enter'){ e.preventDefault(); e.stopPropagation(); toggle(); }});
     });
   }
-
-  libClear && libClear.addEventListener('click', clearAllSelections);
 
   const FAV_KEY = 'go_favorites';
   function readFavs(){
@@ -1211,7 +1184,7 @@
       const title=document.createElement('div'); title.className='joseki-title';
       const tick=document.createElement('span'); tick.className='tickbox'; tick.setAttribute('role','checkbox'); tick.setAttribute('tabindex','0');
 
-      title.textContent = 'Favorite ' + (i+1) + ' (' + line.moves.length + ' moves)';
+      title.textContent = `Favorite ${i+1} (${line.moves.length} moves)`;
       tick.setAttribute('aria-checked', isOnLineKey(key) ? 'true' : 'false');
 
       meta.appendChild(title);
@@ -1231,8 +1204,6 @@
     });
     updateFavCount();
   }
-
-  favClear && favClear.addEventListener('click', clearAllSelections);
 
   function updateOwnCount(){
     const n = totalSelectedCount();
@@ -1288,7 +1259,7 @@
       const title=document.createElement('div'); title.className='joseki-title';
       const tick=document.createElement('span'); tick.className='tickbox'; tick.setAttribute('role','checkbox'); tick.setAttribute('tabindex','0');
 
-      title.textContent = 'Pattern ' + (i+1) + ': ' + line.moves.length + ' Moves';
+      title.textContent = `Pattern ${i+1}: ${line.moves.length} Moves`;
       tick.setAttribute('aria-checked', state.selectedOwnIds.has(id) ? 'true' : 'false');
 
       meta.appendChild(title);
@@ -1309,6 +1280,8 @@
     updateOwnCount();
   }
 
+  libClear && libClear.addEventListener('click', clearAllSelections);
+  favClear && favClear.addEventListener('click', clearAllSelections);
   ownClear && ownClear.addEventListener('click', clearAllSelections);
 
   window.addEventListener('storage', function(e){
@@ -1316,6 +1289,61 @@
     if (e.key === 'go_favorites'  && state.view === 'fav') buildFavoritesList();
   });
 
+  function startDrillNow(){
+    try{
+      if (window.GoDrills && typeof window.GoDrills.close === 'function') GoDrills.close();
+      var cap = document.getElementById('drill-cap'); if (cap) cap.style.display='none';
+      if (window.DrillBoard && typeof window.DrillBoard.load === 'function'){
+        DrillBoard.load(null, { perJoseki: 3 });
+      }
+    }catch(_){}
+  }
+  function captureProStart(e){
+    if (!isPro()) return;
+    if (state.mode !== 'complete') return;
+    if (!e) return;
+    e.preventDefault(); e.stopImmediatePropagation(); e.stopPropagation();
+    startDrillNow();
+  }
+  function captureProRetry(e){
+    if (!isPro()) return;
+    if (state.mode !== 'complete') return;
+    var btn = e && e.target && e.target.closest ? e.target.closest('#drill-done-retry') : null;
+    if (!btn) return;
+    e.preventDefault(); e.stopImmediatePropagation(); e.stopPropagation();
+    try{ var done = document.getElementById('drill-done'); if (done) done.style.display='none'; }catch(_){}
+    startDrillNow();
+  }
+  document.addEventListener('click', function(e){
+    var start = e.target && e.target.closest ? e.target.closest('#drills-start') : null;
+    if (start) captureProStart(e);
+  }, true);
+  document.addEventListener('pointerup', function(e){
+    var start = e.target && e.target.closest ? e.target.closest('#drills-start') : null;
+    if (start) captureProStart(e);
+  }, true);
+  document.addEventListener('touchend', function(e){
+    var start = e.target && e.target.closest ? e.target.closest('#drills-start') : null;
+    if (start) captureProStart(e);
+  }, { capture:true, passive:false });
+
+  document.addEventListener('click', captureProRetry, true);
+  document.addEventListener('pointerup', captureProRetry, true);
+  document.addEventListener('touchend', captureProRetry, { capture:true, passive:false });
+
+  function autoHideCapIfPro(){
+    if (!isPro()) return;
+    var cap = document.getElementById('drill-cap');
+    if (cap && cap.style.display !== 'none') cap.style.display='none';
+  }
+  setInterval(autoHideCapIfPro, 800);
+
+  // default mode and auto-open on page load
   setMode('complete');
+  open();
 })();
 </script>
+</body>
+</html>
+
+
