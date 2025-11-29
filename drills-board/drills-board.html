@@ -111,12 +111,12 @@
   </div>
 </div>
 
-<!-- NEW: Run Cap (2-run limit) -->
+<!-- Run Cap overlay -->
 <div id="drill-cap" style="display:none;position:fixed;inset:0;z-index:100000;align-items:center;justify-content:center;">
   <div style="position:absolute;inset:0;background:rgba(0,0,0,.55);"></div>
   <div style="position:relative;z-index:1;background:#fff;border:1px solid #e2e8f0;border-radius:10px;box-shadow:0 12px 28px rgba(15,23,42,.18);width:min(86vw,460px);padding:16px;text-align:center;font-family:system-ui,Segoe UI,Arial,sans-serif;color:#0f172a;">
     <div style="font-weight:800;font-size:18px;margin-bottom:8px;">Limit Reached</div>
-    <div style="color:#334155;margin-bottom:14px;">You’ve reached the 2-run limit for drills.</div>
+    <div style="color:#334155;margin-bottom:14px;">You’ve reached your current drills limit.</div>
     <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap;">
       <button id="drill-cap-ok" style="padding:8px 14px;border-radius:8px;border:1px solid #cbd5e1;background:#f1f5f9;color:#0f172a;font-weight:700;cursor:pointer;">OK</button>
     </div>
@@ -175,13 +175,74 @@ if (!window.StoneSFX) {
   const SGF_URL = "https://3d85c7a311526e02aeeeb19e952d0c09.cdn.bubble.io/f1756283064420x481184906507390100/game%20(1).sgf";
   const MIN_MOVES = 10;
 
-  /* ===== 2-run cap (Start + Retry) ===== */
-  const RUN_LIMIT = 2;
+  /* ===== Plan helpers (match drills list) ===== */
+  var Tier = window.Tier || {
+    get: function(){
+      try {
+        return (localStorage.getItem('go_tier') || 'free').toLowerCase();
+      } catch(e){
+        return 'free';
+      }
+    }
+  };
+
+  function isPro(){
+    try{
+      if (window.GoLimits && typeof window.GoLimits.get === 'function'){
+        var lim = window.GoLimits.get();
+        if (lim && lim.drills){
+          if (lim.drills.triesPerDay === Number.POSITIVE_INFINITY) return true;
+          if (typeof lim.drills.plan === 'string' && lim.drills.plan.toLowerCase() === 'pro') return true;
+        }
+      }
+    }catch(e){}
+    var t = Tier && typeof Tier.get === 'function' ? Tier.get() : 'free';
+    return (t || 'free').toLowerCase() === 'pro';
+  }
+
+  /* ===== Run cap (Start + Retry), respects plan ===== */
+  const DEFAULT_RUN_LIMIT = 2;
   const RUNS_KEY = 'go:drill_runs_session_count';
-  function getRuns(){ try { return parseInt(sessionStorage.getItem(RUNS_KEY) || '0', 10) || 0; } catch(e){ return 0; } }
-  function canStart(){ return getRuns() < RUN_LIMIT; }
-  function incRuns(){ try { sessionStorage.setItem(RUNS_KEY, String(getRuns()+1)); } catch(e){} }
-  function runsLeft(){ return Math.max(0, RUN_LIMIT - getRuns()); }
+
+  function getRunLimit(){
+    try{
+      if (window.GoLimits && typeof window.GoLimits.get === 'function'){
+        var lim = window.GoLimits.get();
+        if (lim && lim.drills){
+          if (typeof lim.drills.triesPerDay === 'number'){
+            if (lim.drills.triesPerDay === Number.POSITIVE_INFINITY) return Infinity;
+            return Math.max(0, lim.drills.triesPerDay|0);
+          }
+          if (typeof lim.drills.runLimit === 'number'){
+            return Math.max(0, lim.drills.runLimit|0);
+          }
+        }
+      }
+    }catch(e){}
+    if (isPro()) return Infinity;
+    return DEFAULT_RUN_LIMIT;
+  }
+
+  function getRuns(){
+    try { return parseInt(sessionStorage.getItem(RUNS_KEY) || '0', 10) || 0; }
+    catch(e){ return 0; }
+  }
+  function canStart(){
+    var limit = getRunLimit();
+    if (!isFinite(limit)) return true;     // unlimited for Pro
+    return getRuns() < limit;
+  }
+  function incRuns(){
+    var limit = getRunLimit();
+    if (!isFinite(limit)) return;          // don’t count Pro runs
+    try { sessionStorage.setItem(RUNS_KEY, String(getRuns()+1)); } catch(e){}
+  }
+  function runsLeft(){
+    var limit = getRunLimit();
+    if (!isFinite(limit)) return Infinity;
+    var left = limit - getRuns();
+    return left < 0 ? 0 : left;
+  }
 
   // NEW overlay references
   const capM   = document.getElementById('drill-cap');
@@ -265,7 +326,7 @@ if (!window.StoneSFX) {
       p=>t_rot90(p,S),
       p=>compose(t_swap,t_rot90,S)(p),
       p=>t_rot180(p,S),
-      p=>compose(t_swap,t_rot180,S)(p)(p),
+      p=>compose(t_swap,t_rot180,S)(p),
       p=>t_rot270(p,S),
       p=>compose(t_swap,t_rot270,S)(p)
     ];
@@ -701,7 +762,7 @@ if (!window.StoneSFX) {
     if (doneTitle) doneTitle.textContent = customTitle || 'All Drills Complete';
 
     if (runsLeft() <= 0){
-      if (doneMsgEl) doneMsgEl.textContent = 'You reached the 2-run limit.';
+      if (doneMsgEl) doneMsgEl.textContent = 'You reached your drills limit.';
       doneRetry.disabled = true;
       doneRetry.style.opacity = '.6';
       doneRetry.style.cursor = 'not-allowed';
@@ -734,7 +795,7 @@ if (!window.StoneSFX) {
   doneRetry.addEventListener('click', function(){
     if (!canStart()){
       showCapMsg();
-      if (doneMsgEl) doneMsgEl.textContent = 'You reached the 2-run limit.';
+      if (doneMsgEl) doneMsgEl.textContent = 'You reached your drills limit.';
       doneRetry.disabled = true;
       doneRetry.style.opacity = '.6';
       doneRetry.style.cursor = 'not-allowed';
