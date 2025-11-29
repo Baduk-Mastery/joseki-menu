@@ -1,96 +1,3 @@
-<!doctype html>
-<html lang="en">
-<head>
-  <meta charset="utf-8" />
-  <title>Joseki Master – Practice List</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <style>
-    html, body{
-      margin:0;
-      padding:0;
-      min-height:100%;
-      font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
-    }
-  </style>
-</head>
-<body>
-
-<noscript>
-  <p>
-    JavaScript is required to use Practice mode.
-    <a href="../joseki-menu/index.html">Back to menu</a>
-  </p>
-</noscript>
-
-<!-- Simple global menu bridge used by Practice List -->
-<script>
-  window.GoMenu = window.GoMenu || {
-    open: function(){
-      // From /practice-list/ go back to main menu
-      window.location.href = "../joseki-menu/index.html";
-    }
-  };
-</script>
-
-<!-- =========================
-     PRACTICE PICKER OVERLAY
-     ========================= -->
-<div id="practice-overlay" aria-modal="true" role="dialog" style="display:none">
-  <div class="s-inner">
-    <div class="s-header">
-      <button id="practice-back" class="s-back" type="button" aria-label="Back">← Back</button>
-      <button id="practice-favorites" class="s-fav" type="button" aria-label="Favorites">★ Favorites</button>
-      <h1 class="s-title">Choose a Category</h1>
-    </div>
-
-    <!-- Legacy single-card grid (removed by script if present) -->
-    <div class="prac-grid">
-      <button id="prac-card-1" class="s-card prac-card" type="button">
-        <div class="prac-thumb" id="prac-thumb-1" aria-hidden="true"></div>
-        <div class="prac-meta">
-          <div class="prac-title">Practice Test Joseki</div>
-          <div class="prac-desc">Practice both colors across all corners and sides.</div>
-          <div class="prac-cta"><span class="s-btn">Start</span></div>
-        </div>
-      </button>
-    </div>
-  </div>
-</div>
-
-<!-- Level Selector Overlay (still here; no board yet) -->
-<div id="level-overlay" aria-modal="true" role="dialog" style="display:none">
-  <div class="s-inner">
-    <div class="s-header">
-      <button id="level-back" class="s-back" type="button" aria-label="Back to list">← Back</button>
-      <h1 class="s-title">Choose Level</h1>
-    </div>
-    <div class="level-grid">
-      <button class="s-card level-card" data-level="1" type="button">
-        <div class="level-title">Level 1</div>
-        <div class="level-desc">Every move is marked with “A”. Get familiar with the sequence.</div>
-      </button>
-      <button class="s-card level-card" data-level="2" type="button">
-        <div class="level-title">Level 2</div>
-        <div class="level-desc">You play Black only; White moves are auto-placed.</div>
-      </button>
-      <button class="s-card level-card" data-level="3" type="button">
-        <div class="level-title">Level 3</div>
-        <div class="level-desc">You play White only; Black moves are auto-placed.</div>
-      </button>
-      <button class="s-card level-card" data-level="4" type="button">
-        <div class="level-title">Level 4</div>
-        <div class="level-desc">Only the second move is marked “A”; you play the rest for both colors.</div>
-        <span class="pro-chip" aria-hidden="true">PRO</span>
-      </button>
-      <button class="s-card level-card" data-level="5" type="button">
-        <div class="level-title">Level 5</div>
-        <div class="level-desc">Like Level 4, but the opening color alternates each try.</div>
-        <span class="pro-chip" aria-hidden="true">PRO</span>
-      </button>
-    </div>
-  </div>
-</div>
-
 <style>
   /* Overlays: scrollable + momentum */
   #practice-overlay, #level-overlay{
@@ -100,7 +7,7 @@
     color:#e6f3ff; -webkit-tap-highlight-color:transparent;
     background-image:
       linear-gradient(rgba(0,0,0,.35), rgba(0,0,0,.45)),
-      url('https://3d85c7a311526e02aeeeb19e952d0c09.cdn.bubble.io/f1755870506985x437178801728222500/wood.jpg');
+      url('../img/wood.jpg');
     background-size:cover; background-position:center;
   }
   #practice-overlay .s-inner, #level-overlay .s-inner{
@@ -128,33 +35,59 @@
     grid-row:2; grid-column:3; justify-self:end;
   }
 
-  .s-back{
-    padding:8px 12px; border-radius:12px; cursor:pointer; font-weight:800; line-height:1;
-    background: rgba(37,99,235,.22); color:#e6f3ff;
-    border:2px solid rgba(37,99,235,.75);
-    box-shadow:0 8px 20px rgba(2,6,23,.45), inset 0 0 0 1px rgba(255,255,255,.08);
-    transition:transform .06s, background .15s, box-shadow .15s;
-  }
-  .s-back:hover{  background: rgba(37,99,235,.26); }
-  .s-back:active{ background: rgba(37,99,235,.32); transform:translateY(1px); }
-
+  /* Buttons (matching practice-board back / favorites / open) */
+  .s-back,
   .s-fav{
-    padding:8px 12px; border-radius:12px; cursor:pointer; font-weight:800; line-height:1;
-    background: rgba(37,99,235,.22); color:#e6f3ff;
-    border:2px solid rgba(37,99,235,.75);
-    box-shadow:0 8px 20px rgba(2,6,23,.45), inset 0 0 0 1px rgba(255,255,255,.08);
-    transition:transform .06s, background .15s, box-shadow .15s;
-  }
-  .s-fav:hover{  background: rgba(37,99,235,.26); }
-  .s-fav:active{ background: rgba(37,99,235,.32); transform:translateY(1px); }
+    padding:8px 14px;
+    border-radius:999px;
+    cursor:pointer;
+    font-weight:800;
+    line-height:1;
+    font-size:14px;
 
-  .s-title{ margin:0; font-size:24px; line-height:1.15; font-weight:800; text-shadow:0 1px 2px rgba(0,0,0,.35); }
+    background: rgba(37,99,235,.22);
+    color:#e6f3ff;
+    border:2px solid rgba(37,99,235,.78);
+    box-shadow:
+      0 8px 20px rgba(2,6,23,.45),
+      inset 0 0 0 1px rgba(255,255,255,.08);
+
+    text-shadow:0 1px 1px rgba(15,23,42,.65);
+    transition:
+      transform .06s,
+      background .15s,
+      box-shadow .15s,
+      filter .12s;
+  }
+  .s-back:hover,
+  .s-fav:hover{
+    background: rgba(37,99,235,.27);
+    filter:brightness(1.05);
+  }
+  .s-back:active,
+  .s-fav:active{
+    background: rgba(37,99,235,.34);
+    transform:translateY(1px);
+    box-shadow:
+      0 4px 14px rgba(2,6,23,.55),
+      inset 0 0 0 1px rgba(255,255,255,.06);
+  }
+
+  .s-title{
+    margin:0;
+    font-size:24px;
+    line-height:1.15;
+    font-weight:800;
+    text-shadow:0 1px 2px rgba(0,0,0,.35);
+  }
 
   .s-card{
-    background: rgba(37,99,235,.22);
-    border:2px solid rgba(37,99,235,.75);
+    background: rgba(15,23,42,.60);
+    border:1px solid rgba(148,163,184,.65);
     border-radius:12px;
-    box-shadow:0 8px 20px rgba(2,6,23,.45), inset 0 0 0 1px rgba(255,255,255,.08);
+    box-shadow:
+      0 10px 26px rgba(15,23,42,.75),
+      inset 0 0 0 1px rgba(255,255,255,.06);
     color:#e6f3ff;
   }
 
@@ -168,55 +101,122 @@
 
   .prac-card{
     display:flex; align-items:stretch; gap:12px; width:100%; text-align:left; padding:10px; cursor:pointer;
-    transition:transform .06s, background .15s;
+    transition:transform .06s, background .15s, box-shadow .15s, filter .12s;
     user-select:none; -webkit-user-select:none;
+  }
+  .prac-card:hover{
+    filter:brightness(1.04);
+    box-shadow:
+      0 14px 30px rgba(15,23,42,.85),
+      inset 0 0 0 1px rgba(255,255,255,.08);
   }
   .prac-card:active{ transform:translateY(1px); }
 
+  /* Thumbnail holders – wood, slightly transparent, a bit darker than menu buttons */
   .prac-thumb{
-    width:132px; height:132px; border-radius:10px; overflow:hidden; flex:none;
+    width:132px; height:132px;
+    border-radius:10px;
+    overflow:hidden;
+    flex:none;
     position: relative;
+
+    background:none;
+    border:1px solid rgba(248,250,252,.45);
+    box-shadow:
+      0 10px 22px rgba(0,0,0,.55),
+      inset 0 0 0 1px rgba(255,255,255,.04);
+  }
+  .prac-thumb::before{
+    content:"";
+    position:absolute;
+    inset:0;
+    border-radius:inherit;
     background-image:
-      linear-gradient(rgba(0,0,0,.04), rgba(0,0,0,.06)),
-      url('https://3d85c7a311526e02aeeeb19e952d0c09.cdn.bubble.io/f1755870506985x437178801728222500/wood.jpg');
-    background-size:cover; background-position:center;
-    border:2px solid rgba(37,99,235,.65);
-    box-shadow: inset 0 0 0 1px rgba(255,255,255,.06);
+      linear-gradient(
+        to bottom,
+        rgba(0,0,0,.48),
+        rgba(0,0,0,.72)
+      ),
+      url('../img/wood.jpg');
+    background-size:cover;
+    background-position:center;
+    opacity:0.70; /* a bit less bright than menu buttons (~0.82) */
   }
   .prac-thumb canvas.prac-canvas{
-    position:absolute; inset:0; width:100%; height:100%;
-    display:block; pointer-events:none;
+    position:absolute; inset:0;
+    width:100%; height:100%;
+    display:block;
+    pointer-events:none;
+    z-index:1;
   }
 
   .prac-meta{
     flex:1; min-width:0; display:flex; flex-direction:column; height:100%;
   }
-  .prac-title{ font-weight:800; font-size:18px; line-height:1.3; }
-  .prac-desc{ margin-top:6px; font-size:13px; line-height:1.5; color:#e6f3ff; opacity:.92; }
+  .prac-title{
+    font-weight:800;
+    font-size:18px;
+    line-height:1.3;
+    text-shadow:0 1px 1px rgba(15,23,42,.8);
+  }
+  .prac-desc{
+    margin-top:6px;
+    font-size:13px;
+    line-height:1.5;
+    color:#e6f3ff;
+    opacity:.92;
+  }
 
   .prac-cta{
     margin-top:auto; display:flex; align-items:center; gap:8px;
   }
+
+  /* “Open / Select / Confirm” chip – same language as back / favorites */
   .s-btn{
-    display:inline-block; padding:10px 12px; border-radius:12px; font-weight:800; font-size:13px; cursor:pointer;
+    display:inline-block;
+    padding:8px 13px;
+    border-radius:999px;
+    font-weight:800;
+    font-size:14px;
+    cursor:pointer;
+
     background: rgba(37,99,235,.22);
-    color:#e6f3ff; border:2px solid rgba(37,99,235,.75);
-    box-shadow:0 8px 20px rgba(2,6,23,.45), inset 0 0 0 1px rgba(255,255,255,.08);
-    transition:transform .06s, background .15s, box-shadow .15s;
+    color:#e6f3ff;
+    border:2px solid rgba(37,99,235,.78);
+    box-shadow:
+      0 8px 20px rgba(2,6,23,.45),
+      inset 0 0 0 1px rgba(255,255,255,.08);
+
+    text-shadow:0 1px 1px rgba(15,23,42,.65);
+    transition:
+      transform .06s,
+      background .15s,
+      box-shadow .15s,
+      filter .12s;
   }
-  .s-btn:active{ transform:translateY(1px); }
+  .s-btn:hover{
+    background: rgba(37,99,235,.27);
+    filter:brightness(1.05);
+  }
+  .s-btn:active{
+    transform:translateY(1px);
+    background: rgba(37,99,235,.34);
+    box-shadow:
+      0 4px 14px rgba(2,6,23,.55),
+      inset 0 0 0 1px rgba(255,255,255,.06);
+  }
 
   .prac-cta .fav-icon{
     display:inline-grid; place-items:center;
     padding:0; margin-left:auto;
-    line-height:1; border-radius:10px;
+    line-height:1; border-radius:12px;
     min-width:34px; min-height:34px;
     font-size:20px;
   }
 
   .s-btn.s-btn-danger{
     background: rgba(220,38,38,.22);
-    border-color: rgba(220,38,38,.75);
+    border-color: rgba(220,38,38,.78);
   }
 
   .fav-toggle[aria-pressed="true"]{
@@ -252,7 +252,7 @@
     pointer-events:auto;
     background-image:
       linear-gradient(rgba(0,0,0,.35), rgba(0,0,0,.45)),
-      url('https://3d85c7a311526e02aeeeb19e952d0c09.cdn.bubble.io/f1755870506985x437178801728222500/wood.jpg');
+      url('../img/wood.jpg');
     background-size:cover; background-position:center;
     border:2px solid rgba(37,99,235,.75);
     border-radius:12px;
@@ -269,1076 +269,31 @@
     margin-top:10px; display:flex; gap:10px; justify-content:center; flex-wrap:wrap;
   }
   #practice-overlay.toast-open .s-inner{ pointer-events:none; }
+
+  /* Pro-level toast inside Level overlay */
+  #level-overlay .level-toast{
+    position:fixed; left:50%; top:50%; transform:translate(-50%,-50%);
+    z-index:100002; display:none; pointer-events:none;
+  }
+  #level-overlay .level-toast .level-toast-card{
+    pointer-events:auto;
+    background-image:
+      linear-gradient(rgba(0,0,0,.35), rgba(0,0,0,.45)),
+      url('../img/wood.jpg');
+    background-size:cover; background-position:center;
+    border:2px solid rgba(37,99,235,.75);
+    border-radius:12px;
+    box-shadow:0 8px 20px rgba(2,6,23,.45), inset 0 0 0 1px rgba(255,255,255,.08);
+    padding:10px 12px;
+    min-width:280px; max-width:min(92vw, 420px);
+    max-height:calc(100vh - 32px); overflow:auto;
+    text-shadow:0 1px 2px rgba(0,0,0,.35);
+  }
+  #level-overlay .level-toast .level-toast-text{
+    font-weight:800; font-size:14px; line-height:1.35; color:#e6f3ff;
+  }
+  #level-overlay .level-toast .level-toast-actions{
+    margin-top:10px; display:flex; gap:10px; justify-content:center; flex-wrap:wrap;
+  }
+  #level-overlay.toast-open .s-inner{ pointer-events:none; }
 </style>
-
-<script>
-(function(){
-  const SGF_URL   = "https://3d85c7a311526e02aeeeb19e952d0c09.cdn.bubble.io/f1756283064420x481184906507390100/game%20%281%29.sgf";
-  const MIN_MOVES = 6;  // Only show variations with at least this many moves
-
-  const overlay    = document.getElementById('practice-overlay');
-  const backBtn    = document.getElementById('practice-back');
-  const favHeader  = document.getElementById('practice-favorites');
-  const lvlOverlay = document.getElementById('level-overlay');
-  let leavingToMenu = false;
-  const lvlBack    = document.getElementById('level-back');
-  const MENU_URL   = "../joseki-menu/index.html";
-
-  function isVisible(el){ return el && el.style.display !== 'none'; }
-  function setFavHeaderVisible(show){
-    if (favHeader) favHeader.style.display = show ? '' : 'none';
-  }
-
-  function goBackToMenu(){
-    if (leavingToMenu) return;
-    leavingToMenu = true;
-    // Do not close overlay; keep wood background visible until navigation completes
-    window.location.replace(MENU_URL);
-  }
-
-  let catsGrid = document.getElementById('prac-categories');
-  let varsGrid = document.getElementById('prac-variations');
-  function ensureGrids(){
-    const inner = overlay.querySelector('.s-inner') || overlay;
-    if (!catsGrid){
-      catsGrid = document.createElement('div');
-      catsGrid.id = 'prac-categories';
-      catsGrid.className = 'prac-grid';
-      inner.appendChild(catsGrid);
-    }
-    if (!varsGrid){
-      varsGrid = document.createElement('div');
-      varsGrid.id = 'prac-variations';
-      varsGrid.className = 'prac-grid';
-      varsGrid.style.display='none';
-      inner.appendChild(varsGrid);
-    }
-  }
-
-  (function killLegacyPicker(){
-    const legacyCard = document.getElementById('prac-card-1');
-    if (legacyCard){
-      const g = legacyCard.closest('.prac-grid');
-      if (g) g.remove();
-    }
-  })();
-
-  const TierAPI = window.Tier || {
-    get(){
-      try { return (localStorage.getItem('go_tier') || 'free').toLowerCase(); }
-      catch(_) { return 'free'; }
-    }
-  };
-  function isPro(){ return String(TierAPI.get() || 'free').toLowerCase() === 'pro'; }
-
-  function applyTierGate(){
-    const proLocked = !isPro();
-    document.querySelectorAll('#level-overlay .level-card').forEach(btn=>{
-      const lvl = +(btn.getAttribute('data-level') || 0);
-      btn.setAttribute('aria-disabled', (proLocked && lvl >= 4) ? 'true' : 'false');
-    });
-  }
-
-  const LevelUI = {
-    open(){ applyTierGate(); lvlOverlay.style.display='flex'; },
-    close(){ lvlOverlay.style.display='none'; }
-  };
-  window.PracticeLevel = LevelUI;
-
-  /* SGF parsing for thumbnails */
-
-  function rb(str,i){
-    let out='',k=i;
-    while(k<str.length){
-      const ch=str[k++];
-      if(ch==='\\'){
-        if(k<str.length) out+=str[k++];
-        continue;
-      }
-      if(ch===']') break;
-      out+=ch;
-    }
-    return {t:out,n:k};
-  }
-  function parseTree(str,i){
-    const seq=[]; let node=null;
-    if(str[i]!=='(') return {seq:[],n:i};
-    i++;
-    while(i<str.length){
-      const ch=str[i];
-      if(ch===';'){ node={}; seq.push(node); i++; }
-      else if(/[A-Za-z]/.test(ch)){
-        let key='';
-        while(/[A-Za-z]/.test(str[i]||'')) key+=str[i++];
-        const vals=[];
-        while(str[i]==='['){
-          const r=rb(str,i+1);
-          vals.push(r.t); i=r.n;
-        }
-        if(!node){ node={}; seq.push(node); }
-        node[key]=vals.length>1?vals:vals[0];
-      } else if(ch==='('){
-        const child=parseTree(str,i); i=child.n;
-        if(seq.length){
-          const p=seq[seq.length-1];
-          (p.variations||(p.variations=[])).push(child.seq);
-        }
-      } else if(ch===')'){ i++; break; }
-      else i++;
-    }
-    for(let k=0;k<seq.length-1;k++) seq[k].next=seq[k+1];
-    return {seq,n:i};
-  }
-  function parseAllTrees(str){
-    const trees=[];
-    let i=str.indexOf('(');
-    if (str.charCodeAt && str.charCodeAt(0)===0xFEFF) str = str.slice(1);
-    while(i>=0 && i<str.length){
-      const r = parseTree(str,i);
-      if (r.seq && r.seq.length) trees.push(r.seq);
-      const nxt = str.indexOf('(', r.n);
-      if (nxt === -1) break;
-      i = nxt;
-    }
-    return trees;
-  }
-  function parseSZ(sz){
-    if(!sz) return 19;
-    if(typeof sz==='string'){
-      const n=parseInt(sz.split(':')[0],10);
-      return (n>=2&&n<=52)?n:19;
-    }
-    return 19;
-  }
-  function xy(s, SIZE){
-    if(!s || s.length<2) return null;
-    const x=s.charCodeAt(0)-97, y=s.charCodeAt(1)-97;
-    if (x<0 || y<0 || x>=SIZE || y>=SIZE) return null;
-    return {x,y};
-  }
-  function listCoords(prop, SIZE){
-    const arr=Array.isArray(prop)?prop:(prop?[prop]:[]);
-    const out=[];
-    for(const v of arr){
-      const p=xy(v,SIZE); if(p) out.push(p);
-    }
-    return out;
-  }
-  function linkify(seq,parent){
-    for(let i=0;i<seq.length;i++){
-      const n=seq[i];
-      n.prev=(i===0?parent:seq[i-1]);
-      n.next=(i<seq.length-1?seq[i+1]:null);
-      if(n.variations){
-        for(const v of n.variations){
-          if(v && v.length) linkify(v,n);
-        }
-      }
-    }
-  }
-  function nodeMove(n,SIZE){
-    if (!n) return null;
-    if (n.B){
-      const p=xy(n.B, SIZE); if(p) return {x:p.x,y:p.y,color:'B'};
-    }
-    if (n.W){
-      const p=xy(n.W, SIZE); if(p) return {x:p.x,y:p.y,color:'W'};
-    }
-    return null;
-  }
-  function enumerateLines(seq,SIZE){
-    const lines=[];
-    let start = seq && seq[0];
-    while(start && !nodeMove(start,SIZE) && !start.variations) start = start.next;
-
-    function dfs(node, acc){
-      if (!node){ lines.push(acc.slice()); return; }
-      acc.push(node);
-      if (node.variations && node.variations.length){
-        for(const v of node.variations){
-          let f=v && v[0];
-          while(f && !nodeMove(f,SIZE) && !f.variations) f=f.next;
-          if (f) dfs(f, acc.slice());
-        }
-      }
-      if (node.next){
-        let nx=node.next;
-        while(nx && !nodeMove(nx,SIZE) && !nx.variations) nx=nx.next;
-        if (nx) dfs(nx, acc);
-        else lines.push(acc.slice());
-      } else {
-        lines.push(acc.slice());
-      }
-    }
-    if (start) dfs(start, []);
-    return lines.map(nodes => nodes.map(n => nodeMove(n,SIZE)).filter(Boolean));
-  }
-
-  function nicePoint(pt,S){
-    const letters="ABCDEFGHJKLMNOPQRST".slice(0,Math.min(19,S));
-    const col=letters[pt.x]||String(pt.x);
-    const row=(S-pt.y).toString();
-    return col+row;
-  }
-
-  /* Confirm removal toast */
-
-  let favToast=null, favText=null, favCancel=null, favYes=null, favYesCb=null;
-  function ensureFavToast(){
-    if (favToast) return;
-    favToast = document.createElement('div');
-    favToast.className = 'prac-toast';
-    favToast.setAttribute('role','alertdialog');
-    favToast.setAttribute('aria-modal','true');
-    favToast.innerHTML =
-      '<div class="s-card prac-toast-card">' +
-        '<div class="prac-toast-text">Remove this favorite?</div>' +
-        '<div class="prac-toast-actions">' +
-          '<button type="button" class="s-btn s-btn-lg" id="prac-remove-cancel">Cancel</button>' +
-          '<button type="button" class="s-btn s-btn-lg s-btn-danger" id="prac-remove-yes">Remove</button>' +
-        '</div>' +
-      '</div>';
-    overlay.appendChild(favToast);
-    favText   = favToast.querySelector('.prac-toast-text');
-    favCancel = favToast.querySelector('#prac-remove-cancel');
-    favYes    = favToast.querySelector('#prac-remove-yes');
-
-    favCancel.addEventListener('click', hideFavToast);
-    favYes.addEventListener('click', function(){
-      try { typeof favYesCb === 'function' && favYesCb(); }
-      finally { favYesCb = null; hideFavToast(); }
-    });
-
-    window.addEventListener('keydown', function(e){
-      if (favToast && favToast.style.display !== 'none' && e.key === 'Escape'){
-        hideFavToast();
-        try { e.stopImmediatePropagation(); } catch(_){}
-      }
-    }, true);
-  }
-  function showFavToast(message, onYes){
-    ensureFavToast();
-    if (favText) favText.textContent = message || 'Remove this favorite?';
-    favYesCb = onYes || null;
-    favToast.style.display = 'block';
-    overlay.classList.add('toast-open');
-    setTimeout(function(){ try { favCancel && favCancel.focus(); } catch(_) {} }, 30);
-  }
-  function hideFavToast(){
-    if (!favToast) return;
-    favToast.style.display = 'none';
-    overlay.classList.remove('toast-open');
-  }
-
-  /* Favorites */
-
-  const FAV_KEY = 'go_favorites';
-  function lineKey(line){
-    const size = line.size || 19;
-    const seq = (line.moves||[]).map(m => (m.color||'B')[0]+':'+m.x+','+m.y).join('|');
-    return `${size}|${seq}`;
-  }
-  function readFavs(){
-    try{ return JSON.parse(localStorage.getItem(FAV_KEY)||'{}') || {}; } catch(_){ return {}; }
-  }
-  function writeFavs(map){
-    try{ localStorage.setItem(FAV_KEY, JSON.stringify(map)); } catch(_){}
-  }
-  function isFav(line){ const m=readFavs(); return !!m[lineKey(line)]; }
-  function addFav(line){
-    const m=readFavs();
-    m[lineKey(line)] = {
-      size: line.size||19,
-      rootAB: Array.isArray(line.rootAB)?line.rootAB:[],
-      rootAW: Array.isArray(line.rootAW)?line.rootAW:[],
-      moves: (line.moves||[]).map(p => ({x:p.x,y:p.y,color:p.color}))
-    };
-    writeFavs(m);
-  }
-  function removeFav(lineOrKey){
-    const k = typeof lineOrKey==='string' ? lineOrKey : lineKey(lineOrKey);
-    const m=readFavs(); delete m[k]; writeFavs(m);
-  }
-
-  function buildFavToggle(el, line, onChange){
-    el.classList.add('fav-toggle');
-    el.setAttribute('role','button');
-    el.setAttribute('tabindex','0');
-
-    function setUI(on){
-      el.setAttribute('aria-pressed', on ? 'true' : 'false');
-      el.textContent = on ? '★' : '☆';
-      el.setAttribute('aria-label', on ? 'Remove from favorites' : 'Add to favorites');
-      el.title = on ? 'Remove from favorites' : 'Add to favorites';
-    }
-    setUI(isFav(line));
-
-    function toggle(e){
-      e.stopPropagation(); e.preventDefault();
-      const on = isFav(line);
-      if (!on){
-        addFav(line);
-        setUI(true);
-        if (typeof onChange==='function') onChange(true, lineKey(line));
-      } else {
-        showFavToast('Remove this favorite?', function(){
-          removeFav(line);
-          setUI(false);
-          if (typeof onChange==='function') onChange(false, lineKey(line));
-        });
-      }
-      syncFavIconSizes();
-    }
-
-    el.addEventListener('click', toggle);
-    el.addEventListener('keydown', (e)=>{ if (e.key===' ' || e.key==='Enter') toggle(e); });
-  }
-
-  /* Simulate captures for thumbnails */
-
-  function simulatePosition(size, rootAB, rootAW, moves){
-    const N = size || 19;
-    const E = 0, B = 1, W = 2;
-    const board = Array.from({length:N}, () => Array(N).fill(E));
-
-    function inB(x,y){ return x>=0 && y>=0 && x<N && y<N; }
-    function at(x,y){ return board[y][x]; }
-    function set(x,y,v){ board[y][x]=v; }
-    function neigh(x,y){ return [[x+1,y],[x-1,y],[x,y+1],[x,y-1]].filter(p=>inB(p[0],p[1])); }
-
-    (Array.isArray(rootAB)?rootAB:[]).forEach(p=>{ if(inB(p.x,p.y)) set(p.x,p.y,B); });
-    (Array.isArray(rootAW)?rootAW:[]).forEach(p=>{ if(inB(p.x,p.y)) set(p.x,p.y,W); });
-
-    function groupAndLibs(x,y){
-      const color = at(x,y);
-      if (color===E) return null;
-      const q=[[x,y]], seen=new Set([x+'_'+y]);
-      const group=[[x,y]];
-      let libs=0;
-      while(q.length){
-        const [cx,cy]=q.pop();
-        for(const [nx,ny] of neigh(cx,cy)){
-          const v=at(nx,ny);
-          if (v===E){ libs++; continue; }
-          if (v===color){
-            const k=nx+'_'+ny;
-            if(!seen.has(k)){ seen.add(k); q.push([nx,ny]); group.push([nx,ny]); }
-          }
-        }
-      }
-      return {group, libs};
-    }
-    function removeGroup(g){ for(const [x,y] of g) set(x,y,E); }
-
-    function play(move){
-      if (!move) return;
-      const x=move.x, y=move.y;
-      if (!inB(x,y)) return;
-      const color = move.color==='W' ? W : B;
-      const opp   = color===B ? W : B;
-      if (at(x,y)!==E) return;
-      set(x,y,color);
-
-      const oppToCheck = [];
-      for (const [nx,ny] of neigh(x,y)) if (at(nx,ny)===opp) oppToCheck.push([nx,ny]);
-      let captured = 0;
-      for (const [nx,ny] of oppToCheck){
-        const info = groupAndLibs(nx,ny);
-        if (info && info.libs===0){
-          removeGroup(info.group);
-          captured += info.group.length;
-        }
-      }
-
-      const mine = groupAndLibs(x,y);
-      if (mine && mine.libs===0 && captured===0){
-        removeGroup(mine.group);
-      }
-    }
-
-    (Array.isArray(moves)?moves:[]).forEach(play);
-
-    const out=[];
-    for(let y=0;y<N;y++){
-      for(let x=0;x<N;x++){
-        const v=board[y][x];
-        if (v===B) out.push({x,y,color:'B'});
-        else if (v===W) out.push({x,y,color:'W'});
-      }
-    }
-    return out;
-  }
-
-  /* Drawing helpers */
-
-  function hoshiPoints(size){
-    if (size === 19) return [3,9,15];
-    if (size === 13) return [3,6,9];
-    if (size === 9)  return [2,4,6];
-    const mid = Math.floor((size-1)/2);
-    const off = size >= 15 ? 3 : Math.max(2, Math.round(size/6));
-    return [off, mid, size-1-off];
-  }
-
-  function ensureCanvas(el){
-    let cv = el.querySelector('canvas.prac-canvas');
-    if (!cv){
-      cv = document.createElement('canvas');
-      cv.className = 'prac-canvas';
-      el.appendChild(cv);
-    }
-    return cv;
-  }
-
-  function drawStone(ctx, cx, cy, r, color){
-    const isBlack = (color === 'B');
-    ctx.save();
-    ctx.shadowColor = 'transparent';
-
-    ctx.beginPath();
-    ctx.arc(cx, cy, r, 0, Math.PI*2);
-    ctx.clip();
-
-    const hx = cx - r*0.28, hy = cy - r*0.28;
-    const body = ctx.createRadialGradient(hx, hy, r*0.12, cx, cy, r);
-    if (isBlack){
-      body.addColorStop(0.00, '#686868');
-      body.addColorStop(0.65, '#141414');
-      body.addColorStop(1.00, '#000000');
-    } else {
-      body.addColorStop(0.00, '#ffffff');
-      body.addColorStop(0.70, '#f2f2f2');
-      body.addColorStop(1.00, '#e4e4e4');
-    }
-    ctx.fillStyle = body;
-    ctx.fillRect(cx - r, cy - r, 2*r, 2*r);
-
-    const edge = Math.max(0.6, r * 0.08);
-    const rim = ctx.createRadialGradient(cx, cy, r - edge, cx, cy, r);
-    if (isBlack){
-      rim.addColorStop(0, 'rgba(255,255,255,0)');
-      rim.addColorStop(1, 'rgba(255,255,255,0.12)');
-    } else {
-      rim.addColorStop(0, 'rgba(0,0,0,0)');
-      rim.addColorStop(1, 'rgba(0,0,0,0.18)');
-    }
-    ctx.fillStyle = rim;
-    ctx.fillRect(cx - r, cy - r, 2*r, 2*r);
-
-    const spec = ctx.createRadialGradient(hx, hy, 0, hx, hy, r*0.55);
-    if (isBlack){
-      spec.addColorStop(0, 'rgba(255,255,255,0.10)');
-      spec.addColorStop(1, 'rgba(255,255,255,0)');
-    } else {
-      spec.addColorStop(0, 'rgba(255,255,255,0.22)');
-      spec.addColorStop(1, 'rgba(255,255,255,0)');
-    }
-    ctx.fillStyle = spec;
-    ctx.fillRect(cx - r, cy - r, 2*r, 2*r);
-
-    ctx.restore();
-  }
-
-  function drawBoardThumb(el, size, stones, opts){
-    const crop = !!(opts && opts.crop);
-    const w = Math.max(64, Math.floor(el.clientWidth || 132));
-    const h = w;
-    const dpr = Math.max(1, window.devicePixelRatio || 1);
-
-    const cv = ensureCanvas(el);
-    if (cv.width !== w*dpr || cv.height !== h*dpr){
-      cv.width = Math.floor(w*dpr);
-      cv.height = Math.floor(h*dpr);
-      cv.style.width = w+'px';
-      cv.style.height= h+'px';
-    }
-
-    const ctx = cv.getContext('2d');
-    ctx.setTransform(dpr,0,0,dpr,0,0);
-    ctx.clearRect(0,0,w,h);
-
-    const pad   = Math.round(w * 0.10);
-    const inner = w - pad*2;
-    const step  = inner / (size - 1);
-    const getX  = i => pad + i*step;
-    const getY  = j => pad + j*step;
-
-    let minX=0, minY=0, maxX=size-1, maxY=size-1;
-    if (crop && stones && stones.length){
-      minX=maxX=stones[0].x; minY=maxY=stones[0].y;
-      for (const s of stones){
-        if (s.x<minX) minX=s.x;
-        if (s.x>maxX) maxX=s.x;
-        if (s.y<minY) minY=s.y;
-        if (s.y>maxY) maxY=s.y;
-      }
-      const MARGIN=1;
-      minX=Math.max(0, minX-MARGIN); minY=Math.max(0, minY-MARGIN);
-      maxX=Math.min(size-1, maxX+MARGIN); maxY=Math.min(size-1, maxY+MARGIN);
-
-      const EDGE_NEAR=6;
-      const pinLeft   = (minX <= EDGE_NEAR);
-      const pinTop    = (minY <= EDGE_NEAR);
-      const pinRight  = (maxX >= size-1-EDGE_NEAR);
-      const pinBottom = (maxY >= size-1-EDGE_NEAR);
-      if (pinLeft) minX=0;
-      if (pinTop) minY=0;
-      if (pinRight) maxX=size-1;
-      if (pinBottom) maxY=size-1;
-
-      let wG = (maxX - minX + 1), hG = (maxY - minY + 1);
-      const target = Math.max(wG, hG);
-      if (hG < target){
-        const need = target - hG;
-        if (pinTop && !pinBottom) maxY = Math.min(size-1, maxY+need);
-        else if (pinBottom && !pinTop) minY = Math.max(0, minY-need);
-        else {
-          const up=Math.ceil(need/2), dn=Math.floor(need/2);
-          minY=Math.max(0,minY-up);
-          maxY=Math.min(size-1,maxY+dn);
-        }
-      }
-      if (wG < target){
-        const need = target - wG;
-        if (pinLeft && !pinRight) maxX = Math.min(size-1, maxX+need);
-        else if (pinRight && !pinLeft) minX = Math.max(0, minX-need);
-        else {
-          const lf=Math.ceil(need/2), rt=Math.floor(need/2);
-          minX=Math.max(0,minX-lf);
-          maxX=Math.min(size-1,maxX+rt);
-        }
-      }
-    }
-
-    const leftPx   = getX(minX) - step/2;
-    const rightPx  = getX(maxX) + step/2;
-    const topPx    = getY(minY) - step/2;
-    const bottomPx = getY(maxY) + step/2;
-    const cropSide = Math.max(rightPx-leftPx, bottomPx-topPx);
-    const scale    = w / cropSide;
-
-    ctx.save();
-    ctx.scale(scale, scale);
-    ctx.translate(-leftPx, -topPx);
-
-    ctx.strokeStyle = 'rgba(0,0,0,.9)';
-    const desiredPx = Math.max(1, Math.floor(w * 0.006));
-    ctx.lineWidth = desiredPx / scale;
-
-    for (let i=0;i<size;i++){
-      const y = getY(i);
-      ctx.beginPath(); ctx.moveTo(getX(0), y); ctx.lineTo(getX(size-1), y); ctx.stroke();
-      const x = getX(i);
-      ctx.beginPath(); ctx.moveTo(x, getY(0)); ctx.lineTo(x, getY(size-1)); ctx.stroke();
-    }
-
-    ctx.fillStyle = '#000';
-    const hs = hoshiPoints(size);
-    const hr = Math.max(1, step*0.02);
-    for (const ix of hs){
-      for (const iy of hs){
-        const cx = getX(ix), cy = getY(iy);
-        ctx.beginPath(); ctx.arc(cx, cy, hr, 0, Math.PI*2); ctx.fill();
-      }
-    }
-
-    const r = step * 0.46;
-    for (const s of (stones || [])){
-      drawStone(ctx, getX(s.x), getY(s.y), r, (s.color==='W'?'W':'B'));
-    }
-
-    ctx.restore();
-  }
-
-  function renderTwoMoveThumb(el, size, firstTwo){
-    const stones = [];
-    if (firstTwo[0]) stones.push({ x:firstTwo[0].x, y:firstTwo[0].y, color:firstTwo[0].color || 'B' });
-    if (firstTwo[1]) stones.push({ x:firstTwo[1].x, y:firstTwo[1].y, color:firstTwo[1].color || 'W' });
-    drawBoardThumb(el, size||19, stones, { crop:true });
-  }
-
-  function renderVariationThumb(el, line){
-    const size = line.size || 19;
-    const stones = simulatePosition(size, line.rootAB, line.rootAW, line.moves);
-    drawBoardThumb(el, size, stones, { crop:true });
-  }
-
-  /* Drag-to-scroll on desktop */
-
-  let lastDragAt = 0;
-  function enableDragScroll(scroller, surface){
-    const fine = window.matchMedia && window.matchMedia('(pointer: fine)').matches;
-    if (!fine) return;
-
-    let active=false, startY=0, startTop=0, pid=null, moved=false;
-    const THRESH=4;
-    surface.style.cursor='grab';
-
-    surface.addEventListener('pointerdown', (e)=>{
-      if (e.button!==0) return;
-      active=true; moved=false; pid=e.pointerId;
-      startY=e.clientY; startTop=scroller.scrollTop;
-      surface.setPointerCapture?.(pid);
-      scroller.classList.add('dragging');
-      surface.style.cursor='grabbing';
-    }, {passive:true});
-
-    surface.addEventListener('pointermove', (e)=>{
-      if (!active) return;
-      const dy=e.clientY-startY;
-      if (!moved && Math.abs(dy)>THRESH) moved=true;
-      if (moved){
-        scroller.scrollTop = startTop - dy;
-        e.preventDefault();
-      }
-    }, {passive:false});
-
-    function endDrag(){
-      if (!active) return;
-      active=false;
-      surface.releasePointerCapture?.(pid);
-      scroller.classList.remove('dragging');
-      surface.style.cursor='grab';
-      lastDragAt = Date.now();
-    }
-    surface.addEventListener('pointerup', endDrag, {passive:true});
-    surface.addEventListener('pointercancel', endDrag, {passive:true});
-    surface.addEventListener('mouseleave', endDrag, {passive:true});
-  }
-  function dragClickGuard(){ return (Date.now() - lastDragAt) < 120; }
-
-  /* Match star size to Select button */
-
-  function sizeFavIconFor(cta){
-    const selectBtn = cta.querySelector('.select-btn');
-    const fav = cta.querySelector('.fav-icon');
-    if (!selectBtn || !fav) return;
-    const rect = selectBtn.getBoundingClientRect();
-    const h = Math.max(1, rect.height);
-    fav.style.height = h + 'px';
-    fav.style.width  = h + 'px';
-    const cs = getComputedStyle(fav);
-    const borders = (parseFloat(cs.borderTopWidth)||0) + (parseFloat(cs.borderBottomWidth)||0);
-    const paddings = (parseFloat(cs.paddingTop)||0) + (parseFloat(cs.paddingBottom)||0);
-    const contentH = Math.max(0, h - borders - paddings);
-    fav.style.fontSize = Math.max(12, Math.floor(contentH * 0.64)) + 'px';
-  }
-  function syncFavIconSizes(){
-    document.querySelectorAll('#practice-overlay .prac-cta').forEach(sizeFavIconFor);
-  }
-  window.addEventListener('resize', syncFavIconSizes);
-
-  function setTitle(txt){
-    const t = overlay.querySelector('.s-title');
-    if (t) t.textContent = txt;
-  }
-
-  /* Hook: prepare selection (for now just store in PracticeConfig) */
-
-  function startPracticeFromLine(line){
-    if (!line) return;
-    window.PracticeConfig = window.PracticeConfig || {};
-    window.PracticeConfig.selectedLine = {
-      size:   line.size || 19,
-      rootAB: Array.isArray(line.rootAB) ? line.rootAB.slice() : [],
-      rootAW: Array.isArray(line.rootAW) ? line.rootAW.slice() : [],
-      moves:  (line.moves || []).map(m => ({ x:m.x, y:m.y, color:m.color }))
-    };
-
-    if (lvlOverlay){
-      LevelUI.open();
-    } else {
-      console.log('[Practice] Selected line (no board wired yet):', window.PracticeConfig.selectedLine);
-    }
-  }
-
-  /* Build data */
-
-  const state = { built:false, view:'cats', lines:[], cats:[], currentCatKey:null };
-
-  function buildFromSGF(url){
-    ensureGrids();
-    catsGrid.innerHTML='';
-    varsGrid.innerHTML='';
-    varsGrid.style.display='none';
-    catsGrid.style.display='grid';
-
-    const loading=document.createElement('div');
-    loading.className='s-card prac-card';
-    loading.innerHTML='<div class="prac-meta"><div class="prac-title">Loading…</div><div class="prac-desc">Reading joseki and grouping by the first two moves.</div></div>';
-    catsGrid.appendChild(loading);
-
-    fetch(url, { cache:'no-cache' })
-      .then(r=>r.text())
-      .then(txt=>{
-        const trees=parseAllTrees(txt);
-        if(!trees.length) throw new Error('Empty SGF');
-
-        const lines=[];
-        for (const seq of trees){
-          linkify(seq,null);
-          const size   = parseSZ(seq[0]?.SZ);
-          const rootAB = listCoords(seq[0]?.AB, size);
-          const rootAW = listCoords(seq[0]?.AW, size);
-          const paths  = enumerateLines(seq, size);
-          for (const moves of paths){
-            if ((moves?.length || 0) >= MIN_MOVES){
-              lines.push({ size, rootAB, rootAW, moves });
-            }
-          }
-        }
-
-        const catMap = new Map();
-        for (let i=0;i<lines.length;i++){
-          const mv=lines[i].moves;
-          if (mv.length < 2) continue;
-          const s = lines[i].size || 19, m1 = mv[0], m2 = mv[1];
-          const key = `${s}|${m1.color}:${m1.x},${m1.y}|${m2.color}:${m2.x},${m2.y}`;
-          if (!catMap.has(key)) catMap.set(key, { key, size:s, firstTwo:[m1,m2], lineIdx:[] });
-          catMap.get(key).lineIdx.push(i);
-        }
-
-        state.lines = lines;
-        state.cats  = Array.from(catMap.values());
-        showCategories();
-        console.log('[Practice List] lines(≥'+MIN_MOVES+'): ', lines.length, 'cats:', state.cats.length);
-      })
-      .catch(err=>{
-        catsGrid.innerHTML='';
-        const errEl=document.createElement('div');
-        errEl.className='s-card prac-card';
-        errEl.innerHTML='<div class="prac-meta"><div class="prac-title">Could not load SGF</div><div class="prac-desc">' + (err?.message || 'Unknown error') + '</div></div>';
-        catsGrid.appendChild(errEl);
-        console.error('SGF parsing failed:', err);
-      });
-  }
-
-  function showCategories(){
-    ensureGrids();
-    state.view='cats'; state.currentCatKey=null;
-    setTitle('Choose a Category');
-    setFavHeaderVisible(true);
-    varsGrid.style.display='none';
-    catsGrid.style.display='grid';
-    catsGrid.innerHTML='';
-
-    if (!state.cats.length){
-      const empty=document.createElement('div');
-      empty.className='s-card prac-card';
-      empty.innerHTML='<div class="prac-meta"><div class="prac-title">No categories found</div><div class="prac-desc">No variations with ≥ ' + MIN_MOVES + ' moves were detected.</div></div>';
-      catsGrid.appendChild(empty);
-      enableDragScroll(overlay, catsGrid);
-      return;
-    }
-
-    state.cats.forEach(cat=>{
-      const card=document.createElement('button');
-      card.type='button';
-      card.className='s-card prac-card';
-      card.dataset.key=cat.key;
-
-      const thumb=document.createElement('div');
-      thumb.className='prac-thumb';
-      const meta=document.createElement('div');
-      meta.className='prac-meta';
-      const title=document.createElement('div');
-      title.className='prac-title';
-      const desc=document.createElement('div');
-      desc.className='prac-desc';
-      const cta=document.createElement('div');
-      cta.className='prac-cta';
-
-      const t1 = nicePoint(cat.firstTwo[0], cat.size);
-      const t2 = nicePoint(cat.firstTwo[1], cat.size);
-
-      title.textContent=`First two: ${t1} → ${t2}`;
-      desc.textContent  = `${cat.lineIdx.length} variation${cat.lineIdx.length>1?'s':''} (≥ ${MIN_MOVES} moves)`;
-      cta.innerHTML     = '<span class="s-btn">Open</span>';
-
-      meta.appendChild(title);
-      meta.appendChild(desc);
-      meta.appendChild(cta);
-      card.appendChild(thumb);
-      card.appendChild(meta);
-      catsGrid.appendChild(card);
-
-      renderTwoMoveThumb(thumb, cat.size||19, cat.firstTwo);
-
-      card.addEventListener('click', ()=>{
-        if (dragClickGuard()) return;
-        showCategoryVariations(cat.key);
-      });
-    });
-
-    enableDragScroll(overlay, catsGrid);
-  }
-
-  function showCategoryVariations(catKey){
-    ensureGrids();
-    const cat = state.cats.find(c=>c.key===catKey);
-    if (!cat){
-      showCategories();
-      return;
-    }
-
-    state.view='vars'; state.currentCatKey=catKey;
-    setTitle('Choose a Joseki');
-    setFavHeaderVisible(true);
-    catsGrid.style.display='none';
-    varsGrid.style.display='grid';
-    varsGrid.innerHTML='';
-
-    if(!cat.lineIdx.length){
-      const empty=document.createElement('div');
-      empty.className='s-card prac-card';
-      empty.innerHTML='<div class="prac-meta"><div class="prac-title">No variations in this category</div><div class="prac-desc">Try another category.</div></div>';
-      varsGrid.appendChild(empty);
-      enableDragScroll(overlay, varsGrid);
-      return;
-    }
-
-    cat.lineIdx.forEach((idx,i)=>{
-      const line=state.lines[idx];
-
-      const card=document.createElement('button');
-      card.type='button';
-      card.className='s-card prac-card';
-      card.dataset.line=String(idx);
-
-      const thumb=document.createElement('div');
-      thumb.className='prac-thumb';
-      const meta=document.createElement('div');
-      meta.className='prac-meta';
-      const title=document.createElement('div');
-      title.className='prac-title';
-      const cta=document.createElement('div');
-      cta.className='prac-cta';
-
-      title.textContent=`Variation ${i+1} (${line.moves.length} moves)`;
-
-      cta.innerHTML = '<span class="s-btn select-btn">Select</span>';
-      const favSpan = document.createElement('span');
-      favSpan.className='s-btn fav-icon';
-      buildFavToggle(favSpan, line, (on)=>{
-        if (state.view==='favs' && !on){
-          card.remove();
-          if (!varsGrid.querySelector('.prac-card')) showEmptyFavorites();
-        }
-      });
-      cta.appendChild(favSpan);
-
-      meta.appendChild(title);
-      meta.appendChild(cta);
-      card.appendChild(thumb);
-      card.appendChild(meta);
-      varsGrid.appendChild(card);
-
-      renderVariationThumb(thumb, line);
-
-      const selectBtn = cta.querySelector('.select-btn');
-      selectBtn.addEventListener('click', (ev)=>{
-        ev.stopPropagation();
-        ev.preventDefault();
-        startPracticeFromLine(line);
-      });
-
-      card.addEventListener('click', (ev)=>{
-        if (dragClickGuard()) return;
-        selectBtn.click();
-      });
-    });
-
-    enableDragScroll(overlay, varsGrid);
-    syncFavIconSizes();
-    requestAnimationFrame(syncFavIconSizes);
-  }
-
-  function showEmptyFavorites(){
-    varsGrid.innerHTML='';
-    const empty=document.createElement('div');
-    empty.className='s-card prac-card';
-    empty.innerHTML='<div class="prac-meta"><div class="prac-title">No favorites yet</div><div class="prac-desc">Tap the ☆ star on any joseki to see it here.</div></div>';
-    varsGrid.appendChild(empty);
-  }
-
-  function showFavorites(){
-    ensureGrids();
-    state.view='favs'; state.currentCatKey=null;
-    setTitle('Your Favorites');
-    setFavHeaderVisible(false);
-    catsGrid.style.display='none';
-    varsGrid.style.display='grid';
-    varsGrid.innerHTML='';
-
-    const map = readFavs();
-    const list = Object.values(map);
-    if (!list.length){
-      showEmptyFavorites();
-      enableDragScroll(overlay, varsGrid);
-      return;
-    }
-
-    list.forEach((line)=>{
-      const card=document.createElement('button');
-      card.type='button';
-      card.className='s-card prac-card';
-      card.dataset.key=lineKey(line);
-
-      const thumb=document.createElement('div');
-      thumb.className='prac-thumb';
-      const meta=document.createElement('div');
-      meta.className='prac-meta';
-      const title=document.createElement('div');
-      title.className='prac-title';
-      const cta=document.createElement('div');
-      cta.className='prac-cta';
-
-      title.textContent=`Favorited Joseki (${line.moves.length} moves)`;
-
-      cta.innerHTML = '<span class="s-btn select-btn">Select</span>';
-      const favSpan = document.createElement('span');
-      favSpan.className='s-btn fav-icon';
-      buildFavToggle(favSpan, line, (on, key)=>{
-        if (!on){
-          card.remove();
-          if (!varsGrid.querySelector('.prac-card')) showEmptyFavorites();
-        }
-      });
-      cta.appendChild(favSpan);
-
-      meta.appendChild(title);
-      meta.appendChild(cta);
-      card.appendChild(thumb);
-      card.appendChild(meta);
-      varsGrid.appendChild(card);
-
-      renderVariationThumb(thumb, line);
-
-      const selectBtn = cta.querySelector('.select-btn');
-      selectBtn.addEventListener('click', (ev)=>{
-        ev.stopPropagation();
-        ev.preventDefault();
-        startPracticeFromLine(line);
-      });
-
-      card.addEventListener('click', (ev)=>{
-        if (dragClickGuard()) return;
-        selectBtn.click();
-      });
-    });
-
-    enableDragScroll(overlay, varsGrid);
-    syncFavIconSizes();
-    requestAnimationFrame(syncFavIconSizes);
-  }
-
-  const PracticeUI = {
-    open(){
-      ensureGrids();
-      overlay.style.display = 'flex';
-      if (!state.built){
-        buildFromSGF(SGF_URL);
-        state.built = true;
-      } else {
-        showCategories();
-      }
-    },
-    close(){
-      overlay.style.display = 'none';
-      try { hideFavToast(); } catch(_){}
-
-      state.view = 'cats';
-      state.currentCatKey = null;
-
-      try {
-        setTitle('Choose a Category');
-        setFavHeaderVisible(true);
-        catsGrid.style.display = 'grid';
-        varsGrid.style.display = 'none';
-        overlay.scrollTop = 0;
-        catsGrid.scrollTop = 0;
-        varsGrid.scrollTop = 0;
-      } catch(_){}
-    }
-  };
-  window.GoPractice = {
-    open:()=>PracticeUI.open(),
-    close:()=>PracticeUI.close()
-  };
-
-  lvlOverlay.addEventListener('click', function(e){
-    const card = e.target.closest('.level-card');
-    if (!card) return;
-
-    if (card.getAttribute('aria-disabled') === 'true'){
-      if (window.GoPlans && typeof window.GoPlans.open === 'function') window.GoPlans.open();
-      else if (window.Paywall && typeof Paywall.open === 'function') window.Paywall.open();
-      else alert('This level is available on Pro.');
-      return;
-    }
-
-    const lvl = parseInt(card.getAttribute('data-level') || '2', 10) || 2;
-    window.PracticeConfig = window.PracticeConfig || {};
-    window.PracticeConfig.level = lvl;
-
-    LevelUI.close();
-
-    console.log('[Practice] Selected level (no board wired yet):', lvl, window.PracticeConfig);
-    // In the next step we will navigate to the Practice Board page from here.
-  });
-
-  backBtn && backBtn.addEventListener('click', ()=>{
-    if (overlay.classList.contains('toast-open')){
-      hideFavToast();
-      return;
-    }
-
-    if (state.view === 'vars' || state.view === 'favs'){
-      // Back within Practice: go up one level (no navigation)
-      showCategories();
-    } else {
-      // Root level: go back to main menu WITHOUT closing overlay
-      goBackToMenu();
-    }
-  });
-
-  favHeader && favHeader.addEventListener('click', ()=>{ showFavorites(); });
-  lvlBack && lvlBack.addEventListener('click', ()=> LevelUI.close());
-
-  window.addEventListener('keydown', (e)=>{
-    if (e.key === 'Escape'){
-      if (isVisible(lvlOverlay)) {
-        LevelUI.close();
-      } else if (isVisible(overlay)){
-        if (overlay.classList.contains('toast-open')) {
-          hideFavToast();
-          return;
-        }
-        if (state.view === 'vars' || state.view === 'favs'){
-          // Esc inside a category/favorites → go back to category list
-          showCategories();
-        } else {
-          // Esc from root → go back to menu, keep overlay visible
-          goBackToMenu();
-        }
-      }
-    }
-  });
-
-})();
-</script>
-
-<script>
-  // Auto-open Practice list when this page loads
-  window.addEventListener('load', function(){
-    if (window.GoPractice && typeof window.GoPractice.open === 'function'){
-      window.GoPractice.open();
-    }
-  });
-</script>
-
-</body>
-</html>
-
-
-
