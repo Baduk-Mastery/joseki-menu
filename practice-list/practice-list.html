@@ -128,33 +128,59 @@
     grid-row:2; grid-column:3; justify-self:end;
   }
 
-  .s-back{
-    padding:8px 12px; border-radius:12px; cursor:pointer; font-weight:800; line-height:1;
-    background: rgba(37,99,235,.22); color:#e6f3ff;
-    border:2px solid rgba(37,99,235,.75);
-    box-shadow:0 8px 20px rgba(2,6,23,.45), inset 0 0 0 1px rgba(255,255,255,.08);
-    transition:transform .06s, background .15s, box-shadow .15s;
-  }
-  .s-back:hover{  background: rgba(37,99,235,.26); }
-  .s-back:active{ background: rgba(37,99,235,.32); transform:translateY(1px); }
-
+  /* Buttons (matching practice-board back / favorites / open) */
+  .s-back,
   .s-fav{
-    padding:8px 12px; border-radius:12px; cursor:pointer; font-weight:800; line-height:1;
-    background: rgba(37,99,235,.22); color:#e6f3ff;
-    border:2px solid rgba(37,99,235,.75);
-    box-shadow:0 8px 20px rgba(2,6,23,.45), inset 0 0 0 1px rgba(255,255,255,.08);
-    transition:transform .06s, background .15s, box-shadow .15s;
-  }
-  .s-fav:hover{  background: rgba(37,99,235,.26); }
-  .s-fav:active{ background: rgba(37,99,235,.32); transform:translateY(1px); }
+    padding:8px 14px;
+    border-radius:999px;
+    cursor:pointer;
+    font-weight:800;
+    line-height:1;
+    font-size:14px;
 
-  .s-title{ margin:0; font-size:24px; line-height:1.15; font-weight:800; text-shadow:0 1px 2px rgba(0,0,0,.35); }
+    background: rgba(37,99,235,.22);
+    color:#e6f3ff;
+    border:2px solid rgba(37,99,235,.78);
+    box-shadow:
+      0 8px 20px rgba(2,6,23,.45),
+      inset 0 0 0 1px rgba(255,255,255,.08);
+
+    text-shadow:0 1px 1px rgba(15,23,42,.65);
+    transition:
+      transform .06s,
+      background .15s,
+      box-shadow .15s,
+      filter .12s;
+  }
+  .s-back:hover,
+  .s-fav:hover{
+    background: rgba(37,99,235,.27);
+    filter:brightness(1.05);
+  }
+  .s-back:active,
+  .s-fav:active{
+    background: rgba(37,99,235,.34);
+    transform:translateY(1px);
+    box-shadow:
+      0 4px 14px rgba(2,6,23,.55),
+      inset 0 0 0 1px rgba(255,255,255,.06);
+  }
+
+  .s-title{
+    margin:0;
+    font-size:24px;
+    line-height:1.15;
+    font-weight:800;
+    text-shadow:0 1px 2px rgba(0,0,0,.35);
+  }
 
   .s-card{
-    background: rgba(37,99,235,.22);
-    border:2px solid rgba(37,99,235,.75);
+    background: rgba(15,23,42,.60);
+    border:1px solid rgba(148,163,184,.65);
     border-radius:12px;
-    box-shadow:0 8px 20px rgba(2,6,23,.45), inset 0 0 0 1px rgba(255,255,255,.08);
+    box-shadow:
+      0 10px 26px rgba(15,23,42,.75),
+      inset 0 0 0 1px rgba(255,255,255,.06);
     color:#e6f3ff;
   }
 
@@ -168,55 +194,122 @@
 
   .prac-card{
     display:flex; align-items:stretch; gap:12px; width:100%; text-align:left; padding:10px; cursor:pointer;
-    transition:transform .06s, background .15s;
+    transition:transform .06s, background .15s, box-shadow .15s, filter .12s;
     user-select:none; -webkit-user-select:none;
+  }
+  .prac-card:hover{
+    filter:brightness(1.04);
+    box-shadow:
+      0 14px 30px rgba(15,23,42,.85),
+      inset 0 0 0 1px rgba(255,255,255,.08);
   }
   .prac-card:active{ transform:translateY(1px); }
 
+  /* Thumbnail holders – wood, slightly transparent, a bit darker than menu buttons */
   .prac-thumb{
-    width:132px; height:132px; border-radius:10px; overflow:hidden; flex:none;
+    width:132px; height:132px;
+    border-radius:10px;
+    overflow:hidden;
+    flex:none;
     position: relative;
+
+    background:none;
+    border:1px solid rgba(248,250,252,.45);
+    box-shadow:
+      0 10px 22px rgba(0,0,0,.55),
+      inset 0 0 0 1px rgba(255,255,255,.04);
+  }
+  .prac-thumb::before{
+    content:"";
+    position:absolute;
+    inset:0;
+    border-radius:inherit;
     background-image:
-      linear-gradient(rgba(0,0,0,.04), rgba(0,0,0,.06)),
+      linear-gradient(
+        to bottom,
+        rgba(0,0,0,.48),
+        rgba(0,0,0,.72)
+      ),
       url('../img/wood.jpg');
-    background-size:cover; background-position:center;
-    border:2px solid rgba(37,99,235,.65);
-    box-shadow: inset 0 0 0 1px rgba(255,255,255,.06);
+    background-size:cover;
+    background-position:center;
+    opacity:0.70; /* a bit less bright than menu buttons (~0.82) */
   }
   .prac-thumb canvas.prac-canvas{
-    position:absolute; inset:0; width:100%; height:100%;
-    display:block; pointer-events:none;
+    position:absolute; inset:0;
+    width:100%; height:100%;
+    display:block;
+    pointer-events:none;
+    z-index:1;
   }
 
   .prac-meta{
     flex:1; min-width:0; display:flex; flex-direction:column; height:100%;
   }
-  .prac-title{ font-weight:800; font-size:18px; line-height:1.3; }
-  .prac-desc{ margin-top:6px; font-size:13px; line-height:1.5; color:#e6f3ff; opacity:.92; }
+  .prac-title{
+    font-weight:800;
+    font-size:18px;
+    line-height:1.3;
+    text-shadow:0 1px 1px rgba(15,23,42,.8);
+  }
+  .prac-desc{
+    margin-top:6px;
+    font-size:13px;
+    line-height:1.5;
+    color:#e6f3ff;
+    opacity:.92;
+  }
 
   .prac-cta{
     margin-top:auto; display:flex; align-items:center; gap:8px;
   }
+
+  /* “Open / Select / Confirm” chip – same language as back / favorites */
   .s-btn{
-    display:inline-block; padding:10px 12px; border-radius:12px; font-weight:800; font-size:13px; cursor:pointer;
+    display:inline-block;
+    padding:8px 13px;
+    border-radius:999px;
+    font-weight:800;
+    font-size:14px;
+    cursor:pointer;
+
     background: rgba(37,99,235,.22);
-    color:#e6f3ff; border:2px solid rgba(37,99,235,.75);
-    box-shadow:0 8px 20px rgba(2,6,23,.45), inset 0 0 0 1px rgba(255,255,255,.08);
-    transition:transform .06s, background .15s, box-shadow .15s;
+    color:#e6f3ff;
+    border:2px solid rgba(37,99,235,.78);
+    box-shadow:
+      0 8px 20px rgba(2,6,23,.45),
+      inset 0 0 0 1px rgba(255,255,255,.08);
+
+    text-shadow:0 1px 1px rgba(15,23,42,.65);
+    transition:
+      transform .06s,
+      background .15s,
+      box-shadow .15s,
+      filter .12s;
   }
-  .s-btn:active{ transform:translateY(1px); }
+  .s-btn:hover{
+    background: rgba(37,99,235,.27);
+    filter:brightness(1.05);
+  }
+  .s-btn:active{
+    transform:translateY(1px);
+    background: rgba(37,99,235,.34);
+    box-shadow:
+      0 4px 14px rgba(2,6,23,.55),
+      inset 0 0 0 1px rgba(255,255,255,.06);
+  }
 
   .prac-cta .fav-icon{
     display:inline-grid; place-items:center;
     padding:0; margin-left:auto;
-    line-height:1; border-radius:10px;
+    line-height:1; border-radius:12px;
     min-width:34px; min-height:34px;
     font-size:20px;
   }
 
   .s-btn.s-btn-danger{
     background: rgba(220,38,38,.22);
-    border-color: rgba(220,38,38,.75);
+    border-color: rgba(220,38,38,.78);
   }
 
   .fav-toggle[aria-pressed="true"]{
