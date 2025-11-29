@@ -243,13 +243,21 @@
 
 
 
-  /* Practice-only fullscreen overlay */
-  #go-zoom-overlay-prac{
-    position:fixed; inset:0; z-index:99998;
-    display:none; align-items:center; justify-content:center;
-    background:rgba(0,0,0,.75);
-    -webkit-tap-highlight-color:transparent;
-  }
+/* Practice-only fullscreen overlay */
+#go-zoom-overlay-prac{
+  position:fixed;
+  inset:0;
+  z-index:99998;
+  display:none;
+  align-items:center;
+  justify-content:center;
+
+  /* keep page background visible */
+  background:transparent;   /* or `background:none;` */
+
+  -webkit-tap-highlight-color:transparent;
+}
+
   #go-zoom-stage-prac{
     width:100vw; height:100vh;
     display:flex; align-items:center; justify-content:center;
