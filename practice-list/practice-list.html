@@ -219,11 +219,13 @@
     font-size:20px;
     line-height:1;
   }
-  .prac-cta .fav-icon{
-    display:inline-grid;
-    place-items:center;
-    margin-left:auto;
-  }
+.prac-cta .fav-icon{
+  display:inline-grid;
+  place-items:center;
+  margin-left:8px;   /* small gap from the Select button */
+  flex:0 0 auto;     /* keep the star compact, don’t stretch */
+}
+
 
   /* Slightly larger variant used in toasts */
   .s-btn.s-btn-lg{
@@ -314,6 +316,11 @@
   .prac-cta{
     margin-top:auto; display:flex; align-items:center; gap:8px;
   }
+/* Make Select fill the space until the star */
+.prac-cta .select-btn{
+  flex:1 1 auto;
+}
+
   /* Make the Open button fill the available width inside the card meta */
   .prac-cta .open-btn{
     flex:1 1 auto;
