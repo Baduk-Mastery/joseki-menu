@@ -1390,26 +1390,39 @@ function centerZoomAtGrid(i, j, factor, tapClientX, tapClientY){
     }
 
 
-    function exitFullscreen(){
+    // Smooth exit from fullscreen; if skipReset is true we don't call resetViewLocal()
+    function exitFullscreen(skipReset){
       mount.classList.remove('is-fullscreen');
       if (!isFullscreen) return;
-      resetViewLocal();
+
+      // Only do a hard reset when we're NOT coming from smoothZoomOutAndExit
+      if (!skipReset){
+        resetViewLocal(); // sets scale=1, offsets=0 and applies transform for fullscreen baseW
+      }
+
+      // Move board back into its normal wrapper
       if (returnAnchor && returnAnchor.parentNode){
         returnAnchor.parentNode.insertBefore(mount, returnAnchor);
         returnAnchor.parentNode.removeChild(returnAnchor);
         returnAnchor = null;
       }
-      mount.style.width = '';
+
+      mount.style.width  = '';
       mount.style.height = '';
-      if (overlay) overlay.style.display = 'none';
-      if (zoomExitBtn) zoomExitBtn.style.display = 'none';
+
       isFullscreen = false;
       document.documentElement.style.overflow = prevOverflow;
+
+      // Re-fit the board in the centered container *before* the overlay disappears
       fitBoard();
+
+      // Now hide the dark overlay
+      if (overlay) overlay.style.display = 'none';
 
       if (typeof refreshLivesUI  === 'function') refreshLivesUI();
       if (typeof refreshHintsUI  === 'function') refreshHintsUI();
     }
+
 
     var isPanning = false, panStart = null, activePointerId = null,
     tapStart = null, suppressNextBoardClick = false;
@@ -1841,9 +1854,11 @@ function smoothZoomOutAndExit(){
       applyPanAndSize(true);
 
       // If we were in fullscreen, now leave it
+      // true = skip extra reset, we already animated back to scale 1 / centered
       if (isFullscreen){
-        exitFullscreen();
+        exitFullscreen(true);
       }
+
     }
   }
 
