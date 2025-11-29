@@ -429,12 +429,12 @@
   startBtn.style.display = 'none';
   root.appendChild(startBtn);
 
-  ['pointerdown','pointerup','mousedown','mouseup','touchstart','touchend','click'].forEach(function(type){
-    startBtn.addEventListener(type, function(e){
-      e.stopPropagation();
-      if (type !== 'click') e.preventDefault();
-    }, true);
-  });
+startBtn.addEventListener('click', function(e){
+  e.stopPropagation();
+  e.preventDefault();
+  startDrillNow();
+});
+
 
   // Start button now always calls startDrillNow(), which handles both
   // Bubble-style inline DrillBoard and the new drills-board.html page.
