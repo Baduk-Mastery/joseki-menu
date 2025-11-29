@@ -18,7 +18,7 @@
       url('../img/wood.jpg');  /* same wood you use elsewhere */
     background-size:cover;
     background-position:center;
-    background-attachment:fixed; /* optional, makes it feel even more “global” */
+    background-attachment:fixed;
   }
 
   /* Fullscreen menu background */
@@ -87,74 +87,98 @@
     image-rendering:auto;
   }
 
-  /* Buttons (we use <a> tags styled as buttons) */
+  /* Practice-board-style wood buttons for menu */
   .menu-btn{
+    position:relative;
     display:block;
+    width:100%;
+    min-width:0;
+    padding:10px 24px;
+
+    border-radius:10px;
+    border:1px solid rgba(255,255,255,.40);
+
+    font-size:16px;
+    font-weight:800;
+    line-height:1.1;
+    color:#fff3cf;
+    text-shadow:0 1px 0 rgba(120,60,20,.7);
     text-decoration:none;
     text-align:center;
-    padding:14px 16px;
-    font-size:18px;
-    font-weight:600;
-    border:none;
-    border-radius:8px;
     cursor:pointer;
-    background:#fff;
-    color:#111;
-    box-shadow:0 4px 14px rgba(0,0,0,.18);
-  }
-  .menu-btn:active{ transform:translateY(1px); }
 
+    user-select:none;
+    -webkit-user-select:none;
+    -moz-user-select:none;
+    -ms-user-select:none;
+    -webkit-tap-highlight-color:transparent;
+
+    background-image:
+      linear-gradient(
+        to bottom,
+        rgba(255,255,255,.12),
+        rgba(255,255,255,.03) 38%,
+        rgba(0,0,0,.14) 100%
+      ),
+      url('../img/wood.jpg');
+    background-size:100% 100%, cover;
+    background-position:center;
+    background-repeat:no-repeat;
+
+    filter:brightness(1.08) saturate(.96);
+
+    box-shadow:
+      0 3px 0 rgba(133,74,26,.85),
+      0 8px 14px rgba(0,0,0,.45);
+
+    transition:
+      transform .08s ease-out,
+      box-shadow .08s ease-out,
+      filter .12s ease-out;
+  }
+
+  .menu-btn:hover{
+    filter:brightness(1.12) saturate(.98);
+    transform:translateY(-1px);
+    box-shadow:
+      0 4px 0 rgba(133,74,26,.9),
+      0 10px 16px rgba(0,0,0,.48);
+  }
+
+  .menu-btn:active{
+    filter:brightness(.97) saturate(.96);
+    transform:translateY(2px);
+    box-shadow:
+      0 1px 0 rgba(120,60,20,.9),
+      0 4px 8px rgba(0,0,0,.55);
+  }
+
+  .menu-btn:focus-visible{
+    outline:2px solid rgba(255,255,255,.9);
+    outline-offset:2px;
+  }
+
+  /* Keep class in markup; no visual difference for now */
   .menu-primary{
-    background:#3b82f6;
-    color:#fff;
+    /* could customize primary later; currently same as .menu-btn */
   }
-  .menu-primary:active{ background:#2563eb; }
 
-  /* Slate-outline skin */
-  #start-menu[data-skin="slate-outline"]::before{
-    filter:brightness(.9) saturate(.9);
-  }
-  #start-menu[data-skin="slate-outline"] .menu-inner{
-    width:min(92vw,360px);
-    gap:10px;
-  }
-  #start-menu[data-skin="slate-outline"] .menu-title{
-    margin:0 0 10px;
-    font-size:26px;
-    font-weight:800;
-    color:#e6f3ff;
-    text-shadow:none;
-  }
-  #start-menu[data-skin="slate-outline"] .menu-btn{
-    padding:14px 16px;
-    font-size:17px;
-    font-weight:700;
-    border-radius:12px;
-    background: rgba(37,99,235,.22);
-    color:#e6f3ff;
-    border:2px solid rgba(37,99,235,.75);
-    box-shadow:0 8px 20px rgba(2,6,23,.45),
-               inset 0 0 0 1px rgba(255,255,255,.08);
-    transition:transform .06s, background .15s, box-shadow .15s;
-  }
-  #start-menu[data-skin="slate-outline"] .menu-btn:hover{
-    background: rgba(37,99,235,.26);
-  }
-  #start-menu[data-skin="slate-outline"] .menu-btn:active{
-    background: rgba(37,99,235,.32);
-  }
-  #start-menu[data-skin="slate-outline"] .menu-primary{
-    background: rgba(37,99,235,.22);
-    color:#e6f3ff;
-  }
-  #start-menu[data-skin="slate-outline"] .menu-primary:active{
-    background: rgba(37,99,235,.32);
+  @media (max-width: 480px){
+    .menu-inner{
+      width:min(92vw,340px);
+      padding:14px;
+      gap:10px;
+    }
+    .menu-btn{
+      font-size:15px;
+      padding:9px 18px;
+    }
   }
   </style>
 </head>
 <body>
 
-  <div id="start-menu" data-skin="slate-outline" aria-modal="true" role="dialog">
+  <div id="start-menu" aria-modal="true" role="dialog">
     <div class="menu-inner">
       <h1 class="menu-title sr-only">Joseki Master</h1>
 
@@ -167,12 +191,12 @@
         />
       </div>
 
-      <a href="../joseki/joseki.html" class="menu-btn menu-primary">Joseki</a>
+      <a href="../joseki/joseki.html"           class="menu-btn menu-primary">Joseki</a>
       <a href="../practice-list/practice-list.html" class="menu-btn menu-primary">Practice</a>
-      <a href="../drills/drills.html" class="menu-btn menu-primary">Drills</a>
-      <a href="#" class="menu-btn menu-primary">My Patterns</a>
-      <a href="../settings/settings.html" class="menu-btn menu-primary">Settings</a>
- <a href="../plans/plans.html" class="menu-btn menu-primary">Plans</a>
+      <a href="../drills/drills.html"           class="menu-btn menu-primary">Drills</a>
+      <a href="#"                               class="menu-btn menu-primary">My Patterns</a>
+      <a href="../settings/settings.html"       class="menu-btn menu-primary">Settings</a>
+      <a href="../plans/plans.html"             class="menu-btn menu-primary">Plans</a>
     </div>
   </div>
 
