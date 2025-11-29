@@ -371,7 +371,6 @@
   startBtn.style.display = 'none';
   root.appendChild(startBtn);
 
-  // Prevent weird double fires, but still allow our click handler
   ['pointerdown','pointerup','mousedown','mouseup','touchstart','touchend','click'].forEach(function(type){
     startBtn.addEventListener(type, function(e){
       e.stopPropagation();
@@ -379,12 +378,9 @@
     }, true);
   });
 
-  // NEW: Start button goes to drills board page
   startBtn.addEventListener('click', function(e){
     e.stopPropagation();
-    e.preventDefault();
-    // Adjust this path if your folder structure is different
-    window.location.href = '../drills-board/drills-board.html';
+    showNotice('Drill board coming soon.', 'Start Drill');
   });
 
   var notice     = root.querySelector('#drills-notice');
@@ -486,7 +482,7 @@
     if (noticeText) noticeText.textContent = 'You can add a maximum of ' + MAX_TOTAL + ' patterns.';
   }
 
-  // closing = go back to main menu
+  // changed for standalone page: closing = go back to main menu
   function close(){
     window.location.href = '../joseki-menu/index.html';
   }
@@ -517,7 +513,7 @@
       var t = introCard.querySelector('.info-title');
       var d = introCard.querySelector('.info-desc');
       if (t) t.textContent = 'How Blitz drills work';
-      if (d) d.textContent = 'Pick exactly one joseki/pattern (10+ moves). Quick-fire training.';
+      if (d) d.textContent = 'Pick exactly one joseki/pattern (10+ moves). Quick-fire training. (Start coming soon.)';
       startBtn.textContent = 'Start Blitz';
     } else {
       LIB_SEL_KEY = 'drills_lib_selection';
@@ -1293,6 +1289,55 @@
     if (e.key === 'go_favorites'  && state.view === 'fav') buildFavoritesList();
   });
 
+  function startDrillNow(){
+    try{
+      if (window.GoDrills && typeof window.GoDrills.close === 'function') GoDrills.close();
+      var cap = document.getElementById('drill-cap'); if (cap) cap.style.display='none';
+      if (window.DrillBoard && typeof window.DrillBoard.load === 'function'){
+        DrillBoard.load(null, { perJoseki: 3 });
+      }
+    }catch(_){}
+  }
+  function captureProStart(e){
+    if (!isPro()) return;
+    if (state.mode !== 'complete') return;
+    if (!e) return;
+    e.preventDefault(); e.stopImmediatePropagation(); e.stopPropagation();
+    startDrillNow();
+  }
+  function captureProRetry(e){
+    if (!isPro()) return;
+    if (state.mode !== 'complete') return;
+    var btn = e && e.target && e.target.closest ? e.target.closest('#drill-done-retry') : null;
+    if (!btn) return;
+    e.preventDefault(); e.stopImmediatePropagation(); e.stopPropagation();
+    try{ var done = document.getElementById('drill-done'); if (done) done.style.display='none'; }catch(_){}
+    startDrillNow();
+  }
+  document.addEventListener('click', function(e){
+    var start = e.target && e.target.closest ? e.target.closest('#drills-start') : null;
+    if (start) captureProStart(e);
+  }, true);
+  document.addEventListener('pointerup', function(e){
+    var start = e.target && e.target.closest ? e.target.closest('#drills-start') : null;
+    if (start) captureProStart(e);
+  }, true);
+  document.addEventListener('touchend', function(e){
+    var start = e.target && e.target.closest ? e.target.closest('#drills-start') : null;
+    if (start) captureProStart(e);
+  }, { capture:true, passive:false });
+
+  document.addEventListener('click', captureProRetry, true);
+  document.addEventListener('pointerup', captureProRetry, true);
+  document.addEventListener('touchend', captureProRetry, { capture:true, passive:false });
+
+  function autoHideCapIfPro(){
+    if (!isPro()) return;
+    var cap = document.getElementById('drill-cap');
+    if (cap && cap.style.display !== 'none') cap.style.display='none';
+  }
+  setInterval(autoHideCapIfPro, 800);
+
   // default mode and auto-open on page load
   setMode('complete');
   open();
@@ -1300,3 +1345,5 @@
 </script>
 </body>
 </html>
+
+
