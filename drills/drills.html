@@ -386,19 +386,32 @@
     }
   }
 
-  /* Floating Start button (bottom center) */
-  #drills-root .floating-start{
-    position:fixed;
-    left:50%;
-    bottom:calc(env(safe-area-inset-bottom, 0px) + 28px);
-    transform:translate(-50%, 0);
-    z-index:100010;
-    display:none;
-    white-space:nowrap;
-    pointer-events:auto;
-    touch-action:manipulation;
-  }
-  #drills-root .floating-start:active{ transform:translate(-50%, 0); }
+/* Floating Start button (bottom center) */
+#drills-root .floating-start{
+  position:fixed;
+  left:50%;
+  bottom:calc(env(safe-area-inset-bottom, 0px) + 28px);
+  transform:translateX(-50%);
+  z-index:100010;
+
+  /* keep the original .s-btn display */
+  display:none;              /* hidden by default, JS will just flip this to inline-flex */
+  white-space:nowrap;
+  pointer-events:auto;
+  touch-action:manipulation;
+}
+#drills-root .floating-start:active{
+  /* don’t let :active change the centering */
+  transform:translateX(-50%);
+}
+
+/* Optional: when a notice is open, hide action buttons so nothing feels “jumpy” */
+#drills-root.notice-open .floating-start,
+#drills-root.notice-open .floating-clear{
+  opacity:0;
+  pointer-events:none;
+}
+
   @media (max-width:480px){
     #drills-root .floating-start{
       bottom:calc(env(safe-area-inset-bottom, 0px) + 20px);
@@ -1221,13 +1234,17 @@
   }
 
   /* Library build and render */
-  function updateStartButton(){
-    var n = totalSelectedCount();
-    var shouldShow = overlayOpen && state.view !== 'mode' && n > 0 && n <= MAX_TOTAL;
-    startBtn.style.display = shouldShow ? 'inline-block' : 'none';
-    startBtn.setAttribute('aria-hidden', shouldShow ? 'false' : 'true');
-    startBtn.disabled = !shouldShow;
-  }
+function updateStartButton(){
+  var n = totalSelectedCount();
+  var shouldShow = overlayOpen && state.view !== 'mode' && n > 0 && n <= MAX_TOTAL;
+
+  // keep the same layout as other wood buttons
+  startBtn.style.display = shouldShow ? 'inline-flex' : 'none';
+
+  startBtn.setAttribute('aria-hidden', shouldShow ? 'false' : 'true');
+  startBtn.disabled = !shouldShow;
+}
+
   function updateLibCount(){
     const n = totalSelectedCount();
     if (libCount) libCount.textContent = n + ' / ' + MAX_TOTAL + ' selected';
