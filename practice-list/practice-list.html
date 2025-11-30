@@ -201,14 +201,16 @@
       0 1px 0 rgba(120,60,20,.9),
       0 4px 8px rgba(0,0,0,.55);
   }
-  /* Slimmer header buttons (Back + Favorites) */
-  #practice-overlay .s-header .s-back,
-  #practice-overlay .s-header .s-fav,
-  #level-overlay .s-header .s-back{
-    padding:6px 12px;
-    font-size:14px;
-    border-radius:8px;
-  }
+/* Slimmer header buttons (Back + Favorites) */
+#practice-overlay .s-header .s-back,
+#practice-overlay .s-header .s-fav,
+#level-overlay .s-header .s-back{
+  padding:6px 12px;
+  font-size:14px;
+  border-radius:8px;
+}
+
+
 
   /* Star / favorite button: same design, compact square */
   .fav-toggle{
@@ -219,12 +221,13 @@
     font-size:20px;
     line-height:1;
   }
-  .prac-cta .fav-icon{
-    display:inline-grid;
-    place-items:center;
-    margin-left:8px;
-    flex:0 0 auto;
-  }
+.prac-cta .fav-icon{
+  display:inline-grid;
+  place-items:center;
+  margin-left:8px;   /* small gap from the Select button */
+  flex:0 0 auto;     /* keep the star compact, don’t stretch */
+}
+
 
   /* Slightly larger variant used in toasts */
   .s-btn.s-btn-lg{
@@ -315,10 +318,12 @@
   .prac-cta{
     margin-top:auto; display:flex; align-items:center; gap:8px;
   }
-  .prac-cta .select-btn{
-    flex:1 1 auto;
-  }
+/* Make Select fill the space until the star */
+.prac-cta .select-btn{
+  flex:1 1 auto;
+}
 
+  /* Make the Open button fill the available width inside the card meta */
   .prac-cta .open-btn{
     flex:1 1 auto;
     justify-content:center;
@@ -636,160 +641,32 @@
     }
     return null;
   }
-
-  // Corner/side region classification for fake-pass detection
-  function regionOf(pt, SIZE){
-    if (!pt) return 'none';
-    const max = SIZE - 1;
-
-    // Corner box thickness: around 1–5 from edges on 19x19, scaled on smaller boards
-    const K = Math.max(2, Math.min(5, Math.round(SIZE / 4)));
-
-    const left   = pt.x < K;
-    const right  = pt.x > max - K;
-    const top    = pt.y < K;
-    const bottom = pt.y > max - K;
-
-    if (left && top)    return 'corner-tl';
-    if (right && top)   return 'corner-tr';
-    if (left && bottom) return 'corner-bl';
-    if (right && bottom)return 'corner-br';
-
-    if (top)    return 'side-top';
-    if (bottom) return 'side-bottom';
-    if (left)   return 'side-left';
-    if (right)  return 'side-right';
-
-    return 'center';
-  }
-
-  function isFakePassMove(firstPt, firstRegion, pt, SIZE){
-    if (!firstPt || !pt) return false;
-    const reg = regionOf(pt, SIZE);
-
-    // First move is in a corner: any other corner box is "another corner completely"
-    if (firstRegion === 'corner-tl' ||
-        firstRegion === 'corner-tr' ||
-        firstRegion === 'corner-bl' ||
-        firstRegion === 'corner-br'){
-      return (reg.startsWith('corner-') && reg !== firstRegion);
-    }
-
-    // First move is on a side (not in a corner):
-    // treat a move into the two corners on the opposite side as a fake pass.
-    switch(firstRegion){
-      case 'side-top':
-        // opposite: bottom side → bottom-left, bottom-right
-        return (reg === 'corner-bl' || reg === 'corner-br');
-      case 'side-bottom':
-        // opposite: top side → top-left, top-right
-        return (reg === 'corner-tl' || reg === 'corner-tr');
-      case 'side-left':
-        // opposite: right side → top-right, bottom-right
-        return (reg === 'corner-tr' || reg === 'corner-br');
-      case 'side-right':
-        // opposite: left side → top-left, bottom-left
-        return (reg === 'corner-tl' || reg === 'corner-bl');
-      default:
-        // Center or unclassified: don't apply fake-pass logic
-        return false;
-    }
-  }
-
-  function enumerateLines(seq, SIZE){
-    const lines = [];
+  function enumerateLines(seq,SIZE){
+    const lines=[];
     let start = seq && seq[0];
-
-    // Skip root noise until we hit something with a move or variations
-    while (start && !nodeMove(start, SIZE) && !start.variations) start = start.next;
+    while(start && !nodeMove(start,SIZE) && !start.variations) start = start.next;
 
     function dfs(node, acc){
-      if (!node){
-        lines.push(acc.slice());
-        return;
-      }
+      if (!node){ lines.push(acc.slice()); return; }
       acc.push(node);
-
-      // Branch into variations
       if (node.variations && node.variations.length){
-        for (const v of node.variations){
-          let f = v && v[0];
-          while (f && !nodeMove(f, SIZE) && !f.variations) f = f.next;
+        for(const v of node.variations){
+          let f=v && v[0];
+          while(f && !nodeMove(f,SIZE) && !f.variations) f=f.next;
           if (f) dfs(f, acc.slice());
         }
       }
-
-      // Continue along main line
       if (node.next){
-        let nx = node.next;
-        while (nx && !nodeMove(nx, SIZE) && !nx.variations) nx = nx.next;
+        let nx=node.next;
+        while(nx && !nodeMove(nx,SIZE) && !nx.variations) nx=nx.next;
         if (nx) dfs(nx, acc);
         else lines.push(acc.slice());
       } else {
         lines.push(acc.slice());
       }
     }
-
     if (start) dfs(start, []);
-
-    // Convert SGF nodes → move list, but cut at first pass or fake-pass corner jump.
-    return lines.map(nodes => {
-      const moves = [];
-      let firstCoord = null;
-      let firstRegion = null;
-
-      for (const n of nodes){
-        if (!n) continue;
-
-        const hasB = n.B != null;
-        const hasW = n.W != null;
-        if (!hasB && !hasW) continue;
-
-        let color, raw;
-        if (hasB){ color = 'B'; raw = n.B; }
-        else     { color = 'W'; raw = n.W; }
-
-        // Normalise SGF value
-        let s = raw;
-        if (Array.isArray(s)) s = s[0] || '';
-        if (typeof s !== 'string') s = String(s || '');
-
-        let isPass = false;
-        let coord  = null;
-
-        // Treat empty / too short / off-board coords as pass (B[] / W[] / B[tt] on 19x19, etc.)
-        if (!s || s.length < 2){
-          isPass = true;
-        } else {
-          const p = xy(s, SIZE);
-          if (!p){
-            isPass = true;
-          } else {
-            coord = p;
-          }
-        }
-
-        if (isPass){
-          // Stop here: we only keep moves up to (but not including) the pass.
-          break;
-        }
-
-        if (coord){
-          if (!firstCoord){
-            firstCoord = coord;
-            firstRegion = regionOf(firstCoord, SIZE);
-          } else {
-            // Fake pass: jump to another corner (or opposite-side corner if first move was a side move)
-            if (isFakePassMove(firstCoord, firstRegion, coord, SIZE)){
-              break;
-            }
-          }
-          moves.push({ x: coord.x, y: coord.y, color });
-        }
-      }
-
-      return moves;
-    });
+    return lines.map(nodes => nodes.map(n => nodeMove(n,SIZE)).filter(Boolean));
   }
 
   function nicePoint(pt,S){
@@ -1273,6 +1150,7 @@
     }
   }
 
+
   /* Build data */
 
   const state = { built:false, view:'cats', lines:[], cats:[], currentCatKey:null };
@@ -1295,8 +1173,7 @@
         const trees=parseAllTrees(txt);
         if(!trees.length) throw new Error('Empty SGF');
 
-        // 1) Build raw lines from SGF (with pass-cutting and fake-pass cutting applied in enumerateLines)
-        const rawLines=[];
+        const lines=[];
         for (const seq of trees){
           linkify(seq,null);
           const size   = parseSZ(seq[0]?.SZ);
@@ -1305,70 +1182,25 @@
           const paths  = enumerateLines(seq, size);
           for (const moves of paths){
             if ((moves?.length || 0) >= MIN_MOVES){
-              rawLines.push({ size, rootAB, rootAW, moves });
+              lines.push({ size, rootAB, rootAW, moves });
             }
           }
         }
 
-        // 2) Deduplicate lines that are now identical after truncation
-        const uniqLines = [];
-        const seen = new Map();
-
-        function coordsKey(coords){
-          if (!coords || !coords.length) return '';
-          return coords.map(p => p.x + ',' + p.y).join(';');
-        }
-
-        for (let i = 0; i < rawLines.length; i++){
-          const L = rawLines[i];
-          const size = L.size || 19;
-
-          // Move sequence key (order matters – different sequences stay separate)
-          const keyMoves = (L.moves || [])
-            .map(m => (m.color || 'B')[0] + ':' + m.x + ',' + m.y)
-            .join('|');
-
-          const keyAB = coordsKey(L.rootAB);
-          const keyAW = coordsKey(L.rootAW);
-          const key   = `${size}|AB:${keyAB}|AW:${keyAW}|M:${keyMoves}`;
-
-          if (!seen.has(key)){
-            seen.set(key, uniqLines.length);
-            uniqLines.push(L);
-          }
-        }
-
-        const lines = uniqLines;
-
-        // 3) Build categories from the deduped lines
         const catMap = new Map();
         for (let i=0;i<lines.length;i++){
           const mv=lines[i].moves;
-          if (!mv || mv.length < 2) continue;
-          const s  = lines[i].size || 19;
-          const m1 = mv[0];
-          const m2 = mv[1];
+          if (mv.length < 2) continue;
+          const s = lines[i].size || 19, m1 = mv[0], m2 = mv[1];
           const key = `${s}|${m1.color}:${m1.x},${m1.y}|${m2.color}:${m2.x},${m2.y}`;
-          if (!catMap.has(key)) {
-            catMap.set(key, {
-              key,
-              size: s,
-              firstTwo: [m1, m2],
-              lineIdx: []
-            });
-          }
+          if (!catMap.has(key)) catMap.set(key, { key, size:s, firstTwo:[m1,m2], lineIdx:[] });
           catMap.get(key).lineIdx.push(i);
         }
 
         state.lines = lines;
         state.cats  = Array.from(catMap.values());
         showCategories();
-        console.log(
-          '[Practice List] raw lines(≥'+MIN_MOVES+'): ',
-          rawLines.length,
-          'deduped:', lines.length,
-          'cats:', state.cats.length
-        );
+        console.log('[Practice List] lines(≥'+MIN_MOVES+'): ', lines.length, 'cats:', state.cats.length);
       })
       .catch(err=>{
         catsGrid.innerHTML='';
@@ -1420,7 +1252,7 @@
 
       title.textContent=`First two: ${t1} → ${t2}`;
       desc.textContent  = `${cat.lineIdx.length} variation${cat.lineIdx.length>1?'s':''} (≥ ${MIN_MOVES} moves)`;
-      cta.innerHTML     = '<span class="s-btn open-btn">Open</span>';
+cta.innerHTML     = '<span class="s-btn open-btn">Open</span>';
 
       meta.appendChild(title);
       meta.appendChild(desc);
@@ -1634,32 +1466,34 @@
   };
 
   lvlOverlay.addEventListener('click', function(e){
-    const card = e.target.closest('.level-card');
-    if (!card) return;
+  const card = e.target.closest('.level-card');
+  if (!card) return;
 
-    if (card.getAttribute('aria-disabled') === 'true'){
-      // Show in-app Pro notification instead of external alert/paywall directly
-      showProToast();
-      return;
-    }
+  if (card.getAttribute('aria-disabled') === 'true'){
+    // Show in-app Pro notification instead of external alert/paywall directly
+    showProToast();
+    return;
+  }
 
-    const lvl = parseInt(card.getAttribute('data-level') || '2', 10) || 2;
-    window.PracticeConfig = window.PracticeConfig || {};
-    window.PracticeConfig.level = lvl;
+  const lvl = parseInt(card.getAttribute('data-level') || '2', 10) || 2;
+  window.PracticeConfig = window.PracticeConfig || {};
+  window.PracticeConfig.level = lvl;
 
-    // Persist full config (selectedLine + level)
-    savePracticeConfig();
+  // Persist full config (selectedLine + level)
+  savePracticeConfig();
 
-    // Extra safety: only go to board if a line was actually selected
-    if (!window.PracticeConfig.selectedLine){
-      console.warn('[Practice] Level picked but no selectedLine in PracticeConfig; not opening board.');
-      return;
-    }
+  // Extra safety: only go to board if a line was actually selected
+  if (!window.PracticeConfig.selectedLine){
+    console.warn('[Practice] Level picked but no selectedLine in PracticeConfig; not opening board.');
+    return;
+  }
 
-    // Don’t close overlays here – it causes the flicker back to categories.
-    // Just navigate to the board page; this page will unload anyway.
-    window.location.href = "../practice-board/practice-board.html";
-  });
+  // Don’t close overlays here – it causes the flicker back to categories.
+  // Just navigate to the board page; this page will unload anyway.
+  window.location.href = "../practice-board/practice-board.html";
+});
+
+
 
   backBtn && backBtn.addEventListener('click', ()=>{
     if (overlay.classList.contains('toast-open')){
@@ -1717,3 +1551,5 @@
 
 </body>
 </html>
+
+
