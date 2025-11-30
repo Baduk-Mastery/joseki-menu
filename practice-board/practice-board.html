@@ -896,14 +896,14 @@ html.no-wood, body.no-wood{ background: none !important; }
         }
       }
 
-       zoomHintAnchor = null;
+      zoomHintAnchor = null;
       if (hasSGF){
         var cands = getNextCandidates(currentNode) || [];
         if (cands.length){
           var chosen = null;
 
           if (playerOnly){
-            for (var i = 0; i < cands.length; i++){
+            for (var i=0; i<cands.length; i++){
               if (cands[i].color === playerColor){
                 chosen = cands[i];
                 break;
@@ -912,28 +912,14 @@ html.no-wood, body.no-wood{ background: none !important; }
           }
           if (!chosen) chosen = cands[0];
 
-          // Anchor for zoom/hint ring stays on the actual "next" move
           var p = tfXY(chosen.xy.x, chosen.xy.y);
-          zoomHintAnchor = { x: p.x, y: p.y };
+          zoomHintAnchor = { x:p.x, y:p.y };
 
-          // NEW: show up to 3 consecutive moves (including the next one)
-          // all marked with "A", so we always see direction clearly.
           if (shouldShowHint()){
-            var hintNodes = getHintNodesAround(chosen.node, 3);
-            var seenLB   = {};
-            for (var h = 0; h < hintNodes.length; h++){
-              var mvH = nodeMoveXY(hintNodes[h]);
-              if (!mvH) continue;
-              var posH = tfXY(mvH.x, mvH.y);
-              var keyH = posH.x + ':' + posH.y;
-              if (seenLB[keyH]) continue; // avoid duplicate labels
-              seenLB[keyH] = 1;
-              addLB(posH.x, posH.y, 'A');
-            }
+            addLB(p.x, p.y, 'A');
           }
         }
       }
-
 
       if (forceHintMarker && hintXY){
         board.addObject({ x: hintXY.x, y: hintXY.y, type: HINT_DRAW });
@@ -1048,32 +1034,6 @@ html.no-wood, body.no-wood{ background: none !important; }
       }
       return candidatesDedup(arr);
     }
-    function getHintNodesAround(node, limit){
-      var max = limit || 3;
-      if (!node) return [];
-
-      // Collect this node + previous move-nodes
-      var prevNodes = [];
-      var cur = node;
-      while (cur && prevNodes.length < max){
-        if (nodeHasMove(cur)) prevNodes.push(cur);
-        cur = cur.prev;
-      }
-      // Now prevNodes is [chosen, prev, prev2, ...]; reverse so earliest first
-      prevNodes.reverse();
-
-      var hintNodes = prevNodes.slice();
-
-      // Then, if we still have room, add following move-nodes
-      cur = node.next;
-      while (cur && hintNodes.length < max){
-        if (nodeHasMove(cur)) hintNodes.push(cur);
-        cur = cur.next;
-      }
-
-      return hintNodes;
-    }
-
     function pathTo(node){ var out=[],n=node; while(n){ out.push(n); n=n.prev; } out.reverse(); return out; }
     function buildPositionTo(node){
       clearHint();
@@ -2146,3 +2106,6 @@ html.no-wood, body.no-wood{ background: none !important; }
 
 </body>
 </html>
+
+
+
