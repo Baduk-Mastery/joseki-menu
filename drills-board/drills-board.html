@@ -200,11 +200,10 @@ if (!window.StoneSFX) {
     return (t || 'free').toLowerCase() === 'pro';
   }
 
-    /* ===== Run cap (Start + Retry)
-     - Free: 2 runs per browser session
-     - Pro:  unlimited
+ /* ===== Run cap (Start + Retry)
+     - Disabled: limits are handled per mode/day on drills.html
   ================================= */
-  const RUN_LIMIT_FREE = 2;
+  const RUN_LIMIT_FREE = Infinity;
   const RUNS_KEY = 'go:drill_runs_session_count';
 
   function getRunLimit(){
