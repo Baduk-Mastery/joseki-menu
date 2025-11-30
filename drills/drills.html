@@ -549,7 +549,7 @@ startBtn.addEventListener('click', function(e){
     if (noticeText) noticeText.textContent = 'You can add a maximum of ' + MAX_TOTAL + ' patterns.';
   }
   setLimitFromPlan();
-  // ---- Daily Drills limit: per mode (Complete / Blitz) ----
+    // ---- Daily Drills limit: per mode (Complete / Blitz) ----
   // Free: 2 runs per day per mode. Pro: unlimited.
   var FREE_DAILY_LIMIT_COMPLETE = 2;
   var FREE_DAILY_LIMIT_BLITZ    = 2;
@@ -559,36 +559,32 @@ startBtn.addEventListener('click', function(e){
     return (mode === 'blitz') ? FREE_DAILY_LIMIT_BLITZ : FREE_DAILY_LIMIT_COMPLETE;
   }
 
-  function readDailyDrillState(){
+  // Per-mode buckets:
+  //   go:drills_attempts_complete_today_v1
+  //   go:drills_attempts_blitz_today_v1
+  function readDailyDrillBucket(mode){
+    var m   = (mode === 'blitz') ? 'blitz' : 'complete';
+    var key = 'go:drills_attempts_' + m + '_today_v1';
     try{
-      var key   = 'go:drills_attempts_today_v2';
       var raw   = localStorage.getItem(key);
-      var today = (new Date()).toISOString().slice(0,10);
+      var today = (new Date()).toISOString().slice(0,10); // date only (UTC)
       var obj   = raw ? JSON.parse(raw) : null;
 
-      if (!obj || obj.day !== today){
-        obj = { day: today, counts: { complete:0, blitz:0 } };
-      } else if (!obj.counts){
-        obj.counts = { complete:0, blitz:0 };
+      // If nothing stored yet or from a previous day, start fresh
+      if (!obj || obj.day !== today || typeof obj.count !== 'number'){
+        obj = { day: today, count: 0 };
       }
-      return obj;
+      return { key: key, state: obj };
     }catch(_){
-      // If localStorage is blocked, fail open (no hard lock)
-      return null;
+      // If localStorage is blocked or JSON is bad, fail open
+      return { key: key, state: null };
     }
   }
 
-  function writeDailyDrillState(obj){
-    try{
-      localStorage.setItem('go:drills_attempts_today_v2', JSON.stringify(obj));
-    }catch(_){}
-  }
-
   function getDrillsUsedToday(mode){
-    var st = readDailyDrillState();
-    if (!st) return 0;
-    var m = (mode === 'blitz') ? 'blitz' : 'complete';
-    return (st.counts && typeof st.counts[m] === 'number') ? st.counts[m] : 0;
+    var bucket = readDailyDrillBucket(mode);
+    if (!bucket.state) return 0;
+    return bucket.state.count || 0;
   }
 
   function hasDrillAttemptsLeft(mode){
@@ -604,12 +600,15 @@ startBtn.addEventListener('click', function(e){
     var limit = getDailyLimitForMode(mode);
     if (!isFinite(limit)) return;
 
-    var st = readDailyDrillState();
-    if (!st) return;
-    var m = (mode === 'blitz') ? 'blitz' : 'complete';
-    st.counts[m] = (st.counts[m] || 0) + 1;
-    writeDailyDrillState(st);
+    var bucket = readDailyDrillBucket(mode);
+    if (!bucket.state) return;
+
+    bucket.state.count = (bucket.state.count || 0) + 1;
+    try{
+      localStorage.setItem(bucket.key, JSON.stringify(bucket.state));
+    }catch(_){}
   }
+
 
   /* Overlay API */
   var overlayOpen = false;
