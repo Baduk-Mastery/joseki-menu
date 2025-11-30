@@ -549,6 +549,67 @@ startBtn.addEventListener('click', function(e){
     if (noticeText) noticeText.textContent = 'You can add a maximum of ' + MAX_TOTAL + ' patterns.';
   }
   setLimitFromPlan();
+  // ---- Daily Drills limit: per mode (Complete / Blitz) ----
+  // Free: 2 runs per day per mode. Pro: unlimited.
+  var FREE_DAILY_LIMIT_COMPLETE = 2;
+  var FREE_DAILY_LIMIT_BLITZ    = 2;
+
+  function getDailyLimitForMode(mode){
+    if (isPro()) return Infinity;
+    return (mode === 'blitz') ? FREE_DAILY_LIMIT_BLITZ : FREE_DAILY_LIMIT_COMPLETE;
+  }
+
+  function readDailyDrillState(){
+    try{
+      var key   = 'go:drills_attempts_today_v2';
+      var raw   = localStorage.getItem(key);
+      var today = (new Date()).toISOString().slice(0,10);
+      var obj   = raw ? JSON.parse(raw) : null;
+
+      if (!obj || obj.day !== today){
+        obj = { day: today, counts: { complete:0, blitz:0 } };
+      } else if (!obj.counts){
+        obj.counts = { complete:0, blitz:0 };
+      }
+      return obj;
+    }catch(_){
+      // If localStorage is blocked, fail open (no hard lock)
+      return null;
+    }
+  }
+
+  function writeDailyDrillState(obj){
+    try{
+      localStorage.setItem('go:drills_attempts_today_v2', JSON.stringify(obj));
+    }catch(_){}
+  }
+
+  function getDrillsUsedToday(mode){
+    var st = readDailyDrillState();
+    if (!st) return 0;
+    var m = (mode === 'blitz') ? 'blitz' : 'complete';
+    return (st.counts && typeof st.counts[m] === 'number') ? st.counts[m] : 0;
+  }
+
+  function hasDrillAttemptsLeft(mode){
+    if (isPro()) return true;
+    var limit = getDailyLimitForMode(mode);
+    if (!isFinite(limit)) return true;
+    var used  = getDrillsUsedToday(mode);
+    return used < limit;
+  }
+
+  function recordDrillAttempt(mode){
+    if (isPro()) return;
+    var limit = getDailyLimitForMode(mode);
+    if (!isFinite(limit)) return;
+
+    var st = readDailyDrillState();
+    if (!st) return;
+    var m = (mode === 'blitz') ? 'blitz' : 'complete';
+    st.counts[m] = (st.counts[m] || 0) + 1;
+    writeDailyDrillState(st);
+  }
 
   /* Overlay API */
   var overlayOpen = false;
@@ -1403,6 +1464,24 @@ startBtn.addEventListener('click', function(e){
        page can load ONLY what was selected.
   */
   function startDrillNow(){
+    var mode = state.mode || 'complete';
+
+    // 0) Check daily limit per mode (2 Complete + 2 Blitz on free)
+    if (!hasDrillAttemptsLeft(mode)){
+      var perDay = getDailyLimitForMode(mode);
+      var label  = (mode === 'blitz') ? 'Blitz drills' : 'Complete drills';
+      var msg    = "You've reached today's free limit for " + label + ".";
+      if (isFinite(perDay)){
+        msg += " You can start up to " + perDay + " " + label.toLowerCase() + " per day on the free plan.";
+      }
+      msg += " Come back tomorrow or upgrade to Pro for unlimited drills.";
+      showNotice(msg, 'Daily limit reached');
+      return; // do NOT go to the board
+    }
+
+    // 0b) Record this run locally (per mode)
+    recordDrillAttempt(mode);
+
     // 1) Capture current selections (mode + library + favorites + own IDs)
     try {
       if (window.GoDrills && typeof window.GoDrills.getSelections === 'function') {
@@ -1436,6 +1515,7 @@ startBtn.addEventListener('click', function(e){
       window.location.href = '../drills-board/drills-board.html';
     } catch (_) {}
   }
+
 
   function captureProStart(e){
     if (!isPro()) return;
