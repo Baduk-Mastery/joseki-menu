@@ -387,23 +387,33 @@
   }
 
   /* Floating Start button (bottom center) */
+  /* Floating Start button (bottom center) */
   #drills-root .floating-start{
     position:fixed;
-    left:50%;
+    /* Full-width container, center via margin:auto instead of translate */
+    left:0;
+    right:0;
     bottom:calc(env(safe-area-inset-bottom, 0px) + 28px);
-    transform:translate(-50%, 0);
+    margin:0 auto;
+
+    /* No horizontal transform – prevents sliding/jumping from the side */
+    transform:none;
+
     z-index:100010;
     display:none;
     white-space:nowrap;
     pointer-events:auto;
     touch-action:manipulation;
+    text-align:center; /* just in case */
   }
-  #drills-root .floating-start:active{ transform:translate(-50%, 0); }
+
+  /* Keep mobile bottom offset */
   @media (max-width:480px){
     #drills-root .floating-start{
       bottom:calc(env(safe-area-inset-bottom, 0px) + 20px);
     }
   }
+
 
   /* Centered notice */
   #drills-root #drills-notice{
