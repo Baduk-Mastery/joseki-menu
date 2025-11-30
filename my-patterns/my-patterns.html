@@ -350,27 +350,10 @@
   #ownpatterns-root .own-title{
     font-weight:800; font-size:18px; line-height:1.3;
   }
-#ownpatterns-root .own-cta{
-  margin-top:10px;
-  display:flex;
-  flex-direction:column;
-  gap:8px;
-  align-items:stretch; /* buttons stretch to full width of the meta column */
-}
-/* Full-width action buttons inside pattern cards (like Practice list) */
-#ownpatterns-root .own-cta .s-btn{
-  width:100%;
-  justify-content:center;
-  text-align:center;
-}
-
-/* Keep Remove styling but also full-width */
-#ownpatterns-root .own-cta .s-btn.s-btn-danger{
-  width:100%;
-  justify-content:center;
-  text-align:center;
-}
-
+  #ownpatterns-root .own-cta{
+    margin-top:auto;
+    display:flex; gap:10px; flex-wrap:wrap; align-items:center;
+  }
 
   /* Editor layout */
   #ownpatterns-root #own-editor-wrap{
@@ -1419,3 +1402,6 @@ title.textContent = displayName + ' (' + moveCount + ' Moves)';
 
 </body>
 </html>
+
+
+
