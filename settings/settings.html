@@ -16,21 +16,30 @@
     /* ========= Overlay chrome (WOOD background) ========= */
     #settings-overlay{
       display:none; /* will be turned to flex via JS on load */
-      position:fixed; inset:0; z-index:100000;
-      align-items:center; justify-content:center;
+      position:fixed;
+      inset:0;
+      z-index:100000;
+      align-items:flex-start;
+      justify-content:center;
+      padding:12px 0;
       color:#fff;
       -webkit-tap-highlight-color:transparent;
+      --wood:url('../img/wood.jpg');
       background-image:
         linear-gradient(rgba(0,0,0,.35), rgba(0,0,0,.45)),
-        url('../img/wood.jpg');
-      background-size:cover; background-position:center;
+        var(--wood);
+      background-size:cover;
+      background-position:center;
+      overscroll-behavior:contain;
       isolation:isolate;
+      --maxw:720px;
     }
 
-    /* Header + card are laid out via grid to avoid overlap, regardless of globals */
+    /* Header + card container – width now matches Drills */
     #settings-overlay .s-inner{
-      width:min(92vw,560px);
-      padding:16px 24px 24px;
+      width:min(92vw,var(--maxw));
+      padding:16px 24px 22px;
+      margin:0 auto;
       position:relative;
       display:grid;
       grid-template-columns:auto 1fr;
@@ -44,29 +53,81 @@
       box-sizing:border-box;
     }
 
+    /* Back button – wood style, same as Drills header back */
     #settings-overlay .s-back{
       grid-area:back;
-      position:static !important;
-      margin:0 !important;
-      padding:8px 12px;
-      border-radius:12px; cursor:pointer; font-weight:700;
-      background: rgba(37,99,235,.22);
-      color:#e6f3ff;
-      border:2px solid rgba(37,99,235,.75);
-      box-shadow:0 8px 20px rgba(2,6,23,.45), inset 0 0 0 1px rgba(255,255,255,.08);
-      transition:transform .06s, background .15s, box-shadow .15s;
+      position:relative;
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      gap:6px;
+
+      padding:6px 12px;
+      border-radius:8px;
+      border:1px solid rgba(255,255,255,.40);
+
+      font-size:14px;
+      font-weight:800;
+      line-height:1.1;
+      color:#fff3cf;
+      text-shadow:0 1px 0 rgba(120,60,20,.7);
+      cursor:pointer;
+
+      user-select:none;
+      -webkit-user-select:none;
+      -moz-user-select:none;
+      -ms-user-select:none;
+      -webkit-tap-highlight-color:transparent;
+
+      background-image:
+        linear-gradient(
+          to bottom,
+          rgba(255,255,255,.12),
+          rgba(255,255,255,.03) 38%,
+          rgba(0,0,0,.14) 100%
+        ),
+        var(--wood);
+      background-size:100% 100%, cover;
+      background-position:center;
+      background-repeat:no-repeat;
+
+      filter:brightness(1.08) saturate(.96);
+
+      box-shadow:
+        0 3px 0 rgba(133,74,26,.85),
+        0 8px 14px rgba(0,0,0,.45);
+
+      transition:
+        transform .08s ease-out,
+        box-shadow .08s ease-out,
+        filter .12s ease-out;
+
       white-space:nowrap;
       z-index:1;
     }
-    #settings-overlay .s-back:hover{  background: rgba(37,99,235,.26); }
-    #settings-overlay .s-back:active{ background: rgba(37,99,235,.32); transform:translateY(1px); }
+    #settings-overlay .s-back:hover{
+      filter:brightness(1.12) saturate(.98);
+      transform:translateY(-1px);
+      box-shadow:
+        0 4px 0 rgba(133,74,26,.9),
+        0 10px 16px rgba(0,0,0,.48);
+    }
+    #settings-overlay .s-back:active{
+      filter:brightness(.97) saturate(.96);
+      transform:translateY(2px);
+      box-shadow:
+        0 1px 0 rgba(120,60,20,.9),
+        0 4px 8px rgba(0,0,0,.55);
+    }
 
     #settings-overlay .s-title{
       grid-area:title;
       position:static !important;
       display:block !important;
       margin:0 !important;
-      font-size:34px; font-weight:800; line-height:1.15;
+      font-size:24px;
+      font-weight:800;
+      line-height:1.15;
       text-shadow:0 1px 2px rgba(0,0,0,.35);
       overflow:visible;
       min-width:0;
@@ -80,15 +141,25 @@
       box-shadow:0 8px 20px rgba(2,6,23,.45), inset 0 0 0 1px rgba(255,255,255,.08);
       padding:12px;
       color:#e6f3ff;
+      box-sizing:border-box;
     }
 
     #settings-overlay .s-row{
       display:flex !important;
-      align-items:center; justify-content:space-between;
-      padding:14px 12px; border-radius:12px;
+      align-items:center;
+      justify-content:space-between;
+      padding:14px 12px;
+      border-radius:12px;
     }
-    #settings-overlay .s-row + .s-row{ margin-top:6px; }
-    #settings-overlay .s-label{ font-size:18px; font-weight:700; letter-spacing:.2px; color:#e6f3ff; }
+    #settings-overlay .s-row + .s-row{
+      margin-top:6px;
+    }
+    #settings-overlay .s-label{
+      font-size:18px;
+      font-weight:700;
+      letter-spacing:.2px;
+      color:#e6f3ff;
+    }
 
     /* Subsetting row (child of Zoom) */
     #settings-overlay .s-row-sub{
@@ -116,28 +187,47 @@
     }
 
     #settings-overlay .seg{
-      display:inline-flex !important; gap:6px; padding:4px;
-      background:#161b29; border:1px solid #2b3246; border-radius:999px;
+      display:inline-flex !important;
+      gap:6px;
+      padding:4px;
+      background:#161b29;
+      border:1px solid #2b3246;
+      border-radius:999px;
       box-shadow:inset 0 2px 8px rgba(0,0,0,.35);
     }
     #settings-overlay .seg-btn{
       position:static !important;
-      min-width:72px; padding:10px 14px; border-radius:999px; border:none; cursor:pointer;
-      background:transparent; color:#cfe2ff; font-weight:800; font-size:14px;
-      letter-spacing:.4px; text-transform:uppercase;
+      min-width:72px;
+      padding:10px 14px;
+      border-radius:999px;
+      border:none;
+      cursor:pointer;
+      background:transparent;
+      color:#cfe2ff;
+      font-weight:800;
+      font-size:14px;
+      letter-spacing:.4px;
+      text-transform:uppercase;
       transition:transform .06s;
     }
-    #settings-overlay .seg-btn:active{ transform:translateY(1px); }
+    #settings-overlay .seg-btn:active{
+      transform:translateY(1px);
+    }
     #settings-overlay .seg-btn[aria-pressed="true"]{
-      background:#3b82f6; color:#fff; box-shadow:0 6px 18px rgba(59,130,246,.45);
+      background:#3b82f6;
+      color:#fff;
+      box-shadow:0 6px 18px rgba(59,130,246,.45);
     }
 
     @media (max-width: 360px){
       #settings-overlay .s-inner{
         grid-template-columns: auto 1fr;
         gap:10px 12px;
+        padding:16px 12px 20px;
       }
-      #settings-overlay .s-title{ font-size:28px; }
+      #settings-overlay .s-title{
+        font-size:22px;
+      }
     }
   </style>
 </head>
