@@ -4,29 +4,27 @@
   <meta charset="utf-8" />
   <title>Joseki Master – Practice Board</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
- <style>
-  html, body{
-    margin:0;
-    padding:0;
-    height:100%;
-    font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
-  }
+  <style>
+    html, body{
+      margin:0;
+      padding:0;
+      height:100%;
+      font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+    }
 
-  /* Let the body be a simple container */
-  body{
-    position:relative;
-  }
+    /* Let the body be a simple container */
+    body{
+      position:relative;
+    }
 
-  /* Center the practice board block on the page */
-  #go-board-prac-wrap{
-    position:absolute;
-    top:50%;
-    left:50%;
-    transform:translate(-50%, -50%);
-  }
-</style>
-
-
+    /* Center the practice board block on the page */
+    #go-board-prac-wrap{
+      position:absolute;
+      top:50%;
+      left:50%;
+      transform:translate(-50%, -50%);
+    }
+  </style>
 
   <!-- Simple global menu bridge for Practice Board -->
   <script>
@@ -74,6 +72,7 @@
     <button id="pbtn-reset" class="pbtn pbtn-alt"   type="button">Reset</button>
   </div>
 </div>
+
 <!-- In-app "Back to menu" confirmation (same UX as Joseki board) -->
 <div id="menu-confirm-overlay" aria-hidden="true">
   <div class="menu-confirm-dialog" role="dialog" aria-modal="true" aria-labelledby="menuConfirmTitle">
@@ -87,7 +86,6 @@
     </div>
   </div>
 </div>
-
 
 <!-- Wrong Move Modal -->
 <div id="prac-wrong" style="display:none;position:fixed;inset:0;z-index:99999;align-items:center;justify-content:center;">
@@ -226,7 +224,7 @@
   }
 
   /* DOM hint ring */
-   .hint-ring{
+  .hint-ring{
     position:absolute;
     pointer-events:none;
     border-radius:50%;
@@ -241,44 +239,42 @@
     to  { transform:scale(1.03); opacity:1; }
   }
 
+  /* Practice-only fullscreen overlay */
+  #go-zoom-overlay-prac{
+    position:fixed;
+    inset:0;
+    z-index:99998;
+    display:none;
+    align-items:center;
+    justify-content:center;
 
+    /* keep page background visible */
+    background:transparent;
 
-/* Practice-only fullscreen overlay */
-#go-zoom-overlay-prac{
-  position:fixed;
-  inset:0;
-  z-index:99998;
-  display:none;
-  align-items:center;
-  justify-content:center;
-
-  /* keep page background visible */
-  background:transparent;   /* or `background:none;` */
-
-  -webkit-tap-highlight-color:transparent;
-}
+    -webkit-tap-highlight-color:transparent;
+  }
 
   #go-zoom-stage-prac{
     width:100vw; height:100vh;
     display:flex; align-items:center; justify-content:center;
     touch-action:none;
   }
-  /* Small zoom-out square (visible only while zoomed/fullscreen) */
-    /* Small zoom-out square (bigger, like in screenshot) */
+
+  /* Small zoom-out square (bigger, like in screenshot) */
   #go-zoom-exit-prac{
     position:fixed;
     left:14px;
     bottom:14px;
 
-    width:120px;        /* wider */
-    height:80px;       /* a bit taller */
+    width:120px;
+    height:80px;
     border-radius:9px;
 
     background:rgba(148,163,184,.35);
     border:1px solid rgba(148,163,184,.85);
     box-shadow:0 6px 16px rgba(0,0,0,.55);
 
-    display:none;      /* toggled in JS */
+    display:none; /* toggled in JS */
     cursor:pointer;
     z-index:99999;
     backdrop-filter:blur(2px);
@@ -287,13 +283,28 @@
     color:#e5e7eb;
     font-size:18px;
     font-weight:600;
-    line-height:36px;  /* vertical centering for the “x” */
+    line-height:36px;
     text-align:center;
   }
   #go-zoom-exit-prac::before{
     content:"";
   }
 
+  /* NEW: UI container for meters + buttons while zoomed */
+  #go-zoom-ui-prac{
+    position:fixed;
+    left:0;
+    right:0;
+    bottom:0;
+    padding:0 12px 18px;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    pointer-events:none; /* children re-enable */
+  }
+  #go-zoom-ui-prac > *{
+    pointer-events:auto;
+  }
 
   /* Board drop shadow */
   #go-board-prac{
@@ -301,7 +312,7 @@
       0 18px 40px rgba(0,0,0,.32),
       0 6px 16px rgba(0,0,0,.22) !important;
     border-radius: 10px;
-  touch-action: none; /* NEW: prevents browser scroll on drag, smoother panning */
+    touch-action: none; /* prevents browser scroll on drag, smoother panning */
   }
   #go-board-prac.is-fullscreen{
     box-shadow: none !important;
@@ -320,72 +331,68 @@
     flex-wrap:wrap;
   }
 
-#prac-ctrls .pbtn,
-#prac-ctrls .pbtn-strong,
-#prac-ctrls .pbtn-alt{
-  position:relative;
-  min-width:90px;
-  padding:8px 24px;
+  #prac-ctrls .pbtn,
+  #prac-ctrls .pbtn-strong,
+  #prac-ctrls .pbtn-alt{
+    position:relative;
+    min-width:90px;
+    padding:8px 24px;
 
-  border-radius:10px;
-  border:1px solid rgba(255,255,255,.40);
+    border-radius:10px;
+    border:1px solid rgba(255,255,255,.40);
 
-  font-size:16px;
-  font-weight:800;
-  line-height:1.1;
-  color:#fff3cf;
-  text-shadow:0 1px 0 rgba(120,60,20,.7);
-  cursor:pointer;
+    font-size:16px;
+    font-weight:800;
+    line-height:1.1;
+    color:#fff3cf;
+    text-shadow:0 1px 0 rgba(120,60,20,.7);
+    cursor:pointer;
 
-  /* prevent “marking” */
-  user-select:none;
-  -webkit-user-select:none;
-  -moz-user-select:none;
-  -ms-user-select:none;
-  -webkit-tap-highlight-color:transparent;
+    user-select:none;
+    -webkit-user-select:none;
+    -moz-user-select:none;
+    -ms-user-select:none;
+    -webkit-tap-highlight-color:transparent;
 
-  /* softer highlight + same wood texture */
-  background-image:
-    linear-gradient(
-      to bottom,
-      rgba(255,255,255,.12),
-      rgba(255,255,255,.03) 38%,
-      rgba(0,0,0,.14) 100%
-    ),
-    url('../img/wood.jpg');
-  background-size:100% 100%, cover;
-  background-position:center;
-  background-repeat:no-repeat;
+    background-image:
+      linear-gradient(
+        to bottom,
+        rgba(255,255,255,.12),
+        rgba(255,255,255,.03) 38%,
+        rgba(0,0,0,.14) 100%
+      ),
+      url('../img/wood.jpg');
+    background-size:100% 100%, cover;
+    background-position:center;
+    background-repeat:no-repeat;
 
-  /* mid brightness: between board and bg */
-  filter:brightness(1.08) saturate(.96);
+    filter:brightness(1.08) saturate(.96);
 
-  box-shadow:
-    0 3px 0 rgba(133,74,26,.85),
-    0 8px 14px rgba(0,0,0,.45);
+    box-shadow:
+      0 3px 0 rgba(133,74,26,.85),
+      0 8px 14px rgba(0,0,0,.45);
 
-  transition:
-    transform .08s ease-out,
-    box-shadow .08s ease-out,
-    filter .12s ease-out;
-}
+    transition:
+      transform .08s ease-out,
+      box-shadow .08s ease-out,
+      filter .12s ease-out;
+  }
 
-#prac-ctrls .pbtn:hover{
-  filter:brightness(1.12) saturate(.98);
-  transform:translateY(-1px);
-  box-shadow:
-    0 4px 0 rgba(133,74,26,.9),
-    0 10px 16px rgba(0,0,0,.48);
-}
+  #prac-ctrls .pbtn:hover{
+    filter:brightness(1.12) saturate(.98);
+    transform:translateY(-1px);
+    box-shadow:
+      0 4px 0 rgba(133,74,26,.9),
+      0 10px 16px rgba(0,0,0,.48);
+  }
 
-#prac-ctrls .pbtn:active{
-  filter:brightness(.97) saturate(.96);
-  transform:translateY(2px);
-  box-shadow:
-    0 1px 0 rgba(120,60,20,.9),
-    0 4px 8px rgba(0,0,0,.55);
-}
-
+  #prac-ctrls .pbtn:active{
+    filter:brightness(.97) saturate(.96);
+    transform:translateY(2px);
+    box-shadow:
+      0 1px 0 rgba(120,60,20,.9),
+      0 4px 8px rgba(0,0,0,.55);
+  }
 
   #prac-ctrls .pbtn:focus-visible,
   #prac-ctrls .pbtn-strong:focus-visible,
@@ -546,6 +553,9 @@ if (!window._stoneSFXInit) {
 
     var wrap  = document.getElementById('go-board-prac-wrap');
     var mount = document.getElementById('go-board-prac');
+    var pracCtrls  = document.getElementById('prac-ctrls');   // NEW
+    var pracMeters = document.getElementById('prac-meters');  // NEW
+
     if (!wrap || !mount) return setTimeout(mountPracticeBoard, 50);
 
     /* Page background helper (wood) */
@@ -591,49 +601,44 @@ html.no-wood, body.no-wood{ background: none !important; }
     var grid  = Array.from({length:SIZE}, ()=>Array(SIZE).fill(null));
     var history = [], current = 0, turn = B;
 
-var highlightLastEnabled =
-  (window.GoPrefs && typeof window.GoPrefs.highlightLast !== 'undefined')
-    ? !!window.GoPrefs.highlightLast : true;
+    var highlightLastEnabled =
+      (window.GoPrefs && typeof window.GoPrefs.highlightLast !== 'undefined')
+        ? !!window.GoPrefs.highlightLast : true;
 
-var zoomEnabled = (window.GoPrefs && typeof window.GoPrefs.josekiZoom !== 'undefined')
-  ? !!window.GoPrefs.josekiZoom : true;
+    var zoomEnabled = (window.GoPrefs && typeof window.GoPrefs.josekiZoom !== 'undefined')
+      ? !!window.GoPrefs.josekiZoom : true;
 
-var disableAutoZoomOut =
-  (window.GoPrefs && typeof window.GoPrefs.disableAutoZoomOut !== 'undefined')
-    ? !!window.GoPrefs.disableAutoZoomOut : false;
+    var disableAutoZoomOut =
+      (window.GoPrefs && typeof window.GoPrefs.disableAutoZoomOut !== 'undefined')
+        ? !!window.GoPrefs.disableAutoZoomOut : false;
 
-var lastX = null, lastY = null;
+    var lastX = null, lastY = null;
 
+    window.addEventListener('go:prefs-changed', function(e){
+      var d = e.detail || {};
+      if (!d || typeof d.key === 'undefined') return;
 
-window.addEventListener('go:prefs-changed', function(e){
-  var d = e.detail || {};
-  if (!d || typeof d.key === 'undefined') return;
-
-  if (d.key === 'highlightLast') {
-    highlightLastEnabled = !!d.value;
-    try { redraw(); } catch(_) {}
-  } else if (d.key === 'josekiZoom') {
-    try {
-      if (window.PracticeZoom && typeof PracticeZoom.setEnabled === 'function') {
-        PracticeZoom.setEnabled(!!d.value);
+      if (d.key === 'highlightLast') {
+        highlightLastEnabled = !!d.value;
+        try { redraw(); } catch(_) {}
+      } else if (d.key === 'josekiZoom') {
+        try {
+          if (window.PracticeZoom && typeof PracticeZoom.setEnabled === 'function') {
+            PracticeZoom.setEnabled(!!d.value);
+          }
+        } catch (_) {}
+      } else if (d.key === 'soundOn') {
+        try {
+          if (window.PracticeSound && typeof PracticeSound.setEnabled === 'function') {
+            PracticeSound.setEnabled(!!d.value);
+          } else if (window.StoneSFX && '_enabled' in StoneSFX) {
+            StoneSFX._enabled = !!d.value;
+          }
+        } catch (_) {}
+      } else if (d.key === 'disableAutoZoomOut') {
+        disableAutoZoomOut = !!d.value;
       }
-    } catch (_) {}
-  } else if (d.key === 'soundOn') {
-    try {
-      if (window.PracticeSound && typeof PracticeSound.setEnabled === 'function') {
-        PracticeSound.setEnabled(!!d.value);
-      } else if (window.StoneSFX && '_enabled' in StoneSFX) {
-        StoneSFX._enabled = !!d.value;
-      }
-    } catch (_) {}
-  } else if (d.key === 'disableAutoZoomOut') {
-    // NEW: update local flag when settings change
-    disableAutoZoomOut = !!d.value;
-  }
-});
-
-
-
+    });
 
     window.PracticeHighlight = {
       isEnabled(){ return highlightLastEnabled; },
@@ -758,21 +763,16 @@ window.addEventListener('go:prefs-changed', function(e){
     var hintPulsePhase = 0;
     var hintPulseTimer = null;
     var zoomLayer = null;
-
-    // Grid coordinates (0..18) of “virtual hint” used for zoom
-    var zoomHintAnchor = null;
-
+    var zoomHintAnchor = null;   // grid coords of virtual hint
 
     // Canvas draw handler for the pulsating hint ring
     var HINT_DRAW = {
       stone: {
         draw: function(args, board) {
-          // Same coordinates the black circle uses
           var cx = board.getX(args.x);
           var cy = board.getY(args.y);
           var sr = board.stoneRadius;
 
-          // Simple pulse based on a phase value
           var scale = 0.94 + 0.08 * Math.sin(hintPulsePhase);
           var rOuter = sr * scale;
 
@@ -786,7 +786,6 @@ window.addEventListener('go:prefs-changed', function(e){
           this.globalAlpha  = 0.85;
           this.stroke();
 
-          // Soft inner fill, similar to the DOM hint ring
           this.beginPath();
           this.arc(cx - 0.5, cy - 0.5, rOuter - this.lineWidth * 0.4, 0, 2 * Math.PI, true);
           this.fillStyle = 'rgba(231,240,255,0.30)';
@@ -803,7 +802,7 @@ window.addEventListener('go:prefs-changed', function(e){
       hintPulseTimer = setInterval(function(){
         hintPulsePhase += 0.25;
         redraw();
-      }, 80);  // ~12.5 fps, smooth enough but light
+      }, 80);
     }
 
     function stopHintPulse(){
@@ -825,7 +824,6 @@ window.addEventListener('go:prefs-changed', function(e){
       startHintPulse();
       redraw();
     }
-
 
     function neighbors(x,y){ var ns=[]; if(x>0)ns.push([x-1,y]); if(x<SIZE-1)ns.push([x+1,y]); if(y>0)ns.push([x,y-1]); if(y<SIZE-1)ns.push([x,y+1]); return ns; }
     function groupAndLiberties(x,y){
@@ -875,8 +873,7 @@ window.addEventListener('go:prefs-changed', function(e){
       if (level === 4 || level === 5) return showSingleNext;
       return false;
     }
-    // Use the exact same board point that Hint would highlight
-    // Just return the anchor we maintain in redraw()
+
     function getHintAnchorPoint(){
       return zoomHintAnchor;
     }
@@ -884,7 +881,6 @@ window.addEventListener('go:prefs-changed', function(e){
     function redraw(){
       board.removeAllObjects();
 
-      // Draw stones
       for (var y = 0; y < SIZE; y++){
         for (var x = 0; x < SIZE; x++){
           var v = grid[y][x];
@@ -893,17 +889,14 @@ window.addEventListener('go:prefs-changed', function(e){
         }
       }
 
-      // Recompute the “virtual hint” anchor for the current state,
-      // even if the level doesn’t actually show a visible hint.
       zoomHintAnchor = null;
       if (hasSGF){
         var cands = getNextCandidates(currentNode) || [];
         if (cands.length){
           var chosen = null;
 
-          // In player-only levels, prefer the player's move if present
           if (playerOnly){
-            for (var i = 0; i < cands.length; i++){
+            for (var i=0; i<cands.length; i++){
               if (cands[i].color === playerColor){
                 chosen = cands[i];
                 break;
@@ -915,19 +908,16 @@ window.addEventListener('go:prefs-changed', function(e){
           var p = tfXY(chosen.xy.x, chosen.xy.y);
           zoomHintAnchor = { x:p.x, y:p.y };
 
-          // Only draw the "A" label if this level actually wants a visible hint
           if (shouldShowHint()){
             addLB(p.x, p.y, 'A');
           }
         }
       }
 
-      // Pulsing ring from the Hint button (if active)
       if (forceHintMarker && hintXY){
         board.addObject({ x: hintXY.x, y: hintXY.y, type: HINT_DRAW });
       }
 
-      // Last-move circle
       if (highlightLastEnabled && lastX != null && lastY != null){
         board.addObject({ x:lastX, y:lastY, type:'CR' });
       }
@@ -1143,88 +1133,84 @@ window.addEventListener('go:prefs-changed', function(e){
 
     var zoomEnabled = (window.GoPrefs && typeof window.GoPrefs.josekiZoom !== 'undefined')
                       ? !!window.GoPrefs.josekiZoom : true;
-var scale = 1, minScale = 1, maxScale = 2.6;
-var baseW = 0;
-var offsetX = 0, offsetY = 0;
-var animId = 0;
-var isZoomAnimating = false; // new: track when we are animating zoom
-
-    var isAnimatingZoom = false; // new: avoid pan clamping during zoom animation
-
+    var scale = 1, minScale = 1, maxScale = 2.6;
+    var baseW = 0;
+    var offsetX = 0, offsetY = 0;
+    var animId = 0;
+    var isZoomAnimating = false;
 
     var isFullscreen = false;
-    var overlay = null, stage = null, returnAnchor = null, zoomExitBtn = null;
+    var overlay = null, stage = null, returnAnchor = null, zoomExitBtn = null, zoomUI = null; // zoomUI NEW
     var prevOverflow = "";
+    var ctrlsReturnParent = null, ctrlsReturnNext = null;   // NEW: remember home for controls
+    var metersReturnParent = null, metersReturnNext = null; // NEW: remember home for meters
 
+    function ensureZoomLayer(){
+      if (zoomLayer) return;
+      mount.style.position = 'relative';
+      mount.style.overflow = 'hidden';
 
- function ensureZoomLayer(){
-  if (zoomLayer) return;
-  mount.style.position = 'relative';
-  mount.style.overflow = 'hidden';
+      zoomLayer = document.createElement('div');
+      zoomLayer.style.position = 'absolute';
+      zoomLayer.style.left = '0px';
+      zoomLayer.style.top  = '0px';
 
-  zoomLayer = document.createElement('div');
-  zoomLayer.style.position = 'absolute';
-  zoomLayer.style.left = '0px';
-  zoomLayer.style.top  = '0px';
+      zoomLayer.style.transformOrigin = '0 0';
+      zoomLayer.style.willChange = 'transform';
 
-  // NEW: GPU-friendly transform setup
-  zoomLayer.style.transformOrigin = '0 0';
-  zoomLayer.style.willChange = 'transform';
+      while (mount.firstChild) zoomLayer.appendChild(mount.firstChild);
+      mount.appendChild(zoomLayer);
 
-  while (mount.firstChild) zoomLayer.appendChild(mount.firstChild);
-  mount.appendChild(zoomLayer);
-
-  zoomLayer.style.backgroundImage = "url('../img/wood.jpg')";
-  zoomLayer.style.backgroundSize = "cover";
-  zoomLayer.style.backgroundPosition = "center";
-  mount.style.backgroundImage = "none";
-}
+      zoomLayer.style.backgroundImage = "url('../img/wood.jpg')";
+      zoomLayer.style.backgroundSize = "cover";
+      zoomLayer.style.backgroundPosition = "center";
+      mount.style.backgroundImage = "none";
+    }
 
     ensureZoomLayer();
 
     function ensureOverlay(){
-      if (overlay) {
-        stage      = overlay.querySelector('#go-zoom-stage-prac');
-        zoomExitBtn = overlay.querySelector('#go-zoom-exit-prac');
-        if (zoomExitBtn && !zoomExitBtn._bound) {
-          zoomExitBtn._bound = true;
-          zoomExitBtn.addEventListener('click', function(e){
-            e.stopPropagation();
-            smoothZoomOutAndExit();    // zoom out without placing a stone
-          });
-        }
-        return;
-      }
-
-      overlay = document.getElementById('go-zoom-overlay-prac');
       if (!overlay){
-        overlay = document.createElement('div');
-        overlay.id = 'go-zoom-overlay-prac';
-        overlay.innerHTML =
-          '<div id="go-zoom-stage-prac"></div>' +
-          '<div id="go-zoom-exit-prac" aria-label="Zoom out"></div>';
-        document.body.appendChild(overlay);
-      } else {
-        // If overlay exists but button is missing, add it
-        if (!overlay.querySelector('#go-zoom-exit-prac')){
-          var exitDiv = document.createElement('div');
-          exitDiv.id = 'go-zoom-exit-prac';
-          overlay.appendChild(exitDiv);
+        overlay = document.getElementById('go-zoom-overlay-prac');
+        if (!overlay){
+          overlay = document.createElement('div');
+          overlay.id = 'go-zoom-overlay-prac';
+          overlay.innerHTML =
+            '<div id="go-zoom-stage-prac"></div>' +
+            '<div id="go-zoom-exit-prac" aria-label="Zoom out"></div>' +
+            '<div id="go-zoom-ui-prac"></div>';
+          document.body.appendChild(overlay);
+        } else {
+          if (!overlay.querySelector('#go-zoom-stage-prac')){
+            var stageDiv = document.createElement('div');
+            stageDiv.id = 'go-zoom-stage-prac';
+            overlay.appendChild(stageDiv);
+          }
+          if (!overlay.querySelector('#go-zoom-exit-prac')){
+            var exitDiv = document.createElement('div');
+            exitDiv.id = 'go-zoom-exit-prac';
+            overlay.appendChild(exitDiv);
+          }
+          if (!overlay.querySelector('#go-zoom-ui-prac')){
+            var uiDiv = document.createElement('div');
+            uiDiv.id = 'go-zoom-ui-prac';
+            overlay.appendChild(uiDiv);
+          }
         }
       }
 
       stage       = overlay.querySelector('#go-zoom-stage-prac');
       zoomExitBtn = overlay.querySelector('#go-zoom-exit-prac');
+      zoomUI      = overlay.querySelector('#go-zoom-ui-prac');
 
       if (zoomExitBtn && !zoomExitBtn._bound){
         zoomExitBtn._bound = true;
         zoomExitBtn.addEventListener('click', function(e){
           e.stopPropagation();
-          smoothZoomOutAndExit();      // use your existing smooth zoom-out
+          smoothZoomOutAndExit();
         });
       }
     }
-
 
     function viewportSize(){
       if (isFullscreen) {
@@ -1239,140 +1225,122 @@ var isZoomAnimating = false; // new: track when we are animating zoom
       };
     }
 
-function clampPan(){
-  // Don’t clamp while zooming, so the anchor stays perfectly stable
-  if (isZoomAnimating) return;
+    function clampPan(){
+      if (isZoomAnimating) return;
 
-  const {vw, vh} = viewportSize();
-  const bw = Math.round(baseW * scale);
-  const bleedX = Math.ceil(vw * 0.5);
-  const bleedY = Math.ceil(vh * 0.5);
-  const minOX = -bleedX;
-  const maxOX = Math.max(0, bw - vw) + bleedX;
-  const minOY = -bleedY;
-  const maxOY = Math.max(0, bw - vh) + bleedY;
+      const {vw, vh} = viewportSize();
+      const bw = Math.round(baseW * scale);
+      const bleedX = Math.ceil(vw * 0.5);
+      const bleedY = Math.ceil(vh * 0.5);
+      const minOX = -bleedX;
+      const maxOX = Math.max(0, bw - vw) + bleedX;
+      const minOY = -bleedY;
+      const maxOY = Math.max(0, bw - vh) + bleedY;
 
-  offsetX = Math.max(minOX, Math.min(offsetX, maxOX));
-  offsetY = Math.max(minOY, Math.min(offsetY, maxOY));
-}
-
-
- function applyPanAndSize(redrawAfter){
-  const {vw, vh} = viewportSize();
-
-  // Keep a single “base” board width and let CSS scale it.
-  const targetW = Math.max(2, Math.round(baseW || vw));
-
-  if (board._lastW !== targetW) {
-    board.setWidth(targetW);
-    if (zoomLayer) {
-      zoomLayer.style.width  = targetW + 'px';
-      zoomLayer.style.height = targetW + 'px';
+      offsetX = Math.max(minOX, Math.min(offsetX, maxOX));
+      offsetY = Math.max(minOY, Math.min(offsetY, maxOY));
     }
-    board._lastW = targetW;
-    // If width changed, we want at least one redraw
-    if (!redrawAfter) redrawAfter = true;
-  }
 
-  // clampPan itself skips clamping while a zoom animation is running
-  clampPan();
+    function applyPanAndSize(redrawAfter){
+      const {vw, vh} = viewportSize();
 
-  // GPU-accelerated move + zoom, top-left as origin
-  if (zoomLayer) {
-    zoomLayer.style.transform =
-      'translate3d(' + (-offsetX) + 'px,' + (-offsetY) + 'px,0) scale(' + scale + ')';
-  }
+      const targetW = Math.max(2, Math.round(baseW || vw));
 
-  if (isFullscreen){
-    mount.style.width  = '100vw';
-    mount.style.height = '100vh';
-  } else {
-    mount.style.width  = '';
-    mount.style.height = baseW + 'px';
-  }
+      if (board._lastW !== targetW) {
+        board.setWidth(targetW);
+        if (zoomLayer) {
+          zoomLayer.style.width  = targetW + 'px';
+          zoomLayer.style.height = targetW + 'px';
+        }
+        board._lastW = targetW;
+        if (!redrawAfter) redrawAfter = true;
+      }
 
-  if (redrawAfter) redraw();
-}
+      clampPan();
 
+      if (zoomLayer) {
+        zoomLayer.style.transform =
+          'translate3d(' + (-offsetX) + 'px,' + (-offsetY) + 'px,0) scale(' + scale + ')';
+      }
 
+      if (isFullscreen){
+        mount.style.width  = '100vw';
+        mount.style.height = '100vh';
+      } else {
+        mount.style.width  = '';
+        mount.style.height = baseW + 'px';
+      }
+
+      if (redrawAfter) redraw();
+    }
 
     function resetViewLocal(){
       scale = 1; offsetX = 0; offsetY = 0;
       applyPanAndSize(true);
     }
 
- // Anchor-based zoom animation: keeps the tapped grid point fixed on screen
-// Anchor-based zoom animation: keeps the tapped grid point fixed on screen
-function animateTo(targetScale, pxWorld, pyWorld, sxTarget, syTarget, onDone){
-  targetScale = Math.max(minScale, Math.min(maxScale, targetScale));
+    function animateTo(targetScale, pxWorld, pyWorld, sxTarget, syTarget, onDone){
+      targetScale = Math.max(minScale, Math.min(maxScale, targetScale));
 
-  const s0  = scale;
-  const t0  = performance.now();
-  const dur = 260; // still quick, but smooth
+      const s0  = scale;
+      const t0  = performance.now();
+      const dur = 260;
 
-  cancelAnimationFrame(animId);
-  isZoomAnimating = true;
+      cancelAnimationFrame(animId);
+      isZoomAnimating = true;
 
-  // Make sure we start from a state that already respects the anchor
-  offsetX = pxWorld * s0 - sxTarget;
-  offsetY = pyWorld * s0 - syTarget;
-  applyPanAndSize(false);
+      offsetX = pxWorld * s0 - sxTarget;
+      offsetY = pyWorld * s0 - syTarget;
+      applyPanAndSize(false);
 
-  (function step(now){
-    let t = (now - t0) / dur;
-    if (t > 1) t = 1;
+      (function step(now){
+        let t = (now - t0) / dur;
+        if (t > 1) t = 1;
 
-    // cubic ease-out
-    const e = 1 - Math.pow(1 - t, 3);
-    const s = s0 + (targetScale - s0) * e;
+        const e = 1 - Math.pow(1 - t, 3);
+        const s = s0 + (targetScale - s0) * e;
 
-    scale   = s;
-    offsetX = pxWorld * s - sxTarget;
-    offsetY = pyWorld * s - syTarget;
+        scale   = s;
+        offsetX = pxWorld * s - sxTarget;
+        offsetY = pyWorld * s - syTarget;
 
-    // No clamping during animation, so the anchor doesn’t wobble
-    applyPanAndSize(false);
+        applyPanAndSize(false);
 
-    if (t < 1){
-      animId = requestAnimationFrame(step);
-    } else {
-      isZoomAnimating = false;
-      // One final redraw + clamp when everything is settled
-      applyPanAndSize(true);
-      if (typeof onDone === 'function') {
-        onDone();
-      }
+        if (t < 1){
+          animId = requestAnimationFrame(step);
+        } else {
+          isZoomAnimating = false;
+          applyPanAndSize(true);
+          if (typeof onDone === 'function') {
+            onDone();
+          }
+        }
+      })(t0);
     }
-  })(t0);
-}
 
+    function centerZoomAtGrid(i, j, factor, tapClientX, tapClientY){
+      const targetScale = Math.max(minScale, Math.min(maxScale, scale * factor));
 
-function centerZoomAtGrid(i, j, factor, tapClientX, tapClientY){
-  const targetScale = Math.max(minScale, Math.min(maxScale, scale * factor));
+      const px_curr  = getXcss(i);
+      const py_curr  = getYcss(j);
+      const px_world = px_curr / scale;
+      const py_world = py_curr / scale;
 
-  // Board coordinates of this grid point at current scale
-  const px_curr  = getXcss(i);
-  const py_curr  = getYcss(j);
-  const px_world = px_curr / scale;
-  const py_world = py_curr / scale;
+      const rect = mount.getBoundingClientRect();
+      let sx_target = rect.width  / 2;
+      let sy_target = rect.height / 2;
 
-  // Default: center; if we know the tap position, keep it under the tap
-  const rect = mount.getBoundingClientRect();
-  let sx_target = rect.width  / 2;
-  let sy_target = rect.height / 2;
+      if (typeof tapClientX === 'number' && typeof tapClientY === 'number'){
+        sx_target = tapClientX - rect.left;
+        sy_target = tapClientY - rect.top;
+        sx_target = Math.max(0, Math.min(sx_target, rect.width));
+        sy_target = Math.max(0, Math.min(sy_target, rect.height));
+      }
 
-  if (typeof tapClientX === 'number' && typeof tapClientY === 'number'){
-    sx_target = tapClientX - rect.left;
-    sy_target = tapClientY - rect.top;
-    sx_target = Math.max(0, Math.min(sx_target, rect.width));
-    sy_target = Math.max(0, Math.min(sy_target, rect.height));
-  }
+      animateTo(targetScale, px_world, py_world, sx_target, sy_target);
+    }
 
-  // Now animate with the anchor locked to (sx_target, sy_target)
-  animateTo(targetScale, px_world, py_world, sx_target, sy_target);
-}
-
-     function enterFullscreenAtGrid(i, j, tapClientX, tapClientY){
+    function enterFullscreenAtGrid(i, j, tapClientX, tapClientY){
       if (isFullscreen) return;
       ensureOverlay();
       prevOverflow = document.documentElement.style.overflow || "";
@@ -1383,11 +1351,27 @@ function centerZoomAtGrid(i, j, factor, tapClientX, tapClientY){
       mount.parentNode.insertBefore(returnAnchor, mount);
 
       stage.appendChild(mount);
+
+      // NEW: move meters + buttons into overlay UI
+      if (zoomUI){
+        if (pracMeters && !pracMeters._inZoom){
+          metersReturnParent = pracMeters.parentNode;
+          metersReturnNext   = pracMeters.nextSibling;
+          zoomUI.appendChild(pracMeters);
+          pracMeters._inZoom = true;
+        }
+        if (pracCtrls && !pracCtrls._inZoom){
+          ctrlsReturnParent = pracCtrls.parentNode;
+          ctrlsReturnNext   = pracCtrls.nextSibling;
+          zoomUI.appendChild(pracCtrls);
+          pracCtrls._inZoom = true;
+        }
+      }
+
       overlay.style.display = 'flex';
       if (zoomExitBtn) zoomExitBtn.style.display = 'block';
       mount.classList.add('is-fullscreen');
       isFullscreen = true;
-
 
       const vwFS = window.innerWidth || document.documentElement.clientWidth || 800;
       const vhFS = window.innerHeight || document.documentElement.clientHeight || 800;
@@ -1403,16 +1387,39 @@ function centerZoomAtGrid(i, j, factor, tapClientX, tapClientY){
       });
     }
 
-
     function exitFullscreen(){
       mount.classList.remove('is-fullscreen');
       if (!isFullscreen) return;
       resetViewLocal();
+
       if (returnAnchor && returnAnchor.parentNode){
         returnAnchor.parentNode.insertBefore(mount, returnAnchor);
         returnAnchor.parentNode.removeChild(returnAnchor);
         returnAnchor = null;
       }
+
+      // NEW: move meters + buttons back
+      if (pracMeters && pracMeters._inZoom){
+        if (metersReturnParent){
+          if (metersReturnNext && metersReturnNext.parentNode === metersReturnParent){
+            metersReturnParent.insertBefore(pracMeters, metersReturnNext);
+          } else {
+            metersReturnParent.appendChild(pracMeters);
+          }
+        }
+        pracMeters._inZoom = false;
+      }
+      if (pracCtrls && pracCtrls._inZoom){
+        if (ctrlsReturnParent){
+          if (ctrlsReturnNext && ctrlsReturnNext.parentNode === ctrlsReturnParent){
+            ctrlsReturnParent.insertBefore(pracCtrls, ctrlsReturnNext);
+          } else {
+            ctrlsReturnParent.appendChild(pracCtrls);
+          }
+        }
+        pracCtrls._inZoom = false;
+      }
+
       mount.style.width = '';
       mount.style.height = '';
       if (overlay) overlay.style.display = 'none';
@@ -1426,138 +1433,130 @@ function centerZoomAtGrid(i, j, factor, tapClientX, tapClientY){
     }
 
     var isPanning = false, panStart = null, activePointerId = null,
-    tapStart = null, suppressNextBoardClick = false;
+        tapStart = null, suppressNextBoardClick = false;
 
-function beginPan(e){
-  isPanning = false;
-  panStart = { x: e.clientX, y: e.clientY, ox: offsetX, oy: offsetY };
-  activePointerId = e.pointerId;
-  try { mount.setPointerCapture(e.pointerId); } catch(_) {}
-}
-
-function updatePan(e){
-  // Only handle real touch pointers (phones/tablets)
-  if (e.pointerType && e.pointerType !== 'touch') return;
-  if (panStart == null) return;
-  if (!isFullscreen || scale <= 1) return;
-
-  const dx = e.clientX - panStart.x;
-  const dy = e.clientY - panStart.y;
-
-  if (!isPanning && (dx*dx + dy*dy) > 9){
-    isPanning = true;
-    suppressNextBoardClick = true;
-  }
-  if (!isPanning) return;
-
-  offsetX = panStart.ox - dx;
-  offsetY = panStart.oy - dy;
-
-  applyPanAndSize(false);
-  e.preventDefault();
-}
-
-function endPan(e){
-  if (activePointerId !== null){
-    try { mount.releasePointerCapture(activePointerId); } catch(_) {}
-  }
-  activePointerId = null;
-  panStart = null;
-  setTimeout(function(){ isPanning = false; }, 0);
-}
-
-// TOUCH-ONLY pointer handlers (real phones/tablets).
-// Mouse clicks keep using WGo's own click handling.
-mount.addEventListener('pointerdown', function(e){
-  if (!zoomEnabled) return;
-  if (e.pointerType && e.pointerType !== 'touch') return;
-
-  // Prevent synthetic mouse "click" so WGo doesn't also fire
-  e.preventDefault();
-
-  const r  = mount.getBoundingClientRect();
-  const sx = e.clientX - r.left;
-  const sy = e.clientY - r.top;
-
-  // Convert from screen → board coordinates (undo translate/scale)
-  const boardX = (sx + offsetX) / scale;
-  const boardY = (sy + offsetY) / scale;
-
-  let bestI = 0, bestJ = 0, bestDx = 1e9, bestDy = 1e9;
-  for (let i = 0; i < SIZE; i++){
-    const dx = Math.abs(getXcss(i) - boardX);
-    if (dx < bestDx){ bestDx = dx; bestI = i; }
-  }
-  for (let j = 0; j < SIZE; j++){
-    const dy = Math.abs(getYcss(j) - boardY);
-    if (dy < bestDy){ bestDy = dy; bestJ = j; }
-  }
-
-  tapStart = {
-    x: e.clientX,
-    y: e.clientY,
-    t: performance.now(),
-    gridI: bestI,
-    gridJ: bestJ
-  };
-
-  beginPan(e);
-}, {passive:false});
-
-mount.addEventListener('pointerup', function(e){
-  if (!zoomEnabled || !tapStart) { endPan(e); return; }
-  if (e.pointerType && e.pointerType !== 'touch') {
-    endPan(e);
-    tapStart = null;
-    return;
-  }
-
-  if (isPanning){
-    endPan(e);
-    tapStart = null;
-    return;
-  }
-
-  const dt = performance.now() - tapStart.t;
-  const dx = e.clientX - tapStart.x;
-  const dy = e.clientY - tapStart.y;
-
-  const gi = tapStart.gridI;
-  const gj = tapStart.gridJ;
-  const tapClientX = tapStart.x;
-  const tapClientY = tapStart.y;
-
-  tapStart = null;
-  endPan(e);
-
-  if (dt < 250 && (dx*dx + dy*dy) < 9){
-    // We handled the tap; don't let WGo get a synthetic click.
-    e.preventDefault();
-    e.stopPropagation();
-    if (e.stopImmediatePropagation) e.stopImmediatePropagation();
-
-    if (scale === 1 && !isFullscreen){
-      // First tap: just zoom in, no stone yet.
-      suppressNextBoardClick = true;
-      enterFullscreenAtGrid(gi, gj, tapClientX, tapClientY);
-    } else {
-      // Already zoomed/fullscreen: treat as a real board tap at (gi, gj)
-      suppressNextBoardClick = false;
-      try { handlePracticeClick(gi, gj); } catch(_) {}
+    function beginPan(e){
+      isPanning = false;
+      panStart = { x: e.clientX, y: e.clientY, ox: offsetX, oy: offsetY };
+      activePointerId = e.pointerId;
+      try { mount.setPointerCapture(e.pointerId); } catch(_) {}
     }
-  }
-}, {passive:false, capture:true});
 
-mount.addEventListener('pointermove', function(e){
-  if (!zoomEnabled) return;
-  if (e.pointerType && e.pointerType !== 'touch') return;
-  updatePan(e);
-}, {passive:false});
+    function updatePan(e){
+      if (e.pointerType && e.pointerType !== 'touch') return;
+      if (panStart == null) return;
+      if (!isFullscreen || scale <= 1) return;
 
-mount.addEventListener('pointercancel', function(e){
-  if (e.pointerType && e.pointerType !== 'touch') return;
-  endPan(e);
-}, {passive:true});
+      const dx = e.clientX - panStart.x;
+      const dy = e.clientY - panStart.y;
+
+      if (!isPanning && (dx*dx + dy*dy) > 9){
+        isPanning = true;
+        suppressNextBoardClick = true;
+      }
+      if (!isPanning) return;
+
+      offsetX = panStart.ox - dx;
+      offsetY = panStart.oy - dy;
+
+      applyPanAndSize(false);
+      e.preventDefault();
+    }
+
+    function endPan(e){
+      if (activePointerId !== null){
+        try { mount.releasePointerCapture(activePointerId); } catch(_) {}
+      }
+      activePointerId = null;
+      panStart = null;
+      setTimeout(function(){ isPanning = false; }, 0);
+    }
+
+    mount.addEventListener('pointerdown', function(e){
+      if (!zoomEnabled) return;
+      if (e.pointerType && e.pointerType !== 'touch') return;
+
+      e.preventDefault();
+
+      const r  = mount.getBoundingClientRect();
+      const sx = e.clientX - r.left;
+      const sy = e.clientY - r.top;
+
+      const boardX = (sx + offsetX) / scale;
+      const boardY = (sy + offsetY) / scale;
+
+      let bestI = 0, bestJ = 0, bestDx = 1e9, bestDy = 1e9;
+      for (let i = 0; i < SIZE; i++){
+        const dx = Math.abs(getXcss(i) - boardX);
+        if (dx < bestDx){ bestDx = dx; bestI = i; }
+      }
+      for (let j = 0; j < SIZE; j++){
+        const dy = Math.abs(getYcss(j) - boardY);
+        if (dy < bestDy){ bestDy = dy; bestJ = j; }
+      }
+
+      tapStart = {
+        x: e.clientX,
+        y: e.clientY,
+        t: performance.now(),
+        gridI: bestI,
+        gridJ: bestJ
+      };
+
+      beginPan(e);
+    }, {passive:false});
+
+    mount.addEventListener('pointerup', function(e){
+      if (!zoomEnabled || !tapStart) { endPan(e); return; }
+      if (e.pointerType && e.pointerType !== 'touch') {
+        endPan(e);
+        tapStart = null;
+        return;
+      }
+
+      if (isPanning){
+        endPan(e);
+        tapStart = null;
+        return;
+      }
+
+      const dt = performance.now() - tapStart.t;
+      const dx = e.clientX - tapStart.x;
+      const dy = e.clientY - tapStart.y;
+
+      const gi = tapStart.gridI;
+      const gj = tapStart.gridJ;
+      const tapClientX = tapStart.x;
+      const tapClientY = tapStart.y;
+
+      tapStart = null;
+      endPan(e);
+
+      if (dt < 250 && (dx*dx + dy*dy) < 9){
+        e.preventDefault();
+        e.stopPropagation();
+        if (e.stopImmediatePropagation) e.stopImmediatePropagation();
+
+        if (scale === 1 && !isFullscreen){
+          suppressNextBoardClick = true;
+          enterFullscreenAtGrid(gi, gj, tapClientX, tapClientY);
+        } else {
+          suppressNextBoardClick = false;
+          try { handlePracticeClick(gi, gj); } catch(_) {}
+        }
+      }
+    }, {passive:false, capture:true});
+
+    mount.addEventListener('pointermove', function(e){
+      if (!zoomEnabled) return;
+      if (e.pointerType && e.pointerType !== 'touch') return;
+      updatePan(e);
+    }, {passive:false});
+
+    mount.addEventListener('pointercancel', function(e){
+      if (e.pointerType && e.pointerType !== 'touch') return;
+      endPan(e);
+    }, {passive:true});
 
     document.addEventListener('keydown', function(e){
       if (e.key === 'Escape' && isFullscreen) exitFullscreen();
@@ -1598,12 +1597,6 @@ mount.addEventListener('pointercancel', function(e){
     window.addEventListener('resize', fitBoard);
     window.addEventListener('orientationchange', () => setTimeout(fitBoard,200));
     fitBoard();
-
-    function nextIsPlayersTurn(){
-      if (!playerOnly) return false;
-      var opts = getNextCandidates(currentNode);
-      return (opts.length && opts[0].color === playerColor);
-    }
 
     function primePractice(){
       showSingleNext = false;
@@ -1670,7 +1663,6 @@ mount.addEventListener('pointercancel', function(e){
         }
       }
 
-      // If it's not the player's turn in player-only levels, auto-place opponent first
       var cands = getNextCandidates(currentNode);
       if (!cands || !cands.length) return;
 
@@ -1685,7 +1677,6 @@ mount.addEventListener('pointercancel', function(e){
 
       showHintAt(anchor.x, anchor.y);
     }
-
 
     var hoBack = document.getElementById('prac-hints-back');
     var hoPro  = document.getElementById('prac-hints-pro');
@@ -1806,35 +1797,26 @@ mount.addEventListener('pointercancel', function(e){
       else alert('Pro unlocks unlimited tries.');
     });
 
- // Smooth zoom-out back to full-board view, then exit fullscreen if needed
-// Smooth zoom-out back to full-board view, then exit fullscreen if needed
-// Reset straight back to the normal full-board view, then exit fullscreen if needed
-function smoothZoomOutAndExit(){
-  if (!zoomEnabled) return;
+    function smoothZoomOutAndExit(){
+      if (!zoomEnabled) return;
 
-  // Stop any in-flight animation
-  cancelAnimationFrame(animId);
-  isZoomAnimating = false;
+      cancelAnimationFrame(animId);
+      isZoomAnimating = false;
 
-  // Hard reset view: full board, no pan
-  scale   = 1;
-  offsetX = 0;
-  offsetY = 0;
+      scale   = 1;
+      offsetX = 0;
+      offsetY = 0;
 
-  // Apply base transform so the board is exactly where it was before zoom
-  applyPanAndSize(true);
+      applyPanAndSize(true);
 
-  // If we were in fullscreen, leave it (this will also refit the board width)
-  if (isFullscreen){
-    exitFullscreen();
-  }
-}
-
+      if (isFullscreen){
+        exitFullscreen();
+      }
+    }
 
     function handlePracticeClick(x, y){
       if (!hasSGF || isAutoPlacing) return;
 
-      // Lives quota (Free) on L2–L3
       if (!isPro() && (level === 2 || level === 3)){
         var peek = QUOTA.peek('prac:lives-l23', MAX_LIVES_FREE_L23);
         if (peek.remaining <= 0){ showLocked(); return; }
@@ -1851,7 +1833,6 @@ function smoothZoomOutAndExit(){
         var pos  = tfXY(cand.xy.x, cand.xy.y);
 
         if (pos.x === x && pos.y === y){
-          // Wrong colour in player-only levels (should never happen, but guard)
           if (playerOnly && cand.color !== playerColor){
             showWrong();
             return;
@@ -1860,11 +1841,10 @@ function smoothZoomOutAndExit(){
           if ((level === 4 || level === 5) && showSingleNext) showSingleNext = false;
           if (level === 2 && !l2HintConsumed) l2HintConsumed = true;
 
-                    currentNode = cand.node;
+          currentNode = cand.node;
           buildPositionTo(currentNode);
           StoneSFX.play();
 
-          // Auto zoom-out only if NOT disabled in Settings
           if (!disableAutoZoomOut && zoomEnabled && (scale > 1 || isFullscreen)){
             setTimeout(smoothZoomOutAndExit, 10);
           }
@@ -1882,13 +1862,10 @@ function smoothZoomOutAndExit(){
         }
       }
 
-      // No candidate matched this point – wrong move
       showWrong();
     }
 
-    // WGo's own click mapping is only trusted when not zoomed/fullscreen
     board.addEventListener('click', function(x, y){
-      // When zoomed / fullscreen, we use our own pointer-based mapping instead
       if (zoomEnabled && (scale > 1 || isFullscreen)) return;
 
       if (zoomEnabled && suppressNextBoardClick){
@@ -1899,8 +1876,6 @@ function smoothZoomOutAndExit(){
       handlePracticeClick(x, y);
     });
 
-
-    // In-app "Back to menu" dialog wiring (same as Joseki board)
     var menuConfirmOverlay = document.getElementById('menu-confirm-overlay');
     var menuConfirmCancel  = document.getElementById('menuConfirmCancel');
     var menuConfirmOk      = document.getElementById('menuConfirmOk');
@@ -1911,7 +1886,6 @@ function smoothZoomOutAndExit(){
     }
 
     if (menuConfirmOverlay){
-      // Click outside dialog closes it
       menuConfirmOverlay.addEventListener('click', function(e){
         if (e.target === menuConfirmOverlay) {
           closeMenuConfirm();
@@ -1930,14 +1904,11 @@ function smoothZoomOutAndExit(){
       menuConfirmOk.addEventListener('click', function(e){
         e.stopPropagation();
         closeMenuConfirm();
-        // Actual navigation/menu bridge
         if (window.GoMenu && typeof GoMenu.open === 'function'){
           GoMenu.open();
         } else if (window.BackConfirm && typeof BackConfirm.show === 'function'){
-          // Fallback: if some global confirm exists instead
           BackConfirm.show();
         } else {
-          // Last-resort fallback (just reload menu URL if defined there)
           try { window.location.href = "../joseki-menu/index.html"; } catch(e){}
         }
       });
@@ -1950,12 +1921,10 @@ function smoothZoomOutAndExit(){
     });
 
     function openMenuWithConfirm(){
-      // Prefer our own in-app dialog
       if (menuConfirmOverlay){
         menuConfirmOverlay.classList.add('is-open');
         return;
       }
-      // Fallbacks if dialog not present
       if (window.BackConfirm && typeof BackConfirm.show === 'function'){
         BackConfirm.show();
         return;
@@ -1977,8 +1946,6 @@ function smoothZoomOutAndExit(){
       if (isFullscreen) exitFullscreen();
     });
     if (hintBtn)  hintBtn.addEventListener('click', triggerHint);
-    if (resetBtn) resetBtn.addEventListener('click', function(){ clearHint(); primePractice(); if (isFullscreen) exitFullscreen(); });
-    if (hintBtn)  hintBtn.addEventListener('click', triggerHint);
 
     function hook(id, fn){
       var el = document.getElementById(id);
@@ -1989,13 +1956,11 @@ function smoothZoomOutAndExit(){
     hook('btnForward',function(){ if (!hasSGF || isAutoPlacing) return; var c=getNextCandidates(currentNode); if(c.length){ currentNode=c[0].node; buildPositionTo(currentNode); } });
     hook('btnReset',  function(){ if (!hasSGF) return; primePractice(); if (isFullscreen) exitFullscreen(); });
 
-function getParam(name){ 
-  try { return new URLSearchParams(location.search).get(name); } catch(e){ return null; } 
-}
+    function getParam(name){ 
+      try { return new URLSearchParams(location.search).get(name); } catch(e){ return null; } 
+    }
 
-// Optional SGF via URL param (for debugging); no default file
-var SGF_URL = getParam('sgf');
-
+    var SGF_URL = getParam('sgf');
 
     function _sgfCoord(p){
       return String.fromCharCode(97 + p.x) + String.fromCharCode(97 + p.y);
@@ -2047,14 +2012,12 @@ var SGF_URL = getParam('sgf');
     function hideJosekiEverything(){ /* no-op on standalone */ }
     function showJosekiEverything(){ /* no-op on standalone */ }
 
-function showPracticeUI(){
-  if (window.PageBG && typeof PageBG.add === 'function') PageBG.add();
-  setHidden(wrap, false);
-  wrap.setAttribute('data-hidden','0');
-  refitSoon();
-  // Standalone practice page: don't auto-scroll, let flexbox centering do its job
-  // try { wrap.scrollIntoView({ behavior:'smooth', block:'start' }); } catch(e){}
-}
+    function showPracticeUI(){
+      if (window.PageBG && typeof PageBG.add === 'function') PageBG.add();
+      setHidden(wrap, false);
+      wrap.setAttribute('data-hidden','0');
+      refitSoon();
+    }
 
     function hidePracticeUI(){
       setHidden(wrap, true);
@@ -2062,20 +2025,19 @@ function showPracticeUI(){
       showJosekiEverything();
     }
 
-window.PracticeBoard = {
-  load: function(url, name, opts){
-    try {
-      if (window.PracticeUI && typeof PracticeUI.close === 'function') {
-        PracticeUI.close();
-      }
-    } catch (e) {}
+    window.PracticeBoard = {
+      load: function(url, name, opts){
+        try {
+          if (window.PracticeUI && typeof PracticeUI.close === 'function') {
+            PracticeUI.close();
+          }
+        } catch (e) {}
 
-    try {
-      if (window.PracticeLevel && typeof PracticeLevel.close === 'function') {
-        PracticeLevel.close();
-      }
-    } catch (e) {}
-
+        try {
+          if (window.PracticeLevel && typeof PracticeLevel.close === 'function') {
+            PracticeLevel.close();
+          }
+        } catch (e) {}
 
         if (opts && typeof opts.level !== 'undefined') level = parseInt(opts.level,10) || 2;
         else if (window.PracticeConfig && window.PracticeConfig.level) level = parseInt(window.PracticeConfig.level,10) || 2;
@@ -2114,7 +2076,6 @@ window.PracticeBoard = {
       backYes.addEventListener('click', function(){ try{ window.PracticeBoard.exit(); }catch(e){} }, { passive:true });
     }
 
-    // Try to restore PracticeConfig from localStorage if present
     if (!window.PracticeConfig){
       try{
         var stored = localStorage.getItem('go_practice_config');
@@ -2122,7 +2083,6 @@ window.PracticeBoard = {
       }catch(e){}
     }
 
-    // Auto-load practice board on standalone page
     window.addEventListener('load', function(){
       var opts = null;
       if (window.PracticeConfig && window.PracticeConfig.level){
@@ -2139,10 +2099,3 @@ window.PracticeBoard = {
 
 </body>
 </html>
-
-
-
-
-
-
-
