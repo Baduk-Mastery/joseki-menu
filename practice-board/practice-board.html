@@ -880,23 +880,6 @@ html.no-wood, body.no-wood{ background: none !important; }
       if (level === 4 || level === 5) return showSingleNext;
       return false;
     }
-    function shouldShowLabelA(){
-      // Same basic rules as the old hint logic…
-      if (!shouldShowHint()) return false;
-
-      // On levels where the user is not "one color only",
-      // just behave like before.
-      if (!playerOnly || !playerColor) return true;
-
-      // On Level 2 / 3: keep showing A only until we have
-      // seen diagonal moves followed by a "directional"
-      // (non-diagonal) move by the player.
-      return !directionBrokenFor(currentNode);
-    }
-
-    function getHintAnchorPoint(){
-      return zoomHintAnchor;
-    }
 
     function getHintAnchorPoint(){
       return zoomHintAnchor;
@@ -932,7 +915,7 @@ html.no-wood, body.no-wood{ background: none !important; }
           var p = tfXY(chosen.xy.x, chosen.xy.y);
           zoomHintAnchor = { x:p.x, y:p.y };
 
-          if (shouldShowLabelA()){
+          if (shouldShowHint()){
             addLB(p.x, p.y, 'A');
           }
         }
@@ -1078,95 +1061,6 @@ html.no-wood, body.no-wood{ background: none !important; }
           }
         }
       }
-    function nearestCornerForBoard(x, y){
-      var corners = [
-        { name:'NW', x:0,       y:0 },
-        { name:'NE', x:SIZE-1,  y:0 },
-        { name:'SW', x:0,       y:SIZE-1 },
-        { name:'SE', x:SIZE-1,  y:SIZE-1 }
-      ];
-      var best  = corners[0];
-      var bestD = Infinity;
-      for (var i = 0; i < corners.length; i++){
-        var c  = corners[i];
-        var dx = c.x - x;
-        var dy = c.y - y;
-        var d2 = dx*dx + dy*dy;
-        if (d2 < bestD){
-          bestD = d2;
-          best  = c;
-        }
-      }
-      return best;
-    }
-
-    function inwardOffsetsFromCorner(corner, x, y){
-      if (!corner) return { dx:0, dy:0 };
-
-      if (corner.name === 'NW'){
-        return { dx: x - corner.x,       dy: y - corner.y       };
-      } else if (corner.name === 'NE'){
-        return { dx: corner.x - x,       dy: y - corner.y       };
-      } else if (corner.name === 'SW'){
-        return { dx: x - corner.x,       dy: corner.y - y       };
-      } else { // 'SE'
-        return { dx: corner.x - x,       dy: corner.y - y       };
-      }
-    }
-
-    // True for points like 1-1, 2-2, 3-3 from the same corner
-    function isDiagonalFromCorner(corner, x, y){
-      var off = inwardOffsetsFromCorner(corner, x, y);
-      return off.dx >= 0 && off.dy >= 0 && off.dx === off.dy;
-    }
-
-    // All moves of the *player color* from root up to `node`,
-    // in current orientation (using tfXY).
-    function getPlayerMovePositionsUpTo(node){
-      var result = [];
-      if (!node || !playerColor || !playerOnly) return result;
-
-      var pathNodes = pathTo(node);
-      for (var i = 0; i < pathNodes.length; i++){
-        var n = pathNodes[i];
-        if (!nodeHasMove(n)) continue;
-        var mv = nodeMoveXY(n);
-        if (!mv || mv.color !== playerColor) continue;
-        var pos = tfXY(mv.x, mv.y);
-        result.push({ node:n, x:pos.x, y:pos.y });
-      }
-      return result;
-    }
-
-    // "Direction is broken" once there has been at least one
-    // diagonal player move, and later a non-diagonal player move
-    // from the same corner.
-    function directionBrokenFor(node){
-      if (!node || !playerColor || !playerOnly) return false;
-
-      var moves = getPlayerMovePositionsUpTo(node);
-      if (!moves.length) return false;
-
-      var corner   = null;
-      var seenDiag = false;
-
-      for (var i = 0; i < moves.length; i++){
-        var pos = moves[i];
-        if (!corner) corner = nearestCornerForBoard(pos.x, pos.y);
-
-        var isDiag = isDiagonalFromCorner(corner, pos.x, pos.y);
-
-        if (isDiag){
-          seenDiag = true;
-        } else if (seenDiag){
-          // We had diagonal steps, now we see the first
-          // "directional" (off-diagonal) move → direction chosen.
-          return true;
-        }
-      }
-      return false;
-    }
-
       current=history.length; turn=(current%2===0)?B:W; redraw();
     }
 
