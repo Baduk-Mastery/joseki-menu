@@ -1466,6 +1466,7 @@ startBtn.addEventListener('click', function(e){
     var mode = state.mode || 'complete';
 
     // 0) Check daily limit per mode (2 Complete + 2 Blitz on free)
+    // We only check here; the actual run is counted on the board page.
     if (!hasDrillAttemptsLeft(mode)){
       var perDay = getDailyLimitForMode(mode);
       var label  = (mode === 'blitz') ? 'Blitz drills' : 'Complete drills';
@@ -1478,9 +1479,6 @@ startBtn.addEventListener('click', function(e){
       return; // do NOT go to the board
     }
 
-    // 0b) Record this run locally (per mode)
-    recordDrillAttempt(mode);
-
     // 1) Capture current selections (mode + library + favorites + own IDs)
     try {
       if (window.GoDrills && typeof window.GoDrills.getSelections === 'function') {
@@ -1491,6 +1489,30 @@ startBtn.addEventListener('click', function(e){
         }
       }
     } catch (_) {}
+
+    // 2) Close the overlay if open
+    try {
+      if (window.GoDrills && typeof window.GoDrills.close === 'function') {
+        GoDrills.close();
+      }
+    } catch (_) {}
+
+    // 3) Bubble-style inline DrillBoard (original behavior)
+    try {
+      var cap = document.getElementById('drill-cap');
+      if (cap) cap.style.display = 'none';
+      if (window.DrillBoard && typeof window.DrillBoard.load === 'function') {
+        DrillBoard.load(null, { perJoseki: 3 });
+        return;
+      }
+    } catch (_) {}
+
+    // 4) Static/Vercel: go to dedicated board page
+    try {
+      window.location.href = '../drills-board/drills-board.html';
+    } catch (_) {}
+  }
+
 
     // 2) Close the overlay if open
     try {
