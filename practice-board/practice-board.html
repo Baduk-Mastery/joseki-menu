@@ -154,11 +154,17 @@
     #go-board-prac-wrap { padding:8px 12px 0; }
   }
 
-  #go-board-prac-wrap[data-hidden="1"]{
-    position:fixed !important;
-    left:-200vw !important; top:-200vh !important;
-    opacity:0 !important; pointer-events:none !important;
-  }
+#go-board-prac-wrap[data-hidden="1"]{
+  position:fixed !important;
+  left:-200vw !important; top:-200vh !important;
+  opacity:0 !important; pointer-events:none !important;
+}
+
+/* When practice is hidden, also hide the fixed buttons */
+#go-board-prac-wrap[data-hidden="1"] #prac-ctrls{
+  display:none !important;
+}
+
   #go-board-prac canvas{ display:block; margin:0 auto; }
 
   /* Hide legacy Bubble buttons if present (harmless on standalone) */
@@ -247,16 +253,17 @@
 #go-zoom-overlay-prac{
   position:fixed;
   inset:0;
-  z-index:99998;
+  z-index:90000; /* below modals, below buttons */
   display:none;
   align-items:center;
   justify-content:center;
 
   /* keep page background visible */
-  background:transparent;   /* or `background:none;` */
+  background:transparent;
 
   -webkit-tap-highlight-color:transparent;
 }
+
 
   #go-zoom-stage-prac{
     width:100vw; height:100vh;
@@ -265,31 +272,32 @@
   }
   /* Small zoom-out square (visible only while zoomed/fullscreen) */
     /* Small zoom-out square (bigger, like in screenshot) */
-  #go-zoom-exit-prac{
-    position:fixed;
-    left:14px;
-    bottom:14px;
+#go-zoom-exit-prac{
+  position:fixed;
+  left:14px;
+  bottom:110px; /* moved up so it sits above the bottom buttons */
 
-    width:120px;        /* wider */
-    height:80px;       /* a bit taller */
-    border-radius:9px;
+  width:120px;
+  height:80px;
+  border-radius:9px;
 
-    background:rgba(148,163,184,.35);
-    border:1px solid rgba(148,163,184,.85);
-    box-shadow:0 6px 16px rgba(0,0,0,.55);
+  background:rgba(148,163,184,.35);
+  border:1px solid rgba(148,163,184,.85);
+  box-shadow:0 6px 16px rgba(0,0,0,.55);
 
-    display:none;      /* toggled in JS */
-    cursor:pointer;
-    z-index:99999;
-    backdrop-filter:blur(2px);
-    -webkit-tap-highlight-color:transparent;
+  display:none;      /* toggled in JS */
+  cursor:pointer;
+  z-index:90001;     /* above board, below modals & below controls */
+  backdrop-filter:blur(2px);
+  -webkit-tap-highlight-color:transparent;
 
-    color:#e5e7eb;
-    font-size:18px;
-    font-weight:600;
-    line-height:36px;  /* vertical centering for the “x” */
-    text-align:center;
-  }
+  color:#e5e7eb;
+  font-size:18px;
+  font-weight:600;
+  line-height:36px;
+  text-align:center;
+}
+
   #go-zoom-exit-prac::before{
     content:"";
   }
@@ -309,16 +317,24 @@
 </style>
 
 <style>
-  /* Practice Board buttons – subtle gloss, board-like wood */
-  #prac-ctrls{
-    max-width:720px;
-    margin:14px auto 0;
-    padding:0 12px 18px;
-    display:flex;
-    justify-content:center;
-    gap:12px;
-    flex-wrap:wrap;
-  }
+/* Practice Board buttons – subtle gloss, board-like wood */
+#prac-ctrls{
+  position:fixed;
+  left:50%;
+  bottom:14px;                /* sits at bottom of viewport */
+  transform:translateX(-50%);
+  z-index:90010;              /* above board/overlay, below modals */
+
+  max-width:720px;
+  width:100%;
+  padding:0 12px 18px;
+  display:flex;
+  justify-content:center;
+  gap:12px;
+  flex-wrap:wrap;
+  box-sizing:border-box;
+}
+
 
 #prac-ctrls .pbtn,
 #prac-ctrls .pbtn-strong,
