@@ -427,7 +427,9 @@
   startBtn.textContent = 'Start Drill';
   startBtn.setAttribute('aria-label','Start Drill');
   startBtn.style.display = 'none';
- 
+  root.appendChild(startBtn);
+
+
   // Start button now always calls startDrillNow(), which handles both
   // Bubble-style inline DrillBoard and the new drills-board.html page.
   startBtn.addEventListener('click', function(e){
