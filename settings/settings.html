@@ -33,6 +33,10 @@
       overscroll-behavior:contain;
       isolation:isolate;
       --maxw:720px;
+
+      /* match Drills overlay behaviour */
+      overflow:auto;
+      -webkit-overflow-scrolling:touch;
     }
 
     /* Header + card container – width now matches Drills */
@@ -217,6 +221,22 @@
       background:#3b82f6;
       color:#fff;
       box-shadow:0 6px 18px rgba(59,130,246,.45);
+    }
+    @media (max-width: 480px){
+      #settings-overlay .s-inner{
+        padding:16px 12px 22px;
+      }
+    }
+
+    @media (max-width: 360px){
+      #settings-overlay .s-inner{
+        grid-template-columns: auto 1fr;
+        gap:10px 12px;
+        padding:16px 12px 20px;
+      }
+      #settings-overlay .s-title{
+        font-size:22px;
+      }
     }
 
     @media (max-width: 360px){
