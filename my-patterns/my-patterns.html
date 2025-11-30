@@ -339,10 +339,15 @@
     border:2px solid rgba(37,99,235,.65);
     box-shadow: inset 0 0 0 1px rgba(255,255,255,.06);
   }
-  #ownpatterns-root .own-thumb canvas{
-    position:absolute; top:0; left:0;
-    display:block; pointer-events:none;
-  }
+#ownpatterns-root .own-thumb canvas.own-canvas{
+  position:absolute;
+  inset:0;
+  width:100%;
+  height:100%;
+  display:block;
+  pointer-events:none;
+}
+
 
   #ownpatterns-root .own-meta{
     flex:1; min-width:0; display:flex; flex-direction:column; height:100%;
@@ -990,147 +995,303 @@ function showRemoveToast(pattern, label){
     try { mo.observe(editor, { attributes:true, attributeFilter:['style'] }); } catch(_){}
   })();
 
-  /* WGo loader for thumbnails (separate from editor ensureBoard) */
-  function ensureWGo(cb){
-    if (window.WGo){ cb && cb(); return; }
-    var s=document.createElement('script');
-    s.src="https://3d85c7a311526e02aeeeb19e952d0c09.cdn.bubble.io/f1754893285939x971907393576095400/wgo.min.js";
-    s.async=true;
-    s.onload=cb;
-    s.onerror=cb;
-    document.head.appendChild(s);
-  }
+  /* Thumbnail rendering – same logic as Practice List, no WGo needed */
 
-  /* Render thumbnail with capture simulation so it looks correct */
-  function renderOwnThumb(el, line){
-    el.innerHTML='';
-    ensureWGo(function(){
-      if (!window.WGo) return;
-      var SIZE = line.size || 19;
-      var viewW = Math.max(64, Math.floor(el.clientWidth || 132));
-      var internalW = viewW * 2;
-      var b = new WGo.Board(el, { size: SIZE });
-      b.setWidth(internalW);
-      el.style.height = viewW + 'px';
+  function simulatePosition(size, rootAB, rootAW, moves){
+    var N = size || 19;
+    var E = 0, B = 1, W = 2;
+    var board = Array.from({length:N}, function(){ return Array(N).fill(E); });
 
-      var gridT = Array.from({length:SIZE}, ()=>Array(SIZE).fill(null));
-      (Array.isArray(line.rootAB)?line.rootAB:[]).forEach(function(s){ gridT[s.y][s.x]='B'; });
-      (Array.isArray(line.rootAW)?line.rootAW:[]).forEach(function(s){ gridT[s.y][s.x]='W'; });
+    function inB(x,y){ return x>=0 && y>=0 && x<N && y<N; }
+    function at(x,y){ return board[y][x]; }
+    function set(x,y,v){ board[y][x] = v; }
+    function neigh(x,y){
+      return [
+        [x+1,y],[x-1,y],
+        [x,y+1],[x,y-1]
+      ].filter(function(p){ return inB(p[0],p[1]); });
+    }
 
-      function neighborsT(x,y){
-        var n=[];
-        if (x>0) n.push({x:x-1,y:y});
-        if (x<SIZE-1) n.push({x:x+1,y:y});
-        if (y>0) n.push({x:x,y:y-1});
-        if (y<SIZE-1) n.push({x:x,y:y+1});
-        return n;
-      }
-      function groupAtT(x,y){
-        var color = gridT[y][x];
-        if (!color) return { stones:[], libs:new Set() };
-        var seen=new Set(), q=[{x:x,y:y}], stones=[], libs=new Set();
-        while(q.length){
-          var p=q.pop(), key=p.x+','+p.y;
-          if (seen.has(key)) continue;
-          seen.add(key);
-          stones.push(p);
-          neighborsT(p.x,p.y).forEach(function(nb){
-            var v=gridT[nb.y][nb.x];
-            if (v===null) libs.add(nb.x+','+nb.y);
-            else if (v===color && !seen.has(nb.x+','+nb.y)) q.push(nb);
-          });
-        }
-        return { stones:stones, libs:libs };
-      }
-      function removeStonesT(sts){
-        for (var i=0;i<sts.length;i++){
-          var s=sts[i];
-          gridT[s.y][s.x]=null;
-        }
-      }
+    (Array.isArray(rootAB) ? rootAB : []).forEach(function(p){
+      if (inB(p.x,p.y)) set(p.x,p.y,B);
+    });
+    (Array.isArray(rootAW) ? rootAW : []).forEach(function(p){
+      if (inB(p.x,p.y)) set(p.x,p.y,W);
+    });
 
-      (line.moves||[]).forEach(function(m){
-        if (m.x<0||m.y<0||m.x>=SIZE||m.y>=SIZE) return;
-        if (gridT[m.y][m.x]!==null) return;
-        var me = (m.color==='B'?'B':'W');
-        var opp = (me==='B'?'W':'B');
-        gridT[m.y][m.x]=me;
-        var seen=new Set();
-        neighborsT(m.x,m.y).forEach(function(nb){
-          if (gridT[nb.y][nb.x]===opp){
-            var key=nb.x+','+nb.y;
-            if (seen.has(key)) return;
-            seen.add(key);
-            var g=groupAtT(nb.x,nb.y);
-            if (g.libs.size===0) removeStonesT(g.stones);
+    function groupAndLibs(x,y){
+      var color = at(x,y);
+      if (color === E) return null;
+      var q = [[x,y]];
+      var seen = new Set([x + '_' + y]);
+      var group = [[x,y]];
+      var libs = 0;
+      while(q.length){
+        var cur = q.pop();
+        var cx = cur[0], cy = cur[1];
+        neigh(cx,cy).forEach(function(n){
+          var nx = n[0], ny = n[1];
+          var v = at(nx,ny);
+          if (v === E){
+            libs++;
+          } else if (v === color){
+            var k = nx + '_' + ny;
+            if (!seen.has(k)){
+              seen.add(k);
+              q.push([nx,ny]);
+              group.push([nx,ny]);
+            }
           }
         });
-        var gMy=groupAtT(m.x,m.y);
-        if (gMy.libs.size===0){
-          gridT[m.y][m.x]=null;
+      }
+      return { group: group, libs: libs };
+    }
+
+    function removeGroup(g){
+      g.forEach(function(p){ set(p[0],p[1],E); });
+    }
+
+    function play(move){
+      if (!move) return;
+      var x = move.x, y = move.y;
+      if (!inB(x,y)) return;
+      var color = (move.color === 'W') ? W : B;
+      var opp   = (color === B) ? W : B;
+      if (at(x,y) !== E) return;
+      set(x,y,color);
+
+      var oppToCheck = [];
+      neigh(x,y).forEach(function(n){
+        var nx = n[0], ny = n[1];
+        if (at(nx,ny) === opp) oppToCheck.push([nx,ny]);
+      });
+
+      var captured = 0;
+      oppToCheck.forEach(function(n){
+        var info = groupAndLibs(n[0], n[1]);
+        if (info && info.libs === 0){
+          removeGroup(info.group);
+          captured += info.group.length;
         }
       });
 
-      for (var yy=0; yy<SIZE; yy++){
-        for (var xx=0; xx<SIZE; xx++){
-          var v=gridT[yy][xx];
-          if (v==='B') b.addObject({x:xx,y:yy,c:WGo.B});
-          if (v==='W') b.addObject({x:xx,y:yy,c:WGo.W});
+      var mine = groupAndLibs(x,y);
+      if (mine && mine.libs === 0 && captured === 0){
+        // suicide – undo it
+        removeGroup(mine.group);
+      }
+    }
+
+    (Array.isArray(moves) ? moves : []).forEach(play);
+
+    var out = [];
+    for (var y=0; y<N; y++){
+      for (var x=0; x<N; x++){
+        var v = board[y][x];
+        if (v === B) out.push({ x:x, y:y, color:'B' });
+        else if (v === W) out.push({ x:x, y:y, color:'W' });
+      }
+    }
+    return out;
+  }
+
+  function hoshiPoints(size){
+    if (size === 19) return [3,9,15];
+    if (size === 13) return [3,6,9];
+    if (size === 9)  return [2,4,6];
+    var mid = Math.floor((size-1)/2);
+    var off = size >= 15 ? 3 : Math.max(2, Math.round(size/6));
+    return [off, mid, size-1-off];
+  }
+
+  function ensureThumbCanvas(el){
+    var cv = el.querySelector('canvas.own-canvas');
+    if (!cv){
+      cv = document.createElement('canvas');
+      cv.className = 'own-canvas';
+      el.appendChild(cv);
+    }
+    return cv;
+  }
+
+  function drawStone(ctx, cx, cy, r, color){
+    var isBlack = (color === 'B');
+    ctx.save();
+    ctx.shadowColor = 'transparent';
+
+    ctx.beginPath();
+    ctx.arc(cx, cy, r, 0, Math.PI * 2);
+    ctx.clip();
+
+    var hx = cx - r * 0.28;
+    var hy = cy - r * 0.28;
+    var body = ctx.createRadialGradient(hx, hy, r * 0.12, cx, cy, r);
+    if (isBlack){
+      body.addColorStop(0.00, '#686868');
+      body.addColorStop(0.65, '#141414');
+      body.addColorStop(1.00, '#000000');
+    } else {
+      body.addColorStop(0.00, '#ffffff');
+      body.addColorStop(0.70, '#f2f2f2');
+      body.addColorStop(1.00, '#e4e4e4');
+    }
+    ctx.fillStyle = body;
+    ctx.fillRect(cx - r, cy - r, 2*r, 2*r);
+
+    var edge = Math.max(0.6, r * 0.08);
+    var rim = ctx.createRadialGradient(cx, cy, r - edge, cx, cy, r);
+    if (isBlack){
+      rim.addColorStop(0, 'rgba(255,255,255,0)');
+      rim.addColorStop(1, 'rgba(255,255,255,0.12)');
+    } else {
+      rim.addColorStop(0, 'rgba(0,0,0,0)');
+      rim.addColorStop(1, 'rgba(0,0,0,0.18)');
+    }
+    ctx.fillStyle = rim;
+    ctx.fillRect(cx - r, cy - r, 2*r, 2*r);
+
+    var spec = ctx.createRadialGradient(hx, hy, 0, hx, hy, r * 0.55);
+    if (isBlack){
+      spec.addColorStop(0, 'rgba(255,255,255,0.10)');
+      spec.addColorStop(1, 'rgba(255,255,255,0)');
+    } else {
+      spec.addColorStop(0, 'rgba(255,255,255,0.22)');
+      spec.addColorStop(1, 'rgba(255,255,255,0)');
+    }
+    ctx.fillStyle = spec;
+    ctx.fillRect(cx - r, cy - r, 2*r, 2*r);
+
+    ctx.restore();
+  }
+
+  function drawBoardThumb(el, size, stones, opts){
+    var crop = !!(opts && opts.crop);
+    var w = Math.max(64, Math.floor(el.clientWidth || 132));
+    var h = w;
+    var dpr = Math.max(1, window.devicePixelRatio || 1);
+
+    var cv = ensureThumbCanvas(el);
+    if (cv.width !== w*dpr || cv.height !== h*dpr){
+      cv.width = Math.floor(w*dpr);
+      cv.height = Math.floor(h*dpr);
+      cv.style.width = w + 'px';
+      cv.style.height = h + 'px';
+    }
+
+    var ctx = cv.getContext('2d');
+    ctx.setTransform(dpr,0,0,dpr,0,0);
+    ctx.clearRect(0,0,w,h);
+
+    var pad   = Math.round(w * 0.10);
+    var inner = w - pad*2;
+    var step  = inner / (size - 1);
+    var getX  = function(i){ return pad + i*step; };
+    var getY  = function(j){ return pad + j*step; };
+
+    var minX=0, minY=0, maxX=size-1, maxY=size-1;
+    if (crop && stones && stones.length){
+      minX = maxX = stones[0].x;
+      minY = maxY = stones[0].y;
+      stones.forEach(function(s){
+        if (s.x < minX) minX = s.x;
+        if (s.x > maxX) maxX = s.x;
+        if (s.y < minY) minY = s.y;
+        if (s.y > maxY) maxY = s.y;
+      });
+
+      var MARGIN = 1;
+      minX = Math.max(0, minX - MARGIN);
+      minY = Math.max(0, minY - MARGIN);
+      maxX = Math.min(size-1, maxX + MARGIN);
+      maxY = Math.min(size-1, maxY + MARGIN);
+
+      var EDGE_NEAR = 6;
+      var pinLeft   = (minX <= EDGE_NEAR);
+      var pinTop    = (minY <= EDGE_NEAR);
+      var pinRight  = (maxX >= size-1-EDGE_NEAR);
+      var pinBottom = (maxY >= size-1-EDGE_NEAR);
+      if (pinLeft)  minX = 0;
+      if (pinTop)   minY = 0;
+      if (pinRight) maxX = size-1;
+      if (pinBottom)maxY = size-1;
+
+      var wG = (maxX - minX + 1);
+      var hG = (maxY - minY + 1);
+      var target = Math.max(wG, hG);
+
+      if (hG < target){
+        var need = target - hG;
+        if (pinTop && !pinBottom)      maxY = Math.min(size-1, maxY + need);
+        else if (pinBottom && !pinTop) minY = Math.max(0, minY - need);
+        else {
+          var up = Math.ceil(need/2), dn = Math.floor(need/2);
+          minY = Math.max(0, minY - up);
+          maxY = Math.min(size-1, maxY + dn);
         }
       }
-
-      requestAnimationFrame(function(){
-        var AB = Array.isArray(line.rootAB) ? line.rootAB : [];
-        var AW = Array.isArray(line.rootAW) ? line.rootAW : [];
-        var pts = [].concat(AB, AW, (line.moves||[]).map(function(m){ return {x:m.x,y:m.y}; }));
-        if (!pts.length) return;
-        var minX=pts[0].x, maxX=pts[0].x, minY=pts[0].y, maxY=pts[0].y;
-        for (var t=0;t<pts.length;t++){
-          var p=pts[t];
-          if(p.x<minX)minX=p.x;
-          if(p.x>maxX)maxX=p.x;
-          if(p.y<minY)minY=p.y;
-          if(p.y>maxY)maxY=p.y;
+      if (wG < target){
+        need = target - wG;
+        if (pinLeft && !pinRight)       maxX = Math.min(size-1, maxX + need);
+        else if (pinRight && !pinLeft)  minX = Math.max(0, minX - need);
+        else {
+          var lf = Math.ceil(need/2), rt = Math.floor(need/2);
+          minX = Math.max(0, minX - lf);
+          maxX = Math.min(size-1, maxX + rt);
         }
-        var MARGIN=1;
-        minX=Math.max(0,minX-MARGIN);
-        minY=Math.max(0,minY-MARGIN);
-        maxX=Math.min(SIZE-1,maxX+MARGIN);
-        maxY=Math.min(SIZE-1,maxY+MARGIN);
+      }
+    }
 
-        var wG=(maxX-minX+1), hG=(maxY-minY+1), target=Math.max(wG,hG);
-        if (hG<target){
-          var need=target-hG;
-          var up=Math.ceil(need/2), dn=Math.floor(need/2);
-          minY=Math.max(0,minY-up);
-          maxY=Math.min(SIZE-1,maxY+dn);
-        }
-        if (wG<target){
-          var need2=target-wG;
-          var lf=Math.ceil(need2/2), rt=Math.floor(need2/2);
-          minX=Math.max(0,minX-lf);
-          maxX=Math.min(SIZE-1,maxX+rt);
-        }
+    var leftPx   = getX(minX) - step/2;
+    var rightPx  = getX(maxX) + step/2;
+    var topPx    = getY(minY) - step/2;
+    var bottomPx = getY(maxY) + step/2;
+    var cropSide = Math.max(rightPx-leftPx, bottomPx-topPx);
+    var scale    = w / cropSide;
 
-        var spacing = b.getX(1)-b.getX(0), half=spacing/2;
-        var leftPx=b.getX(minX)-half, rightPx=b.getX(maxX)+half;
-        var topPx=b.getY(minY)-half, bottomPx=b.getY(maxY)+half;
-        var cv = el.querySelector('canvas');
-        var ratio = cv ? ((cv.clientWidth || internalW) / (cv.width || internalW)) : 1;
-        leftPx*=ratio; rightPx*=ratio; topPx*=ratio; bottomPx*=ratio;
-        var cropSide = Math.max(rightPx-leftPx, bottomPx-topPx);
-        var scale = viewW / cropSide;
-        el.querySelectorAll('canvas').forEach(function(c){
-          c.style.position='absolute';
-          c.style.left = (-leftPx)+'px';
-          c.style.top  = (-topPx)+'px';
-          c.style.transformOrigin = '0 0';
-          c.style.transform = 'scale('+scale+')';
-          c.style.pointerEvents='none';
-        });
+    ctx.save();
+    ctx.scale(scale, scale);
+    ctx.translate(-leftPx, -topPx);
+
+    ctx.strokeStyle = 'rgba(0,0,0,.9)';
+    var desiredPx = Math.max(1, Math.floor(w * 0.006));
+    ctx.lineWidth = desiredPx / scale;
+
+    for (var i=0; i<size; i++){
+      var y = getY(i);
+      ctx.beginPath(); ctx.moveTo(getX(0), y); ctx.lineTo(getX(size-1), y); ctx.stroke();
+      var x = getX(i);
+      ctx.beginPath(); ctx.moveTo(x, getY(0)); ctx.lineTo(x, getY(size-1)); ctx.stroke();
+    }
+
+    ctx.fillStyle = '#000';
+    var hs = hoshiPoints(size);
+    var hr = Math.max(1, step * 0.02);
+    hs.forEach(function(ix){
+      hs.forEach(function(iy){
+        var cx = getX(ix), cy = getY(iy);
+        ctx.beginPath(); ctx.arc(cx, cy, hr, 0, Math.PI*2); ctx.fill();
       });
     });
+
+    var r = step * 0.46;
+    (stones || []).forEach(function(s){
+      drawStone(ctx, getX(s.x), getY(s.y), r, (s.color === 'W' ? 'W' : 'B'));
+    });
+
+    ctx.restore();
   }
+
+  function renderOwnThumb(el, line){
+    var size = line.size || 19;
+    var stones = simulatePosition(
+      size,
+      Array.isArray(line.rootAB) ? line.rootAB : [],
+      Array.isArray(line.rootAW) ? line.rootAW : [],
+      Array.isArray(line.moves)  ? line.moves  : []
+    );
+    drawBoardThumb(el, size, stones, { crop:true });
+  }
+
 
   /* Pattern list rendering */
   function renderList(){
