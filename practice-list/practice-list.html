@@ -1231,7 +1231,8 @@
         const trees=parseAllTrees(txt);
         if(!trees.length) throw new Error('Empty SGF');
 
-        const lines=[];
+        // 1) Build raw lines from SGF (with pass-cutting already applied in enumerateLines)
+        const rawLines=[];
         for (const seq of trees){
           linkify(seq,null);
           const size   = parseSZ(seq[0]?.SZ);
@@ -1240,25 +1241,70 @@
           const paths  = enumerateLines(seq, size);
           for (const moves of paths){
             if ((moves?.length || 0) >= MIN_MOVES){
-              lines.push({ size, rootAB, rootAW, moves });
+              rawLines.push({ size, rootAB, rootAW, moves });
             }
           }
         }
 
+        // 2) Deduplicate lines that are now identical after truncation at first pass
+        const uniqLines = [];
+        const seen = new Map();
+
+        function coordsKey(coords){
+          if (!coords || !coords.length) return '';
+          return coords.map(p => p.x + ',' + p.y).join(';');
+        }
+
+        for (let i = 0; i < rawLines.length; i++){
+          const L = rawLines[i];
+          const size = L.size || 19;
+
+          // Move sequence key (order matters – different sequences stay separate)
+          const keyMoves = (L.moves || [])
+            .map(m => (m.color || 'B')[0] + ':' + m.x + ',' + m.y)
+            .join('|');
+
+          const keyAB = coordsKey(L.rootAB);
+          const keyAW = coordsKey(L.rootAW);
+          const key   = `${size}|AB:${keyAB}|AW:${keyAW}|M:${keyMoves}`;
+
+          if (!seen.has(key)){
+            seen.set(key, uniqLines.length);
+            uniqLines.push(L);
+          }
+        }
+
+        const lines = uniqLines;
+
+        // 3) Build categories from the deduped lines
         const catMap = new Map();
         for (let i=0;i<lines.length;i++){
           const mv=lines[i].moves;
-          if (mv.length < 2) continue;
-          const s = lines[i].size || 19, m1 = mv[0], m2 = mv[1];
+          if (!mv || mv.length < 2) continue;
+          const s  = lines[i].size || 19;
+          const m1 = mv[0];
+          const m2 = mv[1];
           const key = `${s}|${m1.color}:${m1.x},${m1.y}|${m2.color}:${m2.x},${m2.y}`;
-          if (!catMap.has(key)) catMap.set(key, { key, size:s, firstTwo:[m1,m2], lineIdx:[] });
+          if (!catMap.has(key)) {
+            catMap.set(key, {
+              key,
+              size: s,
+              firstTwo: [m1, m2],
+              lineIdx: []
+            });
+          }
           catMap.get(key).lineIdx.push(i);
         }
 
         state.lines = lines;
         state.cats  = Array.from(catMap.values());
         showCategories();
-        console.log('[Practice List] lines(≥'+MIN_MOVES+'): ', lines.length, 'cats:', state.cats.length);
+        console.log(
+          '[Practice List] raw lines(≥'+MIN_MOVES+'): ',
+          rawLines.length,
+          'deduped:', lines.length,
+          'cats:', state.cats.length
+        );
       })
       .catch(err=>{
         catsGrid.innerHTML='';
@@ -1269,6 +1315,7 @@
         console.error('SGF parsing failed:', err);
       });
   }
+
 
   function showCategories(){
     ensureGrids();
