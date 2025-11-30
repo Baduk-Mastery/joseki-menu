@@ -350,10 +350,22 @@
   #ownpatterns-root .own-title{
     font-weight:800; font-size:18px; line-height:1.3;
   }
-  #ownpatterns-root .own-cta{
-    margin-top:auto;
-    display:flex; gap:10px; flex-wrap:wrap; align-items:center;
-  }
+#ownpatterns-root .own-cta{
+  margin-top:auto;
+  display:flex;
+  align-items:center;
+  gap:8px;              /* matches Practice List spacing */
+}
+/* Make Practice fill remaining space, Remove stay compact (like Select + star) */
+#ownpatterns-root .own-cta .own-practice-btn{
+  flex:1 1 auto;
+  justify-content:center;
+}
+
+#ownpatterns-root .own-cta .own-remove-btn{
+  flex:0 0 auto;
+}
+
 
   /* Editor layout */
   #ownpatterns-root #own-editor-wrap{
@@ -1145,9 +1157,10 @@ var displayName = 'Pattern ' + (idx+1);
 title.textContent = displayName + ' (' + moveCount + ' Moves)';
 
 
-      var practiceBtn = document.createElement('span');
-      practiceBtn.className = 's-btn';
-      practiceBtn.textContent = 'Practice';
+var practiceBtn = document.createElement('span');
+practiceBtn.className = 's-btn own-practice-btn';
+practiceBtn.textContent = 'Practice';
+
       practiceBtn.addEventListener('click', function(ev){
         ev.stopPropagation();
         ev.preventDefault();
@@ -1177,9 +1190,10 @@ title.textContent = displayName + ' (' + moveCount + ' Moves)';
         }
       });
 
-      var removeBtn = document.createElement('span');
-      removeBtn.className = 's-btn s-btn-danger';
-      removeBtn.textContent = 'Remove';
+var removeBtn = document.createElement('span');
+removeBtn.className = 's-btn s-btn-danger own-remove-btn';
+removeBtn.textContent = 'Remove';
+
    removeBtn.addEventListener('click', function(ev){
   ev.stopPropagation();
   ev.preventDefault();
