@@ -641,91 +641,31 @@
     }
     return null;
   }
-  function enumerateLines(seq, SIZE){
-    const lines = [];
+  function enumerateLines(seq,SIZE){
+    const lines=[];
     let start = seq && seq[0];
-
-    // Skip root noise until we hit something with a move or variations
-    while (start && !nodeMove(start, SIZE) && !start.variations) start = start.next;
+    while(start && !nodeMove(start,SIZE) && !start.variations) start = start.next;
 
     function dfs(node, acc){
-      if (!node){
-        lines.push(acc.slice());
-        return;
-      }
+      if (!node){ lines.push(acc.slice()); return; }
       acc.push(node);
-
-      // Branch into variations
       if (node.variations && node.variations.length){
-        for (const v of node.variations){
-          let f = v && v[0];
-          while (f && !nodeMove(f, SIZE) && !f.variations) f = f.next;
+        for(const v of node.variations){
+          let f=v && v[0];
+          while(f && !nodeMove(f,SIZE) && !f.variations) f=f.next;
           if (f) dfs(f, acc.slice());
         }
       }
-
-      // Continue along main line
       if (node.next){
-        let nx = node.next;
-        while (nx && !nodeMove(nx, SIZE) && !nx.variations) nx = nx.next;
+        let nx=node.next;
+        while(nx && !nodeMove(nx,SIZE) && !nx.variations) nx=nx.next;
         if (nx) dfs(nx, acc);
         else lines.push(acc.slice());
       } else {
         lines.push(acc.slice());
       }
     }
-
     if (start) dfs(start, []);
-
-    // Convert SGF nodes → move list, but cut at first pass.
-    return lines.map(nodes => {
-      const moves = [];
-
-      for (const n of nodes){
-        if (!n) continue;
-
-        const hasB = n.B != null;
-        const hasW = n.W != null;
-        if (!hasB && !hasW) continue;
-
-        let color, raw;
-        if (hasB){ color = 'B'; raw = n.B; }
-        else     { color = 'W'; raw = n.W; }
-
-        // Normalise SGF value
-        let s = raw;
-        if (Array.isArray(s)) s = s[0] || '';
-        if (typeof s !== 'string') s = String(s || '');
-
-        let isPass = false;
-        let coord  = null;
-
-        // Treat empty / too short / off-board coords as pass (B[] / W[] / B[tt] on 19x19, etc.)
-        if (!s || s.length < 2){
-          isPass = true;
-        } else {
-          const p = xy(s, SIZE);
-          if (!p){
-            isPass = true;
-          } else {
-            coord = p;
-          }
-        }
-
-        if (isPass){
-          // Stop here: we only keep moves up to (but not including) the pass.
-          break;
-        }
-
-        if (coord){
-          moves.push({ x: coord.x, y: coord.y, color });
-        }
-      }
-
-      return moves;
-    });
-  }
-  if (start) dfs(start, []);
     return lines.map(nodes => nodes.map(n => nodeMove(n,SIZE)).filter(Boolean));
   }
 
@@ -1611,7 +1551,5 @@ cta.innerHTML     = '<span class="s-btn open-btn">Open</span>';
 
 </body>
 </html>
-
-
 
 
