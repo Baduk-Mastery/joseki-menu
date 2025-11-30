@@ -200,33 +200,102 @@
     margin:0; font-size:24px; line-height:1.15; font-weight:800; text-shadow:0 1px 2px rgba(0,0,0,.35);
   }
 
-  /* Buttons + cards (shared look) */
-  #drills-root .s-back,
-  #drills-root .s-btn,
+  /* Cards: same blue look as Practice .s-card */
   #drills-root .s-card{
     background: rgba(37,99,235,.22);
     color:#e6f3ff;
     border:2px solid rgba(37,99,235,.75);
     border-radius:12px;
     box-shadow:0 8px 20px rgba(2,6,23,.45), inset 0 0 0 1px rgba(255,255,255,.08);
+    padding:12px;
+    box-sizing:border-box;
+    overflow:hidden;
   }
-  #drills-root .s-back{
-    padding:8px 12px; cursor:pointer; font-weight:800; line-height:1;
-    transition:transform .06s, background .15s, box-shadow .15s;
-  }
-  #drills-root .s-back:hover{  background: rgba(37,99,235,.26); }
-  #drills-root .s-back:active{ background: rgba(37,99,235,.32); transform:translateY(1px); }
 
-  #drills-root .s-card{ padding:12px; box-sizing:border-box; overflow:hidden; }
   #drills-root .info-title{ font-weight:900; font-size:16px; margin-bottom:4px; }
   #drills-root .info-desc{ font-size:13px; line-height:1.5; opacity:.96; }
 
+  /* Wood-style buttons – match Practice list (.s-back / .s-btn) */
+  #drills-root .s-back,
   #drills-root .s-btn{
-    display:inline-block; padding:10px 12px; font-weight:800; font-size:13px; cursor:pointer;
-    transition:transform .06s, background .15s, box-shadow .15s;
+    position:relative;
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    gap:6px;
+
+    padding:8px 18px;
+    border-radius:10px;
+    border:1px solid rgba(255,255,255,.40);
+
+    font-size:16px;
+    font-weight:800;
+    line-height:1.1;
+    color:#fff3cf;
+    text-shadow:0 1px 0 rgba(120,60,20,.7);
+    cursor:pointer;
+
+    user-select:none;
+    -webkit-user-select:none;
+    -moz-user-select:none;
+    -ms-user-select:none;
+    -webkit-tap-highlight-color:transparent;
+
+    background-image:
+      linear-gradient(
+        to bottom,
+        rgba(255,255,255,.12),
+        rgba(255,255,255,.03) 38%,
+        rgba(0,0,0,.14) 100%
+      ),
+      var(--wood);
+    background-size:100% 100%, cover;
+    background-position:center;
+    background-repeat:no-repeat;
+
+    filter:brightness(1.08) saturate(.96);
+
+    box-shadow:
+      0 3px 0 rgba(133,74,26,.85),
+      0 8px 14px rgba(0,0,0,.45);
+
+    transition:
+      transform .08s ease-out,
+      box-shadow .08s ease-out,
+      filter .12s ease-out;
   }
-  #drills-root .s-btn.s-btn-lg{ font-size:16px; padding:14px 18px; }
-  #drills-root .s-btn:active{ transform:translateY(1px); }
+
+  #drills-root .s-back:hover,
+  #drills-root .s-btn:hover{
+    filter:brightness(1.12) saturate(.98);
+    transform:translateY(-1px);
+    box-shadow:
+      0 4px 0 rgba(133,74,26,.9),
+      0 10px 16px rgba(0,0,0,.48);
+  }
+
+  #drills-root .s-back:active,
+  #drills-root .s-btn:active{
+    filter:brightness(.97) saturate(.96);
+    transform:translateY(2px);
+    box-shadow:
+      0 1px 0 rgba(120,60,20,.9),
+      0 4px 8px rgba(0,0,0,.55);
+  }
+
+  /* Larger variant (Start / OK buttons) */
+  #drills-root .s-btn.s-btn-lg{
+    padding:10px 22px;
+    font-size:16px;
+  }
+
+  /* Slimmer header back button like Practice list */
+  #drills-root .s-header .s-back{
+    padding:6px 12px;
+    font-size:14px;
+    border-radius:8px;
+  }
+
 
   /* Options grid */
   #drills-root .drill-grid{ display:grid; grid-template-columns:1fr; gap:12px; margin-top:14px; }
@@ -243,6 +312,13 @@
   /* Remove per-card descriptions across Drills UI */
   #drills-root .drill-desc, #drills-root .joseki-desc{ display:none !important; }
   #drills-root .drill-cta{ margin-top:10px; display:flex; flex-wrap:wrap; gap:8px; }
+  /* Make 'Choose' buttons fill and center like Practice 'Open' buttons */
+  #drills-root #drills-mode-view .drill-cta .s-btn,
+  #drills-root #drills-options .drill-cta .s-btn{
+    flex:1 1 auto;
+    justify-content:center;
+  }
+
 
   /* Lists (Library, Favorites, Own) */
   #drills-root .drill-list-grid{
