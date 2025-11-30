@@ -152,6 +152,16 @@
           <button id="hlast-off" class="seg-btn" data-val="off" aria-pressed="false">OFF</button>
         </div>
       </div>
+
+      <!-- Row: Disable auto zoom out -->
+      <div class="s-row">
+        <div class="s-label">Disable auto zoom out</div>
+        <div class="seg" role="group" aria-label="Disable auto zoom out setting">
+          <button id="azoff-on"  class="seg-btn" data-val="on"  aria-pressed="false">ON</button>
+          <button id="azoff-off" class="seg-btn" data-val="off" aria-pressed="false">OFF</button>
+        </div>
+      </div>
+
     </div>
   </div>
 </div>
@@ -178,9 +188,12 @@
   } catch (e) {}
 
   // Defaults
-  if (typeof GoPrefs.josekiZoom === 'undefined')     GoPrefs.josekiZoom     = true;
-  if (typeof GoPrefs.soundOn === 'undefined')        GoPrefs.soundOn        = true;
-  if (typeof GoPrefs.highlightLast === 'undefined')  GoPrefs.highlightLast  = true;
+  // Defaults
+  if (typeof GoPrefs.josekiZoom === 'undefined')         GoPrefs.josekiZoom         = true;
+  if (typeof GoPrefs.soundOn === 'undefined')            GoPrefs.soundOn            = true;
+  if (typeof GoPrefs.highlightLast === 'undefined')      GoPrefs.highlightLast      = true;
+  if (typeof GoPrefs.disableAutoZoomOut === 'undefined') GoPrefs.disableAutoZoomOut = false;
+
 
   function savePrefs(){
     try {
@@ -243,7 +256,10 @@
   var soundOff = document.getElementById('sound-off');
   var hOn      = document.getElementById('hlast-on');
   var hOff     = document.getElementById('hlast-off');
+  var azOn     = document.getElementById('azoff-on');
+  var azOff    = document.getElementById('azoff-off');
   var backBtn  = document.getElementById('s-back');
+
 
   function syncButtons(){
     if (zoomOn && zoomOff){
@@ -258,7 +274,12 @@
       hOn.setAttribute('aria-pressed', GoPrefs.highlightLast ? 'true' : 'false');
       hOff.setAttribute('aria-pressed', GoPrefs.highlightLast ? 'false' : 'true');
     }
+    if (azOn && azOff){
+      azOn.setAttribute('aria-pressed', GoPrefs.disableAutoZoomOut ? 'true' : 'false');
+      azOff.setAttribute('aria-pressed', GoPrefs.disableAutoZoomOut ? 'false' : 'true');
+    }
   }
+
 
   // Wire up handlers
   if (zoomOn)  zoomOn.addEventListener('click',  function(){ setPref('josekiZoom', true);  syncButtons(); });
@@ -269,6 +290,9 @@
 
   if (hOn)  hOn.addEventListener('click',  function(){ setPref('highlightLast', true);  syncButtons(); });
   if (hOff) hOff.addEventListener('click', function(){ setPref('highlightLast', false); syncButtons(); });
+
+ if (azOn)  azOn.addEventListener('click',  function(){ setPref('disableAutoZoomOut', true);  syncButtons(); });
+  if (azOff) azOff.addEventListener('click', function(){ setPref('disableAutoZoomOut', false); syncButtons(); });
 
   if (backBtn){
     backBtn.addEventListener('click', function(){

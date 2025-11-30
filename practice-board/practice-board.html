@@ -598,25 +598,27 @@ var highlightLastEnabled =
 var zoomEnabled = (window.GoPrefs && typeof window.GoPrefs.josekiZoom !== 'undefined')
   ? !!window.GoPrefs.josekiZoom : true;
 
-    var lastX = null, lastY = null;
+var disableAutoZoomOut =
+  (window.GoPrefs && typeof window.GoPrefs.disableAutoZoomOut !== 'undefined')
+    ? !!window.GoPrefs.disableAutoZoomOut : false;
+
+var lastX = null, lastY = null;
+
 
 window.addEventListener('go:prefs-changed', function(e){
   var d = e.detail || {};
   if (!d || typeof d.key === 'undefined') return;
 
   if (d.key === 'highlightLast') {
-    // Update practice-board highlight
     highlightLastEnabled = !!d.value;
     try { redraw(); } catch(_) {}
   } else if (d.key === 'josekiZoom') {
-    // Toggle zoom on practice board
     try {
       if (window.PracticeZoom && typeof PracticeZoom.setEnabled === 'function') {
         PracticeZoom.setEnabled(!!d.value);
       }
     } catch (_) {}
   } else if (d.key === 'soundOn') {
-    // Toggle sound via shared sound bridge
     try {
       if (window.PracticeSound && typeof PracticeSound.setEnabled === 'function') {
         PracticeSound.setEnabled(!!d.value);
@@ -624,8 +626,12 @@ window.addEventListener('go:prefs-changed', function(e){
         StoneSFX._enabled = !!d.value;
       }
     } catch (_) {}
+  } else if (d.key === 'disableAutoZoomOut') {
+    // NEW: update local flag when settings change
+    disableAutoZoomOut = !!d.value;
   }
 });
+
 
 
 
@@ -1858,13 +1864,13 @@ function smoothZoomOutAndExit(){
           buildPositionTo(currentNode);
           StoneSFX.play();
 
-          // Auto zoom-out when a correct move is played (smooth, like zoom-in)
-          if (zoomEnabled && (scale > 1 || isFullscreen)){
+          // Auto zoom-out only if NOT disabled in Settings
+          if (!disableAutoZoomOut && zoomEnabled && (scale > 1 || isFullscreen)){
             setTimeout(smoothZoomOutAndExit, 10);
           }
 
-
           var nexts = getNextCandidates(currentNode);
+
           if (!nexts.length){
             showClearedOrWin();
             return;
