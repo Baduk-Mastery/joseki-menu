@@ -35,10 +35,9 @@
       --maxw:720px;
     }
 
-    /* Inner container – same width logic as Drills */
+    /* Same container width as Drills .s-inner */
     #settings-overlay .s-inner{
-      width:92vw;
-      max-width:var(--maxw);
+      width:min(92vw,var(--maxw));
       padding:16px 24px 22px;
       margin:0 auto;
       position:relative;
@@ -46,7 +45,7 @@
       box-sizing:border-box;
     }
 
-    /* Header layout – matches Drills header grid */
+    /* Header block – matches Drills header layout */
     #settings-overlay .s-header{
       display:grid;
       grid-template-columns:auto 1fr;
@@ -121,7 +120,6 @@
         0 4px 8px rgba(0,0,0,.55);
     }
 
-    /* Title – same scale as Drills */
     #settings-overlay .s-title{
       margin:0;
       font-size:24px;
@@ -132,6 +130,7 @@
       min-width:0;
     }
 
+    /* Settings card – full width like Drills info card */
     #settings-overlay .s-card{
       background: rgba(37,99,235,.22);
       border:2px solid rgba(37,99,235,.75);
@@ -140,7 +139,8 @@
       padding:12px;
       color:#e6f3ff;
       box-sizing:border-box;
-      width:100%; /* fill the same inner width as Drills cards */
+      width:100%;
+      margin-top:6px; /* same visual offset as Drills info card */
     }
 
     #settings-overlay .s-row{
@@ -258,7 +258,7 @@
         </div>
       </div>
 
-      <!-- Row: Zoom (moved near bottom) -->
+      <!-- Row: Zoom -->
       <div class="s-row">
         <div class="s-label">Zoom</div>
         <div class="seg" role="group" aria-label="Zoom setting">
