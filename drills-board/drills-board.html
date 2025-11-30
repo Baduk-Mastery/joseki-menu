@@ -200,63 +200,48 @@ if (!window.StoneSFX) {
     return (t || 'free').toLowerCase() === 'pro';
   }
 
-  // Per-day drill limits (same as drills.html)
-  var FREE_DAILY_LIMIT_COMPLETE = 2;
-  var FREE_DAILY_LIMIT_BLITZ    = 2;
+ /* ===== Run cap (Start + Retry)
+     - Disabled: limits are handled per mode/day on drills.html
+  ================================= */
+  const RUN_LIMIT_FREE = Infinity;
+  const RUNS_KEY = 'go:drill_runs_session_count';
 
-  function getDailyLimitForMode(mode){
-    if (isPro()) return Infinity;
-    return (mode === 'blitz') ? FREE_DAILY_LIMIT_BLITZ : FREE_DAILY_LIMIT_COMPLETE;
+  function getRunLimit(){
+    // Pro → unlimited, Free → fixed cap
+    return isPro() ? Infinity : RUN_LIMIT_FREE;
   }
 
-  function readDailyDrillBucket(mode){
-    var m   = (mode === 'blitz') ? 'blitz' : 'complete';
-    var key = 'go:drills_attempts_' + m + '_today_v1';
-    try{
-      var raw   = localStorage.getItem(key);
-      var today = (new Date()).toISOString().slice(0,10); // YYYY-MM-DD (UTC)
-      var obj   = raw ? JSON.parse(raw) : null;
-
-      if (!obj || obj.day !== today || typeof obj.count !== 'number'){
-        obj = { day: today, count: 0 };
-      }
-      return { key: key, state: obj };
-    }catch(_){
-      // If localStorage is blocked, fail open
-      return { key: key, state: null };
+  function getRuns(){
+    try {
+      return parseInt(sessionStorage.getItem(RUNS_KEY) || '0', 10) || 0;
+    } catch(e){
+      return 0;
     }
   }
 
-  function getDrillsUsedToday(mode){
-    var bucket = readDailyDrillBucket(mode);
-    if (!bucket.state) return 0;
-    return bucket.state.count || 0;
+  function setRuns(n){
+    try {
+      sessionStorage.setItem(RUNS_KEY, String(Math.max(0, n | 0)));
+    } catch(e){}
   }
 
-  function hasDrillAttemptsLeft(mode){
-    if (isPro()) return true;
-    var limit = getDailyLimitForMode(mode);
-    if (!isFinite(limit)) return true;
-    var used  = getDrillsUsedToday(mode);
-    return used < limit;
+  function canStart(){
+    const limit = getRunLimit();
+    if (!Number.isFinite(limit)) return true;    // Pro: always allowed
+    return getRuns() < limit;                    // Free: compare vs 2
   }
 
-  function recordDrillAttempt(mode){
-    if (isPro()) return;
-    var limit = getDailyLimitForMode(mode);
-    if (!isFinite(limit)) return;
-
-    var bucket = readDailyDrillBucket(mode);
-    if (!bucket.state) return;
-
-    bucket.state.count = (bucket.state.count || 0) + 1;
-    try{
-      localStorage.setItem(bucket.key, JSON.stringify(bucket.state));
-    }catch(_){}
+  function incRuns(){
+    const limit = getRunLimit();
+    if (!Number.isFinite(limit)) return;         // Pro: don't count runs
+    setRuns(getRuns() + 1);
   }
 
-  // Track which mode this board is running in ('complete' | 'blitz')
-  var currentMode = 'complete';
+  function runsLeft(){
+    const limit = getRunLimit();
+    if (!Number.isFinite(limit)) return Infinity;
+    return Math.max(0, limit - getRuns());
+  }
 
 
   // NEW overlay references
@@ -776,14 +761,14 @@ if (!window.StoneSFX) {
       showDone();
     }, 800);
   }
+
   function showDone(customTitle){
     clearTimers();
     if (statSolvedEl) statSolvedEl.textContent = String(solvedCount);
     if (statFailedEl) statFailedEl.textContent = String(failedCount);
     if (doneTitle) doneTitle.textContent = customTitle || 'All Drills Complete';
 
-    var mode = currentMode || (blitzMode ? 'blitz' : 'complete');
-    if (!hasDrillAttemptsLeft(mode)){
+    if (runsLeft() <= 0){
       if (doneMsgEl) doneMsgEl.textContent = 'You reached your drills limit.';
       doneRetry.disabled = true;
       doneRetry.style.opacity = '.6';
@@ -814,11 +799,8 @@ if (!window.StoneSFX) {
     }
   }
 
-    doneRetry.addEventListener('click', function(){
-    var mode = currentMode || (blitzMode ? 'blitz' : 'complete');
-
-    // Check daily limit for this mode
-    if (!hasDrillAttemptsLeft(mode)){
+  doneRetry.addEventListener('click', function(){
+    if (!canStart()){
       showCapMsg();
       if (doneMsgEl) doneMsgEl.textContent = 'You reached your drills limit.';
       doneRetry.disabled = true;
@@ -826,10 +808,7 @@ if (!window.StoneSFX) {
       doneRetry.style.cursor = 'not-allowed';
       return;
     }
-
-    // Count this retry as a new run
-    recordDrillAttempt(mode);
-
+    incRuns();
     doneM.style.display='none';
     resetStats();
     reshuffleSlots();
@@ -847,7 +826,6 @@ if (!window.StoneSFX) {
     }
     if (slots.length){ startDrill(0); }
   });
-
 
   btnNext.addEventListener('click',  function(){
     if (!slots.length) return;
@@ -922,17 +900,7 @@ if (!window.StoneSFX) {
       // Read selections via helper (GoDrills on same page OR sessionStorage bridge)
       const sel = getDrillSelections();
       const selMode = (sel && sel.mode === 'blitz') ? 'blitz' : 'complete';
-      blitzMode   = (selMode === 'blitz');
-      currentMode = selMode;
-
-      // Daily limit check for this run (first start of the session)
-      if (!hasDrillAttemptsLeft(selMode)){
-        showCapMsg();
-        return;
-      }
-      // Count this session once for the selected mode
-      recordDrillAttempt(selMode);
-
+      blitzMode = (selMode === 'blitz');
 
       function buildSlots(baseLines){
         const raw = [];
@@ -1088,10 +1056,13 @@ if (!window.StoneSFX) {
     const isStandalone = !over && !startBtn;
     if (!isStandalone) return;
 
-    // DrillBoard.load handles daily limit checks and counting
+    if (!canStart()){
+      showCapMsg();
+      return;
+    }
+    incRuns();
     DrillBoard.load(null, { perJoseki: 3 });
   }
-
 
   if (document.readyState === 'loading'){
     document.addEventListener('DOMContentLoaded', autoStartStandalone);
@@ -1103,3 +1074,6 @@ if (!window.StoneSFX) {
 
 </body>
 </html>
+
+
+
