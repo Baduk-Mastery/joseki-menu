@@ -693,16 +693,18 @@ if (!window._stoneSFXInit) {
       if (removeToast.style.display !== 'none' && e.key === 'Escape') hideRemoveToast();
     });
   }
-  function showRemoveToast(pattern){
-    ensureRemoveToast();
-    currentRemoveId = pattern.id;
-    removeText.textContent = 'Remove "' + (pattern.title || 'this pattern') + '"?';
-    removeToast.style.display = 'block';
-    root.classList.add('notice-open');
-    setTimeout(function(){
-      try { btnNo && btnNo.focus(); } catch(_){}
-    }, 30);
-  }
+function showRemoveToast(pattern, label){
+  ensureRemoveToast();
+  currentRemoveId = pattern.id;
+  var name = label || pattern.title || 'this pattern';
+  removeText.textContent = 'Remove "' + name + '"?';
+  removeToast.style.display = 'block';
+  root.classList.add('notice-open');
+  setTimeout(function(){
+    try { btnNo && btnNo.focus(); } catch(_){}
+  }, 30);
+}
+
   function hideRemoveToast(){
     if (!removeToast) return;
     removeToast.style.display = 'none';
@@ -1138,8 +1140,10 @@ if (!window._stoneSFXInit) {
       var cta=document.createElement('div');
       cta.className='own-cta';
 
-      var moveCount = (pat && Array.isArray(pat.moves)) ? pat.moves.length : 0;
-      title.textContent = 'Pattern ' + (idx+1) + ' (' + moveCount + ' Moves)';
+var moveCount = (pat && Array.isArray(pat.moves)) ? pat.moves.length : 0;
+var displayName = 'Pattern ' + (idx+1);
+title.textContent = displayName + ' (' + moveCount + ' Moves)';
+
 
       var practiceBtn = document.createElement('span');
       practiceBtn.className = 's-btn';
@@ -1176,11 +1180,12 @@ if (!window._stoneSFXInit) {
       var removeBtn = document.createElement('span');
       removeBtn.className = 's-btn s-btn-danger';
       removeBtn.textContent = 'Remove';
-      removeBtn.addEventListener('click', function(ev){
-        ev.stopPropagation();
-        ev.preventDefault();
-        showRemoveToast(pat);
-      });
+   removeBtn.addEventListener('click', function(ev){
+  ev.stopPropagation();
+  ev.preventDefault();
+  showRemoveToast(pat, displayName);
+});
+
 
       cta.appendChild(practiceBtn);
       cta.appendChild(removeBtn);
