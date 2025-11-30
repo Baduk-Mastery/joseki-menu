@@ -1,0 +1,1305 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Joseki Master – My Patterns</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    html, body{
+      margin:0;
+      padding:0;
+      min-height:100%;
+      font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+    }
+  </style>
+</head>
+<body>
+
+<noscript>
+  <p>
+    JavaScript is required to use My Patterns.
+    <a href="../joseki-menu/index.html">Back to menu</a>
+  </p>
+</noscript>
+
+<!-- Simple global menu bridge used by My Patterns -->
+<script>
+  window.GoMenu = window.GoMenu || {
+    open: function(){
+      // From /my-patterns/ go back to main menu
+      window.location.href = "../joseki-menu/index.html";
+    }
+  };
+</script>
+
+<!-- ============== OWN PATTERNS (ported from Bubble) ============== -->
+<div id="ownpatterns-root">
+  <!-- My Patterns overlay -->
+  <div id="own-overlay" aria-modal="true" role="dialog" style="display:none">
+    <div class="s-inner">
+      <div class="s-header">
+        <button id="own-back" class="s-back" type="button" aria-label="Back">← Back</button>
+        <h1 class="s-title">My Patterns</h1>
+      </div>
+
+      <!-- Message card -->
+      <div class="s-card info">
+        <div class="info-title">Bring your own patterns</div>
+        <div class="info-desc">Can’t find the pattern you want to study? Add your own and train it in the Practice section.</div>
+      </div>
+
+      <!-- Primary action -->
+      <div class="actions">
+        <button id="own-add" class="s-btn s-btn-lg" type="button">Add</button>
+      </div>
+
+      <!-- Patterns list (populated by script) -->
+      <div class="own-grid" id="own-list">
+        <div class="s-card empty">
+          <div class="empty-title">No patterns yet</div>
+          <div class="empty-desc">Start by adding your first pattern.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Editor overlay (opens when you press Add) -->
+  <div id="own-editor" aria-modal="true" role="dialog" style="display:none">
+    <div class="s-inner">
+      <div class="s-header">
+        <button id="own-edit-back" class="s-back" type="button" aria-label="Back">← Back</button>
+        <h1 class="s-title">Add Pattern</h1>
+      </div>
+
+      <div id="own-editor-wrap">
+        <div id="own-editor-board"></div>
+        <div class="own-editor-ctrls">
+          <button id="own-edit-undo"   class="s-btn" type="button">Undo</button>
+          <button id="own-edit-reset"  class="s-btn" type="button">Reset</button>
+          <button id="own-edit-save"   class="s-btn s-btn-lg" type="button">Add</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Info notice (OK-only). Kept for empty pattern etc. -->
+  <div id="own-notice" role="alert" aria-live="polite" style="display:none">
+      <div class="s-inner">
+        <div class="s-card own-notice-card">
+          <div class="info-title" id="own-notice-title">Heads up</div>
+          <div class="info-desc" id="own-notice-text">Add at least one move to save a pattern.</div>
+          <div class="actions" style="margin-top:12px;">
+            <button id="own-notice-ok" class="s-btn s-btn-lg" type="button" aria-label="Close">OK</button>
+          </div>
+        </div>
+      </div>
+  </div>
+
+  <!-- Removal confirm toast is injected by JS -->
+</div>
+
+<!-- Level Selector Overlay (reused from Practice List) -->
+<div id="level-overlay" aria-modal="true" role="dialog" style="display:none">
+  <div class="s-inner">
+    <div class="s-header">
+      <button id="level-back" class="s-back" type="button" aria-label="Back to patterns">← Back</button>
+      <h1 class="s-title">Choose Level</h1>
+    </div>
+    <div class="level-grid">
+      <button class="s-card level-card" data-level="1" type="button">
+        <div class="level-title">Level 1</div>
+        <div class="level-desc">Every move is marked with “A”. Get familiar with the sequence.</div>
+      </button>
+      <button class="s-card level-card" data-level="2" type="button">
+        <div class="level-title">Level 2</div>
+        <div class="level-desc">You play Black only; White moves are auto-placed.</div>
+      </button>
+      <button class="s-card level-card" data-level="3" type="button">
+        <div class="level-title">Level 3</div>
+        <div class="level-desc">You play White only; Black moves are auto-placed.</div>
+      </button>
+      <button class="s-card level-card" data-level="4" type="button">
+        <div class="level-title">Level 4</div>
+        <div class="level-desc">Only the second move is marked “A”; you play the rest for both colors.</div>
+        <span class="pro-chip" aria-hidden="true">PRO</span>
+      </button>
+      <button class="s-card level-card" data-level="5" type="button">
+        <div class="level-title">Level 5</div>
+        <div class="level-desc">Like Level 4, but the opening color alternates each try.</div>
+        <span class="pro-chip" aria-hidden="true">PRO</span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<style>
+  /* Scope EVERYTHING to this page via #ownpatterns-root */
+  #ownpatterns-root {
+    --wood:url('../img/wood.jpg'); /* keep in lockstep with Practice */
+    --board-max: 720px;
+  }
+
+  /* Overlays (My Patterns + Editor) */
+  #ownpatterns-root #own-overlay,
+  #ownpatterns-root #own-editor{
+    position:fixed; inset:0; z-index:100000; display:none;
+    align-items:flex-start; justify-content:center;
+    padding:12px 0; overflow:auto; -webkit-overflow-scrolling:touch;
+    color:#e6f3ff; -webkit-tap-highlight-color:transparent;
+    background-image:
+      linear-gradient(rgba(0,0,0,.35), rgba(0,0,0,.45)),
+      var(--wood);
+    background-size:cover; background-position:center;
+  }
+
+  #ownpatterns-root .s-inner{
+    width:min(100vw,var(--board-max));
+    padding:16px 0 22px;
+    text-align:left; position:relative; margin:0 auto;
+  }
+  @media (max-width:480px){
+    #ownpatterns-root .s-inner{ padding:16px 12px 22px; }
+  }
+
+  #ownpatterns-root .s-header{
+    display:grid; grid-template-columns:auto 1fr; align-items:center; column-gap:14px; margin:6px 0 10px;
+  }
+  #ownpatterns-root .s-title{
+    margin:0; font-size:24px; line-height:1.15; font-weight:800;
+    text-shadow:0 1px 2px rgba(0,0,0,.35);
+  }
+
+  /* Buttons + cards (same visual language as Practice List glass cards) */
+  #ownpatterns-root .s-back,
+  #ownpatterns-root .s-btn,
+  #ownpatterns-root .s-card{
+    background: rgba(37,99,235,.22);
+    color:#e6f3ff;
+    border:2px solid rgba(37,99,235,.75);
+    border-radius:12px;
+    box-shadow:0 8px 20px rgba(2,6,23,.45), inset 0 0 0 1px rgba(255,255,255,.08);
+  }
+  #ownpatterns-root .s-back{
+    padding:8px 12px; cursor:pointer; font-weight:800; line-height:1;
+    transition:transform .06s, background .15s, box-shadow .15s;
+  }
+  #ownpatterns-root .s-back:hover{  background: rgba(37,99,235,.26); }
+  #ownpatterns-root .s-back:active{ background: rgba(37,99,235,.32); transform:translateY(1px); }
+
+  #ownpatterns-root .s-card{
+    padding:12px; box-sizing:border-box; overflow:hidden;
+  }
+  #ownpatterns-root .info-title{
+    font-weight:900; font-size:16px; margin-bottom:4px;
+  }
+  #ownpatterns-root .info-desc{
+    font-size:13px; line-height:1.5; opacity:.96;
+    white-space:normal; word-break:break-word; overflow-wrap:anywhere; max-width:100%;
+  }
+
+  #ownpatterns-root .actions{
+    margin-top:14px; display:flex; gap:10px; flex-wrap:wrap;
+  }
+  #ownpatterns-root .s-btn{
+    display:inline-block; padding:10px 12px; font-weight:800; font-size:13px; cursor:pointer;
+    transition:transform .06s, background .15s, box-shadow .15s;
+  }
+  #ownpatterns-root .s-btn.s-btn-lg{ font-size:16px; padding:14px 18px; }
+  #ownpatterns-root .s-btn:active{ transform:translateY(1px); }
+
+  /* Danger style for Remove */
+  #ownpatterns-root .s-btn.s-btn-danger{
+    background: rgba(220,38,38,.22);
+    border-color: rgba(220,38,38,.75);
+  }
+
+  /* List grid */
+  #ownpatterns-root .own-grid{
+    display:grid; grid-template-columns:1fr; gap:12px; margin-top:16px;
+  }
+  @media (min-width: 720px){
+    #ownpatterns-root .own-grid{ grid-template-columns:1fr 1fr; }
+  }
+  #ownpatterns-root .empty-title{
+    font-weight:900; font-size:16px; margin-bottom:4px;
+  }
+  #ownpatterns-root .empty-desc{
+    font-size:13px; opacity:.95;
+  }
+
+  /* Own list card layout — updated to match Practice alignment */
+  #ownpatterns-root .own-card{
+    display:flex; align-items:stretch; gap:12px; width:100%; text-align:left; padding:10px; cursor:pointer;
+    transition:transform .06s, background .15s; user-select:none; -webkit-user-select:none;
+  }
+  #ownpatterns-root .own-card:active{ transform:translateY(1px); }
+
+  /* Thumbnail: wood background & frame (WGo board floats above) */
+  #ownpatterns-root .own-thumb{
+    width:132px; height:132px; border-radius:10px; overflow:hidden; flex:none;
+    position: relative;
+    background-image:
+      linear-gradient(rgba(0,0,0,.04), rgba(0,0,0,.06)),
+      var(--wood);
+    background-size:cover; background-position:center;
+    border:2px solid rgba(37,99,235,.65);
+    box-shadow: inset 0 0 0 1px rgba(255,255,255,.06);
+  }
+  #ownpatterns-root .own-thumb canvas{
+    position:absolute; top:0; left:0;
+    display:block; pointer-events:none;
+  }
+
+  #ownpatterns-root .own-meta{
+    flex:1; min-width:0; display:flex; flex-direction:column; height:100%;
+  }
+  #ownpatterns-root .own-title{
+    font-weight:800; font-size:18px; line-height:1.3;
+  }
+  #ownpatterns-root .own-cta{
+    margin-top:auto;
+    display:flex; gap:10px; flex-wrap:wrap; align-items:center;
+  }
+
+  /* Editor layout */
+  #ownpatterns-root #own-editor-wrap{
+    width:100%; max-width:var(--board-max); margin:0 auto; box-sizing:border-box;
+  }
+  #ownpatterns-root #own-editor-board{
+    position:relative; width:100%;
+    border-radius:10px; overflow:hidden;
+    margin:0 auto;
+    box-shadow:0 18px 40px rgba(0,0,0,.32), 0 6px 16px rgba(0,0,0,.22);
+  }
+  #ownpatterns-root #own-editor-board .own-zoom-layer{
+    position:absolute; inset:0;
+    background-image: var(--wood);
+    background-size: cover; background-position: center;
+  }
+  #ownpatterns-root #own-editor-board canvas{
+    display:block; margin:0 auto;
+  }
+
+  #ownpatterns-root .own-editor-ctrls{
+    max-width:var(--board-max); margin:10px auto 0;
+    padding:8px 12px; display:flex; gap:10px; justify-content:center; flex-wrap:wrap;
+  }
+
+  /* Centered info notice (OK-only) */
+  #ownpatterns-root #own-notice{
+    position:fixed; left:50%; top:50%; transform:translate(-50%,-50%);
+    z-index:100001; display:none; padding:0; background:transparent;
+    pointer-events:none;
+  }
+  #ownpatterns-root #own-notice .s-inner{
+    width:auto; padding:0; margin:0; display:block;
+  }
+  #ownpatterns-root #own-notice .own-notice-card{
+    pointer-events:auto;
+    background:none;
+    background-image:
+      linear-gradient(rgba(0,0,0,.35), rgba(0,0,0,.45)),
+      var(--wood);
+    background-size:cover; background-position:center;
+    min-width:280px; max-width:min(92vw, 420px);
+    max-height:calc(100vh - 32px); overflow:auto;
+    text-shadow:0 1px 2px rgba(0,0,0,.35);
+  }
+
+  /* Centered confirm toast (Remove) */
+  #ownpatterns-root .own-toast{
+    position:fixed; left:50%; top:50%; transform:translate(-50%,-50%);
+    z-index:100002; display:none; pointer-events:none;
+  }
+  #ownpatterns-root .own-toast .own-toast-card{
+    pointer-events:auto;
+    background:none;
+    background-image:
+      linear-gradient(rgba(0,0,0,.35), rgba(0,0,0,.45)),
+      var(--wood);
+    background-size:cover; background-position:center;
+    border:2px solid rgba(37,99,235,.75);
+    border-radius:12px;
+    box-shadow:0 8px 20px rgba(2,6,23,.45), inset 0 0 0 1px rgba(255,255,255,.08);
+    padding:10px 12px;
+    min-width:280px; max-width:min(92vw, 420px);
+    max-height:calc(100vh - 32px); overflow:auto;
+    text-shadow:0 1px 2px rgba(0,0,0,.35);
+  }
+  #ownpatterns-root .own-toast .own-toast-text{
+    font-weight:800; font-size:14px; line-height:1.35; color:#e6f3ff;
+  }
+  #ownpatterns-root .own-toast .own-toast-actions{
+    margin-top:10px; display:flex; gap:10px; justify-content:center; flex-wrap:wrap;
+  }
+
+  /* Lock interactions while any notice/toast open */
+  #ownpatterns-root.notice-open #own-editor-board{ pointer-events:none; }
+  #ownpatterns-root.notice-open #own-overlay .s-inner{ pointer-events:none; }
+
+  /* Level overlay styling (copied to match Practice List style) */
+  #level-overlay{
+    position:fixed; inset:0; z-index:100000; display:none;
+    align-items:flex-start; justify-content:center;
+    padding:12px 0; overflow:auto; -webkit-overflow-scrolling:touch;
+    color:#e6f3ff; -webkit-tap-highlight-color:transparent;
+    background-image:
+      linear-gradient(rgba(0,0,0,.35), rgba(0,0,0,.45)),
+      url('../img/wood.jpg');
+    background-size:cover; background-position:center;
+  }
+  #level-overlay .s-inner{
+    width:min(92vw,720px);
+    padding:16px 24px 22px;
+    text-align:left; margin:0 auto;
+  }
+  #level-overlay .s-header{
+    display:grid; grid-template-columns:auto 1fr; align-items:center; column-gap:14px;
+    margin:6px 0 10px;
+  }
+  #level-overlay .s-title{
+    margin:0; font-size:24px; line-height:1.15; font-weight:800;
+    text-shadow:0 1px 2px rgba(0,0,0,.35);
+  }
+  #level-overlay .s-back{
+    position:relative;
+    display:inline-flex; align-items:center; justify-content:center;
+    padding:6px 12px;
+    border-radius:8px;
+    border:1px solid rgba(255,255,255,.40);
+    font-size:14px;
+    font-weight:800;
+    line-height:1.1;
+    color:#fff3cf;
+    text-shadow:0 1px 0 rgba(120,60,20,.7);
+    cursor:pointer;
+    background-image:
+      linear-gradient(
+        to bottom,
+        rgba(255,255,255,.12),
+        rgba(255,255,255,.03) 38%,
+        rgba(0,0,0,.14) 100%
+      ),
+      url('../img/wood.jpg');
+    background-size:100% 100%, cover;
+    background-position:center;
+    background-repeat:no-repeat;
+    filter:brightness(1.08) saturate(.96);
+    box-shadow:
+      0 3px 0 rgba(133,74,26,.85),
+      0 8px 14px rgba(0,0,0,.45);
+    transition:
+      transform .08s ease-out,
+      box-shadow .08s ease-out,
+      filter .12s ease-out;
+  }
+  #level-overlay .s-back:hover{
+    filter:brightness(1.12) saturate(.98);
+    transform:translateY(-1px);
+    box-shadow:
+      0 4px 0 rgba(133,74,26,.9),
+      0 10px 16px rgba(0,0,0,.48);
+  }
+  #level-overlay .s-back:active{
+    filter:brightness(.97) saturate(.96);
+    transform:translateY(2px);
+    box-shadow:
+      0 1px 0 rgba(120,60,20,.9),
+      0 4px 8px rgba(0,0,0,.55);
+  }
+
+  #level-overlay .level-grid{
+    display:grid; grid-template-columns:1fr; gap:12px; margin-top:8px;
+  }
+  @media (min-width: 720px){
+    #level-overlay .level-grid{ grid-template-columns:1fr 1fr; }
+  }
+  #level-overlay .level-card{
+    background: rgba(37,99,235,.22);
+    border:2px solid rgba(37,99,235,.75);
+    border-radius:12px;
+    box-shadow:0 8px 20px rgba(2,6,23,.45), inset 0 0 0 1px rgba(255,255,255,.08);
+    color:#e6f3ff;
+    position:relative; padding:12px; text-align:left; cursor:pointer;
+    transition:transform .06s, background .15s;
+  }
+  #level-overlay .level-card:active{
+    transform:translateY(1px);
+  }
+  #level-overlay .level-title{
+    font-weight:900; font-size:16px; margin-bottom:4px;
+  }
+  #level-overlay .level-desc{
+    font-size:13px; line-height:1.5; opacity:.95;
+  }
+  #level-overlay .pro-chip{
+    position:absolute; top:10px; right:10px; padding:3px 8px; font-size:11px; font-weight:900;
+    border-radius:999px; background:#3b82f6; color:#fff; border:1px solid #3b82f6;
+    box-shadow:0 6px 16px rgba(2,6,23,.45);
+  }
+  #level-overlay .level-card[aria-disabled="true"]{
+    opacity:.55; cursor:not-allowed; filter:saturate(.9);
+  }
+</style>
+
+<!-- Load WGo only if not already present on the page -->
+<script>
+(function ensureWGo(){
+  if (window.WGo) return;
+  var s = document.createElement('script');
+  // You can replace this with a local path if you host wgo.min.js yourself
+  s.src = "https://3d85c7a311526e02aeeeb19e952d0c09.cdn.bubble.io/f1754893285939x971907393576095400/wgo.min.js";
+  s.async = true;
+  document.head.appendChild(s);
+})();
+</script>
+
+<!-- Stone SFX (same module & bridge used by Practice) -->
+<script>
+if (!window.StoneSFX) {
+  window.StoneSFX = (() => {
+    let pool = [], i = 0, unlocked = false;
+    function init(url, voices = 5, volume = 0.35){
+      pool = Array.from({ length: voices }, () => {
+        const a = new Audio(url); a.preload = 'auto'; a.volume = volume; return a;
+      });
+      const unlock = () => {
+        if (unlocked) return;
+        for (const a of pool) {
+          try {
+            a.play().then(()=>a.pause()).catch(()=>{});
+            a.currentTime = 0;
+          } catch(e){}
+        }
+        unlocked = true;
+        window.removeEventListener('touchstart', unlock);
+        window.removeEventListener('mousedown',  unlock);
+      };
+      window.addEventListener('touchstart', unlock, { once:true });
+      window.addEventListener('mousedown',  unlock, { once:true });
+    }
+    function play(){
+      if (!pool.length) return;
+      const a = pool[i++ % pool.length];
+      try {
+        a.currentTime=0;
+        a.playbackRate=0.97+Math.random()*0.06;
+        a.play();
+      } catch(e){}
+    }
+    return { init, play };
+  })();
+}
+if (!window._stoneSFXInit) {
+  StoneSFX.init("https://3d85c7a311526e02aeeeb19e952d0c09.cdn.bubble.io/f1754926303439x491369894441766600/klick.mp3");
+  window._stoneSFXInit = true;
+}
+(function(){
+  if (!window.StoneSFX || window._soundBridgeReady) return;
+  window._soundBridgeReady = true;
+  if (typeof StoneSFX.play === 'function' && !('_enabled' in StoneSFX)){
+    StoneSFX._enabled = (window.GoPrefs ? !!window.GoPrefs.soundOn : true);
+    const _origPlay = StoneSFX.play.bind(StoneSFX);
+    StoneSFX.play = function(){ if (StoneSFX._enabled) _origPlay(); };
+  }
+  window.JosekiSound   = window.JosekiSound   || {
+    isEnabled(){ return !!StoneSFX._enabled; },
+    setEnabled(v){ StoneSFX._enabled = !!v; }
+  };
+  window.PracticeSound = window.PracticeSound || window.JosekiSound;
+})();
+</script>
+
+<script>
+/* Scoped logic; exposes GoOwnPatterns and uses PracticeConfig + Level overlay like Practice List */
+(function(){
+  var root     = document.getElementById('ownpatterns-root');
+  if (!root) return;
+
+  var overlay  = root.querySelector('#own-overlay');
+  var editor   = root.querySelector('#own-editor');
+  var notice   = root.querySelector('#own-notice');
+  var noticeText = root.querySelector('#own-notice-text');
+  var noticeOk   = root.querySelector('#own-notice-ok');
+
+  var openBtn  = root.querySelector('#own-add');
+  var backTop  = root.querySelector('#own-back');
+  var backEd   = root.querySelector('#own-edit-back');
+  var undoBtn  = root.querySelector('#own-edit-undo');
+  var resetBtn = root.querySelector('#own-edit-reset');
+  var saveBtn  = root.querySelector('#own-edit-save');
+  var mount    = root.querySelector('#own-editor-board');
+  var wrap     = root.querySelector('#own-editor-wrap');
+  var listEl   = root.querySelector('#own-list');
+
+  // Practice Board bridge: persist config across pages
+  var PRACTICE_CFG_KEY = 'go_practice_config';
+  function savePracticeConfig(){
+    try {
+      localStorage.setItem(PRACTICE_CFG_KEY, JSON.stringify(window.PracticeConfig || {}));
+    } catch(e){}
+  }
+
+  function show(el){ el.style.display='flex'; }
+  function hide(el){ el.style.display='none'; }
+  function isNoticeOpen(){ return root.classList.contains('notice-open'); }
+
+  /* Info notice helpers (OK-only) */
+  function showNotice(msg, title){
+    if (noticeText) noticeText.textContent = msg || 'Notice';
+    var t = root.querySelector('#own-notice-title');
+    if (t) t.textContent = title || 'Heads up';
+    show(notice);
+    root.classList.add('notice-open');
+    setTimeout(function(){
+      try { noticeOk && noticeOk.focus(); } catch(_){}
+    }, 30);
+  }
+  function hideNotice(){
+    hide(notice);
+    root.classList.remove('notice-open');
+  }
+  // Expose notice helper for Level overlay
+  window.OwnShowNotice = showNotice;
+
+  noticeOk && noticeOk.addEventListener('click', hideNotice);
+  window.addEventListener('keydown', function(e){
+    if (e.key === 'Escape' && isNoticeOpen()) hideNotice();
+  });
+
+  /* Removal confirm toast (centered) */
+  var removeToast = null, removeText = null, btnYes = null, btnNo = null, currentRemoveId = null;
+  function ensureRemoveToast(){
+    if (removeToast) return;
+    removeToast = document.createElement('div');
+    removeToast.className = 'own-toast';
+    removeToast.setAttribute('role','alertdialog');
+    removeToast.setAttribute('aria-modal','true');
+    removeToast.innerHTML =
+      '<div class="s-card own-toast-card">' +
+        '<div class="own-toast-text" id="own-remove-text">Remove this pattern?</div>' +
+        '<div class="own-toast-actions">' +
+          '<button type="button" class="s-btn s-btn-lg" id="own-remove-cancel">Cancel</button>' +
+          '<button type="button" class="s-btn s-btn-lg s-btn-danger" id="own-remove-yes">Remove</button>' +
+        '</div>' +
+      '</div>';
+    root.appendChild(removeToast);
+    removeText = removeToast.querySelector('#own-remove-text');
+    btnYes = removeToast.querySelector('#own-remove-yes');
+    btnNo  = removeToast.querySelector('#own-remove-cancel');
+
+    btnNo.addEventListener('click', hideRemoveToast);
+    btnYes.addEventListener('click', function(){
+      if (!currentRemoveId) return hideRemoveToast();
+      removePattern(currentRemoveId);
+      currentRemoveId = null;
+      hideRemoveToast();
+    });
+    window.addEventListener('keydown', function(e){
+      if (removeToast.style.display !== 'none' && e.key === 'Escape') hideRemoveToast();
+    });
+  }
+  function showRemoveToast(pattern){
+    ensureRemoveToast();
+    currentRemoveId = pattern.id;
+    removeText.textContent = 'Remove "' + (pattern.title || 'this pattern') + '"?';
+    removeToast.style.display = 'block';
+    root.classList.add('notice-open');
+    setTimeout(function(){
+      try { btnNo && btnNo.focus(); } catch(_){}
+    }, 30);
+  }
+  function hideRemoveToast(){
+    if (!removeToast) return;
+    removeToast.style.display = 'none';
+    root.classList.remove('notice-open');
+  }
+
+  /* Storage for patterns */
+  var STORE_KEY = 'go:ownpatterns';
+  function loadPatterns(){
+    try { return JSON.parse(localStorage.getItem(STORE_KEY) || '[]'); }
+    catch(_) { return []; }
+  }
+  function savePatterns(arr){
+    try { localStorage.setItem(STORE_KEY, JSON.stringify(arr)); } catch(_) {}
+  }
+  function removePattern(id){
+    var items = loadPatterns().filter(function(p){ return p.id !== id; });
+    savePatterns(items);
+    renderList();
+  }
+
+  /* Editor state */
+  var SIZE=19, board=null, grid=null, moves=null, last=null, turn='B';
+  var koPoint=null;
+  var highlightLastEnabled = (window.GoPrefs && typeof window.GoPrefs.highlightLast !== 'undefined') ? !!window.GoPrefs.highlightLast : true;
+
+  window.addEventListener('go:prefs-changed', function(e){
+    var d = (e && e.detail) || {};
+    if (d.key === 'highlightLast'){
+      highlightLastEnabled = !!d.value;
+      try { redraw(); } catch(_) {}
+    }
+    if (d.key === 'soundOn' && window.StoneSFX){
+      StoneSFX._enabled = !!d.value;
+    }
+  });
+
+  window.OwnHighlight = {
+    isEnabled(){ return highlightLastEnabled; },
+    setEnabled(v){ highlightLastEnabled = !!v; try { redraw(); } catch(_) {} }
+  };
+
+  function initState(){
+    grid = Array.from({length:SIZE}, ()=>Array(SIZE).fill(null));
+    moves = [];
+    last  = null;
+    turn  = 'B';
+    koPoint = null;
+  }
+
+  function redraw(){
+    if (!board) return;
+    board.removeAllObjects();
+
+    // First pass (legacy; kept but redundant)
+    for (var y=0;y<SIZE;y++){
+      for (var x=0;x<SIZE;x++){
+        var v=grid[y][x];
+        if (v==='B') board.addObject({x:x,y:y,c:WGo.B});
+        if (v==='W') board.addObject({x:x,y:x,c:WGo.W}); // typo guarded by second pass
+      }
+    }
+
+    // Correct second pass
+    board.removeAllObjects();
+    for (var y2=0;y2<SIZE;y2++){
+      for (var x2=0;x2<SIZE;x2++){
+        var v2=grid[y2][x2];
+        if (v2==='B') board.addObject({x:x2,y:y2,c:WGo.B});
+        if (v2==='W') board.addObject({x:x2,y:y2,c:WGo.W});
+      }
+    }
+
+    if (highlightLastEnabled && last){
+      board.addObject({ x:last.x, y:last.y, type:'CR' });
+    }
+  }
+
+  function resetAll(){
+    initState();
+    redraw();
+  }
+
+  function ensureWoodLayer(){
+    if (!mount || mount._woodReady) return;
+    var layer = document.createElement('div');
+    layer.className = 'own-zoom-layer';
+    while (mount.firstChild) layer.appendChild(mount.firstChild);
+    mount.appendChild(layer);
+    mount._woodReady = true;
+  }
+
+  function ensureBoard(cb){
+    function mountNow(){
+      if (board){ cb&&cb(); return; }
+      board = new WGo.Board(mount, { size: SIZE });
+      ensureWoodLayer();
+      resetAll();
+      bindBoardClicks();
+      fitSoon();
+      cb && cb();
+    }
+    if (window.WGo) return mountNow();
+    var tries=0;
+    (function wait(){
+      if (window.WGo) return mountNow();
+      if (tries++>120) return;
+      setTimeout(wait,50);
+    })();
+  }
+
+  /* Liberty / capture helpers */
+  function neighbors(x,y){
+    var n=[];
+    if (x>0) n.push({x:x-1,y:y});
+    if (x<SIZE-1) n.push({x:x+1,y:y});
+    if (y>0) n.push({x:x,y:y-1});
+    if (y<SIZE-1) n.push({x:x,y:y+1});
+    return n;
+  }
+  function groupAt(x,y){
+    var color = grid[y][x];
+    if (!color) return { stones:[], libs:new Set() };
+    var seen = new Set(), q=[{x:x,y:y}], stones=[], libs=new Set();
+    function key(p){ return p.x+','+p.y; }
+    while(q.length){
+      var p=q.pop();
+      var k=key(p);
+      if (seen.has(k)) continue;
+      seen.add(k);
+      stones.push(p);
+      neighbors(p.x,p.y).forEach(function(nb){
+        var v=grid[nb.y][nb.x];
+        if (v===null){ libs.add(nb.x+','+nb.y); }
+        else if (v===color){
+          if (!seen.has(nb.x+','+nb.y)) q.push(nb);
+        }
+      });
+    }
+    return { stones:stones, libs:libs };
+  }
+  function removeStones(sts){
+    for (var i=0;i<sts.length;i++){
+      var s=sts[i];
+      grid[s.y][s.x]=null;
+    }
+  }
+
+  function playAt(x,y){
+    if (grid[y][x]!==null) return;
+
+    if (koPoint && x===koPoint.x && y===koPoint.y){
+      showNotice('Ko — immediate recapture is not allowed. Play elsewhere first.', 'Ko');
+      return;
+    }
+
+    var me = turn;
+    var opp = (me==='B') ? 'W' : 'B';
+
+    grid[y][x]=me;
+
+    var capturedList = [];
+    var seenOpp = new Set();
+    neighbors(x,y).forEach(function(nb){
+      if (grid[nb.y][nb.x]===opp){
+        var key = nb.x+','+nb.y;
+        if (seenOpp.has(key)) return;
+        seenOpp.add(key);
+        var g = groupAt(nb.x, nb.y);
+        if (g.libs.size===0){
+          g.stones.forEach(function(s){ capturedList.push({x:s.x,y:s.y,color:opp}); });
+          removeStones(g.stones);
+        }
+      }
+    });
+
+    var myGroup = groupAt(x,y);
+    if (myGroup.libs.size===0 && capturedList.length===0){
+      grid[y][x]=null;
+      showNotice('Self-capture is not allowed in this editor.', 'Illegal move');
+      return;
+    }
+
+    var prevKo = koPoint ? {x:koPoint.x, y:koPoint.y} : null;
+    koPoint = null;
+
+    if (capturedList.length === 1){
+      if (myGroup.stones.length === 1 && myGroup.libs.size === 1){
+        var onlyLib = Array.from(myGroup.libs)[0].split(',').map(function(v){ return parseInt(v,10); });
+        if (onlyLib[0] === capturedList[0].x && onlyLib[1] === capturedList[0].y){
+          koPoint = { x: capturedList[0].x, y: capturedList[0].y };
+        }
+      }
+    }
+
+    last = { x:x, y:y };
+    moves.push({
+      x:x, y:y, color: me,
+      captured: capturedList,
+      prevKo: prevKo
+    });
+    turn = opp;
+    redraw();
+    try { StoneSFX.play(); } catch(_) {}
+  }
+
+  function bindBoardClicks(){
+    if (!board || board._bound) return;
+    board._bound = true;
+    board.addEventListener('click', function(x,y){
+      if (!isNoticeOpen()) playAt(x,y);
+    });
+  }
+
+  function targetWidth(){
+    var cap = parseInt(getComputedStyle(root).getPropertyValue('--board-max')) || 720;
+    var avail = Math.round((wrap && wrap.getBoundingClientRect().width) ||
+                           (editor && editor.getBoundingClientRect().width) ||
+                           (window.innerWidth || cap));
+    var prac = document.getElementById('go-board-prac');
+    var wP = prac ? Math.round(prac.getBoundingClientRect().width || 0) : 0;
+    var w = wP ? Math.min(wP, avail, cap) : Math.min(avail, cap);
+    w = Math.floor(w);
+    if (w % 2) w--;
+    return w;
+  }
+  function fit(){
+    if (!board) return;
+    var w = targetWidth();
+    if (!w){
+      setTimeout(fit,60);
+      return;
+    }
+    mount.style.width  = w + 'px';
+    mount.style.height = w + 'px';
+    board.setWidth(w);
+    try { redraw(); } catch(_) {}
+  }
+  function fitSoon(){
+    fit();
+    setTimeout(fit,60);
+    setTimeout(fit,180);
+    setTimeout(fit,360);
+  }
+  window.addEventListener('resize', fit);
+  window.addEventListener('orientationchange', function(){ setTimeout(fit,150); });
+  window.addEventListener('pageshow', fitSoon);
+
+  (function observeEditorVisibility(){
+    var mo = new MutationObserver(function(muts){
+      for (var i=0;i<muts.length;i++){
+        if (muts[i].type === 'attributes' && muts[i].attributeName === 'style'){
+          if (editor.style.display === 'none'){
+            resetAll();
+          } else {
+            fitSoon();
+          }
+        }
+      }
+    });
+    try { mo.observe(editor, { attributes:true, attributeFilter:['style'] }); } catch(_){}
+  })();
+
+  /* WGo loader for thumbnails (separate from editor ensureBoard) */
+  function ensureWGo(cb){
+    if (window.WGo){ cb && cb(); return; }
+    var s=document.createElement('script');
+    s.src="https://3d85c7a311526e02aeeeb19e952d0c09.cdn.bubble.io/f1754893285939x971907393576095400/wgo.min.js";
+    s.async=true;
+    s.onload=cb;
+    s.onerror=cb;
+    document.head.appendChild(s);
+  }
+
+  /* Render thumbnail with capture simulation so it looks correct */
+  function renderOwnThumb(el, line){
+    el.innerHTML='';
+    ensureWGo(function(){
+      if (!window.WGo) return;
+      var SIZE = line.size || 19;
+      var viewW = Math.max(64, Math.floor(el.clientWidth || 132));
+      var internalW = viewW * 2;
+      var b = new WGo.Board(el, { size: SIZE });
+      b.setWidth(internalW);
+      el.style.height = viewW + 'px';
+
+      var gridT = Array.from({length:SIZE}, ()=>Array(SIZE).fill(null));
+      (Array.isArray(line.rootAB)?line.rootAB:[]).forEach(function(s){ gridT[s.y][s.x]='B'; });
+      (Array.isArray(line.rootAW)?line.rootAW:[]).forEach(function(s){ gridT[s.y][s.x]='W'; });
+
+      function neighborsT(x,y){
+        var n=[];
+        if (x>0) n.push({x:x-1,y:y});
+        if (x<SIZE-1) n.push({x:x+1,y:y});
+        if (y>0) n.push({x:x,y:y-1});
+        if (y<SIZE-1) n.push({x:x,y:y+1});
+        return n;
+      }
+      function groupAtT(x,y){
+        var color = gridT[y][x];
+        if (!color) return { stones:[], libs:new Set() };
+        var seen=new Set(), q=[{x:x,y:y}], stones=[], libs=new Set();
+        while(q.length){
+          var p=q.pop(), key=p.x+','+p.y;
+          if (seen.has(key)) continue;
+          seen.add(key);
+          stones.push(p);
+          neighborsT(p.x,p.y).forEach(function(nb){
+            var v=gridT[nb.y][nb.x];
+            if (v===null) libs.add(nb.x+','+nb.y);
+            else if (v===color && !seen.has(nb.x+','+nb.y)) q.push(nb);
+          });
+        }
+        return { stones:stones, libs:libs };
+      }
+      function removeStonesT(sts){
+        for (var i=0;i<sts.length;i++){
+          var s=sts[i];
+          gridT[s.y][s.x]=null;
+        }
+      }
+
+      (line.moves||[]).forEach(function(m){
+        if (m.x<0||m.y<0||m.x>=SIZE||m.y>=SIZE) return;
+        if (gridT[m.y][m.x]!==null) return;
+        var me = (m.color==='B'?'B':'W');
+        var opp = (me==='B'?'W':'B');
+        gridT[m.y][m.x]=me;
+        var seen=new Set();
+        neighborsT(m.x,m.y).forEach(function(nb){
+          if (gridT[nb.y][nb.x]===opp){
+            var key=nb.x+','+nb.y;
+            if (seen.has(key)) return;
+            seen.add(key);
+            var g=groupAtT(nb.x,nb.y);
+            if (g.libs.size===0) removeStonesT(g.stones);
+          }
+        });
+        var gMy=groupAtT(m.x,m.y);
+        if (gMy.libs.size===0){
+          gridT[m.y][m.x]=null;
+        }
+      });
+
+      for (var yy=0; yy<SIZE; yy++){
+        for (var xx=0; xx<SIZE; xx++){
+          var v=gridT[yy][xx];
+          if (v==='B') b.addObject({x:xx,y:yy,c:WGo.B});
+          if (v==='W') b.addObject({x:xx,y:yy,c:WGo.W});
+        }
+      }
+
+      requestAnimationFrame(function(){
+        var AB = Array.isArray(line.rootAB) ? line.rootAB : [];
+        var AW = Array.isArray(line.rootAW) ? line.rootAW : [];
+        var pts = [].concat(AB, AW, (line.moves||[]).map(function(m){ return {x:m.x,y:m.y}; }));
+        if (!pts.length) return;
+        var minX=pts[0].x, maxX=pts[0].x, minY=pts[0].y, maxY=pts[0].y;
+        for (var t=0;t<pts.length;t++){
+          var p=pts[t];
+          if(p.x<minX)minX=p.x;
+          if(p.x>maxX)maxX=p.x;
+          if(p.y<minY)minY=p.y;
+          if(p.y>maxY)maxY=p.y;
+        }
+        var MARGIN=1;
+        minX=Math.max(0,minX-MARGIN);
+        minY=Math.max(0,minY-MARGIN);
+        maxX=Math.min(SIZE-1,maxX+MARGIN);
+        maxY=Math.min(SIZE-1,maxY+MARGIN);
+
+        var wG=(maxX-minX+1), hG=(maxY-minY+1), target=Math.max(wG,hG);
+        if (hG<target){
+          var need=target-hG;
+          var up=Math.ceil(need/2), dn=Math.floor(need/2);
+          minY=Math.max(0,minY-up);
+          maxY=Math.min(SIZE-1,maxY+dn);
+        }
+        if (wG<target){
+          var need2=target-wG;
+          var lf=Math.ceil(need2/2), rt=Math.floor(need2/2);
+          minX=Math.max(0,minX-lf);
+          maxX=Math.min(SIZE-1,maxX+rt);
+        }
+
+        var spacing = b.getX(1)-b.getX(0), half=spacing/2;
+        var leftPx=b.getX(minX)-half, rightPx=b.getX(maxX)+half;
+        var topPx=b.getY(minY)-half, bottomPx=b.getY(maxY)+half;
+        var cv = el.querySelector('canvas');
+        var ratio = cv ? ((cv.clientWidth || internalW) / (cv.width || internalW)) : 1;
+        leftPx*=ratio; rightPx*=ratio; topPx*=ratio; bottomPx*=ratio;
+        var cropSide = Math.max(rightPx-leftPx, bottomPx-topPx);
+        var scale = viewW / cropSide;
+        el.querySelectorAll('canvas').forEach(function(c){
+          c.style.position='absolute';
+          c.style.left = (-leftPx)+'px';
+          c.style.top  = (-topPx)+'px';
+          c.style.transformOrigin = '0 0';
+          c.style.transform = 'scale('+scale+')';
+          c.style.pointerEvents='none';
+        });
+      });
+    });
+  }
+
+  /* Pattern list rendering */
+  function renderList(){
+    var items = loadPatterns();
+    listEl.innerHTML='';
+    if (!items.length){
+      var empty=document.createElement('div');
+      empty.className='s-card empty';
+      empty.innerHTML='<div class="empty-title">No patterns yet</div><div class="empty-desc">Start by adding your first pattern.</div>';
+      listEl.appendChild(empty);
+      return;
+    }
+
+    items.forEach(function(pat, idx){
+      var card=document.createElement('button');
+      card.type='button';
+      card.className='s-card own-card';
+      card.dataset.id=pat.id;
+
+      var thumb=document.createElement('div');
+      thumb.className='own-thumb';
+
+      var meta=document.createElement('div');
+      meta.className='own-meta';
+
+      var title=document.createElement('div');
+      title.className='own-title';
+
+      var cta=document.createElement('div');
+      cta.className='own-cta';
+
+      var moveCount = (pat && Array.isArray(pat.moves)) ? pat.moves.length : 0;
+      title.textContent = 'Pattern ' + (idx+1) + ' (' + moveCount + ' Moves)';
+
+      var practiceBtn = document.createElement('span');
+      practiceBtn.className = 's-btn';
+      practiceBtn.textContent = 'Practice';
+      practiceBtn.addEventListener('click', function(ev){
+        ev.stopPropagation();
+        ev.preventDefault();
+        if (!pat || !(pat.moves||[]).length){
+          showNotice('This pattern is empty. Please add some moves first.', 'Empty pattern');
+          return;
+        }
+
+        window.PracticeConfig = window.PracticeConfig || {};
+        window.PracticeConfig.selectedLine = {
+          size:  pat.size || 19,
+          rootAB: Array.isArray(pat.rootAB) ? pat.rootAB.slice() : [],
+          rootAW: Array.isArray(pat.rootAW) ? pat.rootAW.slice() : [],
+          moves:  pat.moves.map(function(m){ return { x:m.x, y:m.y, color:m.color }; })
+        };
+
+        savePracticeConfig();
+
+        var lvlOverlayEl = document.getElementById('level-overlay');
+        if (lvlOverlayEl){
+          applyTierGateOnLevelOverlay();
+          lvlOverlayEl.style.display = 'flex';
+        } else {
+          window.PracticeConfig.level = 2;
+          savePracticeConfig();
+          window.location.href = "../practice-board/practice-board.html";
+        }
+      });
+
+      var removeBtn = document.createElement('span');
+      removeBtn.className = 's-btn s-btn-danger';
+      removeBtn.textContent = 'Remove';
+      removeBtn.addEventListener('click', function(ev){
+        ev.stopPropagation();
+        ev.preventDefault();
+        showRemoveToast(pat);
+      });
+
+      cta.appendChild(practiceBtn);
+      cta.appendChild(removeBtn);
+
+      meta.appendChild(title);
+      meta.appendChild(cta);
+      card.appendChild(thumb);
+      card.appendChild(meta);
+      listEl.appendChild(card);
+
+      renderOwnThumb(thumb, pat);
+
+      card.addEventListener('click', function(){
+        practiceBtn.click();
+      });
+    });
+  }
+
+  /* Tier gating reused for Level overlay */
+  var TierAPI = window.Tier || {
+    get: function(){
+      try { return (localStorage.getItem('go_tier') || 'free').toLowerCase(); }
+      catch(_) { return 'free'; }
+    }
+  };
+  function isPro(){
+    return String(TierAPI.get() || 'free').toLowerCase() === 'pro';
+  }
+  function applyTierGateOnLevelOverlay(){
+    var proLocked = !isPro();
+    document.querySelectorAll('#level-overlay .level-card').forEach(function(btn){
+      var lvl = +(btn.getAttribute('data-level') || 0);
+      btn.setAttribute('aria-disabled', (proLocked && lvl >= 4) ? 'true' : 'false');
+    });
+  }
+  window.addEventListener('tier:changed', applyTierGateOnLevelOverlay);
+
+  /* Level overlay wiring */
+  var lvlOverlay = document.getElementById('level-overlay');
+  var lvlBack    = lvlOverlay ? document.getElementById('level-back') : null;
+
+  if (lvlOverlay){
+    lvlOverlay.addEventListener('click', function(e){
+      var card = e.target.closest('.level-card');
+      if (!card) return;
+
+      if (card.getAttribute('aria-disabled') === 'true'){
+        if (window.OwnShowNotice){
+          window.OwnShowNotice('Levels 4 and 5 are part of Joseki Master Pro.', 'Pro feature');
+        }
+        return;
+      }
+
+      var lvl = parseInt(card.getAttribute('data-level') || '2', 10) || 2;
+      window.PracticeConfig = window.PracticeConfig || {};
+      window.PracticeConfig.level = lvl;
+      savePracticeConfig();
+
+      if (!window.PracticeConfig.selectedLine){
+        console.warn('[OwnPatterns] Level picked but no selectedLine in PracticeConfig; not opening board.');
+        return;
+      }
+
+      window.location.href = "../practice-board/practice-board.html";
+    });
+
+    if (lvlBack){
+      lvlBack.addEventListener('click', function(){
+        lvlOverlay.style.display = 'none';
+      });
+    }
+  }
+
+  /* Public API */
+  if (!window.GoOwnPatterns || !window.GoOwnPatterns.__ready){
+    window.GoOwnPatterns = {
+      open: function(){
+        hideNotice();
+        hideRemoveToast();
+        renderList();
+        show(overlay);
+      },
+      close: function(){
+        hide(overlay);
+        hide(editor);
+        if (lvlOverlay) lvlOverlay.style.display='none';
+        hideNotice();
+        hideRemoveToast();
+        resetAll();
+      },
+      openCreate: function(){
+        hideNotice();
+        hideRemoveToast();
+        hide(overlay);
+        show(editor);
+        ensureBoard(function(){
+          resetAll();
+          fitSoon();
+        });
+        requestAnimationFrame(fitSoon);
+      },
+      __ready: true
+    };
+  }
+
+  /* Wiring */
+  if (openBtn){
+    openBtn.addEventListener('click', function(){
+      window.GoOwnPatterns.openCreate();
+    });
+  }
+
+  if (backTop){
+    backTop.addEventListener('click', function(){
+      window.GoOwnPatterns.close();
+      if (window.GoMenu && typeof window.GoMenu.open === 'function'){
+        window.GoMenu.open();
+      }
+    });
+  }
+
+  if (backEd){
+    backEd.addEventListener('click', function(){
+      hide(editor);
+      hideNotice();
+      hideRemoveToast();
+      resetAll();
+      renderList();
+      show(overlay);
+    });
+  }
+
+  if (undoBtn){
+    undoBtn.addEventListener('click', function(){
+      if (!moves.length || isNoticeOpen()) return;
+      var m=moves.pop();
+      grid[m.y][m.x]=null;
+      if (Array.isArray(m.captured)){
+        m.captured.forEach(function(s){ grid[s.y][s.x]=s.color; });
+      }
+      koPoint = m.prevKo ? { x:m.prevKo.x, y:m.prevKo.y } : null;
+      last = moves.length ? { x:moves[moves.length-1].x, y:moves[moves.length-1].y } : null;
+      turn = m.color;
+      redraw();
+    });
+  }
+
+  if (resetBtn){
+    resetBtn.addEventListener('click', function(){
+      if (!isNoticeOpen()) resetAll();
+    });
+  }
+
+  if (saveBtn){
+    saveBtn.addEventListener('click', function(){
+      if (isNoticeOpen()) return;
+      if (!moves.length){
+        showNotice('Add at least one move to save a pattern.', 'Add a move');
+        return;
+      }
+      var S = SIZE;
+      function pp(m){
+        var L="ABCDEFGHJKLMNOPQRST".slice(0,Math.min(19,S));
+        return (L[m.x]||String(m.x))+(S-m.y);
+      }
+      var title = 'Pattern: ' + moves.slice(0,3).map(pp).join(' → ') + (moves.length>3 ? ' …' : '');
+      var items = loadPatterns();
+      var pat = {
+        id: 'own-' + Date.now(),
+        title: title,
+        createdAt: new Date().toISOString(),
+        size: SIZE,
+        rootAB: [],
+        rootAW: [],
+        moves: moves.map(function(m){ return { x:m.x, y:m.y, color:m.color }; })
+      };
+      items.unshift(pat);
+      savePatterns(items);
+      resetAll();
+      hide(editor);
+      renderList();
+      show(overlay);
+    });
+  }
+
+  // Esc handling for whole page (back to menu if root overlay open)
+  window.addEventListener('keydown', function(e){
+    if (e.key !== 'Escape') return;
+
+    if (lvlOverlay && lvlOverlay.style.display !== 'none'){
+      lvlOverlay.style.display = 'none';
+      return;
+    }
+
+    if (overlay && overlay.style.display !== 'none' && !isNoticeOpen()){
+      window.GoOwnPatterns.close();
+      if (window.GoMenu && typeof window.GoMenu.open === 'function'){
+        window.GoMenu.open();
+      }
+    }
+  });
+
+})();
+</script>
+
+<!-- Auto-open My Patterns overlay on page load -->
+<script>
+  window.addEventListener('load', function(){
+    if (window.GoOwnPatterns && typeof window.GoOwnPatterns.open === 'function'){
+      window.GoOwnPatterns.open();
+    }
+  });
+</script>
+
+</body>
+</html>
