@@ -90,6 +90,31 @@
     #settings-overlay .s-row + .s-row{ margin-top:6px; }
     #settings-overlay .s-label{ font-size:18px; font-weight:700; letter-spacing:.2px; color:#e6f3ff; }
 
+    /* Subsetting row (child of Zoom) */
+    #settings-overlay .s-row-sub{
+      padding-left:24px;
+      background:rgba(15,23,42,.22);
+    }
+    #settings-overlay .s-label-sub{
+      font-size:15px;
+      font-weight:600;
+      letter-spacing:.15px;
+      opacity:.9;
+    }
+    #settings-overlay .s-row-sub.is-disabled{
+      opacity:.45;
+    }
+    #settings-overlay .s-row-sub.is-disabled .seg-btn{
+      pointer-events:none;
+      cursor:default;
+      box-shadow:none;
+    }
+    #settings-overlay .s-row-sub.is-disabled .seg{
+      background:#0b1020;
+      border-color:#1e2536;
+      box-shadow:none;
+    }
+
     #settings-overlay .seg{
       display:inline-flex !important; gap:6px; padding:4px;
       background:#161b29; border:1px solid #2b3246; border-radius:999px;
@@ -118,7 +143,7 @@
 </head>
 <body>
 
-<!-- ===== Settings Overlay (headline + Zoom + Sound + Highlight toggles) ===== -->
+<!-- ===== Settings Overlay ===== -->
 <div id="settings-overlay" aria-modal="true" role="dialog">
   <div class="s-inner">
     <button id="s-back" class="s-back" type="button" aria-label="Back to menu">← Back</button>
@@ -126,15 +151,6 @@
 
     <!-- Card -->
     <div class="s-card">
-      <!-- Row: Zoom -->
-      <div class="s-row">
-        <div class="s-label">Zoom</div>
-        <div class="seg" role="group" aria-label="Zoom setting">
-          <button id="zoom-on"  class="seg-btn" data-val="on"  aria-pressed="false">ON</button>
-          <button id="zoom-off" class="seg-btn" data-val="off" aria-pressed="false">OFF</button>
-        </div>
-      </div>
-
       <!-- Row: Sound -->
       <div class="s-row">
         <div class="s-label">Sound</div>
@@ -153,10 +169,19 @@
         </div>
       </div>
 
-      <!-- Row: Disable auto zoom out -->
+      <!-- Row: Zoom (moved near bottom) -->
       <div class="s-row">
-        <div class="s-label">Disable auto zoom out</div>
-        <div class="seg" role="group" aria-label="Disable auto zoom out setting">
+        <div class="s-label">Zoom</div>
+        <div class="seg" role="group" aria-label="Zoom setting">
+          <button id="zoom-on"  class="seg-btn" data-val="on"  aria-pressed="false">ON</button>
+          <button id="zoom-off" class="seg-btn" data-val="off" aria-pressed="false">OFF</button>
+        </div>
+      </div>
+
+      <!-- Row: Disable auto zoom out (subsetting of Zoom) -->
+      <div class="s-row s-row-sub" id="row-azoff">
+        <div class="s-label s-label-sub">Disable auto zoom out</div>
+        <div class="seg" id="seg-azoff" role="group" aria-label="Disable auto zoom out setting">
           <button id="azoff-on"  class="seg-btn" data-val="on"  aria-pressed="false">ON</button>
           <button id="azoff-off" class="seg-btn" data-val="off" aria-pressed="false">OFF</button>
         </div>
@@ -188,12 +213,15 @@
   } catch (e) {}
 
   // Defaults
-  // Defaults
   if (typeof GoPrefs.josekiZoom === 'undefined')         GoPrefs.josekiZoom         = true;
   if (typeof GoPrefs.soundOn === 'undefined')            GoPrefs.soundOn            = true;
   if (typeof GoPrefs.highlightLast === 'undefined')      GoPrefs.highlightLast      = true;
   if (typeof GoPrefs.disableAutoZoomOut === 'undefined') GoPrefs.disableAutoZoomOut = false;
 
+  // Keep dependent pref consistent on load
+  if (!GoPrefs.josekiZoom && GoPrefs.disableAutoZoomOut){
+    GoPrefs.disableAutoZoomOut = false;
+  }
 
   function savePrefs(){
     try {
@@ -258,13 +286,16 @@
   var hOff     = document.getElementById('hlast-off');
   var azOn     = document.getElementById('azoff-on');
   var azOff    = document.getElementById('azoff-off');
+  var azRow    = document.getElementById('row-azoff');
   var backBtn  = document.getElementById('s-back');
 
-
   function syncButtons(){
+    // Zoom first (sub-setting depends on it)
+    var zoomOnVal = !!GoPrefs.josekiZoom;
+
     if (zoomOn && zoomOff){
-      zoomOn.setAttribute('aria-pressed', GoPrefs.josekiZoom ? 'true' : 'false');
-      zoomOff.setAttribute('aria-pressed', GoPrefs.josekiZoom ? 'false' : 'true');
+      zoomOn.setAttribute('aria-pressed', zoomOnVal ? 'true' : 'false');
+      zoomOff.setAttribute('aria-pressed', zoomOnVal ? 'false' : 'true');
     }
     if (soundOn && soundOff){
       soundOn.setAttribute('aria-pressed', GoPrefs.soundOn ? 'true' : 'false');
@@ -275,15 +306,35 @@
       hOff.setAttribute('aria-pressed', GoPrefs.highlightLast ? 'false' : 'true');
     }
     if (azOn && azOff){
+      // If Zoom is OFF, force the subsetting OFF as well
+      if (!zoomOnVal && GoPrefs.disableAutoZoomOut){
+        GoPrefs.disableAutoZoomOut = false;
+        try {
+          savePrefs();
+          broadcast('disableAutoZoomOut');
+        } catch(e){}
+      }
       azOn.setAttribute('aria-pressed', GoPrefs.disableAutoZoomOut ? 'true' : 'false');
       azOff.setAttribute('aria-pressed', GoPrefs.disableAutoZoomOut ? 'false' : 'true');
     }
+
+    // Grey out the sub-row when Zoom is OFF
+    if (azRow){
+      if (zoomOnVal) azRow.classList.remove('is-disabled');
+      else           azRow.classList.add('is-disabled');
+    }
   }
 
-
   // Wire up handlers
-  if (zoomOn)  zoomOn.addEventListener('click',  function(){ setPref('josekiZoom', true);  syncButtons(); });
-  if (zoomOff) zoomOff.addEventListener('click', function(){ setPref('josekiZoom', false); syncButtons(); });
+  if (zoomOn)  zoomOn.addEventListener('click',  function(){
+    setPref('josekiZoom', true);
+    syncButtons();
+  });
+  if (zoomOff) zoomOff.addEventListener('click', function(){
+    setPref('josekiZoom', false);
+    // subsetting will be forced OFF and greyed via syncButtons()
+    syncButtons();
+  });
 
   if (soundOn)  soundOn.addEventListener('click',  function(){ setPref('soundOn', true);  syncButtons(); });
   if (soundOff) soundOff.addEventListener('click', function(){ setPref('soundOn', false); syncButtons(); });
@@ -291,8 +342,17 @@
   if (hOn)  hOn.addEventListener('click',  function(){ setPref('highlightLast', true);  syncButtons(); });
   if (hOff) hOff.addEventListener('click', function(){ setPref('highlightLast', false); syncButtons(); });
 
- if (azOn)  azOn.addEventListener('click',  function(){ setPref('disableAutoZoomOut', true);  syncButtons(); });
-  if (azOff) azOff.addEventListener('click', function(){ setPref('disableAutoZoomOut', false); syncButtons(); });
+  // Sub-setting: only works when Zoom is ON
+  if (azOn)  azOn.addEventListener('click',  function(){
+    if (!GoPrefs.josekiZoom) return;
+    setPref('disableAutoZoomOut', true);
+    syncButtons();
+  });
+  if (azOff) azOff.addEventListener('click', function(){
+    if (!GoPrefs.josekiZoom) return;
+    setPref('disableAutoZoomOut', false);
+    syncButtons();
+  });
 
   if (backBtn){
     backBtn.addEventListener('click', function(){
@@ -310,6 +370,7 @@
 
   // Show the overlay and sync UI/state on load
   panel.style.display = 'flex';
+  savePrefs(); // persist any normalization we did
   syncButtons();
   applyToBoards();
 
