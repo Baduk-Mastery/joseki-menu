@@ -277,15 +277,6 @@
         </div>
       </div>
 
-      <!-- Row: Center next variation (subsetting of Disable auto zoom out) -->
-      <div class="s-row s-row-sub" id="row-center-next">
-        <div class="s-label s-label-sub">Center next variation</div>
-        <div class="seg" id="seg-center-next" role="group" aria-label="Center next variation setting">
-          <button id="cnext-on"  class="seg-btn" data-val="on"  aria-pressed="false">ON</button>
-          <button id="cnext-off" class="seg-btn" data-val="off" aria-pressed="false">OFF</button>
-        </div>
-      </div>
-
     </div>
   </div>
 </div>
@@ -316,7 +307,6 @@
   if (typeof GoPrefs.soundOn === 'undefined')              GoPrefs.soundOn              = true;
   if (typeof GoPrefs.highlightLast === 'undefined')        GoPrefs.highlightLast        = true;
   if (typeof GoPrefs.disableAutoZoomOut === 'undefined')   GoPrefs.disableAutoZoomOut   = false;
-  if (typeof GoPrefs.centerNextVariation === 'undefined')  GoPrefs.centerNextVariation  = false;
 
   // Keep dependent pref consistent on load
   if (!GoPrefs.josekiZoom && GoPrefs.disableAutoZoomOut){
@@ -388,10 +378,6 @@
   var azOff    = document.getElementById('azoff-off');
   var azRow    = document.getElementById('row-azoff');
 
-  // New sub-setting: Center next variation
-  var cnextOn  = document.getElementById('cnext-on');
-  var cnextOff = document.getElementById('cnext-off');
-  var cnextRow = document.getElementById('row-center-next');
 
   var backBtn  = document.getElementById('s-back');
 
@@ -424,26 +410,13 @@
       azOff.setAttribute('aria-pressed', GoPrefs.disableAutoZoomOut ? 'false' : 'true');
     }
 
-    // Center next variation
-    if (cnextOn && cnextOff){
-      cnextOn.setAttribute('aria-pressed', GoPrefs.centerNextVariation ? 'true' : 'false');
-      cnextOff.setAttribute('aria-pressed', GoPrefs.centerNextVariation ? 'false' : 'true');
-    }
-
-    // Grey out the sub-rows
+    // Grey out the sub-rows (only Disable auto zoom out now)
     if (azRow){
       // Row depends only on Zoom
       if (zoomOnVal) azRow.classList.remove('is-disabled');
       else           azRow.classList.add('is-disabled');
     }
-    if (cnextRow){
-      // Row depends on Zoom AND Disable auto zoom out
-      if (zoomOnVal && GoPrefs.disableAutoZoomOut){
-        cnextRow.classList.remove('is-disabled');
-      } else {
-        cnextRow.classList.add('is-disabled');
-      }
-    }
+
   }
 
   // Wire up handlers
@@ -472,19 +445,6 @@
   if (azOff) azOff.addEventListener('click', function(){
     if (!GoPrefs.josekiZoom) return;
     setPref('disableAutoZoomOut', false);
-    syncButtons();
-  });
-
-  // Sub-setting: Center next variation – only active when
-  // Zoom is ON and Disable auto zoom out is ON
-  if (cnextOn)  cnextOn.addEventListener('click',  function(){
-    if (!GoPrefs.josekiZoom || !GoPrefs.disableAutoZoomOut) return;
-    setPref('centerNextVariation', true);
-    syncButtons();
-  });
-  if (cnextOff) cnextOff.addEventListener('click', function(){
-    if (!GoPrefs.josekiZoom || !GoPrefs.disableAutoZoomOut) return;
-    setPref('centerNextVariation', false);
     syncButtons();
   });
 

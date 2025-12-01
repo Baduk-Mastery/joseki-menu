@@ -497,7 +497,7 @@
   if (typeof GoPrefs.soundOn === 'undefined')              GoPrefs.soundOn              = true;
   if (typeof GoPrefs.highlightLast === 'undefined')        GoPrefs.highlightLast        = true;
   if (typeof GoPrefs.disableAutoZoomOut === 'undefined')   GoPrefs.disableAutoZoomOut   = false;
-  if (typeof GoPrefs.centerNextVariation === 'undefined')  GoPrefs.centerNextVariation  = false;
+
 
   window.GoPrefsSave = function(){
     try {
@@ -618,9 +618,7 @@ html.no-wood, body.no-wood{ background: none !important; }
     var disableAutoZoomOut =
       (window.GoPrefs && typeof window.GoPrefs.disableAutoZoomOut !== 'undefined')
         ? !!window.GoPrefs.disableAutoZoomOut : false;
-    var centerNextVariation =
-      (window.GoPrefs && typeof window.GoPrefs.centerNextVariation !== 'undefined')
-        ? !!window.GoPrefs.centerNextVariation : false;
+
 
     var lastX = null, lastY = null;
 
@@ -647,9 +645,8 @@ html.no-wood, body.no-wood{ background: none !important; }
         } catch (_) {}
       } else if (d.key === 'disableAutoZoomOut') {
         disableAutoZoomOut = !!d.value;
-      } else if (d.key === 'centerNextVariation') {
-        centerNextVariation = !!d.value;
       }
+
     });
 
     window.PracticeHighlight = {
@@ -1741,14 +1738,9 @@ html.no-wood, body.no-wood{ background: none !important; }
 
     // When a corner/side is finished
     function showClearedOrWin(){
-      // Default behavior: if zoom is enabled and per-move auto zoom is disabled,
-      // zoom out at the end of a variation – unless "Center next variation" is ON.
-      if (zoomEnabled && disableAutoZoomOut && (scale > 1 || isFullscreen)) {
-        if (!centerNextVariation) {
-          smoothZoomOutAndExit();
-        }
-        // If centerNextVariation is true, we stay zoomed in and will
-        // re-center on the next variation after it loads.
+      // At the end of a variation, auto zoom out if allowed and currently zoomed.
+      if (zoomEnabled && !disableAutoZoomOut && (scale > 1 || isFullscreen)) {
+        smoothZoomOutAndExit();
       }
 
       if (tryIndex >= ORIENTS.length - 1){
@@ -1757,6 +1749,7 @@ html.no-wood, body.no-wood{ background: none !important; }
         showCleared();
       }
     }
+
 
     function configureWinModal(){
       if (winRetryBtn) winRetryBtn.style.display = '';
@@ -1783,17 +1776,6 @@ html.no-wood, body.no-wood{ background: none !important; }
 
     document.getElementById('prac-wrong-back').addEventListener('click', function(){ hideWrong(); redraw(); });
 
-    // Helper: when the next variation has been loaded, optionally center its first move
-    function maybeCenterNextVariation(){
-      if (!zoomEnabled || !disableAutoZoomOut || !centerNextVariation) return;
-      if (!(scale > 1 || isFullscreen)) return;
-
-      var anchor = getHintAnchorPoint();
-      if (!anchor) return;
-
-      // Keep current zoom, just re-center
-      centerZoomAtGrid(anchor.x, anchor.y, 1);
-    }
 
     document.getElementById('prac-cleared-next').addEventListener('click', function(){
       hideCleared();
@@ -1801,9 +1783,8 @@ html.no-wood, body.no-wood{ background: none !important; }
       swapColorsThisRound = (level === 5) ? (tryIndex % 2 === 1) : false;
       if (tryIndex >= ORIENTS.length){ showWin(); return; }
       primePractice();
-      // If the "Center next variation" setting is ON, re-center after loading
-      maybeCenterNextVariation();
     });
+
 
     winBackBtn.addEventListener('click', function(){
       hideWin();
