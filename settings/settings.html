@@ -321,8 +321,7 @@
   if (!GoPrefs.josekiZoom && GoPrefs.disableAutoZoomOut){
     GoPrefs.disableAutoZoomOut = false;
   }
-  // (autoZoomOnClear just gets greyed-out when Zoom is OFF, but keeps its value)
-
+  // (autoZoomOnClear just gets greyed-out when Zoom is OFF/parent OFF, but keeps its value)
 
   function savePrefs(){
     try {
@@ -379,7 +378,7 @@
   }
 
   // UI elements
-    var zoomOn   = document.getElementById('zoom-on');
+  var zoomOn   = document.getElementById('zoom-on');
   var zoomOff  = document.getElementById('zoom-off');
   var soundOn  = document.getElementById('sound-on');
   var soundOff = document.getElementById('sound-off');
@@ -389,16 +388,15 @@
   var azOff    = document.getElementById('azoff-off');
   var azRow    = document.getElementById('row-azoff');
 
-  // NEW: corner-finished subsetting
+  // Subsetting: corner-finished option
   var azcOn    = document.getElementById('azclear-on');
   var azcOff   = document.getElementById('azclear-off');
   var azcRow   = document.getElementById('row-azclear');
 
   var backBtn  = document.getElementById('s-back');
 
-
   function syncButtons(){
-    // Zoom first (sub-setting depends on it)
+    // Zoom first (sub-settings depend on it)
     var zoomOnVal = !!GoPrefs.josekiZoom;
 
     if (zoomOn && zoomOff){
@@ -426,24 +424,28 @@
       azOff.setAttribute('aria-pressed', GoPrefs.disableAutoZoomOut ? 'false' : 'true');
     }
 
-    // NEW: Zoom out when variation finished
+    // Zoom out when variation finished
     if (azcOn && azcOff){
-      // We keep the value even if Zoom is OFF, but UI is greyed out
+      // Value is kept even if disabled; UI shows it when parent allows
       azcOn.setAttribute('aria-pressed', GoPrefs.autoZoomOnClear ? 'true' : 'false');
       azcOff.setAttribute('aria-pressed', GoPrefs.autoZoomOnClear ? 'false' : 'true');
     }
 
-    // Grey out the sub-rows when Zoom is OFF
+    // Grey out the sub-rows
     if (azRow){
+      // Row depends only on Zoom
       if (zoomOnVal) azRow.classList.remove('is-disabled');
       else           azRow.classList.add('is-disabled');
     }
     if (azcRow){
-      if (zoomOnVal) azcRow.classList.remove('is-disabled');
-      else           azcRow.classList.add('is-disabled');
+      // Row depends on Zoom AND Disable auto zoom out
+      if (zoomOnVal && GoPrefs.disableAutoZoomOut){
+        azcRow.classList.remove('is-disabled');
+      } else {
+        azcRow.classList.add('is-disabled');
+      }
     }
   }
-
 
   // Wire up handlers
   if (zoomOn)  zoomOn.addEventListener('click',  function(){
@@ -452,7 +454,7 @@
   });
   if (zoomOff) zoomOff.addEventListener('click', function(){
     setPref('josekiZoom', false);
-    // subsetting will be forced OFF and greyed via syncButtons()
+    // sub-settings will be forced OFF and greyed via syncButtons()
     syncButtons();
   });
 
@@ -462,18 +464,30 @@
   if (hOn)  hOn.addEventListener('click',  function(){ setPref('highlightLast', true);  syncButtons(); });
   if (hOff) hOff.addEventListener('click', function(){ setPref('highlightLast', false); syncButtons(); });
 
-  // NEW sub-setting: Zoom out when variation finished
-  if (azcOn)  azcOn.addEventListener('click',  function(){
+  // Sub-setting: Disable auto zoom out – only active when Zoom is ON
+  if (azOn)  azOn.addEventListener('click', function(){
     if (!GoPrefs.josekiZoom) return;
+    setPref('disableAutoZoomOut', true);
+    syncButtons();
+  });
+  if (azOff) azOff.addEventListener('click', function(){
+    if (!GoPrefs.josekiZoom) return;
+    setPref('disableAutoZoomOut', false);
+    syncButtons();
+  });
+
+  // Sub-setting: Zoom out when variation finished – only active when
+  // Zoom is ON and Disable auto zoom out is ON
+  if (azcOn)  azcOn.addEventListener('click',  function(){
+    if (!GoPrefs.josekiZoom || !GoPrefs.disableAutoZoomOut) return;
     setPref('autoZoomOnClear', true);
     syncButtons();
   });
   if (azcOff) azcOff.addEventListener('click', function(){
-    if (!GoPrefs.josekiZoom) return;
+    if (!GoPrefs.josekiZoom || !GoPrefs.disableAutoZoomOut) return;
     setPref('autoZoomOnClear', false);
     syncButtons();
   });
-
 
   if (backBtn){
     backBtn.addEventListener('click', function(){
@@ -507,7 +521,3 @@
 
 </body>
 </html>
-
-
-
-
