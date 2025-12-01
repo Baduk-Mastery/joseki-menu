@@ -51,22 +51,24 @@
 <!-- Practice Board (standalone page) -->
 <div id="go-board-prac-wrap" data-hidden="1" style="width:100%;max-width:720px;margin:0 auto;box-sizing:border-box;">
 
-  <!-- Top bar: Back + Lives + Hints on one row -->
-  <div id="prac-topbar">
-    <button id="prac-back-top" class="s-back" type="button" aria-label="Back">← Back</button>
+<!-- Top bar: Back + Lives (center) + Hints (right) -->
+<div id="prac-topbar">
+  <button id="prac-back-top" class="s-back" type="button" aria-label="Back">← Back</button>
 
-    <!-- Practice meters (Free plan) -->
-    <div id="prac-meters" aria-live="polite">
+  <!-- Centered lives row -->
   <div class="meter-row" id="row-lives">
-  <div id="meter-lives" class="stones" role="img" aria-label="Lives remaining"></div>
-</div>
+    <div id="meter-lives" class="stones" role="img" aria-label="Lives remaining"></div>
+  </div>
 
-      <div class="meter-row" id="row-hints">
-        <span class="meter-label">Hints</span>
-        <span id="meter-hints" class="hints-num" role="text">3</span>
-      </div>
+  <!-- Hints (right-aligned group) -->
+  <div id="prac-meters" aria-live="polite">
+    <div class="meter-row" id="row-hints">
+      <span class="meter-label">Hints</span>
+      <span id="meter-hints" class="hints-num" role="text">3</span>
     </div>
   </div>
+</div>
+
 
 
   <div id="go-board-prac"
@@ -439,6 +441,10 @@
   justify-content:space-between;
   gap:8px;
   flex-wrap:wrap;          /* if it gets too tight, meters wrap below */
+}
+/* Center the lives meter between Back and Hints */
+#row-lives{
+  margin:0 auto;
 }
 
 
