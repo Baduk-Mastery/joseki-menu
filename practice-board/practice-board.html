@@ -497,6 +497,7 @@
   if (typeof GoPrefs.soundOn === 'undefined')              GoPrefs.soundOn              = true;
   if (typeof GoPrefs.highlightLast === 'undefined')        GoPrefs.highlightLast        = true;
   if (typeof GoPrefs.disableAutoZoomOut === 'undefined')   GoPrefs.disableAutoZoomOut   = false;
+  if (typeof GoPrefs.centerNextVariation === 'undefined')  GoPrefs.centerNextVariation  = false;
 
   window.GoPrefsSave = function(){
     try {
@@ -614,10 +615,12 @@ html.no-wood, body.no-wood{ background: none !important; }
     var zoomEnabled = (window.GoPrefs && typeof window.GoPrefs.josekiZoom !== 'undefined')
       ? !!window.GoPrefs.josekiZoom : true;
 
-var disableAutoZoomOut =
-  (window.GoPrefs && typeof window.GoPrefs.disableAutoZoomOut !== 'undefined')
-    ? !!window.GoPrefs.disableAutoZoomOut : false;
-
+    var disableAutoZoomOut =
+      (window.GoPrefs && typeof window.GoPrefs.disableAutoZoomOut !== 'undefined')
+        ? !!window.GoPrefs.disableAutoZoomOut : false;
+    var centerNextVariation =
+      (window.GoPrefs && typeof window.GoPrefs.centerNextVariation !== 'undefined')
+        ? !!window.GoPrefs.centerNextVariation : false;
 
     var lastX = null, lastY = null;
 
@@ -642,10 +645,11 @@ var disableAutoZoomOut =
             StoneSFX._enabled = !!d.value;
           }
         } catch (_) {}
-} else if (d.key === 'disableAutoZoomOut') {
-  disableAutoZoomOut = !!d.value;
-}
-
+      } else if (d.key === 'disableAutoZoomOut') {
+        disableAutoZoomOut = !!d.value;
+      } else if (d.key === 'centerNextVariation') {
+        centerNextVariation = !!d.value;
+      }
     });
 
     window.PracticeHighlight = {
@@ -1736,21 +1740,23 @@ var disableAutoZoomOut =
     function hideCleared(){ if (clearedModal) clearedModal.style.display = 'none'; }
 
     // When a corner/side is finished
-function showClearedOrWin(){
-  // At the end of a side/corner, if zoom is enabled and we are in the
-  // "no per-move auto zoom-out" mode (disableAutoZoomOut = true),
-  // still zoom out once here so the user sees overall progress.
-  if (zoomEnabled && disableAutoZoomOut && (scale > 1 || isFullscreen)) {
-    smoothZoomOutAndExit();
-  }
+    function showClearedOrWin(){
+      // Default behavior: if zoom is enabled and per-move auto zoom is disabled,
+      // zoom out at the end of a variation – unless "Center next variation" is ON.
+      if (zoomEnabled && disableAutoZoomOut && (scale > 1 || isFullscreen)) {
+        if (!centerNextVariation) {
+          smoothZoomOutAndExit();
+        }
+        // If centerNextVariation is true, we stay zoomed in and will
+        // re-center on the next variation after it loads.
+      }
 
-  if (tryIndex >= ORIENTS.length - 1){
-    showWin();
-  } else {
-    showCleared();
-  }
-}
-
+      if (tryIndex >= ORIENTS.length - 1){
+        showWin();
+      } else {
+        showCleared();
+      }
+    }
 
     function configureWinModal(){
       if (winRetryBtn) winRetryBtn.style.display = '';
@@ -1777,15 +1783,27 @@ function showClearedOrWin(){
 
     document.getElementById('prac-wrong-back').addEventListener('click', function(){ hideWrong(); redraw(); });
 
+    // Helper: when the next variation has been loaded, optionally center its first move
+    function maybeCenterNextVariation(){
+      if (!zoomEnabled || !disableAutoZoomOut || !centerNextVariation) return;
+      if (!(scale > 1 || isFullscreen)) return;
 
-document.getElementById('prac-cleared-next').addEventListener('click', function(){
-  hideCleared();
-  tryIndex++;
-  swapColorsThisRound = (level === 5) ? (tryIndex % 2 === 1) : false;
-  if (tryIndex >= ORIENTS.length){ showWin(); return; }
-  primePractice();
-});
+      var anchor = getHintAnchorPoint();
+      if (!anchor) return;
 
+      // Keep current zoom, just re-center
+      centerZoomAtGrid(anchor.x, anchor.y, 1);
+    }
+
+    document.getElementById('prac-cleared-next').addEventListener('click', function(){
+      hideCleared();
+      tryIndex++;
+      swapColorsThisRound = (level === 5) ? (tryIndex % 2 === 1) : false;
+      if (tryIndex >= ORIENTS.length){ showWin(); return; }
+      primePractice();
+      // If the "Center next variation" setting is ON, re-center after loading
+      maybeCenterNextVariation();
+    });
 
     winBackBtn.addEventListener('click', function(){
       hideWin();
@@ -2119,3 +2137,6 @@ document.getElementById('prac-cleared-next').addEventListener('click', function(
 
 </body>
 </html>
+
+
+
