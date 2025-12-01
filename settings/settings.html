@@ -277,15 +277,6 @@
         </div>
       </div>
 
-      <!-- Row: Center next variation (subsetting of Disable auto zoom out) -->
-      <div class="s-row s-row-sub" id="row-center-next">
-        <div class="s-label s-label-sub">Center next variation</div>
-        <div class="seg" id="seg-center-next" role="group" aria-label="Center next variation setting">
-          <button id="cnext-on"  class="seg-btn" data-val="on"  aria-pressed="false">ON</button>
-          <button id="cnext-off" class="seg-btn" data-val="off" aria-pressed="false">OFF</button>
-        </div>
-      </div>
-
     </div>
   </div>
 </div>
@@ -316,7 +307,6 @@
   if (typeof GoPrefs.soundOn === 'undefined')              GoPrefs.soundOn              = true;
   if (typeof GoPrefs.highlightLast === 'undefined')        GoPrefs.highlightLast        = true;
   if (typeof GoPrefs.disableAutoZoomOut === 'undefined')   GoPrefs.disableAutoZoomOut   = false;
-  if (typeof GoPrefs.centerNextVariation === 'undefined')  GoPrefs.centerNextVariation  = false;
 
   // Keep dependent pref consistent on load
   if (!GoPrefs.josekiZoom && GoPrefs.disableAutoZoomOut){
@@ -388,62 +378,44 @@
   var azOff    = document.getElementById('azoff-off');
   var azRow    = document.getElementById('row-azoff');
 
-  // New sub-setting: Center next variation
-  var cnextOn  = document.getElementById('cnext-on');
-  var cnextOff = document.getElementById('cnext-off');
-  var cnextRow = document.getElementById('row-center-next');
+var backBtn  = document.getElementById('s-back');
 
-  var backBtn  = document.getElementById('s-back');
 
-  function syncButtons(){
-    // Zoom first (sub-settings depend on it)
-    var zoomOnVal = !!GoPrefs.josekiZoom;
+function syncButtons(){
+  // Zoom first (sub-settings depend on it)
+  var zoomOnVal = !!GoPrefs.josekiZoom;
 
-    if (zoomOn && zoomOff){
-      zoomOn.setAttribute('aria-pressed', zoomOnVal ? 'true' : 'false');
-      zoomOff.setAttribute('aria-pressed', zoomOnVal ? 'false' : 'true');
+  if (zoomOn && zoomOff){
+    zoomOn.setAttribute('aria-pressed', zoomOnVal ? 'true' : 'false');
+    zoomOff.setAttribute('aria-pressed', zoomOnVal ? 'false' : 'true');
+  }
+  if (soundOn && soundOff){
+    soundOn.setAttribute('aria-pressed', GoPrefs.soundOn ? 'true' : 'false');
+    soundOff.setAttribute('aria-pressed', GoPrefs.soundOn ? 'false' : 'true');
+  }
+  if (hOn && hOff){
+    hOn.setAttribute('aria-pressed', GoPrefs.highlightLast ? 'true' : 'false');
+    hOff.setAttribute('aria-pressed', GoPrefs.highlightLast ? 'false' : 'true');
+  }
+  if (azOn && azOff){
+    // If Zoom is OFF, force the subsetting OFF as well
+    if (!zoomOnVal && GoPrefs.disableAutoZoomOut){
+      GoPrefs.disableAutoZoomOut = false;
+      try {
+        savePrefs();
+        broadcast('disableAutoZoomOut');
+      } catch(e){}
     }
-    if (soundOn && soundOff){
-      soundOn.setAttribute('aria-pressed', GoPrefs.soundOn ? 'true' : 'false');
-      soundOff.setAttribute('aria-pressed', GoPrefs.soundOn ? 'false' : 'true');
-    }
-    if (hOn && hOff){
-      hOn.setAttribute('aria-pressed', GoPrefs.highlightLast ? 'true' : 'false');
-      hOff.setAttribute('aria-pressed', GoPrefs.highlightLast ? 'false' : 'true');
-    }
-    if (azOn && azOff){
-      // If Zoom is OFF, force the subsetting OFF as well
-      if (!zoomOnVal && GoPrefs.disableAutoZoomOut){
-        GoPrefs.disableAutoZoomOut = false;
-        try {
-          savePrefs();
-          broadcast('disableAutoZoomOut');
-        } catch(e){}
-      }
-      azOn.setAttribute('aria-pressed', GoPrefs.disableAutoZoomOut ? 'true' : 'false');
-      azOff.setAttribute('aria-pressed', GoPrefs.disableAutoZoomOut ? 'false' : 'true');
-    }
+    azOn.setAttribute('aria-pressed', GoPrefs.disableAutoZoomOut ? 'true' : 'false');
+    azOff.setAttribute('aria-pressed', GoPrefs.disableAutoZoomOut ? 'false' : 'true');
+  }
 
-    // Center next variation
-    if (cnextOn && cnextOff){
-      cnextOn.setAttribute('aria-pressed', GoPrefs.centerNextVariation ? 'true' : 'false');
-      cnextOff.setAttribute('aria-pressed', GoPrefs.centerNextVariation ? 'false' : 'true');
-    }
-
-    // Grey out the sub-rows
-    if (azRow){
-      // Row depends only on Zoom
-      if (zoomOnVal) azRow.classList.remove('is-disabled');
-      else           azRow.classList.add('is-disabled');
-    }
-    if (cnextRow){
-      // Row depends on Zoom AND Disable auto zoom out
-      if (zoomOnVal && GoPrefs.disableAutoZoomOut){
-        cnextRow.classList.remove('is-disabled');
-      } else {
-        cnextRow.classList.add('is-disabled');
-      }
-    }
+  // Grey out the Disable auto zoom out row depending on Zoom
+  if (azRow){
+    if (zoomOnVal) azRow.classList.remove('is-disabled');
+    else           azRow.classList.add('is-disabled');
+  }
+}
   }
 
   // Wire up handlers
@@ -475,18 +447,6 @@
     syncButtons();
   });
 
-  // Sub-setting: Center next variation – only active when
-  // Zoom is ON and Disable auto zoom out is ON
-  if (cnextOn)  cnextOn.addEventListener('click',  function(){
-    if (!GoPrefs.josekiZoom || !GoPrefs.disableAutoZoomOut) return;
-    setPref('centerNextVariation', true);
-    syncButtons();
-  });
-  if (cnextOff) cnextOff.addEventListener('click', function(){
-    if (!GoPrefs.josekiZoom || !GoPrefs.disableAutoZoomOut) return;
-    setPref('centerNextVariation', false);
-    syncButtons();
-  });
 
   if (backBtn){
     backBtn.addEventListener('click', function(){
