@@ -259,7 +259,7 @@
         </div>
       </div>
 
-      <!-- Row: Zoom (moved near bottom) -->
+      <!-- Row: Zoom -->
       <div class="s-row">
         <div class="s-label">Zoom</div>
         <div class="seg" role="group" aria-label="Zoom setting">
@@ -276,12 +276,13 @@
           <button id="azoff-off" class="seg-btn" data-val="off" aria-pressed="false">OFF</button>
         </div>
       </div>
-      <!-- Row: Zoom out when variation finished (subsetting of Zoom) -->
-      <div class="s-row s-row-sub" id="row-azclear">
-        <div class="s-label s-label-sub">Zoom out when variation finished</div>
-        <div class="seg" id="seg-azclear" role="group" aria-label="Zoom out when variation finished setting">
-          <button id="azclear-on"  class="seg-btn" data-val="on"  aria-pressed="false">ON</button>
-          <button id="azclear-off" class="seg-btn" data-val="off" aria-pressed="false">OFF</button>
+
+      <!-- Row: Center next variation (subsetting of Disable auto zoom out) -->
+      <div class="s-row s-row-sub" id="row-center-next">
+        <div class="s-label s-label-sub">Center next variation</div>
+        <div class="seg" id="seg-center-next" role="group" aria-label="Center next variation setting">
+          <button id="cnext-on"  class="seg-btn" data-val="on"  aria-pressed="false">ON</button>
+          <button id="cnext-off" class="seg-btn" data-val="off" aria-pressed="false">OFF</button>
         </div>
       </div>
 
@@ -311,17 +312,16 @@
   } catch (e) {}
 
   // Defaults
-  if (typeof GoPrefs.josekiZoom === 'undefined')         GoPrefs.josekiZoom         = true;
-  if (typeof GoPrefs.soundOn === 'undefined')            GoPrefs.soundOn            = true;
-  if (typeof GoPrefs.highlightLast === 'undefined')      GoPrefs.highlightLast      = true;
-  if (typeof GoPrefs.disableAutoZoomOut === 'undefined') GoPrefs.disableAutoZoomOut = false;
-  if (typeof GoPrefs.autoZoomOnClear === 'undefined')    GoPrefs.autoZoomOnClear    = true;
+  if (typeof GoPrefs.josekiZoom === 'undefined')           GoPrefs.josekiZoom           = true;
+  if (typeof GoPrefs.soundOn === 'undefined')              GoPrefs.soundOn              = true;
+  if (typeof GoPrefs.highlightLast === 'undefined')        GoPrefs.highlightLast        = true;
+  if (typeof GoPrefs.disableAutoZoomOut === 'undefined')   GoPrefs.disableAutoZoomOut   = false;
+  if (typeof GoPrefs.centerNextVariation === 'undefined')  GoPrefs.centerNextVariation  = false;
 
   // Keep dependent pref consistent on load
   if (!GoPrefs.josekiZoom && GoPrefs.disableAutoZoomOut){
     GoPrefs.disableAutoZoomOut = false;
   }
-  // (autoZoomOnClear just gets greyed-out when Zoom is OFF/parent OFF, but keeps its value)
 
   function savePrefs(){
     try {
@@ -388,10 +388,10 @@
   var azOff    = document.getElementById('azoff-off');
   var azRow    = document.getElementById('row-azoff');
 
-  // Subsetting: corner-finished option
-  var azcOn    = document.getElementById('azclear-on');
-  var azcOff   = document.getElementById('azclear-off');
-  var azcRow   = document.getElementById('row-azclear');
+  // New sub-setting: Center next variation
+  var cnextOn  = document.getElementById('cnext-on');
+  var cnextOff = document.getElementById('cnext-off');
+  var cnextRow = document.getElementById('row-center-next');
 
   var backBtn  = document.getElementById('s-back');
 
@@ -424,11 +424,10 @@
       azOff.setAttribute('aria-pressed', GoPrefs.disableAutoZoomOut ? 'false' : 'true');
     }
 
-    // Zoom out when variation finished
-    if (azcOn && azcOff){
-      // Value is kept even if disabled; UI shows it when parent allows
-      azcOn.setAttribute('aria-pressed', GoPrefs.autoZoomOnClear ? 'true' : 'false');
-      azcOff.setAttribute('aria-pressed', GoPrefs.autoZoomOnClear ? 'false' : 'true');
+    // Center next variation
+    if (cnextOn && cnextOff){
+      cnextOn.setAttribute('aria-pressed', GoPrefs.centerNextVariation ? 'true' : 'false');
+      cnextOff.setAttribute('aria-pressed', GoPrefs.centerNextVariation ? 'false' : 'true');
     }
 
     // Grey out the sub-rows
@@ -437,12 +436,12 @@
       if (zoomOnVal) azRow.classList.remove('is-disabled');
       else           azRow.classList.add('is-disabled');
     }
-    if (azcRow){
+    if (cnextRow){
       // Row depends on Zoom AND Disable auto zoom out
       if (zoomOnVal && GoPrefs.disableAutoZoomOut){
-        azcRow.classList.remove('is-disabled');
+        cnextRow.classList.remove('is-disabled');
       } else {
-        azcRow.classList.add('is-disabled');
+        cnextRow.classList.add('is-disabled');
       }
     }
   }
@@ -476,16 +475,16 @@
     syncButtons();
   });
 
-  // Sub-setting: Zoom out when variation finished – only active when
+  // Sub-setting: Center next variation – only active when
   // Zoom is ON and Disable auto zoom out is ON
-  if (azcOn)  azcOn.addEventListener('click',  function(){
+  if (cnextOn)  cnextOn.addEventListener('click',  function(){
     if (!GoPrefs.josekiZoom || !GoPrefs.disableAutoZoomOut) return;
-    setPref('autoZoomOnClear', true);
+    setPref('centerNextVariation', true);
     syncButtons();
   });
-  if (azcOff) azcOff.addEventListener('click', function(){
+  if (cnextOff) cnextOff.addEventListener('click', function(){
     if (!GoPrefs.josekiZoom || !GoPrefs.disableAutoZoomOut) return;
-    setPref('autoZoomOnClear', false);
+    setPref('centerNextVariation', false);
     syncButtons();
   });
 

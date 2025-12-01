@@ -323,8 +323,8 @@
   /* Practice Board buttons – subtle gloss, board-like wood */
 #prac-ctrls{
   max-width: 720px;
-  width: 100%;              /* new: fill the wrapper */
-  box-sizing: border-box;   /* new: include padding in width */
+  width: 100%;
+  box-sizing: border-box;
   margin: 14px auto 0;
   padding: 0 12px 18px;
   display: flex;
@@ -333,7 +333,6 @@
   flex-wrap: wrap;
 }
 
-
 #prac-ctrls .pbtn,
 #prac-ctrls .pbtn-strong,
 #prac-ctrls .pbtn-alt{
@@ -341,8 +340,8 @@
   min-width:90px;
   padding:8px 24px;
 
-  flex: 1 1 0;          /* new: let each button grow to fill the row */
-  text-align: center;   /* new: keep label centered */
+  flex: 1 1 0;
+  text-align: center;
 
   border-radius:10px;
   border:1px solid rgba(255,255,255,.40);
@@ -383,7 +382,6 @@
     box-shadow .08s ease-out,
     filter .12s ease-out;
 }
-
 
   #prac-ctrls .pbtn:hover{
     filter:brightness(1.12) saturate(.98);
@@ -495,12 +493,11 @@
     }
   } catch (e) {}
 
-  if (typeof GoPrefs.josekiZoom === 'undefined')         GoPrefs.josekiZoom         = true;
-  if (typeof GoPrefs.soundOn === 'undefined')            GoPrefs.soundOn            = true;
-  if (typeof GoPrefs.highlightLast === 'undefined')      GoPrefs.highlightLast      = true;
-  if (typeof GoPrefs.disableAutoZoomOut === 'undefined') GoPrefs.disableAutoZoomOut = false;
-  if (typeof GoPrefs.autoZoomOnClear === 'undefined')    GoPrefs.autoZoomOnClear    = true;
-
+  if (typeof GoPrefs.josekiZoom === 'undefined')           GoPrefs.josekiZoom           = true;
+  if (typeof GoPrefs.soundOn === 'undefined')              GoPrefs.soundOn              = true;
+  if (typeof GoPrefs.highlightLast === 'undefined')        GoPrefs.highlightLast        = true;
+  if (typeof GoPrefs.disableAutoZoomOut === 'undefined')   GoPrefs.disableAutoZoomOut   = false;
+  if (typeof GoPrefs.centerNextVariation === 'undefined')  GoPrefs.centerNextVariation  = false;
 
   window.GoPrefsSave = function(){
     try {
@@ -563,8 +560,8 @@ if (!window._stoneSFXInit) {
 
     var wrap  = document.getElementById('go-board-prac-wrap');
     var mount = document.getElementById('go-board-prac');
-    var pracCtrls  = document.getElementById('prac-ctrls');   // NEW
-    var pracMeters = document.getElementById('prac-meters');  // NEW
+    var pracCtrls  = document.getElementById('prac-ctrls');
+    var pracMeters = document.getElementById('prac-meters');
 
     if (!wrap || !mount) return setTimeout(mountPracticeBoard, 50);
 
@@ -621,12 +618,11 @@ html.no-wood, body.no-wood{ background: none !important; }
     var disableAutoZoomOut =
       (window.GoPrefs && typeof window.GoPrefs.disableAutoZoomOut !== 'undefined')
         ? !!window.GoPrefs.disableAutoZoomOut : false;
-    var autoZoomOnClear =
-      (window.GoPrefs && typeof window.GoPrefs.autoZoomOnClear !== 'undefined')
-        ? !!window.GoPrefs.autoZoomOnClear : true;
+    var centerNextVariation =
+      (window.GoPrefs && typeof window.GoPrefs.centerNextVariation !== 'undefined')
+        ? !!window.GoPrefs.centerNextVariation : false;
 
     var lastX = null, lastY = null;
-
 
     window.addEventListener('go:prefs-changed', function(e){
       var d = e.detail || {};
@@ -651,8 +647,8 @@ html.no-wood, body.no-wood{ background: none !important; }
         } catch (_) {}
       } else if (d.key === 'disableAutoZoomOut') {
         disableAutoZoomOut = !!d.value;
-      } else if (d.key === 'autoZoomOnClear') {
-        autoZoomOnClear = !!d.value;
+      } else if (d.key === 'centerNextVariation') {
+        centerNextVariation = !!d.value;
       }
     });
 
@@ -1156,10 +1152,10 @@ html.no-wood, body.no-wood{ background: none !important; }
     var isZoomAnimating = false;
 
     var isFullscreen = false;
-    var overlay = null, stage = null, returnAnchor = null, zoomExitBtn = null, zoomUI = null; // zoomUI NEW
+    var overlay = null, stage = null, returnAnchor = null, zoomExitBtn = null, zoomUI = null;
     var prevOverflow = "";
-    var ctrlsReturnParent = null, ctrlsReturnNext = null;   // NEW: remember home for controls
-    var metersReturnParent = null, metersReturnNext = null; // NEW: remember home for meters
+    var ctrlsReturnParent = null, ctrlsReturnNext = null;
+    var metersReturnParent = null, metersReturnNext = null;
 
     function ensureZoomLayer(){
       if (zoomLayer) return;
@@ -1368,7 +1364,7 @@ html.no-wood, body.no-wood{ background: none !important; }
 
       stage.appendChild(mount);
 
-      // NEW: move meters + buttons into overlay UI
+      // move meters + buttons into overlay UI
       if (zoomUI){
         if (pracMeters && !pracMeters._inZoom){
           metersReturnParent = pracMeters.parentNode;
@@ -1414,7 +1410,7 @@ html.no-wood, body.no-wood{ background: none !important; }
         returnAnchor = null;
       }
 
-      // NEW: move meters + buttons back
+      // move meters + buttons back
       if (pracMeters && pracMeters._inZoom){
         if (metersReturnParent){
           if (metersReturnNext && metersReturnNext.parentNode === metersReturnParent){
@@ -1743,10 +1739,16 @@ html.no-wood, body.no-wood{ background: none !important; }
     function showCleared(){ if (clearedModal) clearedModal.style.display = 'flex'; }
     function hideCleared(){ if (clearedModal) clearedModal.style.display = 'none'; }
 
+    // When a corner/side is finished
     function showClearedOrWin(){
-      // NEW: optional zoom-out when a corner/side is finished
-      if (zoomEnabled && autoZoomOnClear && (scale > 1 || isFullscreen)) {
-        smoothZoomOutAndExit();
+      // Default behavior: if zoom is enabled and per-move auto zoom is disabled,
+      // zoom out at the end of a variation – unless "Center next variation" is ON.
+      if (zoomEnabled && disableAutoZoomOut && (scale > 1 || isFullscreen)) {
+        if (!centerNextVariation) {
+          smoothZoomOutAndExit();
+        }
+        // If centerNextVariation is true, we stay zoomed in and will
+        // re-center on the next variation after it loads.
       }
 
       if (tryIndex >= ORIENTS.length - 1){
@@ -1755,7 +1757,6 @@ html.no-wood, body.no-wood{ background: none !important; }
         showCleared();
       }
     }
-
 
     function configureWinModal(){
       if (winRetryBtn) winRetryBtn.style.display = '';
@@ -1781,12 +1782,27 @@ html.no-wood, body.no-wood{ background: none !important; }
     function hideWin(){ if (winModal) winModal.style.display = 'none'; }
 
     document.getElementById('prac-wrong-back').addEventListener('click', function(){ hideWrong(); redraw(); });
+
+    // Helper: when the next variation has been loaded, optionally center its first move
+    function maybeCenterNextVariation(){
+      if (!zoomEnabled || !disableAutoZoomOut || !centerNextVariation) return;
+      if (!(scale > 1 || isFullscreen)) return;
+
+      var anchor = getHintAnchorPoint();
+      if (!anchor) return;
+
+      // Keep current zoom, just re-center
+      centerZoomAtGrid(anchor.x, anchor.y, 1);
+    }
+
     document.getElementById('prac-cleared-next').addEventListener('click', function(){
       hideCleared();
       tryIndex++;
       swapColorsThisRound = (level === 5) ? (tryIndex % 2 === 1) : false;
       if (tryIndex >= ORIENTS.length){ showWin(); return; }
       primePractice();
+      // If the "Center next variation" setting is ON, re-center after loading
+      maybeCenterNextVariation();
     });
 
     winBackBtn.addEventListener('click', function(){
@@ -2121,8 +2137,3 @@ html.no-wood, body.no-wood{ background: none !important; }
 
 </body>
 </html>
-
-
-
-
-
