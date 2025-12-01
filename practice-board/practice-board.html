@@ -497,6 +497,8 @@
   if (typeof GoPrefs.soundOn === 'undefined')              GoPrefs.soundOn              = true;
   if (typeof GoPrefs.highlightLast === 'undefined')        GoPrefs.highlightLast        = true;
   if (typeof GoPrefs.disableAutoZoomOut === 'undefined')   GoPrefs.disableAutoZoomOut   = false;
+  if (typeof GoPrefs.autoPlaySpeed === 'undefined')        GoPrefs.autoPlaySpeed        = 'fast';
+
 
 
   window.GoPrefsSave = function(){
@@ -619,6 +621,17 @@ html.no-wood, body.no-wood{ background: none !important; }
       (window.GoPrefs && typeof window.GoPrefs.disableAutoZoomOut !== 'undefined')
         ? !!window.GoPrefs.disableAutoZoomOut : false;
 
+    // NEW: auto-play speed and derived delay
+    var autoPlaySpeed =
+      (window.GoPrefs && typeof window.GoPrefs.autoPlaySpeed === 'string')
+        ? window.GoPrefs.autoPlaySpeed
+        : 'fast';
+
+    var AUTO_DELAY_FAST = 300;  // current behavior
+    var AUTO_DELAY_SLOW = 700;  // slower mode
+    var AUTO_DELAY      = (autoPlaySpeed === 'slow') ? AUTO_DELAY_SLOW : AUTO_DELAY_FAST;
+
+
 
     var lastX = null, lastY = null;
 
@@ -645,9 +658,22 @@ html.no-wood, body.no-wood{ background: none !important; }
         } catch (_) {}
       } else if (d.key === 'disableAutoZoomOut') {
         disableAutoZoomOut = !!d.value;
+      } else if (d.key === 'autoPlaySpeed') {          // NEW
+        autoPlaySpeed = (d.value === 'slow') ? 'slow' : 'fast';
+        AUTO_DELAY    = (autoPlaySpeed === 'slow') ? AUTO_DELAY_SLOW : AUTO_DELAY_FAST;
       }
-
     });
+
+    // NEW: bridge so Settings can call PracticeSpeed.setSpeed(...)
+    window.PracticeSpeed = {
+      getSpeed: function(){
+        return autoPlaySpeed;
+      },
+      setSpeed: function(speed){
+        autoPlaySpeed = (speed === 'slow') ? 'slow' : 'fast';
+        AUTO_DELAY    = (autoPlaySpeed === 'slow') ? AUTO_DELAY_SLOW : AUTO_DELAY_FAST;
+      }
+    };
 
     window.PracticeHighlight = {
       isEnabled(){ return highlightLastEnabled; },
@@ -661,11 +687,11 @@ html.no-wood, body.no-wood{ background: none !important; }
     var tryIndex = 0;
     var swapColorsThisRound = false;
     var isAutoPlacing = false;
-    var AUTO_DELAY = 300;
 
     var playerOnly = false;
     var playerColor = null;
     var l2HintConsumed = false;
+
 
     /* Tier + quota */
     var TierAPI = window.Tier || {
