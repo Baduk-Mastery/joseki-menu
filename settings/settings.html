@@ -276,6 +276,14 @@
           <button id="azoff-off" class="seg-btn" data-val="off" aria-pressed="false">OFF</button>
         </div>
       </div>
+      <!-- Row: Zoom out when corner finished (subsetting of Zoom) -->
+      <div class="s-row s-row-sub" id="row-azclear">
+        <div class="s-label s-label-sub">Zoom out when corner finished</div>
+        <div class="seg" id="seg-azclear" role="group" aria-label="Zoom out when corner finished setting">
+          <button id="azclear-on"  class="seg-btn" data-val="on"  aria-pressed="false">ON</button>
+          <button id="azclear-off" class="seg-btn" data-val="off" aria-pressed="false">OFF</button>
+        </div>
+      </div>
 
     </div>
   </div>
@@ -307,11 +315,14 @@
   if (typeof GoPrefs.soundOn === 'undefined')            GoPrefs.soundOn            = true;
   if (typeof GoPrefs.highlightLast === 'undefined')      GoPrefs.highlightLast      = true;
   if (typeof GoPrefs.disableAutoZoomOut === 'undefined') GoPrefs.disableAutoZoomOut = false;
+  if (typeof GoPrefs.autoZoomOnClear === 'undefined')    GoPrefs.autoZoomOnClear    = true;
 
   // Keep dependent pref consistent on load
   if (!GoPrefs.josekiZoom && GoPrefs.disableAutoZoomOut){
     GoPrefs.disableAutoZoomOut = false;
   }
+  // (autoZoomOnClear just gets greyed-out when Zoom is OFF, but keeps its value)
+
 
   function savePrefs(){
     try {
@@ -368,7 +379,7 @@
   }
 
   // UI elements
-  var zoomOn   = document.getElementById('zoom-on');
+    var zoomOn   = document.getElementById('zoom-on');
   var zoomOff  = document.getElementById('zoom-off');
   var soundOn  = document.getElementById('sound-on');
   var soundOff = document.getElementById('sound-off');
@@ -377,7 +388,14 @@
   var azOn     = document.getElementById('azoff-on');
   var azOff    = document.getElementById('azoff-off');
   var azRow    = document.getElementById('row-azoff');
+
+  // NEW: corner-finished subsetting
+  var azcOn    = document.getElementById('azclear-on');
+  var azcOff   = document.getElementById('azclear-off');
+  var azcRow   = document.getElementById('row-azclear');
+
   var backBtn  = document.getElementById('s-back');
+
 
   function syncButtons(){
     // Zoom first (sub-setting depends on it)
@@ -408,12 +426,24 @@
       azOff.setAttribute('aria-pressed', GoPrefs.disableAutoZoomOut ? 'false' : 'true');
     }
 
-    // Grey out the sub-row when Zoom is OFF
+    // NEW: Zoom out when corner finished
+    if (azcOn && azcOff){
+      // We keep the value even if Zoom is OFF, but UI is greyed out
+      azcOn.setAttribute('aria-pressed', GoPrefs.autoZoomOnClear ? 'true' : 'false');
+      azcOff.setAttribute('aria-pressed', GoPrefs.autoZoomOnClear ? 'false' : 'true');
+    }
+
+    // Grey out the sub-rows when Zoom is OFF
     if (azRow){
       if (zoomOnVal) azRow.classList.remove('is-disabled');
       else           azRow.classList.add('is-disabled');
     }
+    if (azcRow){
+      if (zoomOnVal) azcRow.classList.remove('is-disabled');
+      else           azcRow.classList.add('is-disabled');
+    }
   }
+
 
   // Wire up handlers
   if (zoomOn)  zoomOn.addEventListener('click',  function(){
@@ -432,17 +462,18 @@
   if (hOn)  hOn.addEventListener('click',  function(){ setPref('highlightLast', true);  syncButtons(); });
   if (hOff) hOff.addEventListener('click', function(){ setPref('highlightLast', false); syncButtons(); });
 
-  // Sub-setting: only works when Zoom is ON
-  if (azOn)  azOn.addEventListener('click',  function(){
+  // NEW sub-setting: Zoom out when corner finished
+  if (azcOn)  azcOn.addEventListener('click',  function(){
     if (!GoPrefs.josekiZoom) return;
-    setPref('disableAutoZoomOut', true);
+    setPref('autoZoomOnClear', true);
     syncButtons();
   });
-  if (azOff) azOff.addEventListener('click', function(){
+  if (azcOff) azcOff.addEventListener('click', function(){
     if (!GoPrefs.josekiZoom) return;
-    setPref('disableAutoZoomOut', false);
+    setPref('autoZoomOnClear', false);
     syncButtons();
   });
+
 
   if (backBtn){
     backBtn.addEventListener('click', function(){

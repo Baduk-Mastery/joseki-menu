@@ -495,9 +495,12 @@
     }
   } catch (e) {}
 
-  if (typeof GoPrefs.josekiZoom === 'undefined')     GoPrefs.josekiZoom     = true;
-  if (typeof GoPrefs.soundOn === 'undefined')        GoPrefs.soundOn        = true;
-  if (typeof GoPrefs.highlightLast === 'undefined')  GoPrefs.highlightLast  = true;
+  if (typeof GoPrefs.josekiZoom === 'undefined')         GoPrefs.josekiZoom         = true;
+  if (typeof GoPrefs.soundOn === 'undefined')            GoPrefs.soundOn            = true;
+  if (typeof GoPrefs.highlightLast === 'undefined')      GoPrefs.highlightLast      = true;
+  if (typeof GoPrefs.disableAutoZoomOut === 'undefined') GoPrefs.disableAutoZoomOut = false;
+  if (typeof GoPrefs.autoZoomOnClear === 'undefined')    GoPrefs.autoZoomOnClear    = true;
+
 
   window.GoPrefsSave = function(){
     try {
@@ -618,8 +621,12 @@ html.no-wood, body.no-wood{ background: none !important; }
     var disableAutoZoomOut =
       (window.GoPrefs && typeof window.GoPrefs.disableAutoZoomOut !== 'undefined')
         ? !!window.GoPrefs.disableAutoZoomOut : false;
+    var autoZoomOnClear =
+      (window.GoPrefs && typeof window.GoPrefs.autoZoomOnClear !== 'undefined')
+        ? !!window.GoPrefs.autoZoomOnClear : true;
 
     var lastX = null, lastY = null;
+
 
     window.addEventListener('go:prefs-changed', function(e){
       var d = e.detail || {};
@@ -644,6 +651,8 @@ html.no-wood, body.no-wood{ background: none !important; }
         } catch (_) {}
       } else if (d.key === 'disableAutoZoomOut') {
         disableAutoZoomOut = !!d.value;
+      } else if (d.key === 'autoZoomOnClear') {
+        autoZoomOnClear = !!d.value;
       }
     });
 
@@ -1735,12 +1744,18 @@ html.no-wood, body.no-wood{ background: none !important; }
     function hideCleared(){ if (clearedModal) clearedModal.style.display = 'none'; }
 
     function showClearedOrWin(){
+      // NEW: optional zoom-out when a corner/side is finished
+      if (zoomEnabled && autoZoomOnClear && (scale > 1 || isFullscreen)) {
+        smoothZoomOutAndExit();
+      }
+
       if (tryIndex >= ORIENTS.length - 1){
         showWin();
       } else {
         showCleared();
       }
     }
+
 
     function configureWinModal(){
       if (winRetryBtn) winRetryBtn.style.display = '';
