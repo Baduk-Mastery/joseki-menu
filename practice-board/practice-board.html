@@ -206,11 +206,19 @@
     flex-wrap:wrap;
   }
 
-  #prac-meters .meter-row{
-    display:flex; align-items:center; gap:10px;
-    background:#fff; border:1px solid #e2e8f0; border-radius:10px;
-    padding:8px 12px; box-shadow:0 6px 16px rgba(15,23,42,.06);
-  }
+/* Apply pill/card style to both Hints and Lives */
+#prac-meters .meter-row,
+#row-lives{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  background:#fff;
+  border:1px solid #e2e8f0;
+  border-radius:10px;
+  padding:8px 12px;
+  box-shadow:0 6px 16px rgba(15,23,42,.06);
+}
+
   .meter-label{ font-weight:800; font-size:14px; color:#0f172a; }
   .stones{ display:flex; gap:6px; }
   .stone{
