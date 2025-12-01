@@ -1470,6 +1470,11 @@ html.no-wood, body.no-wood{ background: none !important; }
     var ctrlsReturnParent = null, ctrlsReturnNext = null;
     var topbarReturnParent = null, topbarReturnNext = null;
 
+    // Prevent the first synthetic click on the zoom-out box from immediately exiting
+    var justEnteredFullscreen = false;
+    var JUST_ENTER_EXIT_DELAY = 350; // ms
+
+
     function ensureZoomLayer(){
       if (zoomLayer) return;
       mount.style.position = 'relative';
@@ -1538,6 +1543,14 @@ html.no-wood, body.no-wood{ background: none !important; }
       if (zoomExitBtn && !zoomExitBtn._bound){
         zoomExitBtn._bound = true;
         zoomExitBtn.addEventListener('click', function(e){
+          // Ignore the synthetic click that comes right after entering fullscreen
+          if (justEnteredFullscreen){
+            justEnteredFullscreen = false;
+            e.stopPropagation();
+            e.preventDefault();
+            return;
+          }
+
           e.stopPropagation();
           smoothZoomOutAndExit();
         });
@@ -1711,6 +1724,12 @@ html.no-wood, body.no-wood{ background: none !important; }
       if (zoomExitBtn) zoomExitBtn.style.display = 'block';
       mount.classList.add('is-fullscreen');
       isFullscreen = true;
+      // We just entered fullscreen: ignore the very next click on the exit box
+      justEnteredFullscreen = true;
+      setTimeout(function(){
+        justEnteredFullscreen = false;
+      }, JUST_ENTER_EXIT_DELAY);
+
 
       const vwFS = window.innerWidth || document.documentElement.clientWidth || 800;
       const vhFS = window.innerHeight || document.documentElement.clientHeight || 800;
