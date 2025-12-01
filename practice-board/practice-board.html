@@ -309,6 +309,22 @@
   #go-zoom-ui-prac > *{
     pointer-events:auto;
   }
+  /* NEW: Top UI container (Back + meters) while zoomed */
+  #go-zoom-top-prac{
+    position:fixed;
+    left:0;
+    right:0;
+    top:0;
+    padding:12px 12px 0;
+    display:flex;
+    justify-content:center;
+    align-items:flex-start;
+    pointer-events:none;
+    z-index:99999; /* keep above the board */
+  }
+  #go-zoom-top-prac > *{
+    pointer-events:auto;
+  }
 
   /* Board drop shadow */
   #go-board-prac{
@@ -650,6 +666,7 @@ if (!window._stoneSFXInit) {
     var mount = document.getElementById('go-board-prac');
     var pracCtrls  = document.getElementById('prac-ctrls');
     var pracMeters = document.getElementById('prac-meters');
+    var pracTopbar = document.getElementById('prac-topbar');
 
     if (!wrap || !mount) return setTimeout(mountPracticeBoard, 50);
 
@@ -1430,10 +1447,10 @@ html.no-wood, body.no-wood{ background: none !important; }
 
 
     var isFullscreen = false;
-    var overlay = null, stage = null, returnAnchor = null, zoomExitBtn = null, zoomUI = null;
+    var overlay = null, stage = null, returnAnchor = null, zoomExitBtn = null, zoomUI = null, zoomTop = null;
     var prevOverflow = "";
     var ctrlsReturnParent = null, ctrlsReturnNext = null;
-    var metersReturnParent = null, metersReturnNext = null;
+    var topbarReturnParent = null, topbarReturnNext = null;
 
     function ensureZoomLayer(){
       if (zoomLayer) return;
@@ -1468,6 +1485,7 @@ html.no-wood, body.no-wood{ background: none !important; }
           overlay.innerHTML =
             '<div id="go-zoom-stage-prac"></div>' +
             '<div id="go-zoom-exit-prac" aria-label="Zoom out"></div>' +
+            '<div id="go-zoom-top-prac"></div>' +
             '<div id="go-zoom-ui-prac"></div>';
           document.body.appendChild(overlay);
         } else {
@@ -1481,6 +1499,11 @@ html.no-wood, body.no-wood{ background: none !important; }
             exitDiv.id = 'go-zoom-exit-prac';
             overlay.appendChild(exitDiv);
           }
+          if (!overlay.querySelector('#go-zoom-top-prac')){
+            var topDiv = document.createElement('div');
+            topDiv.id = 'go-zoom-top-prac';
+            overlay.appendChild(topDiv);
+          }
           if (!overlay.querySelector('#go-zoom-ui-prac')){
             var uiDiv = document.createElement('div');
             uiDiv.id = 'go-zoom-ui-prac';
@@ -1491,6 +1514,7 @@ html.no-wood, body.no-wood{ background: none !important; }
 
       stage       = overlay.querySelector('#go-zoom-stage-prac');
       zoomExitBtn = overlay.querySelector('#go-zoom-exit-prac');
+      zoomTop     = overlay.querySelector('#go-zoom-top-prac');
       zoomUI      = overlay.querySelector('#go-zoom-ui-prac');
 
       if (zoomExitBtn && !zoomExitBtn._bound){
@@ -1649,20 +1673,20 @@ html.no-wood, body.no-wood{ background: none !important; }
 
       stage.appendChild(mount);
 
-      // move meters + buttons into overlay UI
-      if (zoomUI){
-        if (pracMeters && !pracMeters._inZoom){
-          metersReturnParent = pracMeters.parentNode;
-          metersReturnNext   = pracMeters.nextSibling;
-          zoomUI.appendChild(pracMeters);
-          pracMeters._inZoom = true;
-        }
-        if (pracCtrls && !pracCtrls._inZoom){
-          ctrlsReturnParent = pracCtrls.parentNode;
-          ctrlsReturnNext   = pracCtrls.nextSibling;
-          zoomUI.appendChild(pracCtrls);
-          pracCtrls._inZoom = true;
-        }
+      // move top bar (Back + meters) to the top overlay
+      if (zoomTop && pracTopbar && !pracTopbar._inZoom){
+        topbarReturnParent = pracTopbar.parentNode;
+        topbarReturnNext   = pracTopbar.nextSibling;
+        zoomTop.appendChild(pracTopbar);
+        pracTopbar._inZoom = true;
+      }
+
+      // move bottom controls to the bottom overlay
+      if (zoomUI && pracCtrls && !pracCtrls._inZoom){
+        ctrlsReturnParent = pracCtrls.parentNode;
+        ctrlsReturnNext   = pracCtrls.nextSibling;
+        zoomUI.appendChild(pracCtrls);
+        pracCtrls._inZoom = true;
       }
 
       overlay.style.display = 'flex';
@@ -1696,17 +1720,18 @@ html.no-wood, body.no-wood{ background: none !important; }
         returnAnchor = null;
       }
 
-      // move meters + buttons back
-      if (pracMeters && pracMeters._inZoom){
-        if (metersReturnParent){
-          if (metersReturnNext && metersReturnNext.parentNode === metersReturnParent){
-            metersReturnParent.insertBefore(pracMeters, metersReturnNext);
+       // move top bar + buttons back
+      if (pracTopbar && pracTopbar._inZoom){
+        if (topbarReturnParent){
+          if (topbarReturnNext && topbarReturnNext.parentNode === topbarReturnParent){
+            topbarReturnParent.insertBefore(pracTopbar, topbarReturnNext);
           } else {
-            metersReturnParent.appendChild(pracMeters);
+            topbarReturnParent.appendChild(pracTopbar);
           }
         }
-        pracMeters._inZoom = false;
+        pracTopbar._inZoom = false;
       }
+
       if (pracCtrls && pracCtrls._inZoom){
         if (ctrlsReturnParent){
           if (ctrlsReturnNext && ctrlsReturnNext.parentNode === ctrlsReturnParent){
@@ -1717,6 +1742,7 @@ html.no-wood, body.no-wood{ background: none !important; }
         }
         pracCtrls._inZoom = false;
       }
+
 
       mount.style.width = '';
       mount.style.height = '';
