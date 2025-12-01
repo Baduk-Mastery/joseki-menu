@@ -1173,6 +1173,75 @@ html.no-wood, body.no-wood{ background: none !important; }
     var offsetX = 0, offsetY = 0;
     var animId = 0;
     var isZoomAnimating = false;
+    // Kinetic panning state
+    var flingId = 0;
+    var isFlinging = false;
+    var flingVX = 0, flingVY = 0;  // px per ms in offset-space
+    var flingLastTime = 0;
+    var panSamplePrev = null;
+    var panSampleCurr = null;
+
+    function cancelFling(){
+      if (!isFlinging && !flingId) return;
+      isFlinging = false;
+      if (flingId){
+        cancelAnimationFrame(flingId);
+        flingId = 0;
+      }
+    }
+
+    function startFling(vx, vy){
+      // Only fling when zoomed & fullscreen
+      if (!isFullscreen || scale <= 1) return;
+
+      cancelFling();
+
+      var speed = Math.sqrt(vx*vx + vy*vy);
+      // Ignore tiny velocities
+      if (speed < 0.04) return;
+
+      isFlinging   = true;
+      flingVX      = vx;
+      flingVY      = vy;
+      flingLastTime = performance.now();
+
+      (function step(now){
+        if (!isFlinging) return;
+
+        var dt = now - flingLastTime;
+        if (dt <= 0){
+          flingId = requestAnimationFrame(step);
+          return;
+        }
+        // Avoid giant jumps on dropped frames
+        if (dt > 50) dt = 50;
+        flingLastTime = now;
+
+        // Move according to current velocity
+        offsetX += flingVX * dt;
+        offsetY += flingVY * dt;
+
+        // Friction-based deceleration (simple linear falloff)
+        var friction = 0.0025; // px/ms²
+        var speed = Math.sqrt(flingVX*flingVX + flingVY*flingVY);
+        var decel = friction * dt;
+
+        if (speed <= 0.01 || decel >= speed){
+          cancelFling();
+          applyPanAndSize(true);
+          return;
+        }
+
+        var newSpeed    = speed - decel;
+        var scaleFactor = newSpeed / speed;
+        flingVX *= scaleFactor;
+        flingVY *= scaleFactor;
+
+        applyPanAndSize(false);
+        flingId = requestAnimationFrame(step);
+      })(performance.now());
+    }
+
 
     var isFullscreen = false;
     var overlay = null, stage = null, returnAnchor = null, zoomExitBtn = null, zoomUI = null;
@@ -1310,12 +1379,18 @@ html.no-wood, body.no-wood{ background: none !important; }
     }
 
     function resetViewLocal(){
-      scale = 1; offsetX = 0; offsetY = 0;
+      cancelFling();
+      scale = 1;
+      offsetX = 0;
+      offsetY = 0;
       applyPanAndSize(true);
     }
 
+
     function animateTo(targetScale, pxWorld, pyWorld, sxTarget, syTarget, onDone){
       targetScale = Math.max(minScale, Math.min(maxScale, targetScale));
+
+      cancelFling(); // stop kinetic pan when zooming
 
       const s0  = scale;
       const t0  = performance.now();
@@ -1377,6 +1452,7 @@ html.no-wood, body.no-wood{ background: none !important; }
 
     function enterFullscreenAtGrid(i, j, tapClientX, tapClientY){
       if (isFullscreen) return;
+     cancelFling();
       ensureOverlay();
       prevOverflow = document.documentElement.style.overflow || "";
       document.documentElement.style.overflow = 'hidden';
@@ -1423,6 +1499,7 @@ html.no-wood, body.no-wood{ background: none !important; }
     }
 
     function exitFullscreen(){
+      cancelFling();
       mount.classList.remove('is-fullscreen');
       if (!isFullscreen) return;
       resetViewLocal();
@@ -1471,11 +1548,19 @@ html.no-wood, body.no-wood{ background: none !important; }
         tapStart = null, suppressNextBoardClick = false;
 
     function beginPan(e){
+      cancelFling(); // stop existing kinetic motion
+
       isPanning = false;
       panStart = { x: e.clientX, y: e.clientY, ox: offsetX, oy: offsetY };
       activePointerId = e.pointerId;
+
+      // reset velocity samples
+      panSamplePrev = null;
+      panSampleCurr = null;
+
       try { mount.setPointerCapture(e.pointerId); } catch(_) {}
     }
+
 
     function updatePan(e){
       if (e.pointerType && e.pointerType !== 'touch') return;
@@ -1495,22 +1580,45 @@ html.no-wood, body.no-wood{ background: none !important; }
       offsetY = panStart.oy - dy;
 
       applyPanAndSize(false);
+
+      // Sample offsets over time for velocity estimation
+      const now = performance.now();
+      panSamplePrev = panSampleCurr;
+      panSampleCurr = { ox: offsetX, oy: offsetY, t: now };
+
       e.preventDefault();
     }
 
     function endPan(e){
+      var wasPanning = isPanning;
+
       if (activePointerId !== null){
         try { mount.releasePointerCapture(activePointerId); } catch(_) {}
       }
       activePointerId = null;
       panStart = null;
       setTimeout(function(){ isPanning = false; }, 0);
+
+      // No fling in these cases
+      if (!wasPanning || !isFullscreen || scale <= 1) return;
+      if (e && e.type === 'pointercancel') return;
+      if (!panSamplePrev || !panSampleCurr) return;
+
+      var dt = panSampleCurr.t - panSamplePrev.t;
+      // Ignore weird or too-old samples
+      if (dt <= 0 || dt > 120) return;
+
+      var vx = (panSampleCurr.ox - panSamplePrev.ox) / dt; // px/ms
+      var vy = (panSampleCurr.oy - panSamplePrev.oy) / dt;
+
+      startFling(vx, vy);
     }
+
 
     mount.addEventListener('pointerdown', function(e){
       if (!zoomEnabled) return;
       if (e.pointerType && e.pointerType !== 'touch') return;
-
+     cancelFling();
       e.preventDefault();
 
       const r  = mount.getBoundingClientRect();
@@ -1847,6 +1955,7 @@ function showClearedOrWin(){
     function smoothZoomOutAndExit(){
       if (!zoomEnabled) return;
 
+      cancelFling();
       cancelAnimationFrame(animId);
       isZoomAnimating = false;
 
@@ -1860,6 +1969,7 @@ function showClearedOrWin(){
         exitFullscreen();
       }
     }
+
 
     function handlePracticeClick(x, y){
       if (!hasSGF || isAutoPlacing) return;
