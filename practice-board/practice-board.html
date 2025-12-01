@@ -50,8 +50,15 @@
 
 <!-- Practice Board (standalone page) -->
 <div id="go-board-prac-wrap" data-hidden="1" style="width:100%;max-width:720px;margin:0 auto;box-sizing:border-box;">
+
+  <!-- Top header: Back button -->
+  <div id="prac-header">
+    <button id="prac-back-top" class="s-back" type="button" aria-label="Back">← Back</button>
+  </div>
+
   <!-- Practice meters (Free plan) -->
   <div id="prac-meters" aria-live="polite" style="display:none;">
+
     <div class="meter-row" id="row-lives">
       <span class="meter-label">Lives</span>
       <div id="meter-lives" class="stones" role="img" aria-label="Lives remaining"></div>
@@ -404,6 +411,83 @@
   #prac-ctrls .pbtn-alt:focus-visible{
     outline:2px solid rgba(255,255,255,.9);
     outline-offset:2px;
+  }
+</style>
+<style>
+  /* Practice Board top header */
+  #prac-header{
+    max-width:720px;
+    width:100%;
+    margin:16px auto 6px;
+    padding:0 12px;
+    box-sizing:border-box;
+    display:flex;
+    justify-content:flex-start;
+  }
+
+  /* Wood-style Back button – same look as Practice List .s-back */
+  .s-back{
+    position:relative;
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    gap:6px;
+
+    padding:6px 12px;
+    border-radius:8px;
+    border:1px solid rgba(255,255,255,.40);
+
+    font-size:14px;
+    font-weight:800;
+    line-height:1.1;
+    color:#fff3cf;
+    text-shadow:0 1px 0 rgba(120,60,20,.7);
+    cursor:pointer;
+
+    user-select:none;
+    -webkit-user-select:none;
+    -moz-user-select:none;
+    -ms-user-select:none;
+    -webkit-tap-highlight-color:transparent;
+
+    background-image:
+      linear-gradient(
+        to bottom,
+        rgba(255,255,255,.12),
+        rgba(255,255,255,.03) 38%,
+        rgba(0,0,0,.14) 100%
+      ),
+      url('../img/wood.jpg');
+    background-size:100% 100%, cover;
+    background-position:center;
+    background-repeat:no-repeat;
+
+    filter:brightness(1.08) saturate(.96);
+
+    box-shadow:
+      0 3px 0 rgba(133,74,26,.85),
+      0 8px 14px rgba(0,0,0,.45);
+
+    transition:
+      transform .08s ease-out,
+      box-shadow .08s ease-out,
+      filter .12s ease-out;
+  }
+
+  .s-back:hover{
+    filter:brightness(1.12) saturate(.98);
+    transform:translateY(-1px);
+    box-shadow:
+      0 4px 0 rgba(133,74,26,.9),
+      0 10px 16px rgba(0,0,0,.48);
+  }
+
+  .s-back:active{
+    filter:brightness(.97) saturate(.96);
+    transform:translateY(2px);
+    box-shadow:
+      0 1px 0 rgba(120,60,20,.9),
+      0 4px 8px rgba(0,0,0,.55);
   }
 </style>
 
@@ -2203,6 +2287,33 @@ function showClearedOrWin(){
       if (isFullscreen) exitFullscreen();
     });
     if (hintBtn)  hintBtn.addEventListener('click', triggerHint);
+    // Top-left Back button – go back to previous screen (Practice List, My Patterns, etc.)
+    var headerBack = document.getElementById('prac-back-top');
+
+    if (headerBack){
+      headerBack.addEventListener('click', function(e){
+        e.preventDefault();
+
+        // Prefer going back to the actual previous same-origin page
+        try{
+          if (document.referrer){
+            var ref = new URL(document.referrer);
+            if (ref.origin === window.location.origin){
+              window.history.back();
+              return;
+            }
+          }
+        } catch(_){}
+
+        // Fallback: try Practice List page, then main menu
+        try{
+          window.location.href = "../practice-list/index.html";
+        } catch(_){
+          window.location.href = "../joseki-menu/index.html";
+        }
+      });
+    }
+
 
     function hook(id, fn){
       var el = document.getElementById(id);
