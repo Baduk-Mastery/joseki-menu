@@ -439,10 +439,14 @@
       else           azRow.classList.add('is-disabled');
     }
     if (azcRow){
-      if (zoomOnVal) azcRow.classList.remove('is-disabled');
-      else           azcRow.classList.add('is-disabled');
+      // enabled only when Zoom ON AND Disable auto zoom out ON
+      if (zoomOnVal && GoPrefs.disableAutoZoomOut) {
+        azcRow.classList.remove('is-disabled');
+      } else {
+        azcRow.classList.add('is-disabled');
+      }
     }
-  }
+
 
 
   // Wire up handlers
@@ -461,6 +465,29 @@
 
   if (hOn)  hOn.addEventListener('click',  function(){ setPref('highlightLast', true);  syncButtons(); });
   if (hOff) hOff.addEventListener('click', function(){ setPref('highlightLast', false); syncButtons(); });
+  // Sub-setting: Disable auto zoom out (only works when Zoom is ON)
+  if (azOn)  azOn.addEventListener('click', function(){
+    if (!GoPrefs.josekiZoom) return;
+    setPref('disableAutoZoomOut', true);
+    syncButtons();
+  });
+  if (azOff) azOff.addEventListener('click', function(){
+    if (!GoPrefs.josekiZoom) return;
+    setPref('disableAutoZoomOut', false);
+    syncButtons();
+  });
+
+  // NEW sub-setting: Zoom out when variation finished
+  if (azcOn)  azcOn.addEventListener('click',  function(){
+    if (!GoPrefs.josekiZoom || !GoPrefs.disableAutoZoomOut) return;
+    setPref('autoZoomOnClear', true);
+    syncButtons();
+  });
+  if (azcOff) azcOff.addEventListener('click', function(){
+    if (!GoPrefs.josekiZoom || !GoPrefs.disableAutoZoomOut) return;
+    setPref('autoZoomOnClear', false);
+    syncButtons();
+  });
 
   // NEW sub-setting: Zoom out when variation finished
   if (azcOn)  azcOn.addEventListener('click',  function(){
