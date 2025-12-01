@@ -1229,7 +1229,7 @@ html.no-wood, body.no-wood{ background: none !important; }
         offsetX += flingVX * dt;
         offsetY += flingVY * dt;
 
-        var friction = 0.0015; // px/ms²
+        var friction = 0.0005; // px/ms²
         var speed = Math.sqrt(flingVX*flingVX + flingVY*flingVY);
         var decel = friction * dt;
 
