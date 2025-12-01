@@ -276,10 +276,10 @@
           <button id="azoff-off" class="seg-btn" data-val="off" aria-pressed="false">OFF</button>
         </div>
       </div>
-      <!-- Row: Zoom out when corner finished (subsetting of Zoom) -->
+      <!-- Row: Zoom out when variation finished (subsetting of Zoom) -->
       <div class="s-row s-row-sub" id="row-azclear">
-        <div class="s-label s-label-sub">Zoom out when corner finished</div>
-        <div class="seg" id="seg-azclear" role="group" aria-label="Zoom out when corner finished setting">
+        <div class="s-label s-label-sub">Zoom out when variation finished</div>
+        <div class="seg" id="seg-azclear" role="group" aria-label="Zoom out when variation finished setting">
           <button id="azclear-on"  class="seg-btn" data-val="on"  aria-pressed="false">ON</button>
           <button id="azclear-off" class="seg-btn" data-val="off" aria-pressed="false">OFF</button>
         </div>
@@ -426,7 +426,7 @@
       azOff.setAttribute('aria-pressed', GoPrefs.disableAutoZoomOut ? 'false' : 'true');
     }
 
-    // NEW: Zoom out when corner finished
+    // NEW: Zoom out when variation finished
     if (azcOn && azcOff){
       // We keep the value even if Zoom is OFF, but UI is greyed out
       azcOn.setAttribute('aria-pressed', GoPrefs.autoZoomOnClear ? 'true' : 'false');
@@ -462,7 +462,7 @@
   if (hOn)  hOn.addEventListener('click',  function(){ setPref('highlightLast', true);  syncButtons(); });
   if (hOff) hOff.addEventListener('click', function(){ setPref('highlightLast', false); syncButtons(); });
 
-  // NEW sub-setting: Zoom out when corner finished
+  // NEW sub-setting: Zoom out when variation finished
   if (azcOn)  azcOn.addEventListener('click',  function(){
     if (!GoPrefs.josekiZoom) return;
     setPref('autoZoomOnClear', true);
