@@ -2288,33 +2288,30 @@ function showClearedOrWin(){
       if (isFullscreen) exitFullscreen();
     });
     if (hintBtn)  hintBtn.addEventListener('click', triggerHint);
-    // Top-left Back button – go back to previous screen (Practice List, My Patterns, etc.)
-    var headerBack = document.getElementById('prac-back-top');
+// Top-left Back button – go back to previous screen (Practice List, My Patterns, etc.)
+var headerBack = document.getElementById('prac-back-top');
 
-    if (headerBack){
-      headerBack.addEventListener('click', function(e){
-        e.preventDefault();
+if (headerBack){
+  headerBack.addEventListener('click', function(e){
+    e.preventDefault();
 
-        // Prefer going back to the actual previous same-origin page
-        try{
-          if (document.referrer){
-            var ref = new URL(document.referrer);
-            if (ref.origin === window.location.origin){
-              window.history.back();
-              return;
-            }
-          }
-        } catch(_){}
-
-        // Fallback: try Practice List page, then main menu
-        try{
-          window.location.href = "../practice-list/index.html";
-        } catch(_){
-          window.location.href = "../joseki-menu/index.html";
-        }
-      });
+    // If we have any referrer, just go back in history so the user
+    // returns to the exact screen they launched Practice from
+    // (level selection, category selection, Bubble page, etc.).
+    if (document.referrer){
+      window.history.back();
+      return;
     }
 
+    // If there is no referrer (opened directly or in a new tab),
+    // fall back to the Practice List, then menu.
+    try{
+      window.location.href = "../practice-list/index.html";
+    } catch(_){
+      window.location.href = "../joseki-menu/index.html";
+    }
+  });
+}
 
     function hook(id, fn){
       var el = document.getElementById(id);
