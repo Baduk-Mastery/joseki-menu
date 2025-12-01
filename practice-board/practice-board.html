@@ -1843,41 +1843,83 @@ html.no-wood, body.no-wood{ background: none !important; }
 
       startFling(vx, vy);
     }
+    // NEW: Compute clickable grid bounds so we can ignore taps outside the grid
+    function getBoardBounds(){
+      // Intersections in CSS space
+      var firstX = getXcss(0);
+      var lastX  = getXcss(SIZE - 1);
+      var firstY = getYcss(0);
+      var lastY  = getYcss(SIZE - 1);
+
+      // Estimate grid spacing
+      var spacingX = SIZE > 1 ? Math.abs(getXcss(1) - firstX) : 0;
+      var spacingY = SIZE > 1 ? Math.abs(getYcss(1) - firstY) : 0;
+      if (!spacingX && spacingY) spacingX = spacingY;
+      if (!spacingY && spacingX) spacingY = spacingX;
+
+      // Half spacing defines how far outside the outer intersections we still
+      // treat taps as "on the board". Beyond that is "outside the grid".
+      var halfX = spacingX * 0.5 || 8;
+      var halfY = spacingY * 0.5 || 8;
+
+      return {
+        minX: firstX - halfX,
+        maxX: lastX  + halfX,
+        minY: firstY - halfY,
+        maxY: lastY  + halfY
+      };
+    }
 
 
     mount.addEventListener('pointerdown', function(e){
       if (!zoomEnabled) return;
       if (e.pointerType && e.pointerType !== 'touch') return;
-     cancelFling();
+      cancelFling();
       e.preventDefault();
 
       const r  = mount.getBoundingClientRect();
       const sx = e.clientX - r.left;
       const sy = e.clientY - r.top;
 
+      // Map pointer back into board "world" coordinates
       const boardX = (sx + offsetX) / scale;
       const boardY = (sy + offsetY) / scale;
 
-      let bestI = 0, bestJ = 0, bestDx = 1e9, bestDy = 1e9;
-      for (let i = 0; i < SIZE; i++){
-        const dx = Math.abs(getXcss(i) - boardX);
-        if (dx < bestDx){ bestDx = dx; bestI = i; }
-      }
-      for (let j = 0; j < SIZE; j++){
-        const dy = Math.abs(getYcss(j) - boardY);
-        if (dy < bestDy){ bestDy = dy; bestJ = j; }
+      const bounds = getBoardBounds();
+
+      // Default: tap is not on any grid point
+      var gridI = null;
+      var gridJ = null;
+
+      // Only snap to a grid point if the tap falls inside the grid area
+      if (boardX >= bounds.minX && boardX <= bounds.maxX &&
+          boardY >= bounds.minY && boardY <= bounds.maxY){
+        let bestI = 0, bestJ = 0, bestDx = 1e9, bestDy = 1e9;
+
+        for (let i = 0; i < SIZE; i++){
+          const dx = Math.abs(getXcss(i) - boardX);
+          if (dx < bestDx){ bestDx = dx; bestI = i; }
+        }
+        for (let j = 0; j < SIZE; j++){
+          const dy = Math.abs(getYcss(j) - boardY);
+          if (dy < bestDy){ bestDy = dy; bestJ = j; }
+        }
+
+        gridI = bestI;
+        gridJ = bestJ;
       }
 
       tapStart = {
         x: e.clientX,
         y: e.clientY,
         t: performance.now(),
-        gridI: bestI,
-        gridJ: bestJ
+        gridI: gridI,
+        gridJ: gridJ
       };
 
       beginPan(e);
     }, {passive:false});
+
 
     mount.addEventListener('pointerup', function(e){
       if (!zoomEnabled || !tapStart) { endPan(e); return; }
@@ -1906,19 +1948,28 @@ html.no-wood, body.no-wood{ background: none !important; }
       endPan(e);
 
       if (dt < 250 && (dx*dx + dy*dy) < 9){
+        // NEW: If the tap was not on a valid grid point, ignore it completely.
+        if (gi == null || gj == null ||
+            gi < 0 || gj < 0 || gi >= SIZE || gj >= SIZE){
+          return;
+        }
+
         e.preventDefault();
         e.stopPropagation();
         if (e.stopImmediatePropagation) e.stopImmediatePropagation();
 
         if (scale === 1 && !isFullscreen){
+          // Zoom in from normal view
           suppressNextBoardClick = true;
           enterFullscreenAtGrid(gi, gj, tapClientX, tapClientY);
         } else {
+          // Already zoomed: treat as a real board tap
           suppressNextBoardClick = false;
           try { handlePracticeClick(gi, gj); } catch(_) {}
         }
       }
     }, {passive:false, capture:true});
+
 
     mount.addEventListener('pointermove', function(e){
       if (!zoomEnabled) return;
@@ -2340,9 +2391,6 @@ if (headerBack){
   headerBack.addEventListener('click', function(e){
     e.preventDefault();
 
-    // If we have any referrer, just go back in history so the user
-    // returns to the exact screen they launched Practice from
-    // (level selection, category selection, Bubble page, etc.).
     if (document.referrer){
       window.history.back();
       return;
