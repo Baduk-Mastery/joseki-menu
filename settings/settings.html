@@ -258,6 +258,15 @@
           <button id="hlast-off" class="seg-btn" data-val="off" aria-pressed="false">OFF</button>
         </div>
       </div>
+      <!-- Row: Auto-play speed -->
+      <div class="s-row">
+        <div class="s-label">Auto-play speed</div>
+        <div class="seg" role="group" aria-label="Auto-play speed setting">
+          <button id="speed-fast" class="seg-btn" data-val="fast" aria-pressed="false">FAST</button>
+          <button id="speed-slow" class="seg-btn" data-val="slow" aria-pressed="false">SLOW</button>
+        </div>
+      </div>
+
 
       <!-- Row: Zoom -->
       <div class="s-row">
@@ -307,6 +316,8 @@
   if (typeof GoPrefs.soundOn === 'undefined')              GoPrefs.soundOn              = true;
   if (typeof GoPrefs.highlightLast === 'undefined')        GoPrefs.highlightLast        = true;
   if (typeof GoPrefs.disableAutoZoomOut === 'undefined')   GoPrefs.disableAutoZoomOut   = false;
+  if (typeof GoPrefs.autoPlaySpeed === 'undefined')        GoPrefs.autoPlaySpeed        = 'fast';  // NEW
+
 
   // Keep dependent pref consistent on load
   if (!GoPrefs.josekiZoom && GoPrefs.disableAutoZoomOut){
@@ -358,10 +369,29 @@
         PracticeHighlight.setEnabled(!!GoPrefs.highlightLast);
       }
     } catch (e) {}
+    // NEW: Auto-play speed
+    try {
+      if (window.JosekiSpeed && typeof JosekiSpeed.setSpeed === 'function') {
+        JosekiSpeed.setSpeed(GoPrefs.autoPlaySpeed || 'fast');
+      }
+      if (window.PracticeSpeed && typeof PracticeSpeed.setSpeed === 'function') {
+        PracticeSpeed.setSpeed(GoPrefs.autoPlaySpeed || 'fast');
+      }
+    } catch (e) {}
   }
 
   function setPref(key, val){
     GoPrefs[key] = !!val;
+    savePrefs();
+    broadcast(key);
+    applyToBoards();
+  }
+
+  // NEW: for string/enum settings (like autoPlaySpeed)
+  function setEnumPref(key, val, allowed, fallback){
+    var v = val;
+    if (!allowed || allowed.indexOf(v) === -1) v = fallback;
+    GoPrefs[key] = v;
     savePrefs();
     broadcast(key);
     applyToBoards();
@@ -377,7 +407,8 @@
   var azOn     = document.getElementById('azoff-on');
   var azOff    = document.getElementById('azoff-off');
   var azRow    = document.getElementById('row-azoff');
-
+  var speedFast = document.getElementById('speed-fast');
+  var speedSlow = document.getElementById('speed-slow');
 
   var backBtn  = document.getElementById('s-back');
 
@@ -410,14 +441,21 @@
       azOff.setAttribute('aria-pressed', GoPrefs.disableAutoZoomOut ? 'false' : 'true');
     }
 
+    // NEW: speed buttons
+    if (speedFast && speedSlow){
+      var isSlow = (GoPrefs.autoPlaySpeed === 'slow');
+      speedFast.setAttribute('aria-pressed', isSlow ? 'false' : 'true');
+      speedSlow.setAttribute('aria-pressed', isSlow ? 'true' : 'false');
+    }
+
     // Grey out the sub-rows (only Disable auto zoom out now)
     if (azRow){
       // Row depends only on Zoom
       if (zoomOnVal) azRow.classList.remove('is-disabled');
       else           azRow.classList.add('is-disabled');
     }
-
   }
+
 
   // Wire up handlers
   if (zoomOn)  zoomOn.addEventListener('click',  function(){
@@ -436,6 +474,14 @@
   if (hOn)  hOn.addEventListener('click',  function(){ setPref('highlightLast', true);  syncButtons(); });
   if (hOff) hOff.addEventListener('click', function(){ setPref('highlightLast', false); syncButtons(); });
 
+  if (speedFast) speedFast.addEventListener('click', function(){
+    setEnumPref('autoPlaySpeed', 'fast', ['fast', 'slow'], 'fast');
+    syncButtons();
+  });
+  if (speedSlow) speedSlow.addEventListener('click', function(){
+    setEnumPref('autoPlaySpeed', 'slow', ['fast', 'slow'], 'fast');
+    syncButtons();
+  });
   // Sub-setting: Disable auto zoom out – only active when Zoom is ON
   if (azOn)  azOn.addEventListener('click', function(){
     if (!GoPrefs.josekiZoom) return;
