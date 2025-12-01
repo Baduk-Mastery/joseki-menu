@@ -51,23 +51,23 @@
 <!-- Practice Board (standalone page) -->
 <div id="go-board-prac-wrap" data-hidden="1" style="width:100%;max-width:720px;margin:0 auto;box-sizing:border-box;">
 
-  <!-- Top header: Back button -->
-  <div id="prac-header">
+  <!-- Top bar: Back + Lives + Hints on one row -->
+  <div id="prac-topbar">
     <button id="prac-back-top" class="s-back" type="button" aria-label="Back">← Back</button>
+
+    <!-- Practice meters (Free plan) -->
+    <div id="prac-meters" aria-live="polite">
+      <div class="meter-row" id="row-lives">
+        <span class="meter-label">Lives</span>
+        <div id="meter-lives" class="stones" role="img" aria-label="Lives remaining"></div>
+      </div>
+      <div class="meter-row" id="row-hints">
+        <span class="meter-label">Hints</span>
+        <span id="meter-hints" class="hints-num" role="text">3</span>
+      </div>
+    </div>
   </div>
 
-  <!-- Practice meters (Free plan) -->
-  <div id="prac-meters" aria-live="polite" style="display:none;">
-
-    <div class="meter-row" id="row-lives">
-      <span class="meter-label">Lives</span>
-      <div id="meter-lives" class="stones" role="img" aria-label="Lives remaining"></div>
-    </div>
-    <div class="meter-row" id="row-hints">
-      <span class="meter-label">Hints</span>
-      <span id="meter-hints" class="hints-num" role="text">3</span>
-    </div>
-  </div>
 
   <div id="go-board-prac"
        style="position:relative;width:100%;border-radius:6px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.08);"></div>
@@ -196,17 +196,14 @@
 
   /* Practice meters (Free) */
   #prac-meters{
-    max-width:720px; 
-    margin:0 auto 8px;
-    padding:0 12px;
     display:flex;
     flex-direction:row;
-    gap:10px;
+    gap:8px;
     align-items:center;
-    justify-content:center;
+    justify-content:flex-end;
     flex-wrap:wrap;
-    box-sizing:border-box;
   }
+
   #prac-meters .meter-row{
     display:flex; align-items:center; gap:10px;
     background:#fff; border:1px solid #e2e8f0; border-radius:10px;
@@ -414,16 +411,20 @@
   }
 </style>
 <style>
-/* Practice Board top header */
-#prac-header{
+/* Practice Board top bar (Back + meters) */
+#prac-topbar{
   max-width:720px;
   width:100%;
-  margin:16px auto 14px;   /* more space below the button */
-  padding:0;               /* align with board's left/right edge */
+  margin:16px auto 10px;
+  padding:0;               /* aligns with board edges via wrapper padding */
   box-sizing:border-box;
   display:flex;
-  justify-content:flex-start;
+  align-items:center;
+  justify-content:space-between;
+  gap:8px;
+  flex-wrap:wrap;          /* if it gets too tight, meters wrap below */
 }
+
 
 
   /* Wood-style Back button – same look as Practice List .s-back */
