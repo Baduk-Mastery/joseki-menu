@@ -1199,7 +1199,7 @@ html.no-wood, body.no-wood{ background: none !important; }
       var speed = Math.sqrt(vx*vx + vy*vy);
 
       // New: cap very fast swipes so they don't slide too far
-      var MAX_SPEED = 0.18; // try 0.15–0.22 range
+      var MAX_SPEED = 0.25; // try 0.15–0.22 range
       if (speed > MAX_SPEED){
         var s = MAX_SPEED / speed;
         vx *= s;
@@ -1229,7 +1229,7 @@ html.no-wood, body.no-wood{ background: none !important; }
         offsetX += flingVX * dt;
         offsetY += flingVY * dt;
 
-        var friction = 0.0025; // px/ms²
+        var friction = 0.0015; // px/ms²
         var speed = Math.sqrt(flingVX*flingVX + flingVY*flingVY);
         var decel = friction * dt;
 
