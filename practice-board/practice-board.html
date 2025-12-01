@@ -1092,28 +1092,54 @@ html.no-wood, body.no-wood{ background: none !important; }
       current=history.length; turn=(current%2===0)?B:W; redraw();
     }
 
-    function t_identity(p){ return {x:p.x,y:p.y}; }
-    function t_swap(p){ return {x:p.y, y:p.x}; }
-    function t_rot90(p){  return {x: SIZE-1 - p.y, y: p.x}; }
-    function t_rot180(p){ return {x: SIZE-1 - p.x, y: SIZE-1 - p.y}; }
-    function t_rot270(p){ return {x: p.y, y: SIZE-1 - p.x}; }
-    function compose(a,b){ return function(p){ return a(b(p)); }; }
+    function t_identity(p){ return { x: p.x, y: p.y }; }
+    function t_swap(p){ return { x: p.y, y: p.x }; }
+    function t_rot90(p){  return { x: SIZE - 1 - p.y, y: p.x }; }
+    function t_rot180(p){ return { x: SIZE - 1 - p.x, y: SIZE - 1 - p.y }; }
+    function t_rot270(p){ return { x: p.y, y: SIZE - 1 - p.x }; }
+    function compose(a, b){
+      return function(p){ return a(b(p)); };
+    }
 
     var FLIP_NE = compose(t_swap, t_rot180);
 
+    // Base orientation list (unchanged) – used for corner joseki
     var ORIENTS = [
-      { name:'Start',        tf: t_identity },
-      { name:'Next-1',       tf: t_rot90 },
-      { name:'Next-2',       tf: compose(t_rot90,  FLIP_NE) },
-      { name:'Across-1',     tf: t_rot180 },
-      { name:'Across-2',     tf: compose(t_rot180, FLIP_NE) },
-      { name:'Prev-1',       tf: t_rot270 },
-      { name:'Prev-2',       tf: compose(t_rot270, FLIP_NE) },
-      { name:'Start-Other',  tf: FLIP_NE }
+      { name: 'Start',       tf: t_identity },
+      { name: 'Next-1',      tf: t_rot90 },
+      { name: 'Next-2',      tf: compose(t_rot90,  FLIP_NE) },
+      { name: 'Across-1',    tf: t_rot180 },
+      { name: 'Across-2',    tf: compose(t_rot180, FLIP_NE) },
+      { name: 'Prev-1',      tf: t_rot270 },
+      { name: 'Prev-2',      tf: compose(t_rot270, FLIP_NE) },
+      { name: 'Start-Other', tf: FLIP_NE }
+    ];
+
+    // NEW: orientation order for *side* patterns.
+    // For a side joseki whose first try is, say, on the top side near the right,
+    // the tries go clockwise:
+    //   0: top-right side
+    //   1: right-top
+    //   2: right-bottom
+    //   3: bottom-right
+    //   4: bottom-left
+    //   5: left-bottom
+    //   6: left-top
+    //   7: top-left
+    var ORIENTS_SIDE = [
+      ORIENTS[0], // Start        (id)
+      ORIENTS[7], // Start-Other  (flip)
+      ORIENTS[1], // Next-1       (r90)
+      ORIENTS[2], // Next-2       (r90 ∘ flip)
+      ORIENTS[3], // Across-1     (r180)
+      ORIENTS[4], // Across-2     (r180 ∘ flip)
+      ORIENTS[5], // Prev-1       (r270)
+      ORIENTS[6]  // Prev-2       (r270 ∘ flip)
     ];
 
     var startTF    = t_identity;
     var startTFInv = t_identity;
+    var activeOrients = ORIENTS; // default: corner behaviour
 
     (function(){
       var ALL = [
@@ -1123,48 +1149,115 @@ html.no-wood, body.no-wood{ background: none !important; }
         compose(t_rot180, FLIP_NE),
         compose(t_rot270, FLIP_NE)
       ];
+
       function isIdentity(f){
-        var pts = [{x:0,y:0},{x:SIZE-1,y:0},{x:0,y:SIZE-1},{x:5,y:7},{x:9,y:9}];
-        for (var i=0;i<pts.length;i++){ var p=pts[i], q=f(p); if (q.x!==p.x || q.y!==p.y) return false; }
+        var pts = [
+          { x: 0,       y: 0 },
+          { x: SIZE-1,  y: 0 },
+          { x: 0,       y: SIZE-1 },
+          { x: 5,       y: 7 },
+          { x: 9,       y: 9 }
+        ];
+        for (var i = 0; i < pts.length; i++){
+          var p = pts[i];
+          var q = f(p);
+          if (q.x !== p.x || q.y !== p.y) return false;
+        }
         return true;
       }
+
       function invertTF(tf){
-        for (var i=0;i<ALL.length;i++){ if (isIdentity(compose(ALL[i], tf))) return ALL[i]; }
+        for (var i = 0; i < ALL.length; i++){
+          if (isIdentity(compose(ALL[i], tf))) return ALL[i];
+        }
         return t_identity;
       }
 
       window.detectStartTF = function(){
         var opts = getRootCandidates();
-        if (!opts.length){ startTF=t_identity; startTFInv=t_identity; return; }
-        var mv = {x:opts[0].xy.x, y:opts[0].xy.y};
+        if (!opts.length){
+          startTF      = t_identity;
+          startTFInv   = t_identity;
+          activeOrients = ORIENTS;
+          return;
+        }
+
+        // First move of the main sequence (in SGF coordinates)
+        var mv = { x: opts[0].xy.x, y: opts[0].xy.y };
 
         function cornerOf(p){
-          var NE={x:SIZE-1,y:0}, SE={x:SIZE-1,y:SIZE-1}, SW={x:0,y:SIZE-1}, NW={x:0,y:0};
-          function d2(a){ var dx=a.x-p.x, dy=a.y-p.y; return dx*dx+dy*dy; }
-          var ds=[d2(NE),d2(SE),d2(SW),d2(NW)];
-          var k=0, best=ds[0]; for (var i=1;i<4;i++){ if (ds[i]<best){ best=ds[i]; k=i; } }
+          var NE = { x: SIZE-1, y: 0 };
+          var SE = { x: SIZE-1, y: SIZE-1 };
+          var SW = { x: 0,      y: SIZE-1 };
+          var NW = { x: 0,      y: 0 };
+          function d2(a){
+            var dx = a.x - p.x;
+            var dy = a.y - p.y;
+            return dx*dx + dy*dy;
+          }
+          var ds = [ d2(NE), d2(SE), d2(SW), d2(NW) ];
+          var k  = 0, best = ds[0];
+          for (var i = 1; i < 4; i++){
+            if (ds[i] < best){ best = ds[i]; k = i; }
+          }
           return k;
         }
+
+        // Rotate so the nearest corner is NE
         var corner = cornerOf(mv);
-        var rotToNE = (corner===0)?t_identity : (corner===1)?t_rot270 : (corner===2)?t_rot180 : t_rot90;
+        var rotToNE =
+          (corner === 0) ? t_identity :
+          (corner === 1) ? t_rot270 :
+          (corner === 2) ? t_rot180 :
+                           t_rot90;
 
         var q = rotToNE(mv);
-        var inwardX = (SIZE-1) - q.x;
-        var inwardY = q.y;
+        var inwardX  = (SIZE - 1) - q.x;
+        var inwardY  = q.y;
         var needFlip = inwardY > inwardX;
 
+        // Start transform (possibly with the NE flip)
         startTF    = needFlip ? compose(FLIP_NE, rotToNE) : rotToNE;
         startTFInv = invertTF(startTF);
+
+        // Canonical root after applying the start transform
+        var canon = startTF(mv);
+
+        // Decide if this is a corner or a side joseki in canonical coordinates.
+        var margin   = 3; // how close to the edge counts as "on the side"
+        var onTop    = (canon.y <= margin);
+        var onBottom = (canon.y >= SIZE - 1 - margin);
+        var onLeft   = (canon.x <= margin);
+        var onRight  = (canon.x >= SIZE - 1 - margin);
+
+        var nearCorner = ( (onTop || onBottom) && (onLeft || onRight) );
+        var nearEdge   =  (onTop || onBottom || onLeft || onRight);
+
+        if (nearCorner){
+          // Corner joseki – keep the original orientation order (already clockwise)
+          activeOrients = ORIENTS;
+        } else if (nearEdge){
+          // Side joseki – use the special side cycle (clockwise along the sides)
+          activeOrients = ORIENTS_SIDE;
+        } else {
+          // Central-ish patterns – treat them like sides for rotation purposes
+          activeOrients = ORIENTS_SIDE;
+        }
       };
     })();
 
-    function tfXY(x,y){
-      var step = ORIENTS[tryIndex % ORIENTS.length].tf;
-      var p = startTF({x:x,y:y});
-      p = step(p);
-      p = startTFInv(p);
-      return {x:p.x, y:p.y};
+    function tfXY(x, y){
+      // Use activeOrients (corner vs side aware), fall back to ORIENTS just in case
+      var arr  = activeOrients || ORIENTS;
+      var step = arr[ tryIndex % arr.length ].tf;
+
+      var p = startTF({ x: x, y: y });
+      p     = step(p);
+      p     = startTFInv(p);
+
+      return { x: p.x, y: p.y };
     }
+
 
     var zoomEnabled = (window.GoPrefs && typeof window.GoPrefs.josekiZoom !== 'undefined')
                       ? !!window.GoPrefs.josekiZoom : true;
