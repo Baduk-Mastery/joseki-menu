@@ -1197,12 +1197,22 @@ html.no-wood, body.no-wood{ background: none !important; }
       cancelFling();
 
       var speed = Math.sqrt(vx*vx + vy*vy);
-      // Ignore tiny velocities
+
+      // New: cap very fast swipes so they don't slide too far
+      var MAX_SPEED = 0.18; // try 0.15–0.22 range
+      if (speed > MAX_SPEED){
+        var s = MAX_SPEED / speed;
+        vx *= s;
+        vy *= s;
+        speed = MAX_SPEED;
+      }
+
+      // Ignore tiny velocities (keep this as-is, or tweak)
       if (speed < 0.04) return;
 
-      isFlinging   = true;
-      flingVX      = vx;
-      flingVY      = vy;
+      isFlinging    = true;
+      flingVX       = vx;
+      flingVY       = vy;
       flingLastTime = performance.now();
 
       (function step(now){
@@ -1213,15 +1223,12 @@ html.no-wood, body.no-wood{ background: none !important; }
           flingId = requestAnimationFrame(step);
           return;
         }
-        // Avoid giant jumps on dropped frames
         if (dt > 50) dt = 50;
         flingLastTime = now;
 
-        // Move according to current velocity
         offsetX += flingVX * dt;
         offsetY += flingVY * dt;
 
-        // Friction-based deceleration (simple linear falloff)
         var friction = 0.0025; // px/ms²
         var speed = Math.sqrt(flingVX*flingVX + flingVY*flingVY);
         var decel = friction * dt;
