@@ -1744,11 +1744,8 @@ html.no-wood, body.no-wood{ background: none !important; }
     function hideCleared(){ if (clearedModal) clearedModal.style.display = 'none'; }
 
     function showClearedOrWin(){
-      // Only auto zoom out when:
-      // - zoom is enabled
-      // - per-move auto zoom is disabled
-      // - "zoom out when variation finished" is ON
-      if (zoomEnabled && disableAutoZoomOut && autoZoomOnClear && (scale > 1 || isFullscreen)) {
+      // NEW: optional zoom-out when a corner/side is finished
+      if (zoomEnabled && autoZoomOnClear && (scale > 1 || isFullscreen)) {
         smoothZoomOutAndExit();
       }
 
@@ -1758,7 +1755,6 @@ html.no-wood, body.no-wood{ background: none !important; }
         showCleared();
       }
     }
-
 
 
     function configureWinModal(){
@@ -2125,6 +2121,8 @@ html.no-wood, body.no-wood{ background: none !important; }
 
 </body>
 </html>
+
+
 
 
 
