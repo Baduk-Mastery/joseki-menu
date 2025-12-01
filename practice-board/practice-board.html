@@ -1783,17 +1783,44 @@ html.no-wood, body.no-wood{ background: none !important; }
 
     document.getElementById('prac-wrong-back').addEventListener('click', function(){ hideWrong(); redraw(); });
 
-    // Helper: when the next variation has been loaded, optionally center its first move
-    function maybeCenterNextVariation(){
-      if (!zoomEnabled || !disableAutoZoomOut || !centerNextVariation) return;
-      if (!(scale > 1 || isFullscreen)) return;
+// Helper: when the next variation has been loaded, optionally center on the *next move*
+function maybeCenterNextVariation(){
+  // Only act if:
+  // - zoom is enabled
+  // - auto zoom-out at end is disabled
+  // - "center next variation" is turned on
+  // - we are actually zoomed in
+  if (!zoomEnabled || !disableAutoZoomOut || !centerNextVariation) return;
+  if (!(scale > 1 || isFullscreen)) return;
+  if (!hasSGF) return;
 
-      var anchor = getHintAnchorPoint();
-      if (!anchor) return;
+  // Take the same candidate that redraw() uses for the hint / "A" label:
+  var cands = getNextCandidates(currentNode);
+  if (!cands || !cands.length) return;
 
-      // Keep current zoom, just re-center
-      centerZoomAtGrid(anchor.x, anchor.y, 1);
+  var chosen = null;
+
+  // Respect playerOnly logic so we center on the *player's* next move when applicable
+  if (playerOnly){
+    for (var i = 0; i < cands.length; i++){
+      if (cands[i].color === playerColor){
+        chosen = cands[i];
+        break;
+      }
     }
+  }
+  if (!chosen) chosen = cands[0];
+
+  // Convert SGF coords to board grid coords using the current orientation
+  var p = tfXY(chosen.xy.x, chosen.xy.y);
+  var gx = (p.x | 0);
+  var gy = (p.y | 0);
+
+  // Keep current zoom level, only re-center on the new point
+  centerZoomAtGrid(gx, gy, 1);
+}
+
+
 
     document.getElementById('prac-cleared-next').addEventListener('click', function(){
       hideCleared();
