@@ -1071,6 +1071,26 @@ html.no-wood, body.no-wood{ background: none !important; }
           var p = tfXY(chosen.xy.x, chosen.xy.y);
           zoomHintAnchor = { x:p.x, y:p.y };
 
+          // NEW: reset per redraw
+          var showA = false;
+
+          if (shouldShowHint()){
+            showA = true;
+          } else if (shouldShowDirectionalMarkerForNode(chosen.node)){
+            showA = true;
+          }
+
+          if (showA){
+            addLB(p.x, p.y, 'A');
+          }
+        }
+      }
+
+          if (!chosen) chosen = cands[0];
+
+          var p = tfXY(chosen.xy.x, chosen.xy.y);
+          zoomHintAnchor = { x:p.x, y:p.y };
+
 if (shouldShowHint()){
             showA = true;
           } else if (shouldShowDirectionalMarkerForNode(chosen.node)){
