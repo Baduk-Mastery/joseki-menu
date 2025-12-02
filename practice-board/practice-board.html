@@ -449,6 +449,8 @@
 </style>
 <style>
 /* Practice Board top bar (Back + meters) */
+#prac-t<style>
+/* Practice Board top bar (Back + meters) */
 #prac-topbar{
   max-width:720px;
   width:100%;
@@ -459,80 +461,109 @@
   align-items:center;
   justify-content:space-between;
   gap:8px;
-  flex-wrap:wrap;          /* if it gets too tight, meters wrap below */
+  flex-wrap:nowrap;        /* keep everything on one line on wider screens */
 }
-/* Center the lives meter between Back and Hints */
+
+/* Center the lives meter between Back and Hints on wider screens */
 #row-lives{
   margin:0 auto;
 }
 
+/* Wood-style Back button – same look as Practice List .s-back */
+.s-back{
+  position:relative;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  gap:6px;
 
+  padding:6px 12px;
+  border-radius:8px;
+  border:1px solid rgba(255,255,255,.40);
 
-  /* Wood-style Back button – same look as Practice List .s-back */
-  .s-back{
-    position:relative;
-    display:inline-flex;
+  font-size:14px;
+  font-weight:800;
+  line-height:1.1;
+  color:#fff3cf;
+  text-shadow:0 1px 0 rgba(120,60,20,.7);
+  cursor:pointer;
+
+  user-select:none;
+  -webkit-user-select:none;
+  -moz-user-select:none;
+  -ms-user-select:none;
+  -webkit-tap-highlight-color:transparent;
+
+  background-image:
+    linear-gradient(
+      to bottom,
+      rgba(255,255,255,.12),
+      rgba(255,255,255,.03) 38%,
+      rgba(0,0,0,.14) 100%
+    ),
+    url('../img/wood.jpg');
+  background-size:100% 100%, cover;
+  background-position:center;
+  background-repeat:no-repeat;
+
+  filter:brightness(1.08) saturate(.96);
+
+  box-shadow:
+    0 3px 0 rgba(133,74,26,.85),
+    0 8px 14px rgba(0,0,0,.45);
+
+  transition:
+    transform .08s ease-out,
+    box-shadow .08s ease-out,
+    filter .12s ease-out;
+}
+
+.s-back:hover{
+  filter:brightness(1.12) saturate(.98);
+  transform:translateY(-1px);
+  box-shadow:
+    0 4px 0 rgba(133,74,26,.9),
+    0 10px 16px rgba(0,0,0,.48);
+}
+
+.s-back:active{
+  filter:brightness(.97) saturate(.96);
+  transform:translateY(2px);
+  box-shadow:
+    0 1px 0 rgba(120,60,20,.9),
+    0 4px 8px rgba(0,0,0,.55);
+}
+
+/* Mobile layout: back on first row, lives left + hints right on second row */
+@media (max-width: 480px){
+  #prac-topbar{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    grid-template-areas:
+      "back  back"
+      "lives hints";
+    row-gap:8px;
     align-items:center;
-    justify-content:center;
-    gap:6px;
-
-    padding:6px 12px;
-    border-radius:8px;
-    border:1px solid rgba(255,255,255,.40);
-
-    font-size:14px;
-    font-weight:800;
-    line-height:1.1;
-    color:#fff3cf;
-    text-shadow:0 1px 0 rgba(120,60,20,.7);
-    cursor:pointer;
-
-    user-select:none;
-    -webkit-user-select:none;
-    -moz-user-select:none;
-    -ms-user-select:none;
-    -webkit-tap-highlight-color:transparent;
-
-    background-image:
-      linear-gradient(
-        to bottom,
-        rgba(255,255,255,.12),
-        rgba(255,255,255,.03) 38%,
-        rgba(0,0,0,.14) 100%
-      ),
-      url('../img/wood.jpg');
-    background-size:100% 100%, cover;
-    background-position:center;
-    background-repeat:no-repeat;
-
-    filter:brightness(1.08) saturate(.96);
-
-    box-shadow:
-      0 3px 0 rgba(133,74,26,.85),
-      0 8px 14px rgba(0,0,0,.45);
-
-    transition:
-      transform .08s ease-out,
-      box-shadow .08s ease-out,
-      filter .12s ease-out;
   }
 
-  .s-back:hover{
-    filter:brightness(1.12) saturate(.98);
-    transform:translateY(-1px);
-    box-shadow:
-      0 4px 0 rgba(133,74,26,.9),
-      0 10px 16px rgba(0,0,0,.48);
+  #prac-back-top{
+    grid-area:back;
+    justify-self:flex-start;  /* keep the back button small, not full-width */
   }
 
-  .s-back:active{
-    filter:brightness(.97) saturate(.96);
-    transform:translateY(2px);
-    box-shadow:
-      0 1px 0 rgba(120,60,20,.9),
-      0 4px 8px rgba(0,0,0,.55);
+  #row-lives{
+    grid-area:lives;
+    margin:0;                 /* override the auto-centering on mobile */
+    justify-self:flex-start;
   }
+
+  #prac-meters{
+    grid-area:hints;
+    justify-self:flex-end;
+  }
+}
 </style>
+
 
 <style>
   /* In-app "Back to menu" dialog (same style as Joseki board) */
