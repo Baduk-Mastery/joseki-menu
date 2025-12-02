@@ -99,17 +99,18 @@
 <!-- Wrong Move Modal -->
 <div id="prac-wrong" style="display:none;position:fixed;inset:0;z-index:99999;align-items:center;justify-content:center;">
   <div style="position:absolute;inset:0;background:rgba(0,0,0,.55);"></div>
-  <div style="position:relative;z-index:1;background:#fff;border:1px solid #e2e8f0;border-radius:10px;box-shadow:0 12px 28px rgba(15,23,42,.18);width:min(86vw,420px);padding:16px;text-align:center;font-family:system-ui,Segoe UI,Arial,sans-serif;color:#0f172a;">
+  <div class="notif-card" style="width:min(86vw,420px);">
     <div style="font-weight:800;font-size:18px;margin-bottom:8px;">Wrong Move</div>
     <div style="color:#334155;margin-bottom:14px;">That point isn’t part of this joseki.</div>
     <button id="prac-wrong-back" style="padding:8px 14px;border-radius:8px;border:1px solid #cbd5e1;background:#f1f5f9;font-weight:700;cursor:pointer;">Back</button>
   </div>
 </div>
 
+
 <!-- Cleared Modal -->
 <div id="prac-cleared" style="display:none;position:fixed;inset:0;z-index:99999;align-items:center;justify-content:center;">
   <div style="position:absolute;inset:0;background:rgba(0,0,0,.55);"></div>
-  <div style="position:relative;z-index:1;background:#fff;border:1px solid #e2e8f0;border-radius:10px;box-shadow:0 12px 28px rgba(15,23,42,.18);width:min(86vw,420px);padding:16px;text-align:center;font-family:system-ui,Segoe UI,Arial,sans-serif;color:#0f172a;">
+  <div class="notif-card" style="width:min(86vw,420px);">
     <div style="font-weight:800;font-size:18px;margin-bottom:8px;">Cleared</div>
     <div style="color:#334155;margin-bottom:14px;">Great! Let’s try the next side/corner.</div>
     <button id="prac-cleared-next" style="padding:8px 14px;border-radius:8px;border:1px solid #cbd5e1;background:#e7f0ff;color:#0b4aa2;font-weight:700;cursor:pointer;">Next</button>
@@ -119,7 +120,7 @@
 <!-- Congratulations Modal -->
 <div id="prac-win" style="display:none;position:fixed;inset:0;z-index:99999;align-items:center;justify-content:center;">
   <div style="position:absolute;inset:0;background:rgba(0,0,0,.55);"></div>
-  <div style="position:relative;z-index:1;background:#fff;border:1px solid #e2e8f0;border-radius:10px;box-shadow:0 12px 28px rgba(15,23,42,.18);width:min(86vw,520px);padding:16px;text-align:center;font-family:system-ui,Segoe UI,Arial,sans-serif;color:#0f172a;">
+  <div class="notif-card" style="width:min(86vw,520px);">
     <div style="font-weight:800;font-size:18px;margin-bottom:14px;">Congratulations!</div>
     <div style="color:#334155;margin-bottom:14px;">You cleared all 8 sides.</div>
     <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap;">
@@ -130,10 +131,11 @@
   </div>
 </div>
 
+
 <!-- Out of Lives Modal -->
 <div id="prac-locked" style="display:none;position:fixed;inset:0;z-index:99999;align-items:center;justify-content:center;">
   <div style="position:absolute;inset:0;background:rgba(0,0,0,.55);"></div>
-  <div style="position:relative;z-index:1;background:#fff;border:1px solid #e2e8f0;border-radius:10px;box-shadow:0 12px 28px rgba(15,23,42,.18);width:min(86vw,460px);padding:16px;text-align:center;font-family:system-ui,Segoe UI,Arial,sans-serif;color:#0f172a;">
+  <div class="notif-card" style="width:min(86vw,460px);">
     <div style="font-weight:800;font-size:18px;margin-bottom:14px;">Out of Lives</div>
     <div id="prac-locked-msg" style="color:#334155;margin-bottom:14px;">You’ve used all lives for today on Levels 2–3.</div>
     <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap;">
@@ -143,10 +145,11 @@
   </div>
 </div>
 
+
 <!-- Out of Hints Modal -->
 <div id="prac-hints-out" style="display:none;position:fixed;inset:0;z-index:99999;align-items:center;justify-content:center;">
   <div style="position:absolute;inset:0;background:rgba(0,0,0,.55);"></div>
-  <div style="position:relative;z-index:1;background:#fff;border:1px solid #e2e8f0;border-radius:10px;box-shadow:0 12px 28px rgba(15,23,42,.18);width:min(86vw,460px);padding:16px;text-align:center;font-family:system-ui,Segoe UI,Arial,sans-serif;color:#0f172a;">
+  <div class="notif-card" style="width:min(86vw,460px);">
     <div style="font-weight:800;font-size:18px;margin-bottom:14px;">Out of Hints</div>
     <div style="color:#334155;margin-bottom:14px;">You’ve used all 3 daily hints on Practice.</div>
     <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap;">
@@ -155,6 +158,7 @@
     </div>
   </div>
 </div>
+
 
 <style>
   @media (max-width: 480px){
@@ -604,6 +608,35 @@
 
   .mc-btn-secondary{
     background:rgba(15,23,42,.85);
+  }
+</style>
+<style>
+  /* Shared notification card background (uses /img/notification.jpg) */
+  .notif-card{
+    position:relative;
+    z-index:1;
+
+    /* Keep basic card look */
+    border-radius:10px;
+    border:1px solid #e2e8f0;
+    box-shadow:0 12px 28px rgba(15,23,42,.18);
+
+    padding:16px;
+    text-align:center;
+    font-family:system-ui,Segoe UI,Arial,sans-serif;
+    color:#0f172a;
+
+    /* New notification background */
+    background-image:
+      linear-gradient(
+        to bottom,
+        rgba(0,0,0,.10),
+        rgba(0,0,0,.25)
+      ),
+      url('../img/notification.jpg');
+    background-size:cover;
+    background-position:center;
+    background-repeat:no-repeat;
   }
 </style>
 
