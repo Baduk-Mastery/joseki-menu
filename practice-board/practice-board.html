@@ -793,7 +793,7 @@ html.no-wood, body.no-wood{ background: none !important; }
     var AUTO_DELAY_FAST = 300;  // current behavior
     var AUTO_DELAY_SLOW = 700;  // slower mode
     var AUTO_DELAY      = (autoPlaySpeed === 'slow') ? AUTO_DELAY_SLOW : AUTO_DELAY_FAST;
-    var CLEAR_NOTIFY_DELAY = 300;
+
 
 
     var lastX = null, lastY = null;
@@ -2363,24 +2363,21 @@ mount.addEventListener('pointerup', function(e){
     function hideCleared(){ if (clearedModal) clearedModal.style.display = 'none'; }
 
     // When a corner/side is finished
-    // When a corner/side is finished
-    function showClearedOrWin(){
-      // At the end of a variation, always zoom out if currently zoomed,
-      // even when "Disable auto zoom out" is ON.
-      if (zoomEnabled && (scale > 1 || isFullscreen)) {
-        smoothZoomOutAndExit();
-      }
+function showClearedOrWin(){
+  // At the end of a variation, always zoom out if currently zoomed,
+  // even when "Disable auto zoom out" is ON.
+  if (zoomEnabled && (scale > 1 || isFullscreen)) {
+    smoothZoomOutAndExit();
+  }
 
-      var delay = CLEAR_NOTIFY_DELAY || 0;
+  if (tryIndex >= ORIENTS.length - 1){
+    showWin();
+  } else {
+    showCleared();
+  }
+}
 
-      setTimeout(function(){
-        if (tryIndex >= ORIENTS.length - 1){
-          showWin();
-        } else {
-          showCleared();
-        }
-      }, delay);
-    }
+
 
     function configureWinModal(){
       if (winRetryBtn) winRetryBtn.style.display = '';
@@ -2795,3 +2792,6 @@ if (headerBack){
 
 </body>
 </html>
+
+
+
