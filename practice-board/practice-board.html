@@ -51,20 +51,21 @@
 <!-- Practice Board (standalone page) -->
 <div id="go-board-prac-wrap" data-hidden="1" style="width:100%;max-width:720px;margin:0 auto;box-sizing:border-box;">
 
-<!-- Top bar: Back + Lives (center) + Hints (right) -->
+<!-- Top bar: Back + (Lives + Hints grouped) -->
 <div id="prac-topbar">
   <button id="prac-back-top" class="s-back" type="button" aria-label="Back">← Back</button>
 
-  <!-- Centered lives row -->
-  <div class="meter-row" id="row-lives">
-    <div id="meter-lives" class="stones" role="img" aria-label="Lives remaining"></div>
-  </div>
+  <!-- RIGHT GROUP: lives + hints move together -->
+  <div id="prac-topbar-right">
+    <div class="meter-row" id="row-lives">
+      <div id="meter-lives" class="stones" role="img" aria-label="Lives remaining"></div>
+    </div>
 
-  <!-- Hints (right-aligned group) -->
-  <div id="prac-meters" aria-live="polite">
-    <div class="meter-row" id="row-hints">
-      <span class="meter-label">Hints</span>
-      <span id="meter-hints" class="hints-num" role="text">3</span>
+    <div id="prac-meters" aria-live="polite">
+      <div class="meter-row" id="row-hints">
+        <span class="meter-label">Hints</span>
+        <span id="meter-hints" class="hints-num" role="text">3</span>
+      </div>
     </div>
   </div>
 </div>
@@ -453,18 +454,37 @@
   max-width:720px;
   width:100%;
   margin:16px auto 10px;
-  padding:0;               /* aligns with board edges via wrapper padding */
+  padding:0;
   box-sizing:border-box;
+
+  /* Two main columns: Back | (Lives + Hints) */
   display:flex;
-  align-items:center;
+  align-items:flex-start;
   justify-content:space-between;
   gap:8px;
-  flex-wrap:wrap;          /* if it gets too tight, meters wrap below */
+  flex-wrap:wrap; /* lets the right group drop under Back on narrow screens */
 }
-/* Center the lives meter between Back and Hints */
+
+/* Back button column: fixed size, never wraps with the right group */
+#prac-back-top{
+  flex:0 0 auto;
+}
+
+/* Right cluster: Lives + Hints move together, can wrap internally */
+#prac-topbar-right{
+  flex:1 1 0;
+  display:flex;
+  justify-content:flex-end;
+  align-items:center;
+  gap:8px;
+  flex-wrap:wrap; /* on extra small screens, Lives / Hints can stack */
+}
+
+/* No more auto-centering hack; just use the pill style from below */
 #row-lives{
-  margin:0 auto;
+  margin:0;
 }
+
 
 
 
