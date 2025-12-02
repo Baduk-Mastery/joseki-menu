@@ -880,15 +880,71 @@ html.no-wood, body.no-wood{ background: none !important; }
     var l2HintConsumed = false;
 
 
-    /* Tier + quota */
+    /* Tier + quota (now auto-refreshes when plan changes in another tab/page) */
     var TierAPI = window.Tier || {
-      get: function(){ try { return (localStorage.getItem('go_tier') || 'free').toLowerCase(); } catch(_) { return 'free'; } }
+      get: function(){
+        try {
+          return (localStorage.getItem('go_tier') || 'free').toLowerCase();
+        } catch(_) {
+          return 'free';
+        }
+      }
     };
-    function isPro(){ return String(TierAPI.get() || 'free').toLowerCase() === 'pro'; }
-    window.addEventListener('tier:changed', function(){
-      if (typeof refreshLivesUI  === 'function') refreshLivesUI();
-      if (typeof refreshHintsUI  === 'function') refreshHintsUI();
+
+    var TIER_STORAGE_KEY = 'go_tier';
+
+    function getTier(){
+      try {
+        var t = TierAPI.get && TierAPI.get();
+        return String(t || 'free').toLowerCase();
+      } catch(_) {
+        return 'free';
+      }
+    }
+
+    function isPro(){
+      return getTier() === 'pro';
+    }
+
+    // INTERNAL: keep track of last seen tier and emit a synthetic "tier:changed"
+    // whenever localStorage / TierAPI has changed.
+    (function(){
+      var lastTier = getTier();
+
+      function maybeEmitTierChanged(){
+        var current = getTier();
+        if (current === lastTier) return;
+        lastTier = current;
+
+        var ev;
+        try{
+          ev = new CustomEvent('tier:changed', { detail:{ tier: current }});
+        } catch(e){
+          ev = document.createEvent('CustomEvent');
+          ev.initCustomEvent('tier:changed', true, true, { tier: current });
+        }
+        window.dispatchEvent(ev);
+      }
+
+      // 1) When another tab / popup writes localStorage("go_tier", ...)
+      window.addEventListener('storage', function(e){
+        if (!e.key || e.key === TIER_STORAGE_KEY){
+          maybeEmitTierChanged();
+        }
+      });
+
+      // 2) Fallback: in case the upgrade happens in-place without "storage" event,
+      // we poll very lightly.
+      setInterval(maybeEmitTierChanged, 2000);
+    })();
+
+    // Consumers inside this file just listen to "tier:changed"
+    window.addEventListener('tier:changed', function(e){
+      // Make sure the meters flip immediately when the plan changes.
+      if (typeof window.refreshLivesUI === 'function') window.refreshLivesUI();
+      if (typeof window.refreshHintsUI === 'function') window.refreshHintsUI();
     });
+
     function openPlansPage(){
       // If you ever wire in a JS paywall again, this still works:
       if (window.GoPlans && typeof GoPlans.open === 'function'){
