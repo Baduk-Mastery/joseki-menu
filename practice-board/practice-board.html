@@ -197,14 +197,16 @@
   }
 
   /* Practice meters (Free) */
-  #prac-meters{
-    display:flex;
-    flex-direction:row;
-    gap:8px;
-    align-items:center;
-    justify-content:flex-end;
-    flex-wrap:wrap;
-  }
+#prac-meters{
+  display:flex;
+  flex-direction:row;
+  gap:8px;
+  align-items:center;
+  justify-content:flex-end;
+  flex-wrap:wrap;
+  flex:0 0 auto;
+}
+
 
 /* Apply pill/card style to both Hints and Lives */
 #prac-meters .meter-row,
@@ -457,13 +459,45 @@
   box-sizing:border-box;
   display:flex;
   align-items:center;
-  justify-content:space-between;
+  justify-content:flex-start;  /* we'll do centering via flex on #row-lives */
   gap:8px;
-  flex-wrap:wrap;          /* if it gets too tight, meters wrap below */
+  flex-wrap:wrap;
 }
-/* Center the lives meter between Back and Hints */
+
+/* Back button: just its natural size */
+#prac-back-top{
+  flex:0 0 auto;
+}
+
+/* Lives: take up the middle and center its content on wide screens */
 #row-lives{
-  margin:0 auto;
+  flex:1 1 auto;           /* expand to fill between Back and Hints */
+  justify-content:center;  /* center the lives pill inside that space */
+}
+
+/* Small screens: put Lives + Hints together below Back, all left-aligned */
+@media (max-width: 480px){
+  #prac-topbar{
+    justify-content:flex-start;
+    align-items:flex-start;
+  }
+
+  /* First row: Back alone, full width */
+  #prac-back-top{
+    flex:0 0 100%;
+  }
+
+  /* Second row: Lives + Hints next to each other, left-aligned */
+  #row-lives{
+    flex:0 0 auto;
+    justify-content:flex-start;
+    margin:0;
+  }
+
+  #prac-meters{
+    flex:0 0 auto;
+    justify-content:flex-start;
+  }
 }
 
 
