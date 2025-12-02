@@ -1071,7 +1071,13 @@ html.no-wood, body.no-wood{ background: none !important; }
           var p = tfXY(chosen.xy.x, chosen.xy.y);
           zoomHintAnchor = { x:p.x, y:p.y };
 
-          if (shouldShowHint()){
+if (shouldShowHint()){
+            showA = true;
+          } else if (shouldShowDirectionalMarkerForNode(chosen.node)){
+            showA = true;
+          }
+
+          if (showA){
             addLB(p.x, p.y, 'A');
           }
         }
@@ -1155,6 +1161,70 @@ html.no-wood, body.no-wood{ background: none !important; }
       if (swapColorsThisRound) color = (color===B?W:B);
       return {x:xy.x,y:xy.y,color:color};
     }
+    // Raw SGF coordinates (no color / orientation changes)
+    function nodeMoveXYRaw(n){
+      var s = n && (n.B || n.W);
+      if (!s) return null;
+      return sgfCoordToXY(s);
+    }
+
+    // Map a move into canonical coordinates (relative to the "start" corner)
+    // using startTF, but WITHOUT rotating to the current tryIndex.
+    function moveCanonCoord(n){
+      var xy = nodeMoveXYRaw(n);
+      if (!xy) return null;
+      // Canonical orientation: first move near a specific corner.
+      var p = startTF({ x: xy.x, y: xy.y });
+      return p;
+    }
+
+    // A "neutral" move is one that lies on the diagonal from the corner:
+    // distances from the corner in x and y are equal (1-1, 2-2, 3-3, 4-4, ...).
+    function isNeutralFromCornerCanon(p){
+      if (!p) return false;
+      var dx = (SIZE - 1) - p.x; // distance from right edge (NE corner)
+      var dy = p.y;              // distance from top
+      return dx === dy;
+    }
+
+    // Given a path of nodes from root to some node, find the FIRST move
+    // that is non-neutral AFTER a prefix of one or more neutral moves.
+    // Returns that node, or null if there is no such move.
+    function firstDirectionalAfterNeutralNode(path){
+      if (!path || !path.length) return null;
+
+      var moves = [];
+      for (var i = 0; i < path.length; i++){
+        var nd = path[i];
+        if (!nodeHasMove(nd)) continue;
+        var canon = moveCanonCoord(nd);
+        if (!canon) continue;
+        var neutral = isNeutralFromCornerCanon(canon);
+        moves.push({ node: nd, neutral: neutral });
+      }
+      if (!moves.length) return null;
+
+      // Count how many moves at the very beginning are neutral.
+      var idx = 0;
+      while (idx < moves.length && moves[idx].neutral) idx++;
+
+      // We only care if the joseki actually starts with at least one neutral move.
+      if (idx === 0) return null;          // starts directional -> no special marker
+      if (idx >= moves.length) return null; // all moves so far are neutral -> no directional yet
+
+      // This is the first non-neutral move after the neutral prefix.
+      return moves[idx].node;
+    }
+
+    // True if "nextNode" is exactly that first directional move after the
+    // neutral prefix at the beginning.
+    function shouldShowDirectionalMarkerForNode(nextNode){
+      if (!nextNode) return false;
+      var path = pathTo(nextNode);
+      var firstDir = firstDirectionalAfterNeutralNode(path);
+      return firstDir === nextNode;
+    }
+
     function candidatesDedup(list){ var seen={},out=[]; for(var i=0;i<list.length;i++){ var mv=list[i],key=mv.xy.x+':'+mv.xy.y+':'+mv.color; if(!seen[key]){ seen[key]=1; out.push(mv); } } return out; }
 
     function getRootCandidates(){
