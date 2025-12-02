@@ -51,16 +51,16 @@
 <!-- Practice Board (standalone page) -->
 <div id="go-board-prac-wrap" data-hidden="1" style="width:100%;max-width:720px;margin:0 auto;box-sizing:border-box;">
 
-<!-- Top bar: Back (left), Lives (center), Hints (right) -->
+<!-- Top bar: Back + Lives (center) + Hints (right) -->
 <div id="prac-topbar">
   <button id="prac-back-top" class="s-back" type="button" aria-label="Back">← Back</button>
 
-  <!-- Lives pill -->
+  <!-- Centered lives row -->
   <div class="meter-row" id="row-lives">
     <div id="meter-lives" class="stones" role="img" aria-label="Lives remaining"></div>
   </div>
 
-  <!-- Hints pill -->
+  <!-- Hints (right-aligned group) -->
   <div id="prac-meters" aria-live="polite">
     <div class="meter-row" id="row-hints">
       <span class="meter-label">Hints</span>
@@ -68,7 +68,6 @@
     </div>
   </div>
 </div>
-
 
 
 
@@ -449,73 +448,90 @@
 
 </style>
 <style>
-/* Practice Board top bar (Back + lives + hints)
- *
- * Wide:   Back left | Lives centered | Hints right
- * Mobile: Back on its own row, then
- *         Lives left  | Hints right on the next row
- */
-
+/* Practice Board top bar (Back + meters) */
 #prac-topbar{
   max-width:720px;
   width:100%;
   margin:16px auto 10px;
-  padding:0;
+  padding:0;               /* aligns with board edges via wrapper padding */
   box-sizing:border-box;
-
   display:flex;
-  align-items:flex-start;
+  align-items:center;
   justify-content:space-between;
   gap:8px;
-  flex-wrap:wrap;
+  flex-wrap:wrap;          /* if it gets too tight, meters wrap below */
 }
-
-/* Back button – fixed on the left */
-#prac-back-top{
-  flex:0 0 auto;
-}
-
-/* Lives pill – centered between Back and Hints on wide screens */
+/* Center the lives meter between Back and Hints */
 #row-lives{
-  flex:0 0 auto;
-  margin-left:auto;
-  margin-right:auto;
+  margin:0 auto;
 }
 
-/* Hints container – stays on the right */
-#prac-meters{
-  flex:0 0 auto;
-}
 
-/* Mobile layout */
-@media (max-width: 520px){
-  #prac-topbar{
-    justify-content:flex-start;
+
+  /* Wood-style Back button – same look as Practice List .s-back */
+  .s-back{
+    position:relative;
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    gap:6px;
+
+    padding:6px 12px;
+    border-radius:8px;
+    border:1px solid rgba(255,255,255,.40);
+
+    font-size:14px;
+    font-weight:800;
+    line-height:1.1;
+    color:#fff3cf;
+    text-shadow:0 1px 0 rgba(120,60,20,.7);
+    cursor:pointer;
+
+    user-select:none;
+    -webkit-user-select:none;
+    -moz-user-select:none;
+    -ms-user-select:none;
+    -webkit-tap-highlight-color:transparent;
+
+    background-image:
+      linear-gradient(
+        to bottom,
+        rgba(255,255,255,.12),
+        rgba(255,255,255,.03) 38%,
+        rgba(0,0,0,.14) 100%
+      ),
+      url('../img/wood.jpg');
+    background-size:100% 100%, cover;
+    background-position:center;
+    background-repeat:no-repeat;
+
+    filter:brightness(1.08) saturate(.96);
+
+    box-shadow:
+      0 3px 0 rgba(133,74,26,.85),
+      0 8px 14px rgba(0,0,0,.45);
+
+    transition:
+      transform .08s ease-out,
+      box-shadow .08s ease-out,
+      filter .12s ease-out;
   }
 
-  /* Back takes the first full row */
-  #prac-back-top{
-    width:100%;
-    margin-bottom:4px;
+  .s-back:hover{
+    filter:brightness(1.12) saturate(.98);
+    transform:translateY(-1px);
+    box-shadow:
+      0 4px 0 rgba(133,74,26,.9),
+      0 10px 16px rgba(0,0,0,.48);
   }
 
-  /* Lives + Hints share the second row */
-  #row-lives,
-  #prac-meters{
-    flex:1 1 0;
+  .s-back:active{
+    filter:brightness(.97) saturate(.96);
+    transform:translateY(2px);
+    box-shadow:
+      0 1px 0 rgba(120,60,20,.9),
+      0 4px 8px rgba(0,0,0,.55);
   }
-
-  /* Lives aligned left under Back */
-  #row-lives{
-    margin-left:0;
-    margin-right:0;
-  }
-
-  /* Push Hints block to the right on the second row */
-  #prac-meters{
-    margin-left:auto;
-  }
-}
 </style>
 
 <style>
@@ -2578,6 +2594,8 @@ if (headerBack){
 
 </body>
 </html>
+
+
 
 
 
