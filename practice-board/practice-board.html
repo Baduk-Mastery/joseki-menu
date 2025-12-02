@@ -449,24 +449,71 @@
 </style>
 <style>
 /* Practice Board top bar (Back + meters) */
-#prac-t<style>
-/* Practice Board top bar (Back + meters) */
 #prac-topbar{
   max-width:720px;
   width:100%;
   margin:16px auto 10px;
-  padding:0;               /* aligns with board edges via wrapper padding */
+  padding:0;
   box-sizing:border-box;
-  display:flex;
+
+  /* Use grid so we can precisely place Back / Lives / Hints */
+  display:grid;
+  grid-template-columns:auto 1fr auto;  /* Back | center | Hints */
+  grid-template-rows:auto;
+  column-gap:8px;
+  row-gap:6px;
   align-items:center;
-  justify-content:space-between;
-  gap:8px;
-  flex-wrap:nowrap;        /* keep everything on one line on wider screens */
 }
 
-/* Center the lives meter between Back and Hints on wider screens */
+/* Desktop / default: one row: Back | Lives (centered) | Hints (right) */
+#prac-back-top{
+  grid-column:1;
+  grid-row:1;
+  justify-self:start;
+}
+
 #row-lives{
-  margin:0 auto;
+  grid-column:2;
+  grid-row:1;
+
+  /* prevent stretching full width */
+  justify-self:center;
+  margin:0; /* override any previous margin */
+}
+
+#prac-meters{
+  grid-column:3;
+  grid-row:1;
+  justify-self:end;
+}
+
+/* Small screens: 
+   - Row 1: Back spans full width, left aligned
+   - Row 2: Lives on the left, Hints on the right (same row) */
+@media (max-width:480px){
+  #prac-topbar{
+    grid-template-columns:1fr 1fr;
+    grid-template-rows:auto auto;
+  }
+
+  #prac-back-top{
+    grid-column:1 / 3; /* span two columns */
+    grid-row:1;
+    justify-self:start;
+  }
+
+  #row-lives{
+    grid-column:1;
+    grid-row:2;
+    justify-self:start;  /* left, not full width */
+    margin:0;
+  }
+
+  #prac-meters{
+    grid-column:2;
+    grid-row:2;
+    justify-self:end;    /* right side */
+  }
 }
 
 /* Wood-style Back button – same look as Practice List .s-back */
@@ -533,37 +580,7 @@
     0 1px 0 rgba(120,60,20,.9),
     0 4px 8px rgba(0,0,0,.55);
 }
-
-/* Mobile layout: back on first row, lives left + hints right on second row */
-@media (max-width: 480px){
-  #prac-topbar{
-    display:grid;
-    grid-template-columns:1fr 1fr;
-    grid-template-areas:
-      "back  back"
-      "lives hints";
-    row-gap:8px;
-    align-items:center;
-  }
-
-  #prac-back-top{
-    grid-area:back;
-    justify-self:flex-start;  /* keep the back button small, not full-width */
-  }
-
-  #row-lives{
-    grid-area:lives;
-    margin:0;                 /* override the auto-centering on mobile */
-    justify-self:flex-start;
-  }
-
-  #prac-meters{
-    grid-area:hints;
-    justify-self:flex-end;
-  }
-}
 </style>
-
 
 <style>
   /* In-app "Back to menu" dialog (same style as Joseki board) */
