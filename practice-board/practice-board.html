@@ -2314,12 +2314,20 @@ function showClearedOrWin(){
     });
 
 
-    winBackBtn.addEventListener('click', function(){
-      hideWin();
-      try { if (window.PracticeBoard && typeof window.PracticeBoard.exit === 'function') window.PracticeBoard.exit(); } catch(e){}
-      if (window.GoPractice && typeof GoPractice.open === 'function'){ GoPractice.open(); }
-      else window.GoMenu && typeof GoMenu.open === 'function' && GoMenu.open();
-    });
+winBackBtn.addEventListener('click', function(){
+  hideWin();
+
+  // Let the board clean itself up if needed (harmless on standalone)
+  try {
+    if (window.PracticeBoard && typeof window.PracticeBoard.exit === 'function') {
+      window.PracticeBoard.exit();
+    }
+  } catch(e){}
+
+  // Then go back to the selection page we originally came from
+  goBackToSelection();
+});
+
 
     winProgBtn && winProgBtn.addEventListener('click', function(){
       var target = parseInt(winProgBtn.dataset.level || '2', 10);
@@ -2495,25 +2503,30 @@ function showClearedOrWin(){
       if (isFullscreen) exitFullscreen();
     });
     if (hintBtn)  hintBtn.addEventListener('click', triggerHint);
+// Helper: go back to the joseki selection we came from
+function goBackToSelection(){
+  // If we have a referrer, just step back in history.
+  if (document.referrer){
+    window.history.back();
+    return;
+  }
+
+  // No referrer (opened directly / new tab) – fall back to Practice List,
+  // then to main menu as a last resort.
+  try{
+    window.location.href = "../practice-list/index.html";
+  } catch(_){
+    window.location.href = "../joseki-menu/index.html";
+  }
+}
+
 // Top-left Back button – go back to previous screen (Practice List, My Patterns, etc.)
 var headerBack = document.getElementById('prac-back-top');
 
 if (headerBack){
   headerBack.addEventListener('click', function(e){
     e.preventDefault();
-
-    if (document.referrer){
-      window.history.back();
-      return;
-    }
-
-    // If there is no referrer (opened directly or in a new tab),
-    // fall back to the Practice List, then menu.
-    try{
-      window.location.href = "../practice-list/index.html";
-    } catch(_){
-      window.location.href = "../joseki-menu/index.html";
-    }
+    goBackToSelection();
   });
 }
 
