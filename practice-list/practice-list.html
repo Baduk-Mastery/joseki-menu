@@ -12,6 +12,7 @@
       font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
     }
   </style>
+  <script src="../lib/tier-bridge.js"></script>
 </head>
 <body>
 
@@ -468,13 +469,25 @@
     }
   })();
 
-  const TierAPI = window.Tier || {
+  // Use shared GoTier bridge (if present), fallback to old Tier or localStorage
+  const TierAPI = window.GoTier || window.Tier || {
     get(){
       try { return (localStorage.getItem('go_tier') || 'free').toLowerCase(); }
       catch(_) { return 'free'; }
     }
   };
-  function isPro(){ return String(TierAPI.get() || 'free').toLowerCase() === 'pro'; }
+
+  function getTier(){
+    try {
+      if (TierAPI && typeof TierAPI.get === 'function'){
+        return String(TierAPI.get() || 'free').toLowerCase();
+      }
+    } catch(_){}
+    return 'free';
+  }
+
+  function isPro(){ return getTier() === 'pro'; }
+
 
   function applyTierGate(){
     const proLocked = !isPro();
@@ -489,6 +502,11 @@
     close(){ lvlOverlay.style.display='none'; }
   };
   window.PracticeLevel = LevelUI;
+  // When the actual plan changes (GoTier.set), refresh level gating in-place
+  window.addEventListener('tier:changed', function(e){
+    applyTierGate();
+  });
+
 
   /* Pro-level toast (in-app notification for locked levels) */
 
