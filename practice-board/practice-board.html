@@ -453,133 +453,85 @@
   max-width:720px;
   width:100%;
   margin:16px auto 10px;
-  padding:0;
+  padding:0;               /* aligns with board edges via wrapper padding */
   box-sizing:border-box;
-
-  /* Use grid so we can precisely place Back / Lives / Hints */
-  display:grid;
-  grid-template-columns:auto 1fr auto;  /* Back | center | Hints */
-  grid-template-rows:auto;
-  column-gap:8px;
-  row-gap:6px;
+  display:flex;
   align-items:center;
+  justify-content:space-between;
+  gap:8px;
+  flex-wrap:wrap;          /* if it gets too tight, meters wrap below */
 }
-
-/* Desktop / default: one row: Back | Lives (centered) | Hints (right) */
-#prac-back-top{
-  grid-column:1;
-  grid-row:1;
-  justify-self:start;
-}
-
+/* Center the lives meter between Back and Hints */
 #row-lives{
-  grid-column:2;
-  grid-row:1;
-
-  /* prevent stretching full width */
-  justify-self:center;
-  margin:0; /* override any previous margin */
+  margin:0 auto;
 }
 
-#prac-meters{
-  grid-column:3;
-  grid-row:1;
-  justify-self:end;
-}
 
-/* Small screens: 
-   - Row 1: Back spans full width, left aligned
-   - Row 2: Lives on the left, Hints on the right (same row) */
-@media (max-width:480px){
-  #prac-topbar{
-    grid-template-columns:1fr 1fr;
-    grid-template-rows:auto auto;
+
+  /* Wood-style Back button – same look as Practice List .s-back */
+  .s-back{
+    position:relative;
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    gap:6px;
+
+    padding:6px 12px;
+    border-radius:8px;
+    border:1px solid rgba(255,255,255,.40);
+
+    font-size:14px;
+    font-weight:800;
+    line-height:1.1;
+    color:#fff3cf;
+    text-shadow:0 1px 0 rgba(120,60,20,.7);
+    cursor:pointer;
+
+    user-select:none;
+    -webkit-user-select:none;
+    -moz-user-select:none;
+    -ms-user-select:none;
+    -webkit-tap-highlight-color:transparent;
+
+    background-image:
+      linear-gradient(
+        to bottom,
+        rgba(255,255,255,.12),
+        rgba(255,255,255,.03) 38%,
+        rgba(0,0,0,.14) 100%
+      ),
+      url('../img/wood.jpg');
+    background-size:100% 100%, cover;
+    background-position:center;
+    background-repeat:no-repeat;
+
+    filter:brightness(1.08) saturate(.96);
+
+    box-shadow:
+      0 3px 0 rgba(133,74,26,.85),
+      0 8px 14px rgba(0,0,0,.45);
+
+    transition:
+      transform .08s ease-out,
+      box-shadow .08s ease-out,
+      filter .12s ease-out;
   }
 
-  #prac-back-top{
-    grid-column:1 / 3; /* span two columns */
-    grid-row:1;
-    justify-self:start;
+  .s-back:hover{
+    filter:brightness(1.12) saturate(.98);
+    transform:translateY(-1px);
+    box-shadow:
+      0 4px 0 rgba(133,74,26,.9),
+      0 10px 16px rgba(0,0,0,.48);
   }
 
-  #row-lives{
-    grid-column:1;
-    grid-row:2;
-    justify-self:start;  /* left, not full width */
-    margin:0;
+  .s-back:active{
+    filter:brightness(.97) saturate(.96);
+    transform:translateY(2px);
+    box-shadow:
+      0 1px 0 rgba(120,60,20,.9),
+      0 4px 8px rgba(0,0,0,.55);
   }
-
-  #prac-meters{
-    grid-column:2;
-    grid-row:2;
-    justify-self:end;    /* right side */
-  }
-}
-
-/* Wood-style Back button – same look as Practice List .s-back */
-.s-back{
-  position:relative;
-  display:inline-flex;
-  align-items:center;
-  justify-content:center;
-  gap:6px;
-
-  padding:6px 12px;
-  border-radius:8px;
-  border:1px solid rgba(255,255,255,.40);
-
-  font-size:14px;
-  font-weight:800;
-  line-height:1.1;
-  color:#fff3cf;
-  text-shadow:0 1px 0 rgba(120,60,20,.7);
-  cursor:pointer;
-
-  user-select:none;
-  -webkit-user-select:none;
-  -moz-user-select:none;
-  -ms-user-select:none;
-  -webkit-tap-highlight-color:transparent;
-
-  background-image:
-    linear-gradient(
-      to bottom,
-      rgba(255,255,255,.12),
-      rgba(255,255,255,.03) 38%,
-      rgba(0,0,0,.14) 100%
-    ),
-    url('../img/wood.jpg');
-  background-size:100% 100%, cover;
-  background-position:center;
-  background-repeat:no-repeat;
-
-  filter:brightness(1.08) saturate(.96);
-
-  box-shadow:
-    0 3px 0 rgba(133,74,26,.85),
-    0 8px 14px rgba(0,0,0,.45);
-
-  transition:
-    transform .08s ease-out,
-    box-shadow .08s ease-out,
-    filter .12s ease-out;
-}
-
-.s-back:hover{
-  filter:brightness(1.12) saturate(.98);
-  transform:translateY(-1px);
-  box-shadow:
-    0 4px 0 rgba(133,74,26,.9),
-    0 10px 16px rgba(0,0,0,.48);
-}
-
-.s-back:active{
-  filter:brightness(.97) saturate(.96);
-  transform:translateY(2px);
-  box-shadow:
-    0 1px 0 rgba(120,60,20,.9),
-    0 4px 8px rgba(0,0,0,.55);
-}
 </style>
 
 <style>
