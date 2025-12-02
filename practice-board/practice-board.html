@@ -2328,6 +2328,20 @@ winBackBtn.addEventListener('click', function(){
   goBackToSelection();
 });
 
+// NEW: Retry button – restart current level from side 0
+if (winRetryBtn){
+  winRetryBtn.addEventListener('click', function(){
+    hideWin();
+
+    // Start over from the first side / corner
+    tryIndex = 0;
+    swapColorsThisRound = (level === 5) ? (tryIndex % 2 === 1) : false;
+
+    // Rebuild the board and quotas for this level and joseki
+    primePractice();
+  });
+}
+
 
     winProgBtn && winProgBtn.addEventListener('click', function(){
       var target = parseInt(winProgBtn.dataset.level || '2', 10);
