@@ -84,19 +84,28 @@
   </div>
 </div>
 
-<!-- In-app "Back to menu" confirmation (same UX as Joseki board) -->
+<!-- In-app "Back to menu" confirmation (same look as other notifications) -->
 <div id="menu-confirm-overlay" aria-hidden="true">
-  <div class="menu-confirm-dialog" role="dialog" aria-modal="true" aria-labelledby="menuConfirmTitle">
-    <div class="menu-confirm-title" id="menuConfirmTitle">Back to menu?</div>
-    <div class="menu-confirm-text">
+  <div class="menu-confirm-dialog notif-card"
+       style="width:min(86vw,420px);"
+       role="dialog"
+       aria-modal="true"
+       aria-labelledby="menuConfirmTitle">
+    <div class="menu-confirm-title" id="menuConfirmTitle"
+         style="font-weight:800;font-size:18px;margin-bottom:8px;">
+      Back to menu?
+    </div>
+    <div class="menu-confirm-text"
+         style="margin-bottom:14px;">
       Do you want to leave this practice view and return to the main menu?
     </div>
-    <div class="menu-confirm-actions">
-      <button type="button" id="menuConfirmCancel" class="mc-btn mc-btn-secondary">Stay here</button>
-      <button type="button" id="menuConfirmOk" class="mc-btn mc-btn-primary">Yes, go to menu</button>
+    <div class="menu-confirm-actions notif-actions">
+      <button type="button" id="menuConfirmCancel" class="pbtn">Stay here</button>
+      <button type="button" id="menuConfirmOk" class="pbtn">Yes, go to menu</button>
     </div>
   </div>
 </div>
+
 
 <!-- Wrong Move Modal -->
 <div id="prac-wrong" style="display:none;position:fixed;inset:0;z-index:99999;align-items:center;justify-content:center;">
@@ -570,7 +579,7 @@
     display:none;
     align-items:center;
     justify-content:center;
-    background:rgba(15,23,42,.78);
+    background:rgba(0,0,0,.55);
     z-index:99999;
     -webkit-tap-highlight-color:transparent;
   }
