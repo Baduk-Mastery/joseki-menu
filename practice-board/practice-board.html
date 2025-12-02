@@ -2363,20 +2363,38 @@ mount.addEventListener('pointerup', function(e){
     function hideCleared(){ if (clearedModal) clearedModal.style.display = 'none'; }
 
     // When a corner/side is finished
-function showClearedOrWin(){
-  // At the end of a variation, always zoom out if currently zoomed,
-  // even when "Disable auto zoom out" is ON.
-  if (zoomEnabled && (scale > 1 || isFullscreen)) {
-    smoothZoomOutAndExit();
-  }
+    function showClearedOrWin(){
+      var isZoomed = zoomEnabled && (scale > 1 || isFullscreen);
+      var delay    = AUTO_DELAY; // uses fast/slow from settings
 
-  if (tryIndex >= ORIENTS.length - 1){
-    showWin();
-  } else {
-    showCleared();
-  }
-}
+      function showModal(){
+        if (tryIndex >= ORIENTS.length - 1){
+          showWin();
+        } else {
+          showCleared();
+        }
+      }
 
+      // Zoom enabled and currently zoomed-in
+      if (isZoomed){
+        if (disableAutoZoomOut){
+          // Setting: "Disable auto zoom out" = ON
+          // Last stone is placed, wait (fast/slow), then zoom out and show modal.
+          setTimeout(function(){
+            smoothZoomOutAndExit();
+            showModal();
+          }, delay);
+        } else {
+          // Setting: "Disable auto zoom out" = OFF
+          // Zoom out first, then wait (fast/slow) before showing the notification.
+          smoothZoomOutAndExit();
+          setTimeout(showModal, delay);
+        }
+      } else {
+        // Not zoomed: just wait (fast/slow) after the last stone, then show the modal.
+        setTimeout(showModal, delay);
+      }
+    }
 
 
     function configureWinModal(){
@@ -2492,6 +2510,7 @@ if (winRetryBtn){
 
       var opts = getNextCandidates(currentNode);
       if (!opts || !opts.length){
+        // Already at the end – just run the end-of-variation logic
         showClearedOrWin();
         return;
       }
@@ -2513,16 +2532,22 @@ if (winRetryBtn){
           buildPositionTo(currentNode);
           StoneSFX.play();
 
-          if (!disableAutoZoomOut && zoomEnabled && (scale > 1 || isFullscreen)){
-            setTimeout(smoothZoomOutAndExit, 10);
-          }
-
+          // Check what comes next
           var nexts = getNextCandidates(currentNode);
 
+          // If there is no next move, this was the last stone.
+          // Let showClearedOrWin handle zoom & delay using the settings.
           if (!nexts.length){
             showClearedOrWin();
             return;
           }
+
+          // Non-final move: auto zoom out if allowed and currently zoomed.
+          if (!disableAutoZoomOut && zoomEnabled && (scale > 1 || isFullscreen)){
+            setTimeout(smoothZoomOutAndExit, 10);
+          }
+
+          // In player-only levels, auto-place opponent moves as before.
           if (playerOnly){
             autoPlaceOpponentIfNeeded();
           }
