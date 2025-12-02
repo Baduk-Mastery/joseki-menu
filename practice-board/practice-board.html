@@ -830,6 +830,22 @@ html.no-wood, body.no-wood{ background: none !important; }
       if (typeof refreshLivesUI  === 'function') refreshLivesUI();
       if (typeof refreshHintsUI  === 'function') refreshHintsUI();
     });
+    function openPlansPage(){
+      // If you ever wire in a JS paywall again, this still works:
+      if (window.GoPlans && typeof GoPlans.open === 'function'){
+        GoPlans.open();
+        return;
+      }
+      if (window.Paywall && typeof Paywall.open === 'function'){
+        Paywall.open();
+        return;
+      }
+
+      // Static site fallback – same as Menu "Plans" button
+      try {
+        window.location.href = "../plans/plans.html";
+      } catch (e) {}
+    }
 
     var QUOTA = (function(){
       function todayKey(name){
@@ -2216,10 +2232,9 @@ mount.addEventListener('pointerup', function(e){
     var hoBack = document.getElementById('prac-hints-back');
     var hoPro  = document.getElementById('prac-hints-pro');
     if (hoBack) hoBack.addEventListener('click', function(){ hideHintsOut(); });
-    if (hoPro)  hoPro.addEventListener('click', function(){
-      if (window.Paywall && typeof Paywall.open === 'function'){ Paywall.open(); }
-      else if (window.GoPlans && typeof GoPlans.open === 'function'){ GoPlans.open(); }
-      else alert('Pro unlocks unlimited hints.');
+        if (hoPro)  hoPro.addEventListener('click', function(){
+      hideHintsOut();
+      openPlansPage();
     });
 
     function autoPlaceOpponentIfNeeded(){
@@ -2347,9 +2362,7 @@ if (winRetryBtn){
       var target = parseInt(winProgBtn.dataset.level || '2', 10);
       hideWin();
       if (!isPro() && target >= 4){
-        if (window.GoPlans && typeof GoPlans.open === 'function'){ GoPlans.open(); }
-        else if (window.Paywall && typeof Paywall.open === 'function'){ Paywall.open(); }
-        else alert('Level ' + target + ' is a Pro level.');
+        openPlansPage();
         return;
       }
       if (window.PracticeBoard && typeof window.PracticeBoard.load === 'function'){
@@ -2361,9 +2374,8 @@ if (winRetryBtn){
     var lockedProBtn = document.getElementById('prac-locked-pro');
     if (lockedBack)   lockedBack.addEventListener('click', function(){ hideLocked(); });
     if (lockedProBtn) lockedProBtn.addEventListener('click', function(){
-      if (window.Paywall && typeof Paywall.open === 'function'){ Paywall.open(); }
-      else if (window.GoPlans && typeof GoPlans.open === 'function'){ GoPlans.open(); }
-      else alert('Pro unlocks unlimited tries.');
+      hideLocked();
+      openPlansPage();
     });
 
     function smoothZoomOutAndExit(){
@@ -2641,11 +2653,10 @@ if (headerBack){
         else level = 2;
 
         if (!isPro() && level >= 4){
-          if (window.GoPlans && typeof GoPlans.open === 'function'){ GoPlans.open(); }
-          else if (window.Paywall && typeof Paywall.open === 'function'){ Paywall.open(); }
-          else alert('Level ' + level + ' is a Pro level.');
+          openPlansPage();
           return;
         }
+
 
         playerOnly = (level === 2 || level === 3);
         playerColor = playerOnly ? (level === 2 ? B : W) : null;
