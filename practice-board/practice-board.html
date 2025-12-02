@@ -2112,10 +2112,9 @@ mount.addEventListener('pointerup', function(e){
     return;
   }
 
-  const dt = performance.now() - tapStart.t;
   const dx = e.clientX - tapStart.x;
   const dy = e.clientY - tapStart.y;
-  const dist2 = dx*dx + dy*dy;   // ← add this line
+  const dist2 = dx*dx + dy*dy;
 
   const gi = tapStart.gridI;
   const gj = tapStart.gridJ;
@@ -2127,7 +2126,47 @@ mount.addEventListener('pointerup', function(e){
 
   // Treat as a tap if movement was small and we never started panning
   if (dist2 <= TAP_SLOP2){
-    // NEW: If the tap was not on a valid grid point, ignore it completely.
+    const baseView = (scale === 1 && !isFullscreen);
+
+    if (baseView){
+      // In normal view: allow taps anywhere on the board wood.
+      // If the tap was outside the strict grid bounds, zoom towards
+      // the nearest intersection instead of ignoring it.
+      let ti = gi;
+      let tj = gj;
+
+      if (ti == null || tj == null ||
+          ti < 0 || tj < 0 || ti >= SIZE || tj >= SIZE){
+        const rect = mount.getBoundingClientRect();
+        const sx   = tapClientX - rect.left;
+        const sy   = tapClientY - rect.top;
+
+        let bestI = 0, bestDx = Infinity;
+        for (let i = 0; i < SIZE; i++){
+          const dxI = Math.abs(getXcss(i) - sx);
+          if (dxI < bestDx){ bestDx = dxI; bestI = i; }
+        }
+
+        let bestJ = 0, bestDy = Infinity;
+        for (let j = 0; j < SIZE; j++){
+          const dyJ = Math.abs(getYcss(j) - sy);
+          if (dyJ < bestDy){ bestDy = dyJ; bestJ = j; }
+        }
+
+        ti = bestI;
+        tj = bestJ;
+      }
+
+      e.preventDefault();
+      e.stopPropagation();
+      if (e.stopImmediatePropagation) e.stopImmediatePropagation();
+
+      suppressNextBoardClick = true;
+      enterFullscreenAtGrid(ti, tj, tapClientX, tapClientY);
+      return;
+    }
+
+    // Already zoomed: only accept taps that really land on the grid
     if (gi == null || gj == null ||
         gi < 0 || gj < 0 || gi >= SIZE || gj >= SIZE){
       return;
@@ -2137,18 +2176,8 @@ mount.addEventListener('pointerup', function(e){
     e.stopPropagation();
     if (e.stopImmediatePropagation) e.stopImmediatePropagation();
 
-    if (scale === 1 && !isFullscreen){
-      // Zoom in from normal view
-      suppressNextBoardClick = true;
-      enterFullscreenAtGrid(gi, gj, tapClientX, tapClientY);
-    } else {
-      // Already zoomed: treat as a real board tap
-      // IMPORTANT: also suppress the synthetic click on the canvas,
-      // otherwise handlePracticeClick can be called twice.
-      suppressNextBoardClick = true;
-      try { handlePracticeClick(gi, gj); } catch(_) {}
-    }
-
+    suppressNextBoardClick = true;
+    try { handlePracticeClick(gi, gj); } catch (_) {}
   }
 }, {passive:false, capture:true});
 
