@@ -885,10 +885,16 @@ html.no-wood, body.no-wood{ background: none !important; }
       get: function(){ try { return (localStorage.getItem('go_tier') || 'free').toLowerCase(); } catch(_) { return 'free'; } }
     };
     function isPro(){ return String(TierAPI.get() || 'free').toLowerCase() === 'pro'; }
+    // Flag so we know a plan change happened while on this page
+    window.__tierChangedWhileOnPractice = false;
+
     window.addEventListener('tier:changed', function(){
-      if (typeof refreshLivesUI  === 'function') refreshLivesUI();
-      if (typeof refreshHintsUI  === 'function') refreshHintsUI();
+      window.__tierChangedWhileOnPractice = true;
+
+      if (typeof window.refreshLivesUI  === 'function') window.refreshLivesUI();
+      if (typeof window.refreshHintsUI  === 'function') window.refreshHintsUI();
     });
+
     function openPlansPage(){
       // If you ever wire in a JS paywall again, this still works:
       if (window.GoPlans && typeof GoPlans.open === 'function'){
@@ -1946,8 +1952,8 @@ html.no-wood, body.no-wood{ background: none !important; }
       document.documentElement.style.overflow = prevOverflow;
       fitBoard();
 
-      if (typeof refreshLivesUI  === 'function') refreshLivesUI();
-      if (typeof refreshHintsUI  === 'function') refreshHintsUI();
+      if (typeof window.refreshLivesUI  === 'function') window.refreshLivesUI();
+      if (typeof window.refreshHintsUI === 'function') window.refreshHintsUI();
     }
 
     var isPanning = false, panStart = null, activePointerId = null,
@@ -2212,8 +2218,9 @@ mount.addEventListener('pointerup', function(e){
       showSingleNext = false;
       l2HintConsumed = false;
       clearHint();
-      if (typeof refreshLivesUI === 'function') refreshLivesUI();
-      if (typeof refreshHintsUI === 'function') refreshHintsUI();
+
+      if (typeof window.refreshLivesUI  === 'function') window.refreshLivesUI();
+      if (typeof window.refreshHintsUI === 'function') window.refreshHintsUI();
 
       if (level === 1){
         currentNode = null;
@@ -2321,7 +2328,7 @@ mount.addEventListener('pointerup', function(e){
     function showWrong(){
       if (!isPro() && (level === 2 || level === 3)){
         var res = QUOTA.use('prac:lives-l23', MAX_LIVES_FREE_L23);
-        if (typeof refreshLivesUI === 'function') refreshLivesUI();
+        if (typeof window.refreshLivesUI === 'function') window.refreshLivesUI();
         if (!res.ok){ showLocked(); return; }
       }
       if (zoomEnabled && (scale > 1 || isFullscreen)) {
@@ -2590,14 +2597,25 @@ if (winRetryBtn){
     if (hintBtn)  hintBtn.addEventListener('click', triggerHint);
 // Helper: go back to the joseki selection we came from
 function goBackToSelection(){
-  // If we have a referrer, just step back in history.
+  // If the plan changed while we were on this page,
+  // force a fresh load of the Practice List so it reflects Pro.
+  if (window.__tierChangedWhileOnPractice){
+    window.__tierChangedWhileOnPractice = false;
+    try{
+      window.location.href = "../practice-list/index.html";
+    } catch(_){
+      window.location.href = "../joseki-menu/index.html";
+    }
+    return;
+  }
+
+  // Normal behavior: just go back to where we came from
   if (document.referrer){
     window.history.back();
     return;
   }
 
-  // No referrer (opened directly / new tab) – fall back to Practice List,
-  // then to main menu as a last resort.
+  // No referrer (opened directly in new tab) → go to Practice List, then menu as fallback
   try{
     window.location.href = "../practice-list/index.html";
   } catch(_){
