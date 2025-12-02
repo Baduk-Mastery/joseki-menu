@@ -102,7 +102,9 @@
   <div class="notif-card" style="width:min(86vw,420px);">
     <div style="font-weight:800;font-size:18px;margin-bottom:8px;">Wrong Move</div>
     <div style="color:#334155;margin-bottom:14px;">That point isn’t part of this joseki.</div>
-    <button id="prac-wrong-back" style="padding:8px 14px;border-radius:8px;border:1px solid #cbd5e1;background:#f1f5f9;font-weight:700;cursor:pointer;">Back</button>
+    <div class="notif-actions">
+      <button id="prac-wrong-back" class="pbtn" type="button">Back</button>
+    </div>
   </div>
 </div>
 
@@ -113,7 +115,9 @@
   <div class="notif-card" style="width:min(86vw,420px);">
     <div style="font-weight:800;font-size:18px;margin-bottom:8px;">Cleared</div>
     <div style="color:#334155;margin-bottom:14px;">Great! Let’s try the next side/corner.</div>
-    <button id="prac-cleared-next" style="padding:8px 14px;border-radius:8px;border:1px solid #cbd5e1;background:#e7f0ff;color:#0b4aa2;font-weight:700;cursor:pointer;">Next</button>
+    <div class="notif-actions">
+      <button id="prac-cleared-next" class="pbtn" type="button">Next</button>
+    </div>
   </div>
 </div>
 
@@ -123,10 +127,10 @@
   <div class="notif-card" style="width:min(86vw,520px);">
     <div style="font-weight:800;font-size:18px;margin-bottom:14px;">Congratulations!</div>
     <div style="color:#334155;margin-bottom:14px;">You cleared all 8 sides.</div>
-    <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap;">
-      <button id="prac-win-back"     style="padding:8px 14px;border-radius:8px;border:1px solid #cbd5e1;background:#e7f0ff;color:#0b4aa2;font-weight:700;cursor:pointer;">Back to Joseki selection</button>
-      <button id="prac-win-retry"    style="padding:8px 14px;border-radius:8px;border:1px solid #cbd5e1;background:#f1f5f9;color:#0f172a;font-weight:700;cursor:pointer;">Retry</button>
-      <button id="prac-win-progress" style="display:none;padding:8px 14px;border-radius:8px;border:1px solid #cbd5e1;background:#f1f5f9;color:#0f172a;font-weight:700;cursor:pointer;">Next level</button>
+    <div class="notif-actions">
+      <button id="prac-win-back"     class="pbtn" type="button">Back to Joseki selection</button>
+      <button id="prac-win-retry"    class="pbtn" type="button">Retry</button>
+      <button id="prac-win-progress" class="pbtn" type="button" style="display:none;">Next level</button>
     </div>
   </div>
 </div>
@@ -138,9 +142,9 @@
   <div class="notif-card" style="width:min(86vw,460px);">
     <div style="font-weight:800;font-size:18px;margin-bottom:14px;">Out of Lives</div>
     <div id="prac-locked-msg" style="color:#334155;margin-bottom:14px;">You’ve used all lives for today on Levels 2–3.</div>
-    <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap;">
-      <button id="prac-locked-pro"  style="padding:8px 14px;border-radius:8px;border:1px solid #cbd5e1;background:#e7f0ff;color:#0b4aa2;font-weight:700;cursor:pointer;">Go Pro</button>
-      <button id="prac-locked-back" style="padding:8px 14px;border-radius:8px;border:1px solid #cbd5e1;background:#f1f5f9;font-weight:700;cursor:pointer;">Back</button>
+    <div class="notif-actions">
+      <button id="prac-locked-pro"  class="pbtn" type="button">Go Pro</button>
+      <button id="prac-locked-back" class="pbtn" type="button">Back</button>
     </div>
   </div>
 </div>
@@ -152,12 +156,13 @@
   <div class="notif-card" style="width:min(86vw,460px);">
     <div style="font-weight:800;font-size:18px;margin-bottom:14px;">Out of Hints</div>
     <div style="color:#334155;margin-bottom:14px;">You’ve used all 3 daily hints on Practice.</div>
-    <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap;">
-      <button id="prac-hints-pro"  style="padding:8px 14px;border-radius:8px;border:1px solid #cbd5e1;background:#e7f0ff;color:#0b4aa2;font-weight:700;cursor:pointer;">Go Pro</button>
-      <button id="prac-hints-back" style="padding:8px 14px;border-radius:8px;border:1px solid #cbd5e1;background:#f1f5f9;font-weight:700;cursor:pointer;">Back</button>
+    <div class="notif-actions">
+      <button id="prac-hints-pro"  class="pbtn" type="button">Go Pro</button>
+      <button id="prac-hints-back" class="pbtn" type="button">Back</button>
     </div>
   </div>
 </div>
+
 
 
 <style>
@@ -371,19 +376,23 @@
   flex-wrap: wrap;
 }
 
+/* Use the same wood style on board controls AND notification buttons */
 #prac-ctrls .pbtn,
 #prac-ctrls .pbtn-strong,
-#prac-ctrls .pbtn-alt{
+#prac-ctrls .pbtn-alt,
+.notif-card .pbtn,
+.notif-card .pbtn-strong,
+.notif-card .pbtn-alt{
   position: relative;
   min-width: 90px;
   padding: 8px 24px;
 
   /* Make the *content* perfectly centered */
   flex: 1 1 0;
-  display: flex;             /* NEW */
-  align-items: center;       /* NEW */
-  justify-content: center;   /* NEW */
-  box-sizing: border-box;    /* NEW */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
 
   text-align: center;
 
@@ -427,7 +436,8 @@
     filter .12s ease-out;
 }
 
-#prac-ctrls .pbtn:hover{
+#prac-ctrls .pbtn:hover,
+.notif-card .pbtn:hover{
   filter: brightness(1.12) saturate(.98);
   transform: translateY(-1px);
   box-shadow:
@@ -435,7 +445,8 @@
     0 10px 16px rgba(0,0,0,.48);
 }
 
-#prac-ctrls .pbtn:active{
+#prac-ctrls .pbtn:active,
+.notif-card .pbtn:active{
   filter: brightness(.97) saturate(.96);
   transform: translateY(2px);
   box-shadow:
@@ -445,11 +456,22 @@
 
 #prac-ctrls .pbtn:focus-visible,
 #prac-ctrls .pbtn-strong:focus-visible,
-#prac-ctrls .pbtn-alt:focus-visible{
+#prac-ctrls .pbtn-alt:focus-visible,
+.notif-card .pbtn:focus-visible,
+.notif-card .pbtn-strong:focus-visible,
+.notif-card .pbtn-alt:focus-visible{
   outline: 2px solid rgba(255,255,255,.9);
   outline-offset: 2px;
 }
 
+/* Layout helper for buttons inside notifications */
+.notif-actions{
+  margin-top: 10px;
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
 </style>
 <style>
 /* Practice Board top bar (Back + meters) */
