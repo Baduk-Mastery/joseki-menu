@@ -354,7 +354,7 @@
 </style>
 
 <style>
-  /* Practice Board buttons – subtle gloss, board-like wood */
+/* Practice Board buttons – subtle gloss, board-like wood */
 #prac-ctrls{
   max-width: 720px;
   width: 100%;
@@ -370,28 +370,34 @@
 #prac-ctrls .pbtn,
 #prac-ctrls .pbtn-strong,
 #prac-ctrls .pbtn-alt{
-  position:relative;
-  min-width:90px;
-  padding:8px 24px;
+  position: relative;
+  min-width: 90px;
+  padding: 8px 24px;
 
+  /* Make the *content* perfectly centered */
   flex: 1 1 0;
+  display: flex;             /* NEW */
+  align-items: center;       /* NEW */
+  justify-content: center;   /* NEW */
+  box-sizing: border-box;    /* NEW */
+
   text-align: center;
 
-  border-radius:10px;
-  border:1px solid rgba(255,255,255,.40);
+  border-radius: 10px;
+  border: 1px solid rgba(255,255,255,.40);
 
-  font-size:16px;
-  font-weight:800;
-  line-height:1.1;
-  color:#fff3cf;
-  text-shadow:0 1px 0 rgba(120,60,20,.7);
-  cursor:pointer;
+  font-size: 16px;
+  font-weight: 800;
+  line-height: 1.1;
+  color: #fff3cf;
+  text-shadow: 0 1px 0 rgba(120,60,20,.7);
+  cursor: pointer;
 
-  user-select:none;
-  -webkit-user-select:none;
-  -moz-user-select:none;
-  -ms-user-select:none;
-  -webkit-tap-highlight-color:transparent;
+  user-select: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  -webkit-tap-highlight-color: transparent;
 
   background-image:
     linear-gradient(
@@ -401,11 +407,11 @@
       rgba(0,0,0,.14) 100%
     ),
     url('../img/wood.jpg');
-  background-size:100% 100%, cover;
-  background-position:center;
-  background-repeat:no-repeat;
+  background-size: 100% 100%, cover;
+  background-position: center;
+  background-repeat: no-repeat;
 
-  filter:brightness(1.08) saturate(.96);
+  filter: brightness(1.08) saturate(.96);
 
   box-shadow:
     0 3px 0 rgba(133,74,26,.85),
@@ -417,28 +423,29 @@
     filter .12s ease-out;
 }
 
-  #prac-ctrls .pbtn:hover{
-    filter:brightness(1.12) saturate(.98);
-    transform:translateY(-1px);
-    box-shadow:
-      0 4px 0 rgba(133,74,26,.9),
-      0 10px 16px rgba(0,0,0,.48);
-  }
+#prac-ctrls .pbtn:hover{
+  filter: brightness(1.12) saturate(.98);
+  transform: translateY(-1px);
+  box-shadow:
+    0 4px 0 rgba(133,74,26,.9),
+    0 10px 16px rgba(0,0,0,.48);
+}
 
-  #prac-ctrls .pbtn:active{
-    filter:brightness(.97) saturate(.96);
-    transform:translateY(2px);
-    box-shadow:
-      0 1px 0 rgba(120,60,20,.9),
-      0 4px 8px rgba(0,0,0,.55);
-  }
+#prac-ctrls .pbtn:active{
+  filter: brightness(.97) saturate(.96);
+  transform: translateY(2px);
+  box-shadow:
+    0 1px 0 rgba(120,60,20,.9),
+    0 4px 8px rgba(0,0,0,.55);
+}
 
-  #prac-ctrls .pbtn:focus-visible,
-  #prac-ctrls .pbtn-strong:focus-visible,
-  #prac-ctrls .pbtn-alt:focus-visible{
-    outline:2px solid rgba(255,255,255,.9);
-    outline-offset:2px;
-  }
+#prac-ctrls .pbtn:focus-visible,
+#prac-ctrls .pbtn-strong:focus-visible,
+#prac-ctrls .pbtn-alt:focus-visible{
+  outline: 2px solid rgba(255,255,255,.9);
+  outline-offset: 2px;
+}
+
 </style>
 <style>
 /* Practice Board top bar (Back + meters) */
