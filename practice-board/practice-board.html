@@ -1989,9 +1989,12 @@ mount.addEventListener('pointerup', function(e){
       enterFullscreenAtGrid(gi, gj, tapClientX, tapClientY);
     } else {
       // Already zoomed: treat as a real board tap
-      suppressNextBoardClick = false;
+      // IMPORTANT: also suppress the synthetic click on the canvas,
+      // otherwise handlePracticeClick can be called twice.
+      suppressNextBoardClick = true;
       try { handlePracticeClick(gi, gj); } catch(_) {}
     }
+
   }
 }, {passive:false, capture:true});
 
