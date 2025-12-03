@@ -67,7 +67,7 @@
   touch-action:none;
 }
 
-/* Small “zoom out” box in fullscreen */
+/* Small “zoom out” box in fullscreen – match Practice Board */
 #go-zoom-exit{
   position:fixed;
   left:14px;
@@ -88,14 +88,17 @@
   -webkit-tap-highlight-color:transparent;
 
   color:#e5e7eb;
-  font-size:16px;
+  font-size:18px;
   font-weight:600;
+  line-height:36px;
   text-align:center;
-  line-height:80px;
 }
+
+/* Empty label – same as Practice (no "Zoom out" text) */
 #go-zoom-exit::before{
-  content:"Zoom out";
+  content:"";
 }
+
 
 /* Make the Joseki board good for drag/pan */
 #go-board{
@@ -600,6 +603,12 @@ body.bg-wood [class*="blur"]{
 
   var animId          = 0;
   var isZoomAnimating = false;
+// Joseki Board: no kinetic pan yet, but we keep this stub
+// so the zoom math matches the Practice Board implementation.
+function cancelFling(){
+  // no-op for now
+}
+
 
   var isPanning       = false;
   var panStart        = null;
@@ -688,136 +697,145 @@ body.bg-wood [class*="blur"]{
     }
   }
 
-  function viewportSize(){
-    if (isFullscreen){
-      return {
-        vw: mount.clientWidth  || window.innerWidth  || baseW || 1,
-        vh: mount.clientHeight || window.innerHeight || baseW || 1
-      };
-    }
+function viewportSize(){
+  if (isFullscreen) {
     return {
-      vw: mount.clientWidth || baseW || 1,
-      vh: mount.clientHeight || baseW || 1
+      vw: mount.clientWidth  || window.innerWidth  || baseW || 1,
+      vh: mount.clientHeight || window.innerHeight || baseW || 1
     };
   }
+  return {
+    vw: mount.clientWidth || baseW || 1,
+    vh: mount.clientHeight || baseW || 1
+  };
+}
 
-  // Keep the board covering the viewport when zoomed
-  function clampPan(){
-    if (!isFullscreen || scale <= 1){
-      offsetX = 0;
-      offsetY = 0;
-      return;
+// Keep the board stable while zooming – with a bit of "bleed" like Practice
+function clampPan(){
+  if (isZoomAnimating) return;
+
+  const { vw, vh } = viewportSize();
+  const bw = Math.round(baseW * scale);
+
+  const bleedX = Math.ceil(vw * 0.5);
+  const bleedY = Math.ceil(vh * 0.5);
+
+  const minOX = -bleedX;
+  const maxOX = Math.max(0, bw - vw) + bleedX;
+  const minOY = -bleedY;
+  const maxOY = Math.max(0, bw - vh) + bleedY;
+
+  offsetX = Math.max(minOX, Math.min(offsetX, maxOX));
+  offsetY = Math.max(minOY, Math.min(offsetY, maxOY));
+}
+
+function applyPanAndSize(redrawAfter){
+  const { vw } = viewportSize();
+
+  // Match Practice: board width is clamped and rounded
+  const targetW = Math.max(2, Math.round(baseW || vw));
+
+  if (board._lastW !== targetW) {
+    board.setWidth(targetW);
+    if (zoomLayer) {
+      zoomLayer.style.width  = targetW + 'px';
+      zoomLayer.style.height = targetW + 'px';
     }
-
-    var view = viewportSize();
-    var vw = view.vw, vh = view.vh;
-    var bw = baseW * scale;
-
-    var maxX = Math.max(0, bw - vw);
-    var maxY = Math.max(0, bw - vh);
-
-    if (offsetX < 0) offsetX = 0;
-    if (offsetY < 0) offsetY = 0;
-    if (offsetX > maxX) offsetX = maxX;
-    if (offsetY > maxY) offsetY = maxY;
+    board._lastW = targetW;
+    if (!redrawAfter) redrawAfter = true;
   }
 
-  function applyPanAndSize(redrawAfter){
-    var view = viewportSize();
-    var vw   = view.vw;
-    var targetW = baseW || vw;
+  clampPan();
 
-    if (board._lastW !== targetW){
-      board.setWidth(targetW);
-      if (zoomLayer){
-        zoomLayer.style.width  = targetW + 'px';
-        zoomLayer.style.height = targetW + 'px';
-      }
-      board._lastW = targetW;
-      if (!redrawAfter) redrawAfter = true;
-    }
-
-    clampPan();
-
-    if (zoomLayer){
-      zoomLayer.style.transform =
-        'translate3d(' + (-offsetX) + 'px,' + (-offsetY) + 'px,0) scale(' + scale + ')';
-    }
-
-    if (isFullscreen){
-      mount.style.width  = '100vw';
-      mount.style.height = '100vh';
-    } else {
-      mount.style.width  = '';
-      mount.style.height = baseW + 'px';
-    }
-
-    if (redrawAfter) redraw();
+  if (zoomLayer){
+    zoomLayer.style.transform =
+      'translate3d(' + (-offsetX) + 'px,' + (-offsetY) + 'px,0) scale(' + scale + ')';
   }
 
-  function resetViewLocal(){
-    scale   = 1;
-    offsetX = 0;
-    offsetY = 0;
-    applyPanAndSize(true);
+  if (isFullscreen){
+    mount.style.width  = '100vw';
+    mount.style.height = '100vh';
+  } else {
+    mount.style.width  = '';
+    mount.style.height = baseW + 'px';
   }
 
-  function animateTo(targetScale, worldX, worldY, sxTarget, syTarget){
-    targetScale = Math.max(minScale, Math.min(maxScale, targetScale));
+  if (redrawAfter) redraw();
+}
 
-    var s0 = scale;
-    var t0 = performance.now();
-    var dur = 260;
+function resetViewLocal(){
+  cancelFling(); // stub, but keeps behaviour consistent with Practice
+  scale   = 1;
+  offsetX = 0;
+  offsetY = 0;
+  applyPanAndSize(true);
+}
 
-    cancelAnimationFrame(animId);
-    isZoomAnimating = true;
+function animateTo(targetScale, pxWorld, pyWorld, sxTarget, syTarget){
+  targetScale = Math.max(minScale, Math.min(maxScale, targetScale));
 
-    // Start from the current scale
-    offsetX = worldX * s0 - sxTarget;
-    offsetY = worldY * s0 - syTarget;
+  cancelFling(); // stop any potential kinetic pan
+
+  const s0  = scale;
+  const t0  = performance.now();
+  const dur = 260;
+
+  cancelAnimationFrame(animId);
+  isZoomAnimating = true;
+
+  // Start anchored at current scale
+  offsetX = pxWorld * s0 - sxTarget;
+  offsetY = pxWorld * 0 + (pyWorld * s0 - syTarget); // keep structure explicit
+  applyPanAndSize(false);
+
+  (function step(now){
+    let t = (now - t0) / dur;
+    if (t > 1) t = 1;
+
+    const e = 1 - Math.pow(1 - t, 3); // ease-out cubic
+    const s = s0 + (targetScale - s0) * e;
+
+    scale   = s;
+    offsetX = pxWorld * s - sxTarget;
+    offsetY = pyWorld * s - syTarget;
+
     applyPanAndSize(false);
 
-    (function step(now){
-      var t = (now - t0) / dur;
-      if (t > 1) t = 1;
-
-      var e = 1 - Math.pow(1 - t, 3); // ease-out cubic
-      var s = s0 + (targetScale - s0) * e;
-
-      scale   = s;
-      offsetX = worldX * s - sxTarget;
-      offsetY = worldY * s - syTarget;
-
-      applyPanAndSize(false);
-
-      if (t < 1){
-        animId = requestAnimationFrame(step);
-      } else {
-        isZoomAnimating = false;
-        applyPanAndSize(true);
-      }
-    })(t0);
-  }
-
-  function centerZoomAtGrid(i, j, factor, tapClientX, tapClientY){
-    var targetScale = Math.max(minScale, Math.min(maxScale, scale * factor));
-
-    var worldX = getXcss(i);
-    var worldY = getYcss(j);
-
-    var rect = mount.getBoundingClientRect();
-    var sxTarget = rect.width  / 2;
-    var syTarget = rect.height / 2;
-
-    if (typeof tapClientX === 'number' && typeof tapClientY === 'number'){
-      sxTarget = tapClientX - rect.left;
-      syTarget = tapClientY - rect.top;
-      sxTarget = Math.max(0, Math.min(sxTarget, rect.width));
-      syTarget = Math.max(0, Math.min(syTarget, rect.height));
+    if (t < 1){
+      animId = requestAnimationFrame(step);
+    } else {
+      isZoomAnimating = false;
+      applyPanAndSize(true);
     }
+  })(t0);
+}
 
-    animateTo(targetScale, worldX, worldY, sxTarget, syTarget);
+function centerZoomAtGrid(i, j, factor, tapClientX, tapClientY){
+  const targetScale = Math.max(minScale, Math.min(maxScale, scale * factor));
+
+  // Current CSS position of the grid intersection
+  const px_curr = getXcss(i);
+  const py_curr = getYcss(j);
+
+  // Convert to "world" coordinates (independent of current scale)
+  const px_world = px_curr / scale;
+  const py_world = py_curr / scale;
+
+  const rect = mount.getBoundingClientRect();
+  let sxTarget = rect.width  / 2;
+  let syTarget = rect.height / 2;
+
+  // If we know the tap position, zoom towards the finger
+  if (typeof tapClientX === 'number' && typeof tapClientY === 'number'){
+    sxTarget = tapClientX - rect.left;
+    syTarget = tapClientY - rect.top;
+    sxTarget = Math.max(0, Math.min(sxTarget, rect.width));
+    syTarget = Math.max(0, Math.min(syTarget, rect.height));
   }
+
+  animateTo(targetScale, px_world, py_world, sxTarget, syTarget);
+}
+
 
   function enterFullscreenAtGrid(i, j, tapClientX, tapClientY){
     if (!zoomEnabled || isFullscreen) return;
