@@ -623,7 +623,6 @@ function cancelFling(){
 
   var tapStart = null;
   var TAP_SLOP2 = 64; // squared px (~8px) – small finger jitter allowed
-  var suppressNextBoardClick = false;
 
   // Convert board (canvas) coordinates to CSS px
   function canvasCssScale(){
@@ -1005,7 +1004,8 @@ function centerZoomAtGrid(i, j, factor, tapClientX, tapClientY){
         }
       }
 
-      suppressNextBoardClick = true;
+      // We’re using this tap just to enter fullscreen zoom – cancel the default click
+      e.preventDefault();
       enterFullscreenAtGrid(bi, bj, start.x, start.y);
     }
   }, { passive:false, capture:true });
@@ -1566,8 +1566,6 @@ function centerZoomAtGrid(i, j, factor, tapClientX, tapClientY){
   function gotoNext (){ var cand = getNextCandidates(currentNode); if (!cand.length) return; currentNode = cand[0].node; buildPositionTo(currentNode); }
 
   board.addEventListener('click', function(x,y){
-    if (zoomEnabled && suppressNextBoardClick){ suppressNextBoardClick = false; return; }
-
     if (hasSGF && !freeMode){
       var opts = getTurnCandidates(currentNode); // filtered by turn
       for (var i=0;i<opts.length;i++){
