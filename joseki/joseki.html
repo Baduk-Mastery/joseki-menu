@@ -1037,6 +1037,31 @@ function centerZoomAtGrid(i, j, factor, tapClientX, tapClientY){
     },
     isFullscreen: function(){ return isFullscreen; }
   };
+  // React to Settings changes (same event as Practice Board)
+  window.addEventListener('go:prefs-changed', function(e){
+    var d = e.detail || {};
+    if (!d || typeof d.key === 'undefined') return;
+
+    if (d.key === 'josekiZoom') {
+      // Enable/disable zoom live
+      try {
+        if (window.JosekiZoom && typeof JosekiZoom.setEnabled === 'function') {
+          JosekiZoom.setEnabled(!!d.value);
+        }
+      } catch (_) {}
+    } else if (d.key === 'highlightLast') {
+      // Toggle last-move marker
+      highlightLastEnabled = !!d.value;
+      try { redraw(); } catch (_) {}
+    } else if (d.key === 'soundOn') {
+      // Toggle stone sound
+      setSoundEnabled(!!d.value);
+    } else if (d.key === 'disableAutoZoomOut') {
+      // Whether to auto-exit fullscreen after a correct move
+      disableAutoZoomOut = !!d.value;
+    }
+  });
+
 
   // Initial sizing
   function fitBoard(){
