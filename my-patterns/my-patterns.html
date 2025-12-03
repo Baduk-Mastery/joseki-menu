@@ -201,6 +201,18 @@
     overflow-wrap:anywhere;
     max-width:100%;
   }
+/* Match Practice Board notification typography inside the My Patterns notice */
+#ownpatterns-root #own-notice .info-title{
+  font-size:18px;
+  margin-bottom:8px;
+}
+
+#ownpatterns-root #own-notice .info-desc{
+  font-size:16px;
+  line-height:1.4;
+  margin-bottom:14px; /* same feel as notif body text on Practice Board */
+}
+
 
   #ownpatterns-root .actions{
     margin-top:14px;
@@ -505,11 +517,12 @@
   #ownpatterns-root .own-toast .own-toast-card > *{
     color:inherit !important;
   }
-  #ownpatterns-root .own-toast .own-toast-text{
-    font-weight:800;
-    font-size:14px;
-    line-height:1.35;
-  }
+#ownpatterns-root .own-toast .own-toast-text{
+  font-weight:800;
+  font-size:18px;
+  line-height:1.35;
+  margin-bottom:8px; /* same visual spacing as Practice Board titles */
+}
   #ownpatterns-root .own-toast .own-toast-actions{
     margin-top:10px;
     display:flex;
