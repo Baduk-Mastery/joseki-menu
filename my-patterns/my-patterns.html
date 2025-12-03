@@ -141,29 +141,58 @@
   }
 
   /* Overlays (My Patterns + Editor) */
-  #ownpatterns-root #own-overlay,
-  #ownpatterns-root #own-editor{
-    position:fixed; inset:0; z-index:100000; display:none;
-    align-items:center; justify-content:center;
-    padding:12px 0; overflow:auto; -webkit-overflow-scrolling:touch;
-    color:#e6f3ff; -webkit-tap-highlight-color:transparent;
-    background-image:
-      linear-gradient(rgba(0,0,0,.35), rgba(0,0,0,.45)),
-      var(--wood);
-    background-size:cover; background-position:center;
-  }
+#ownpatterns-root #own-overlay,
+#ownpatterns-root #own-editor{
+  position:fixed;
+  inset:0;
+  z-index:100000;
+  display:none;
+
+  /* Full-screen flex, wood stays fixed, no scroll here */
+  align-items:stretch;
+  justify-content:center;
+  padding:0 0 12px 0;          /* only bottom margin of wood */
+  box-sizing:border-box;
+  overflow:hidden;             /* prevent overscroll showing body */
+  color:#e6f3ff;
+  -webkit-tap-highlight-color:transparent;
+
+  background-color:#1b1208;    /* warm fallback */
+  background-image:
+    linear-gradient(rgba(0,0,0,.35), rgba(0,0,0,.45)),
+    var(--wood);
+  background-size:cover;
+  background-position:center;
+}
+
 /* Keep the My Patterns list aligned to the top */
 #ownpatterns-root #own-overlay{
   align-items:flex-start;
 }
+
+/* Keep the My Patterns list aligned to the top */
+#ownpatterns-root #own-overlay{
+  align-items:flex-start;
+}
+#ownpatterns-root .s-inner{
+  width:min(92vw,var(--board-max));
+  height:100%;
+  max-height:100%;
+  margin:0 auto;
+  padding:16px 24px 22px;
+  text-align:left;
+  position:relative;
+
+  /* This is the only scrollable area */
+  overflow:auto;
+  -webkit-overflow-scrolling:touch;
+}
+
+@media (max-width:480px){
   #ownpatterns-root .s-inner{
-    width:min(100vw,var(--board-max));
-    padding:16px 0 22px;
-    text-align:left; position:relative; margin:0 auto;
+    padding:16px 12px 22px;
   }
-  @media (max-width:480px){
-    #ownpatterns-root .s-inner{ padding:16px 12px 22px; }
-  }
+}
 
   #ownpatterns-root .s-header{
     display:grid; grid-template-columns:auto 1fr; align-items:center; column-gap:14px; margin:6px 0 10px;
@@ -433,12 +462,16 @@
     padding:0;
     background:rgba(0,0,0,.55); /* same dim backdrop as Practice modals */
   }
-  #ownpatterns-root #own-notice .s-inner{
-    width:auto;
-    padding:0;
-    margin:0;
-    display:block;
-  }
+#ownpatterns-root #own-notice .s-inner{
+  width:auto;
+  padding:0;
+  margin:0;
+  display:block;
+  height:auto;
+  max-height:none;
+  overflow:visible;
+}
+
   #ownpatterns-root #own-notice .own-notice-card{
     position:relative;
     border-radius:10px;
@@ -538,20 +571,38 @@
 
   /* Level overlay styling (copied to match Practice List style) */
   #level-overlay{
-    position:fixed; inset:0; z-index:100000; display:none;
-    align-items:flex-start; justify-content:center;
-    padding:12px 0; overflow:auto; -webkit-overflow-scrolling:touch;
-    color:#e6f3ff; -webkit-tap-highlight-color:transparent;
-    background-image:
-      linear-gradient(rgba(0,0,0,.35), rgba(0,0,0,.45)),
-      url('../img/wood.jpg');
-    background-size:cover; background-position:center;
-  }
-  #level-overlay .s-inner{
-    width:min(92vw,720px);
-    padding:16px 24px 22px;
-    text-align:left; margin:0 auto;
-  }
+  position:fixed;
+  inset:0;
+  z-index:100000;
+  display:none;
+
+  align-items:stretch;
+  justify-content:center;
+  padding:0 0 12px 0;
+  box-sizing:border-box;
+  overflow:hidden;
+
+  color:#e6f3ff;
+  -webkit-tap-highlight-color:transparent;
+  background-color:#1b1208;
+  background-image:
+    linear-gradient(rgba(0,0,0,.35), rgba(0,0,0,.45)),
+    url('../img/wood.jpg');
+  background-size:cover;
+  background-position:center;
+}
+
+#level-overlay .s-inner{
+  width:min(92vw,720px);
+  height:100%;
+  max-height:100%;
+  margin:0 auto;
+  padding:16px 24px 22px;
+  text-align:left;
+  overflow:auto;
+  -webkit-overflow-scrolling:touch;
+}
+
   #level-overlay .s-header{
     display:grid; grid-template-columns:auto 1fr; align-items:center; column-gap:14px;
     margin:6px 0 10px;
