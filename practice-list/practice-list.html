@@ -410,6 +410,19 @@
   justify-content:center;
   flex-wrap:wrap;
 }
+/* When the remove-favorite toast is open, darken the background
+   and block scrolling/interactions outside the card */
+#practice-overlay.toast-open{
+  overflow: hidden; /* freeze scroll while toast is open */
+}
+
+#practice-overlay.toast-open::before{
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: rgba(0,0,0,.55); /* same dark scrim as Practice Board */
+  z-index: 100001;             /* below the toast card (100002), above wood */
+}
 
   #practice-overlay.toast-open .s-inner{ pointer-events:none; }
 
