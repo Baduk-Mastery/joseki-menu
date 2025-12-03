@@ -4,27 +4,14 @@
   <meta charset="utf-8" />
   <title>Joseki Master – Practice List</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-<style>
-  html, body{
-    margin:0;
-    padding:0;
-    min-height:100%;
-    height:100%;
-    font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
-
-    /* important: use the same wood background as the overlay */
-    background-color:#000; /* safe fallback */
-    background-image:
-      linear-gradient(rgba(0,0,0,.35), rgba(0,0,0,.45)),
-      url('../img/wood.jpg');
-    background-size:cover;
-    background-position:center;
-    background-repeat:no-repeat;
-
-    /* prevent the page itself from scrolling/bouncing */
-    overflow:hidden;
-  }
-</style>
+  <style>
+    html, body{
+      margin:0;
+      padding:0;
+      min-height:100%;
+      font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+    }
+  </style>
   <script src="../lib/tier-bridge.js"></script>
 </head>
 <body>
@@ -107,30 +94,16 @@
 
 <style>
   /* Overlays: scrollable + momentum */
-#practice-overlay, #level-overlay{
-  overscroll-behavior: contain;
-}
-  position:fixed; inset:0; z-index:100000; display:none;
-  align-items:flex-start; justify-content:center;
-  padding:12px 0;
-  overflow:auto;
-  -webkit-overflow-scrolling:touch;
-  overscroll-behavior:contain; /* NEW: keep rubber-band inside overlay */
-
-  color:#e6f3ff;
-  -webkit-tap-highlight-color:transparent;
-
-  /* NEW: solid fallback so you never see “through” */
-  background-color:#120a05;
-
-  background-image:
-    linear-gradient(rgba(0,0,0,.35), rgba(0,0,0,.45)),
-    url('../img/wood.jpg');
-  background-size:cover;
-  background-position:center;
-  background-repeat:no-repeat;
-}
-
+  #practice-overlay, #level-overlay{
+    position:fixed; inset:0; z-index:100000; display:none;
+    align-items:flex-start; justify-content:center;
+    padding:12px 0; overflow:auto; -webkit-overflow-scrolling:touch;
+    color:#e6f3ff; -webkit-tap-highlight-color:transparent;
+    background-image:
+      linear-gradient(rgba(0,0,0,.35), rgba(0,0,0,.45)),
+      url('../img/wood.jpg');
+    background-size:cover; background-position:center;
+  }
   #practice-overlay .s-inner, #level-overlay .s-inner{
     width:min(92vw,720px); padding:16px 24px 22px; text-align:left; margin:0 auto;
   }
@@ -1645,5 +1618,7 @@ cta.innerHTML     = '<span class="s-btn open-btn">Open</span>';
 
 </body>
 </html>
+
+
 
 
