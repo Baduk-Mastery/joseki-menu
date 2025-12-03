@@ -177,22 +177,50 @@
   }
 
   /* Overlay shell */
-  #drills-root #drills-overlay{
-    position:fixed; inset:0; z-index:100000; display:none;
-    align-items:flex-start; justify-content:center;
-    padding:12px 0; overflow:auto; -webkit-overflow-scrolling:touch;
-    background-image:
-      linear-gradient(rgba(0,0,0,.35), rgba(0,0,0,.45)),
-      var(--wood);
-    background-size:cover; background-position:center;
+#drills-root #drills-overlay{
+  position:fixed;
+  inset:0;
+  z-index:100000;
+  display:none;
 
-    /* keep scroll bounce inside overlay, but no dark background */
-    overscroll-behavior:contain;
-  }
+  /* Overlay itself does NOT scroll */
+  overflow:hidden;
 
-  #drills-root .s-inner{
-    width:min(92vw,var(--maxw)); padding:16px 24px 22px; text-align:left; margin:0 auto; position:relative;
-  }
+  display:flex;
+  align-items:stretch;
+  justify-content:center;
+
+  /* Wood margin only at the bottom (matches Practice list fix) */
+  padding:0 0 12px 0;
+  box-sizing:border-box;
+
+  background-image:
+    linear-gradient(rgba(0,0,0,.35), rgba(0,0,0,.45)),
+    var(--wood);
+  background-size:cover;
+  background-position:center;
+
+  /* keep scroll bounce inside overlay, but no white/black background peeking through */
+  overscroll-behavior:contain;
+}
+
+
+ #drills-root .s-inner{
+  width:min(92vw,var(--maxw));
+  height:100%;
+  max-height:100%;
+  margin:0 auto;
+
+  padding:16px 24px 22px;
+  text-align:left;
+  position:relative;
+  box-sizing:border-box;
+
+  /* This is the only scrollable area */
+  overflow:auto;
+  -webkit-overflow-scrolling:touch;
+}
+
   #drills-root .s-header{
     display:grid; grid-template-columns:auto 1fr; align-items:center; column-gap:14px; margin:6px 0 10px;
   }
