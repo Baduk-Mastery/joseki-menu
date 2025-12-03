@@ -107,6 +107,10 @@
   align-items:stretch;
   justify-content:center;
 
+  /* Wood margin at top/bottom happens here instead of on .s-inner */
+  padding:12px 0;
+  box-sizing:border-box;
+
   color:#e6f3ff;
   -webkit-tap-highlight-color:transparent;
 
@@ -119,18 +123,24 @@
   background-position:center;
 }
 
-/* Inner column: this is the only scrollable area */
+
 #practice-overlay .s-inner,
 #level-overlay .s-inner{
   width:min(92vw,720px);
-  max-height:calc(100vh - 24px);  /* preserves top/bottom gap visually */
-  margin:12px auto;
+
+  /* Fill all available height inside the overlay padding */
+  height:100%;
+  max-height:100%;
+  margin:0 auto;
+
   padding:16px 24px 22px;
   text-align:left;
 
+  /* This is the only scrollable area */
   overflow:auto;
   -webkit-overflow-scrolling:touch;
 }
+
 
   /* Headers */
   #practice-overlay .s-header, #level-overlay .s-header{
