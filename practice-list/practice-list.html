@@ -4,19 +4,27 @@
   <meta charset="utf-8" />
   <title>Joseki Master – Practice List</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <style>
-html, body{
-  margin:0;
-  padding:0;
-  min-height:100%;
-  height:100%;
-  font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+<style>
+  html, body{
+    margin:0;
+    padding:0;
+    min-height:100%;
+    height:100%;
+    font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
 
-  /* NEW: avoid white flashes from the page background */
-  background-color:#120a05; /* dark wood-ish fallback */
-  overflow:hidden;          /* only the overlay itself scrolls */
-}
-  </style>
+    /* important: use the same wood background as the overlay */
+    background-color:#000; /* safe fallback */
+    background-image:
+      linear-gradient(rgba(0,0,0,.35), rgba(0,0,0,.45)),
+      url('../img/wood.jpg');
+    background-size:cover;
+    background-position:center;
+    background-repeat:no-repeat;
+
+    /* prevent the page itself from scrolling/bouncing */
+    overflow:hidden;
+  }
+</style>
   <script src="../lib/tier-bridge.js"></script>
 </head>
 <body>
