@@ -749,14 +749,15 @@
     favToast.className = 'prac-toast';
     favToast.setAttribute('role','alertdialog');
     favToast.setAttribute('aria-modal','true');
-    favToast.innerHTML =
-      '<div class="s-card prac-toast-card">' +
-        '<div class="prac-toast-text">Remove this favorite?</div>' +
-        '<div class="prac-toast-actions">' +
-          '<button type="button" class="s-btn s-btn-lg" id="prac-remove-cancel">Cancel</button>' +
-          '<button type="button" class="s-btn s-btn-lg s-btn-danger" id="prac-remove-yes">Remove</button>' +
-        '</div>' +
-      '</div>';
+favToast.innerHTML =
+  '<div class="s-card prac-toast-card">' +
+    '<div class="prac-toast-text">Remove this pattern?</div>' +
+    '<div class="prac-toast-actions">' +
+      '<button type="button" class="s-btn s-btn-lg" id="prac-remove-cancel">Cancel</button>' +
+      '<button type="button" class="s-btn s-btn-lg s-btn-danger" id="prac-remove-yes">Remove</button>' +
+    '</div>' +
+  '</div>';
+
     overlay.appendChild(favToast);
     favText   = favToast.querySelector('.prac-toast-text');
     favCancel = favToast.querySelector('#prac-remove-cancel');
