@@ -67,41 +67,7 @@
     #go-board.is-fullscreen{ box-shadow: none !important; }
   </style>
 
-  <style>
-    /* Responsive Joseki buttons (Practice styling) */
-    #joseki-ctrls{ display:flex; flex-wrap:nowrap; gap:10px; align-items:stretch; justify-content:center; }
-    #joseki-ctrls .jbtn,
-    #joseki-ctrls .jbtn-strong,
-    #joseki-ctrls .jbtn-alt{
-      flex:1 1 0; min-width:0; white-space:nowrap;
-      padding:12px 16px; border-radius:12px; font-weight:800; font-size:15px; line-height:1; cursor:pointer;
-      background: rgba(37,99,235,.22); color:#e6f3ff; border:2px solid rgba(37,99,235,.75);
-      box-shadow:none !important; transition:transform .06s, background .15s; -webkit-tap-highlight-color:transparent;
-    }
-    #joseki-ctrls .jbtn:hover,
-    #joseki-ctrls .jbtn-strong:hover,
-    #joseki-ctrls .jbtn-alt:hover{ background: rgba(37,99,235,.26); }
-    #joseki-ctrls .jbtn:active,
-    #joseki-ctrls .jbtn-strong:active,
-    #joseki-ctrls .jbtn-alt:active{ background: rgba(37,99,235,.32); transform: translateY(1px); }
-    #joseki-ctrls .jbtn:focus-visible,
-    #joseki-ctrls .jbtn-strong:focus-visible,
-    #joseki-ctrls .jbtn-alt:focus-visible{ outline: 2px solid rgba(255,255,255,.85); outline-offset: 2px; }
-    @media (max-width: 400px){
-      #joseki-ctrls .jbtn,
-      #joseki-ctrls .jbtn-strong,
-      #joseki-ctrls .jbtn-alt{ font-size:14px; padding:10px 12px; }
-    }
-    .jbtn[disabled]{
-      opacity: .45;
-      cursor: default;
-      box-shadow: none;
-    }
-    .jbtn[disabled]:active{
-      transform: none;
-    }
-  </style>
-
+ 
   <style>
     /* Make the description box's width include its border so edges align */
     #desc-box { box-sizing: border-box; }
@@ -122,6 +88,113 @@
       white-space: nowrap;
     }
   </style>
+<style>
+  /* Joseki Board buttons – same wood style as Practice Board */
+  #joseki-ctrls{
+    max-width: 720px;
+    width: 100%;
+    box-sizing: border-box;
+    margin: 14px auto 0;
+    padding: 0 12px 18px;
+    display: flex;
+    justify-content: center;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+
+  #joseki-ctrls .jbtn,
+  #joseki-ctrls .jbtn-strong,
+  #joseki-ctrls .jbtn-alt{
+    position: relative;
+    min-width: 90px;
+    padding: 8px 24px;
+
+    /* same layout idea as Practice buttons */
+    flex: 1 1 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-sizing: border-box;
+    text-align: center;
+
+    border-radius: 10px;
+    border: 1px solid rgba(255,255,255,.40);
+
+    font-size: 16px;
+    font-weight: 800;
+    line-height: 1.1;
+    color: #fff3cf;
+    text-shadow: 0 1px 0 rgba(120,60,20,.7);
+    cursor: pointer;
+
+    user-select: none;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    -webkit-tap-highlight-color: transparent;
+
+    background-image:
+      linear-gradient(
+        to bottom,
+        rgba(255,255,255,.12),
+        rgba(255,255,255,.03) 38%,
+        rgba(0,0,0,.14) 100%
+      ),
+      url('../img/wood.jpg');
+    background-size: 100% 100%, cover;
+    background-position: center;
+    background-repeat: no-repeat;
+
+    filter: brightness(1.08) saturate(.96);
+
+    box-shadow:
+      0 3px 0 rgba(133,74,26,.85),
+      0 8px 14px rgba(0,0,0,.45);
+
+    transition:
+      transform .08s ease-out,
+      box-shadow .08s ease-out,
+      filter .12s ease-out;
+  }
+
+  #joseki-ctrls .jbtn:hover,
+  #joseki-ctrls .jbtn-strong:hover,
+  #joseki-ctrls .jbtn-alt:hover{
+    filter: brightness(1.12) saturate(.98);
+    transform: translateY(-1px);
+    box-shadow:
+      0 4px 0 rgba(133,74,26,.9),
+      0 10px 16px rgba(0,0,0,.48);
+  }
+
+  #joseki-ctrls .jbtn:active,
+  #joseki-ctrls .jbtn-strong:active,
+  #joseki-ctrls .jbtn-alt:active{
+    filter: brightness(.97) saturate(.96);
+    transform: translateY(2px);
+    box-shadow:
+      0 1px 0 rgba(120,60,20,.9),
+      0 4px 8px rgba(0,0,0,.55);
+  }
+
+  #joseki-ctrls .jbtn:focus-visible,
+  #joseki-ctrls .jbtn-strong:focus-visible,
+  #joseki-ctrls .jbtn-alt:focus-visible{
+    outline: 2px solid rgba(255,255,255,.9);
+    outline-offset: 2px;
+  }
+
+  /* Disabled state – match Practice behavior */
+  #joseki-ctrls .jbtn[disabled],
+  #joseki-ctrls .jbtn-strong[disabled],
+  #joseki-ctrls .jbtn-alt[disabled]{
+    opacity: .45;
+    cursor: default;
+    box-shadow: none;
+    transform: none;
+    filter: brightness(1) saturate(.9);
+  }
+</style>
 
   <style>
     /* In-app "Back to menu" dialog (slate/blue skin) */
