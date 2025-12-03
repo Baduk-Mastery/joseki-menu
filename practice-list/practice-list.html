@@ -4,41 +4,17 @@
   <meta charset="utf-8" />
   <title>Joseki Master – Practice List</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-<style>
-  html, body{
-    margin:0;
-    padding:0;
-    min-height:100%;
-    height:100%;
-    font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
-
-    /* Lock the page itself, scrolling happens inside the overlays */
-    overflow:hidden;
-
-    /* Warm fallback color (in case the image hasn’t loaded yet), NOT black */
-    background-color:#1b1208;
-  }
-
-  /* Stationary full-screen wood backdrop that never moves or scrolls */
-  #wood-backdrop{
-    position:fixed;
-    inset:0;
-    z-index:99999;
-    pointer-events:none;
-
-    background-image:
-      linear-gradient(rgba(0,0,0,.35), rgba(0,0,0,.45)),
-      url('../img/wood.jpg');
-    background-size:cover;
-    background-position:center;
-    background-repeat:no-repeat;
-  }
-</style>
-
+  <style>
+    html, body{
+      margin:0;
+      padding:0;
+      min-height:100%;
+      font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+    }
+  </style>
   <script src="../lib/tier-bridge.js"></script>
 </head>
 <body>
-<div id="wood-backdrop"></div>
 
 <noscript>
   <p>
@@ -117,23 +93,44 @@
 </div>
 
 <style>
-/* Overlays: scrollable + momentum */
+/* Overlays: full-screen wood background, no scrolling here */
 #practice-overlay, #level-overlay{
-  position:fixed; inset:0; z-index:100000; display:none;
-  align-items:flex-start; justify-content:center;
-  padding:12px 0; overflow:auto; -webkit-overflow-scrolling:touch;
-  color:#e6f3ff; -webkit-tap-highlight-color:transparent;
+  position:fixed;
+  inset:0;
+  z-index:100000;
+  display:none;
 
-  /* Transparent on top of the fixed wood backdrop, with a soft dark veil */
-  background:linear-gradient(rgba(0,0,0,.12), rgba(0,0,0,.28));
+  /* No scroll on the overlay itself */
+  overflow:hidden;
 
-  /* Keep scroll/bounce inside the overlay as much as possible */
-  overscroll-behavior:contain;
+  display:flex;
+  align-items:stretch;
+  justify-content:center;
+
+  color:#e6f3ff;
+  -webkit-tap-highlight-color:transparent;
+
+  /* Wood background stays completely static behind everything */
+  background-color:#1b1208; /* warm fallback, not pure black */
+  background-image:
+    linear-gradient(rgba(0,0,0,.35), rgba(0,0,0,.45)),
+    url('../img/wood.jpg');
+  background-size:cover;
+  background-position:center;
 }
 
-  #practice-overlay .s-inner, #level-overlay .s-inner{
-    width:min(92vw,720px); padding:16px 24px 22px; text-align:left; margin:0 auto;
-  }
+/* Inner column: this is the only scrollable area */
+#practice-overlay .s-inner,
+#level-overlay .s-inner{
+  width:min(92vw,720px);
+  max-height:calc(100vh - 24px);  /* preserves top/bottom gap visually */
+  margin:12px auto;
+  padding:16px 24px 22px;
+  text-align:left;
+
+  overflow:auto;
+  -webkit-overflow-scrolling:touch;
+}
 
   /* Headers */
   #practice-overlay .s-header, #level-overlay .s-header{
@@ -497,6 +494,7 @@
   let leavingToMenu = false;
   const lvlBack    = document.getElementById('level-back');
   const MENU_URL   = "../joseki-menu/index.html";
+  const scrollContainer = overlay.querySelector('.s-inner') || overlay;
 
   function isVisible(el){ return el && el.style.display !== 'none'; }
   function setFavHeaderVisible(show){
@@ -1320,7 +1318,7 @@ favToast.innerHTML =
       empty.className='s-card prac-card';
       empty.innerHTML='<div class="prac-meta"><div class="prac-title">No categories found</div><div class="prac-desc">No variations with ≥ ' + MIN_MOVES + ' moves were detected.</div></div>';
       catsGrid.appendChild(empty);
-      enableDragScroll(overlay, catsGrid);
+    enableDragScroll(scrollContainer, catsGrid);
       return;
     }
 
@@ -1386,7 +1384,7 @@ cta.innerHTML     = '<span class="s-btn open-btn">Open</span>';
       empty.className='s-card prac-card';
       empty.innerHTML='<div class="prac-meta"><div class="prac-title">No variations in this category</div><div class="prac-desc">Try another category.</div></div>';
       varsGrid.appendChild(empty);
-      enableDragScroll(overlay, varsGrid);
+    enableDragScroll(scrollContainer, varsGrid);
       return;
     }
 
@@ -1467,7 +1465,7 @@ cta.innerHTML     = '<span class="s-btn open-btn">Open</span>';
     const list = Object.values(map);
     if (!list.length){
       showEmptyFavorites();
-      enableDragScroll(overlay, varsGrid);
+      enableDragScroll(scrollContainer, varsGrid);
       return;
     }
 
