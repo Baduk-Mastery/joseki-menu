@@ -539,6 +539,8 @@ body.bg-wood [class*="blur"]{
   if (typeof GoPrefs.josekiZoom     === 'undefined') GoPrefs.josekiZoom     = true;
   if (typeof GoPrefs.soundOn       === 'undefined') GoPrefs.soundOn       = true;
   if (typeof GoPrefs.highlightLast === 'undefined') GoPrefs.highlightLast = true;
+if (typeof GoPrefs.disableAutoZoomOut === 'undefined') GoPrefs.disableAutoZoomOut = false;
+
 
 
   // ---------- state ----------
@@ -584,6 +586,11 @@ body.bg-wood [class*="blur"]{
   var zoomEnabled = (typeof GoPrefs.josekiZoom !== 'undefined')
     ? !!GoPrefs.josekiZoom
     : true;
+var disableAutoZoomOut =
+  (typeof GoPrefs.disableAutoZoomOut !== 'undefined')
+    ? !!GoPrefs.disableAutoZoomOut
+    : false;
+
 
   // Core zoom state
   var scale    = 1;
@@ -1543,7 +1550,10 @@ function centerZoomAtGrid(i, j, factor, tapClientX, tapClientY){
           currentNode = opts[i].node;
           buildPositionTo(currentNode);
           try { if (soundEnabled && window.StoneSFX && StoneSFX.play) StoneSFX.play(); } catch(e){}
-          if (zoomEnabled && (scale > 1 || isFullscreen)) setTimeout(exitFullscreen, 10);
+if (zoomEnabled && !disableAutoZoomOut && (scale > 1 || isFullscreen)) {
+  setTimeout(exitFullscreen, 10);
+}
+
           return;
         }
       }
@@ -1563,7 +1573,10 @@ function centerZoomAtGrid(i, j, factor, tapClientX, tapClientY){
     updatePassButtonState();
     try { if (soundEnabled && window.StoneSFX && StoneSFX.play) StoneSFX.play(); } catch(e){}
 
-    if (zoomEnabled && (scale > 1 || isFullscreen)) setTimeout(exitFullscreen, 10);
+if (zoomEnabled && !disableAutoZoomOut && (scale > 1 || isFullscreen)) {
+  setTimeout(exitFullscreen, 10);
+}
+
   });
 
   // ---------- controls ----------
@@ -1610,7 +1623,10 @@ function centerZoomAtGrid(i, j, factor, tapClientX, tapClientY){
     currentNode = chosen;
     buildPositionTo(currentNode);
     try { if (soundEnabled && window.StoneSFX && StoneSFX.play) StoneSFX.play(); } catch(e){}
-    if (zoomEnabled && (scale > 1 || isFullscreen)) setTimeout(exitFullscreen, 10);
+if (zoomEnabled && !disableAutoZoomOut && (scale > 1 || isFullscreen)) {
+  setTimeout(exitFullscreen, 10);
+}
+
   });
 
   hook('jbtnReset',   function(){
