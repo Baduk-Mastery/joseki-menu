@@ -314,9 +314,15 @@
     color:#e6f3ff;
   }
 
-  .prac-grid{
-    display:grid; grid-template-columns:1fr; gap:12px; margin-top:8px; touch-action:pan-y;
-  }
+.prac-grid{
+  display:grid;
+  grid-template-columns:1fr;
+  gap:12px;
+  margin-top:8px;
+  padding-bottom:12px;   /* extra breathing room under the last card */
+  touch-action:pan-y;
+}
+
   @media (min-width: 720px){
     #prac-categories.prac-grid,
     #prac-variations.prac-grid{ grid-template-columns:1fr 1fr; }
@@ -364,9 +370,14 @@
     justify-content:center;
   }
 
-  .level-grid{
-    display:grid; grid-template-columns:1fr; gap:12px; margin-top:8px;
-  }
+.level-grid{
+  display:grid;
+  grid-template-columns:1fr;
+  gap:12px;
+  margin-top:8px;
+  padding-bottom:12px;   /* same gap under the last level card */
+}
+
   @media (min-width: 720px){
     .level-grid{ grid-template-columns:1fr 1fr; }
   }
