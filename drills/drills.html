@@ -190,8 +190,7 @@
   align-items:stretch;
   justify-content:center;
 
-  /* Wood margin only at the bottom (matches Practice list fix) */
-  padding:0 0 12px 0;
+  padding:0;
   box-sizing:border-box;
 
   background-image:
@@ -207,11 +206,12 @@
 
 #drills-root .s-inner{
   width:min(92vw,var(--maxw));
-  height:100%;
+  /* let height be auto, just cap it */
   max-height:100%;
   margin:0 auto;
 
-  padding:16px 24px 22px;
+  /* extra bottom padding so last cards can scroll above the floating buttons */
+  padding:16px 24px 88px;
   text-align:left;
   position:relative;
   box-sizing:border-box;
@@ -220,6 +220,7 @@
   overflow:auto;
   -webkit-overflow-scrolling:touch;
 }
+
 
   #drills-root .s-header{
     display:grid; grid-template-columns:auto 1fr; align-items:center; column-gap:14px; margin:6px 0 10px;
@@ -462,9 +463,10 @@
   /* Lock interactions while notice open */
   #drills-root.notice-open #drills-overlay .s-inner{ pointer-events:none; }
 
-  @media (max-width:480px){
-    #drills-root .s-inner{ padding:16px 12px 22px; }
-  }
+@media (max-width:480px){
+  #drills-root .s-inner{ padding:16px 12px 88px; }
+}
+
 
   /* Mode cards: push the button to the right */
   #drills-root #drills-mode-view .drill-meta{
