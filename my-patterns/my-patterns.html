@@ -23,19 +23,15 @@
   </p>
 </noscript>
 
-<!-- Simple global menu bridge used by My Patterns -->
 <script>
   window.GoMenu = window.GoMenu || {
     open: function(){
-      // From /my-patterns/ go back to main menu
       window.location.href = "../joseki-menu/index.html";
     }
   };
 </script>
 
-<!-- ============== OWN PATTERNS (ported from Bubble) ============== -->
 <div id="ownpatterns-root">
-  <!-- My Patterns overlay -->
   <div id="own-overlay" aria-modal="true" role="dialog" style="display:none">
     <div class="s-inner">
       <div class="s-header">
@@ -43,18 +39,15 @@
         <h1 class="s-title">My Patterns</h1>
       </div>
 
-      <!-- Message card -->
       <div class="s-card info">
         <div class="info-title">Bring your own patterns</div>
         <div class="info-desc">Can’t find the pattern you want to study? Add your own and train it in the Practice section.</div>
       </div>
 
-      <!-- Primary action -->
       <div class="actions">
         <button id="own-add" class="s-btn s-btn-lg" type="button">Add</button>
       </div>
 
-      <!-- Patterns list (populated by script) -->
       <div class="own-grid" id="own-list">
         <div class="s-card empty">
           <div class="empty-title">No patterns yet</div>
@@ -64,7 +57,6 @@
     </div>
   </div>
 
-  <!-- Editor overlay (opens when you press Add) -->
   <div id="own-editor" aria-modal="true" role="dialog" style="display:none">
     <div class="s-inner">
       <div class="s-header">
@@ -83,23 +75,21 @@
     </div>
   </div>
 
-  <!-- Info notice (OK-only). Kept for empty pattern etc. -->
   <div id="own-notice" role="alert" aria-live="polite" style="display:none">
-      <div class="s-inner">
-        <div class="s-card own-notice-card">
-          <div class="info-title" id="own-notice-title">Heads up</div>
-          <div class="info-desc" id="own-notice-text">Add at least one move to save a pattern.</div>
-          <div class="actions" style="margin-top:12px;">
-            <button id="own-notice-ok" class="s-btn s-btn-lg" type="button" aria-label="Close">OK</button>
-          </div>
+    <div class="s-inner">
+      <div class="s-card own-notice-card">
+        <div class="info-title" id="own-notice-title">Heads up</div>
+        <div class="info-desc" id="own-notice-text">Add at least one move to save a pattern.</div>
+        <div class="actions" style="margin-top:12px;">
+          <button id="own-notice-ok" class="s-btn s-btn-lg" type="button" aria-label="Close">OK</button>
         </div>
       </div>
+    </div>
   </div>
 
   <!-- Removal confirm toast is injected by JS -->
 </div>
 
-<!-- Level Selector Overlay (reused from Practice List) -->
 <div id="level-overlay" aria-modal="true" role="dialog" style="display:none">
   <div class="s-inner">
     <div class="s-header">
@@ -134,13 +124,11 @@
 </div>
 
 <style>
-  /* Scope EVERYTHING to this page via #ownpatterns-root */
   #ownpatterns-root {
-    --wood:url('../img/wood.jpg'); /* keep in lockstep with Practice */
+    --wood:url('../img/wood.jpg');
     --board-max: 720px;
   }
 
-  /* Overlays (My Patterns + Editor) */
   #ownpatterns-root #own-overlay,
   #ownpatterns-root #own-editor{
     position:fixed; inset:0; z-index:100000; display:none;
@@ -152,10 +140,11 @@
       var(--wood);
     background-size:cover; background-position:center;
   }
-/* Keep the My Patterns list aligned to the top */
-#ownpatterns-root #own-overlay{
-  align-items:flex-start;
-}
+
+  #ownpatterns-root #own-overlay{
+    align-items:flex-start;
+  }
+
   #ownpatterns-root .s-inner{
     width:min(100vw,var(--board-max));
     padding:16px 0 22px;
@@ -173,9 +162,6 @@
     text-shadow:0 1px 2px rgba(0,0,0,.35);
   }
 
-  /* Buttons + cards – align with Practice List (glass cards + wood buttons) */
-
-  /* Glass cards (keep same look as Practice List) */
   #ownpatterns-root .s-card{
     background: rgba(37,99,235,.22);
     border:2px solid rgba(37,99,235,.75);
@@ -209,7 +195,6 @@
     flex-wrap:wrap;
   }
 
-  /* Wood-style buttons – same look as Practice List / Practice Board */
   #ownpatterns-root .s-back,
   #ownpatterns-root .s-btn{
     position:relative;
@@ -277,20 +262,17 @@
       0 4px 8px rgba(0,0,0,.55);
   }
 
-  /* Slimmer header back button (like Practice header) */
   #ownpatterns-root .s-header .s-back{
     padding:6px 12px;
     font-size:14px;
     border-radius:8px;
   }
 
-  /* Larger primary buttons (Add, OK, etc.) */
   #ownpatterns-root .s-btn.s-btn-lg{
     padding:10px 22px;
     font-size:16px;
   }
 
-  /* Danger variant for Remove (red-tinted wood) */
   #ownpatterns-root .s-btn.s-btn-danger{
     background-image:
       linear-gradient(
@@ -310,8 +292,6 @@
       0 8px 14px rgba(0,0,0,.50);
   }
 
-
-  /* List grid */
   #ownpatterns-root .own-grid{
     display:grid; grid-template-columns:1fr; gap:12px; margin-top:16px;
   }
@@ -325,14 +305,12 @@
     font-size:13px; opacity:.95;
   }
 
-  /* Own list card layout — updated to match Practice alignment */
   #ownpatterns-root .own-card{
     display:flex; align-items:stretch; gap:12px; width:100%; text-align:left; padding:10px; cursor:pointer;
     transition:transform .06s, background .15s; user-select:none; -webkit-user-select:none;
   }
   #ownpatterns-root .own-card:active{ transform:translateY(1px); }
 
-  /* Thumbnail: wood background & frame (WGo board floats above) */
   #ownpatterns-root .own-thumb{
     width:132px; height:132px; border-radius:10px; overflow:hidden; flex:none;
     position: relative;
@@ -343,15 +321,15 @@
     border:2px solid rgba(37,99,235,.65);
     box-shadow: inset 0 0 0 1px rgba(255,255,255,.06);
   }
-#ownpatterns-root .own-thumb canvas.own-canvas{
-  position:absolute;
-  inset:0;
-  width:100%;
-  height:100%;
-  display:block;
-  pointer-events:none;
-}
 
+  #ownpatterns-root .own-thumb canvas.own-canvas{
+    position:absolute;
+    inset:0;
+    width:100%;
+    height:100%;
+    display:block;
+    pointer-events:none;
+  }
 
   #ownpatterns-root .own-meta{
     flex:1; min-width:0; display:flex; flex-direction:column; height:100%;
@@ -359,34 +337,30 @@
   #ownpatterns-root .own-title{
     font-weight:800; font-size:18px; line-height:1.3;
   }
-/* Buttons area inside each pattern card */
-#ownpatterns-root .own-cta{
-  margin-top:auto;
-  display:flex;
-  flex-direction:column;   /* stack vertically by default */
-  gap:8px;
-  align-items:stretch;     /* make children fill width */
-}
 
-/* Make the wood buttons fill the card width inside own-cta */
-#ownpatterns-root .own-cta .s-btn{
-  width:100%;
-  justify-content:center;
-  box-sizing:border-box;
-}
-
-/* On wider screens you can show them side-by-side without overflow */
-@media (min-width: 720px){
   #ownpatterns-root .own-cta{
-    flex-direction:row;
+    margin-top:auto;
+    display:flex;
+    flex-direction:column;
+    gap:8px;
+    align-items:stretch;
   }
+
   #ownpatterns-root .own-cta .s-btn{
-    flex:1 1 0;
+    width:100%;
+    justify-content:center;
+    box-sizing:border-box;
   }
-}
 
+  @media (min-width: 720px){
+    #ownpatterns-root .own-cta{
+      flex-direction:row;
+    }
+    #ownpatterns-root .own-cta .s-btn{
+      flex:1 1 0;
+    }
+  }
 
-  /* Editor layout */
   #ownpatterns-root #own-editor-wrap{
     width:100%; max-width:var(--board-max); margin:0 auto; box-sizing:border-box;
   }
@@ -410,7 +384,6 @@
     padding:8px 12px; display:flex; gap:10px; justify-content:center; flex-wrap:wrap;
   }
 
-  /* Centered info notice (OK-only) */
   #ownpatterns-root #own-notice{
     position:fixed; left:50%; top:50%; transform:translate(-50%,-50%);
     z-index:100001; display:none; padding:0; background:transparent;
@@ -431,7 +404,6 @@
     text-shadow:0 1px 2px rgba(0,0,0,.35);
   }
 
-  /* Centered confirm toast (Remove) */
   #ownpatterns-root .own-toast{
     position:fixed; left:50%; top:50%; transform:translate(-50%,-50%);
     z-index:100002; display:none; pointer-events:none;
@@ -458,11 +430,9 @@
     margin-top:10px; display:flex; gap:10px; justify-content:center; flex-wrap:wrap;
   }
 
-  /* Lock interactions while any notice/toast open */
   #ownpatterns-root.notice-open #own-editor-board{ pointer-events:none; }
   #ownpatterns-root.notice-open #own-overlay .s-inner{ pointer-events:none; }
 
-  /* Level overlay styling (copied to match Practice List style) */
   #level-overlay{
     position:fixed; inset:0; z-index:100000; display:none;
     align-items:flex-start; justify-content:center;
@@ -567,19 +537,16 @@
   }
 </style>
 
-<!-- Load WGo only if not already present on the page -->
 <script>
 (function ensureWGo(){
   if (window.WGo) return;
   var s = document.createElement('script');
-  // You can replace this with a local path if you host wgo.min.js yourself
   s.src = "https://3d85c7a311526e02aeeeb19e952d0c09.cdn.bubble.io/f1754893285939x971907393576095400/wgo.min.js";
   s.async = true;
   document.head.appendChild(s);
 })();
 </script>
 
-<!-- Stone SFX (same module & bridge used by Practice) -->
 <script>
 if (!window.StoneSFX) {
   window.StoneSFX = (() => {
@@ -636,7 +603,6 @@ if (!window._stoneSFXInit) {
 </script>
 
 <script>
-/* Scoped logic; exposes GoOwnPatterns and uses PracticeConfig + Level overlay like Practice List */
 (function(){
   var root     = document.getElementById('ownpatterns-root');
   if (!root) return;
@@ -657,7 +623,6 @@ if (!window._stoneSFXInit) {
   var wrap     = root.querySelector('#own-editor-wrap');
   var listEl   = root.querySelector('#own-list');
 
-  // Practice Board bridge: persist config across pages
   var PRACTICE_CFG_KEY = 'go_practice_config';
   function savePracticeConfig(){
     try {
@@ -669,7 +634,6 @@ if (!window._stoneSFXInit) {
   function hide(el){ el.style.display='none'; }
   function isNoticeOpen(){ return root.classList.contains('notice-open'); }
 
-  /* Info notice helpers (OK-only) */
   function showNotice(msg, title){
     if (noticeText) noticeText.textContent = msg || 'Notice';
     var t = root.querySelector('#own-notice-title');
@@ -684,7 +648,6 @@ if (!window._stoneSFXInit) {
     hide(notice);
     root.classList.remove('notice-open');
   }
-  // Expose notice helper for Level overlay
   window.OwnShowNotice = showNotice;
 
   noticeOk && noticeOk.addEventListener('click', hideNotice);
@@ -692,7 +655,6 @@ if (!window._stoneSFXInit) {
     if (e.key === 'Escape' && isNoticeOpen()) hideNotice();
   });
 
-  /* Removal confirm toast (centered) */
   var removeToast = null, removeText = null, btnYes = null, btnNo = null, currentRemoveId = null;
   function ensureRemoveToast(){
     if (removeToast) return;
@@ -724,17 +686,18 @@ if (!window._stoneSFXInit) {
       if (removeToast.style.display !== 'none' && e.key === 'Escape') hideRemoveToast();
     });
   }
-function showRemoveToast(pattern, label){
-  ensureRemoveToast();
-  currentRemoveId = pattern.id;
-  var name = label || pattern.title || 'this pattern';
-  removeText.textContent = 'Remove "' + name + '"?';
-  removeToast.style.display = 'block';
-  root.classList.add('notice-open');
-  setTimeout(function(){
-    try { btnNo && btnNo.focus(); } catch(_){}
-  }, 30);
-}
+
+  function showRemoveToast(pattern, label){
+    ensureRemoveToast();
+    currentRemoveId = pattern.id;
+    var name = label || pattern.title || 'this pattern';
+    removeText.textContent = 'Remove "' + name + '"?';
+    removeToast.style.display = 'block';
+    root.classList.add('notice-open');
+    setTimeout(function(){
+      try { btnNo && btnNo.focus(); } catch(_){}
+    }, 30);
+  }
 
   function hideRemoveToast(){
     if (!removeToast) return;
@@ -742,7 +705,6 @@ function showRemoveToast(pattern, label){
     root.classList.remove('notice-open');
   }
 
-  /* Storage for patterns */
   var STORE_KEY = 'go:ownpatterns';
   function loadPatterns(){
     try { return JSON.parse(localStorage.getItem(STORE_KEY) || '[]'); }
@@ -757,7 +719,6 @@ function showRemoveToast(pattern, label){
     renderList();
   }
 
-  /* Editor state */
   var SIZE=19, board=null, grid=null, moves=null, last=null, turn='B';
   var koPoint=null;
   var highlightLastEnabled = (window.GoPrefs && typeof window.GoPrefs.highlightLast !== 'undefined') ? !!window.GoPrefs.highlightLast : true;
@@ -790,16 +751,14 @@ function showRemoveToast(pattern, label){
     if (!board) return;
     board.removeAllObjects();
 
-    // First pass (legacy; kept but redundant)
     for (var y=0;y<SIZE;y++){
       for (var x=0;x<SIZE;x++){
         var v=grid[y][x];
         if (v==='B') board.addObject({x:x,y:y,c:WGo.B});
-        if (v==='W') board.addObject({x:x,y:x,c:WGo.W}); // typo guarded by second pass
+        if (v==='W') board.addObject({x:x,y:x,c:WGo.W});
       }
     }
 
-    // Correct second pass
     board.removeAllObjects();
     for (var y2=0;y2<SIZE;y2++){
       for (var x2=0;x2<SIZE;x2++){
@@ -847,7 +806,6 @@ function showRemoveToast(pattern, label){
     })();
   }
 
-  /* Liberty / capture helpers */
   function neighbors(x,y){
     var n=[];
     if (x>0) n.push({x:x-1,y:y});
@@ -999,8 +957,6 @@ function showRemoveToast(pattern, label){
     try { mo.observe(editor, { attributes:true, attributeFilter:['style'] }); } catch(_){}
   })();
 
-  /* Thumbnail rendering – same logic as Practice List, no WGo needed */
-
   function simulatePosition(size, rootAB, rootAW, moves){
     var N = size || 19;
     var E = 0, B = 1, W = 2;
@@ -1081,7 +1037,6 @@ function showRemoveToast(pattern, label){
 
       var mine = groupAndLibs(x,y);
       if (mine && mine.libs === 0 && captured === 0){
-        // suicide – undo it
         removeGroup(mine.group);
       }
     }
@@ -1296,8 +1251,6 @@ function showRemoveToast(pattern, label){
     drawBoardThumb(el, size, stones, { crop:true });
   }
 
-
-  /* Pattern list rendering */
   function renderList(){
     var items = loadPatterns();
     listEl.innerHTML='';
@@ -1327,10 +1280,9 @@ function showRemoveToast(pattern, label){
       var cta=document.createElement('div');
       cta.className='own-cta';
 
-var moveCount = (pat && Array.isArray(pat.moves)) ? pat.moves.length : 0;
-var displayName = 'Pattern ' + (idx+1);
-title.textContent = displayName + ' (' + moveCount + ' Moves)';
-
+      var moveCount = (pat && Array.isArray(pat.moves)) ? pat.moves.length : 0;
+      var displayName = 'Pattern ' + (idx+1);
+      title.textContent = displayName + ' (' + moveCount + ' Moves)';
 
       var practiceBtn = document.createElement('span');
       practiceBtn.className = 's-btn';
@@ -1367,12 +1319,11 @@ title.textContent = displayName + ' (' + moveCount + ' Moves)';
       var removeBtn = document.createElement('span');
       removeBtn.className = 's-btn s-btn-danger';
       removeBtn.textContent = 'Remove';
-   removeBtn.addEventListener('click', function(ev){
-  ev.stopPropagation();
-  ev.preventDefault();
-  showRemoveToast(pat, displayName);
-});
-
+      removeBtn.addEventListener('click', function(ev){
+        ev.stopPropagation();
+        ev.preventDefault();
+        showRemoveToast(pat, displayName);
+      });
 
       cta.appendChild(practiceBtn);
       cta.appendChild(removeBtn);
@@ -1391,7 +1342,6 @@ title.textContent = displayName + ' (' + moveCount + ' Moves)';
     });
   }
 
-  /* Tier gating reused for Level overlay (use shared GoTier bridge if present) */
   var TierAPI = window.GoTier || window.Tier || {
     get: function(){
       try { return (localStorage.getItem('go_tier') || 'free').toLowerCase(); }
@@ -1420,13 +1370,10 @@ title.textContent = displayName + ' (' + moveCount + ' Moves)';
     });
   }
 
-  // When GoTier.set() changes the plan, refresh level gating in-place
   window.addEventListener('tier:changed', function(){
     applyTierGateOnLevelOverlay();
   });
 
-
-  /* Level overlay wiring */
   var lvlOverlay = document.getElementById('level-overlay');
   var lvlBack    = lvlOverlay ? document.getElementById('level-back') : null;
 
@@ -1462,7 +1409,6 @@ title.textContent = displayName + ' (' + moveCount + ' Moves)';
     }
   }
 
-  /* Public API */
   if (!window.GoOwnPatterns || !window.GoOwnPatterns.__ready){
     window.GoOwnPatterns = {
       open: function(){
@@ -1494,7 +1440,6 @@ title.textContent = displayName + ' (' + moveCount + ' Moves)';
     };
   }
 
-  /* Wiring */
   if (openBtn){
     openBtn.addEventListener('click', function(){
       window.GoOwnPatterns.openCreate();
@@ -1574,7 +1519,6 @@ title.textContent = displayName + ' (' + moveCount + ' Moves)';
     });
   }
 
-  // Esc handling for whole page (back to menu if root overlay open)
   window.addEventListener('keydown', function(e){
     if (e.key !== 'Escape') return;
 
@@ -1594,7 +1538,6 @@ title.textContent = displayName + ' (' + moveCount + ' Moves)';
 })();
 </script>
 
-<!-- Auto-open My Patterns overlay on page load -->
 <script>
   window.addEventListener('load', function(){
     if (window.GoOwnPatterns && typeof window.GoOwnPatterns.open === 'function'){
@@ -1605,6 +1548,3 @@ title.textContent = displayName + ' (' + moveCount + ' Moves)';
 
 </body>
 </html>
-
-
-
