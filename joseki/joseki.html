@@ -44,6 +44,19 @@
     .jbtn-alt{ background:#e7f0ff; color:#0b4aa2; border-color:#a7c1ff; }
     .jbtn-strong{ background:#111827; color:#fff; border-color:#111827; }
 
+    /* Fullscreen zoom overlay */
+    #go-zoom-overlay{
+      position:fixed; inset:0; z-index:99998;
+      display:none; align-items:center; justify-content:center;
+      background:rgba(0,0,0,.75);
+      -webkit-tap-highlight-color:transparent;
+    }
+    #go-zoom-stage{
+      width:100vw; height:100vh;
+      display:flex; align-items:center; justify-content:center;
+      touch-action:none;
+    }
+
     /* Board drop shadow */
     #go-board{
       box-shadow:
@@ -51,8 +64,10 @@
         0 6px 16px rgba(0,0,0,.22) !important;
       border-radius: 10px;
     }
+    #go-board.is-fullscreen{ box-shadow: none !important; }
   </style>
 
+ 
   <style>
     /* Make the description box's width include its border so edges align */
     #desc-box { box-sizing: border-box; }
@@ -73,8 +88,7 @@
       white-space: nowrap;
     }
   </style>
-
-  <style>
+<style>
   /* Joseki Board buttons – same wood style as Practice Board */
   #joseki-ctrls{
     max-width: 720px;
@@ -180,7 +194,7 @@
     transform: none;
     filter: brightness(1) saturate(.9);
   }
-  </style>
+</style>
 
   <style>
     /* In-app "Back to menu" dialog (slate/blue skin) */
@@ -336,30 +350,44 @@ window._mainBoardMounted = true;
 
   if (!wrap || mount.clientWidth === 0) return setTimeout(mountBoard, 50);
 
-  /* ====================== PAGE BACKGROUND (match Practice Board) ====================== */
+  /* ====================== PAGE BACKGROUND ====================== */
   (function(){
     if (!document.getElementById('site-bg-wood')){
       var css = `
 :root{ --wood-url: url('../img/wood.jpg'); }
 html.bg-wood, body.bg-wood{
   background-image: linear-gradient(rgba(0,0,0,.35), rgba(0,0,0,.45)), var(--wood-url);
-  background-size: cover;
-  background-position: center;
-  background-repeat: no-repeat;
-  background-attachment: fixed;
-  min-height:100%;
+  background-size: cover; background-position: center; background-repeat: no-repeat; background-attachment: fixed; min-height:100%;
 }
-#bubble,
-.bubble-r-container,
-#page,
-.page,
-#root,
-[data-visual-element="Page"],
-.bubble-element.Page{
+body.bg-wood #bubble,
+body.bg-wood .bubble-r-container,
+body.bg-wood #page,
+body.bg-wood .page,
+body.bg-wood #root,
+body.bg-wood [data-visual-element="Page"],
+body.bg-wood .bubble-element.Page{
   background: transparent !important;
 }
-html.no-wood, body.no-wood{
-  background: none !important;
+html.no-wood, body.no-wood{ background: none !important; }
+
+body.bg-wood .modal-backdrop,
+body.bg-wood .bubble-overlay,
+body.bg-wood .overlay,
+body.bg-wood .popup-dim,
+body.bg-wood .s-dim,
+body.bg-wood .dim,
+body.bg-wood .backdrop{
+  background: transparent !important;
+  backdrop-filter: none !important;
+  filter: none !important;
+}
+body.bg-wood .blur,
+body.bg-wood .blurry,
+body.bg-wood .frost,
+body.bg-wood .frosted,
+body.bg-wood [class*="blur"]{
+  filter: none !important;
+  backdrop-filter: none !important;
 }
       `;
       var st = document.createElement('style');
@@ -367,25 +395,53 @@ html.no-wood, body.no-wood{
       st.textContent = css;
       document.head.appendChild(st);
     }
-
     function addBG(){
       document.documentElement.classList.remove('no-wood');
       document.body.classList.remove('no-wood');
       document.documentElement.classList.add('bg-wood');
       document.body.classList.add('bg-wood');
     }
-
     function removeBG(){
       document.documentElement.classList.remove('bg-wood');
       document.body.classList.remove('bg-wood');
       document.documentElement.classList.add('no-wood');
       document.body.classList.add('no-wood');
     }
-
     window.PageBG = window.PageBG || { add: addBG, remove: removeBG };
 
-    // Standalone joseki-board: always turn the wood background on
     try { PageBG.add(); } catch(e){}
+
+    (function keepBackgroundCrisp(){
+      const SEL = '.modal-backdrop, .bubble-overlay, .overlay, .popup-dim, .s-dim, .dim, .backdrop';
+      function undim(){
+        if (!document.body.classList.contains('bg-wood')) return;
+        document.querySelectorAll(SEL).forEach(el=>{
+          el.style.background = 'transparent';
+          el.style.backdropFilter = 'none';
+          el.style.filter = 'none';
+        });
+      }
+      const mo = new MutationObserver(undim);
+      mo.observe(document.body, { childList:true, subtree:true, attributes:true, attributeFilter:['class','style'] });
+      undim();
+    })();
+
+    function isShown(el){
+      if (!el) return false;
+      var cs = getComputedStyle(el);
+      return cs.display !== 'none' && el.offsetWidth > 0 && el.offsetHeight > 0;
+    }
+    var targets = [ document.getElementById('group-joseki'), wrap ].filter(Boolean);
+    if (targets.length){
+      var mo2 = new MutationObserver(function(){
+        for (var i=0;i<targets.length;i++){
+          if (isShown(targets[i])) { try { PageBG.add(); } catch(e){} break; }
+        }
+      });
+      targets.forEach(function(t){
+        mo2.observe(t, { attributes:true, attributeFilter:['style','class','data-hidden'] });
+      });
+    }
   })();
   /* ==================== /PAGE BACKGROUND ==================== */
 
@@ -424,8 +480,10 @@ html.no-wood, body.no-wood{
     Object.assign(GoPrefs, JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}') || {});
   } catch (e) {}
 
+  if (typeof GoPrefs.josekiZoom     === 'undefined') GoPrefs.josekiZoom     = true;
   if (typeof GoPrefs.soundOn       === 'undefined') GoPrefs.soundOn       = true;
   if (typeof GoPrefs.highlightLast === 'undefined') GoPrefs.highlightLast = true;
+
 
   // ---------- state ----------
   var board = new WGo.Board(mount, { size: SIZE });
@@ -441,6 +499,7 @@ html.no-wood, body.no-wood{
   // Free-play divergence
   var freeMode = false, josekiAnchor = null;
 
+  // Sound preference
   // Sound preference (initial from prefs)
   var soundEnabled = !!GoPrefs.soundOn;
   function setSoundEnabled(v){
@@ -449,6 +508,7 @@ html.no-wood, body.no-wood{
 
   // Highlight last move (initial from prefs)
   var highlightLastEnabled = !!GoPrefs.highlightLast;
+
 
   // Pass button helpers
   var passBtn = null;
@@ -462,14 +522,324 @@ html.no-wood, body.no-wood{
     b.disabled = !on;
   }
 
-  // ---------- simple board sizing (no zoom) ----------
-  function fitBoard(){
-    var w = mount.clientWidth || 400;
-    w = Math.floor(w);
-    if (w % 2) w--;
-    board.setWidth(w);
+  // ---------- fullscreen zoom ----------
+  var zoomEnabled = !!GoPrefs.josekiZoom;
+
+
+  var scale = 1, minScale = 1, maxScale = 2.6;
+  var baseW = 0;
+  var offsetX = 0, offsetY = 0;
+  var zoomLayer = null;
+  var animId = 0;
+
+  var isFullscreen = false;
+  var overlay = null, stage = null, returnAnchor = null;
+  var prevOverflow = "";
+
+  function ensureZoomLayer(){
+    if (zoomLayer) return;
+    mount.style.position = 'relative';
+    mount.style.overflow = 'hidden';
+    zoomLayer = document.createElement('div');
+    zoomLayer.style.position = 'absolute';
+    zoomLayer.style.left = '0px';
+    zoomLayer.style.top  = '0px';
+    zoomLayer.style.willChange = 'left, top, width, height';
+    while (mount.firstChild) zoomLayer.appendChild(mount.firstChild);
+    mount.appendChild(zoomLayer);
+  }
+  ensureZoomLayer();
+
+  // Wood texture on moving layer
+  (function(){
+    mount.style.backgroundImage = 'none';
+    zoomLayer.style.backgroundImage = "url('../img/wood.jpg')";
+    zoomLayer.style.backgroundSize = "cover";
+    zoomLayer.style.backgroundPosition = "center";
+  })();
+
+  function ensureOverlay(){
+    if (overlay) return;
+    overlay = document.createElement('div');
+    overlay.id = 'go-zoom-overlay';
+    overlay.innerHTML = '<div id="go-zoom-stage"></div>';
+    document.body.appendChild(overlay);
+    stage = overlay.querySelector('#go-zoom-stage');
   }
 
+  function viewportSize(){
+    if (isFullscreen) {
+      return {
+        vw: mount.clientWidth  || window.innerWidth  || baseW || 1,
+        vh: mount.clientHeight || window.innerHeight || baseW || 1
+      };
+    }
+    return {
+      vw: mount.clientWidth || baseW || 1,
+      vh: mount.clientHeight || baseW || 1
+    };
+  }
+
+  function padsFor(targetW){
+    const { vw, vh } = viewportSize();
+    const padX = Math.max(0, (vw - targetW) / 2);
+    const padY = Math.max(0, (vh - targetW) / 2);
+    return { padX, padY };
+  }
+
+  function clampPanWith(vw, vh, tw){
+    const maxX = Math.max(0, tw - vw);
+    const maxY = Math.max(0, tw - vh);
+    offsetX = Math.max(0, Math.min(offsetX, maxX));
+    offsetY = Math.max(0, Math.min(offsetY, maxY));
+  }
+
+  function applyPanAndSize(redrawAfter){
+    const { vw, vh } = viewportSize();
+    const targetW = Math.max(2, Math.round(baseW * scale));
+
+    board.setWidth(targetW);
+    zoomLayer.style.width  = targetW + 'px';
+    zoomLayer.style.height = targetW + 'px';
+
+    const { padX, padY } = padsFor(targetW);
+    zoomLayer.style.left = (padX - offsetX) + 'px';
+    zoomLayer.style.top  = (padY - offsetY) + 'px';
+
+    if (isFullscreen){
+      mount.style.width  = '100vw';
+      mount.style.height = '100vh';
+    } else {
+      mount.style.width  = '';
+      mount.style.height = baseW + 'px';
+    }
+    if (redrawAfter) redraw();
+  }
+
+  function resetViewLocal(){
+    scale = 1;
+    offsetX = 0;
+    offsetY = 0;
+    applyPanAndSize(true);
+  }
+
+  // Remember which grid intersection we tapped
+  var lastTapBoardI = Math.floor(SIZE / 2);
+  var lastTapBoardJ = Math.floor(SIZE / 2);
+
+  function captureBoardAnchorFromEvent(e){
+    const rect = mount.getBoundingClientRect();
+    const pxLocal = e.clientX - rect.left;
+    const pyLocal = e.clientY - rect.top;
+
+    var best = Infinity, bi = lastTapBoardI, bj = lastTapBoardJ;
+    for (var ix=0; ix<SIZE; ix++){
+      const xPix = board.getX(ix);
+      for (var iy=0; iy<SIZE; iy++){
+        const yPix = board.getY(iy);
+        const dx = xPix - pxLocal;
+        const dy = yPix - pyLocal;
+        const d2 = dx*dx + dy*dy;
+        if (d2 < best){ best = d2; bi = ix; bj = iy; }
+      }
+    }
+    lastTapBoardI = bi;
+    lastTapBoardJ = bj;
+  }
+
+  function ensureFSOverlay(){
+    ensureOverlay();
+    prevOverflow = document.documentElement.style.overflow || "";
+    document.documentElement.style.overflow = 'hidden';
+  }
+
+  function zoomToIntersection(i, j, factor){
+    if (!zoomEnabled) return;
+
+    var newScale = scale * factor;
+    if (newScale < minScale) newScale = minScale;
+    if (newScale > maxScale) newScale = maxScale;
+    if (newScale === scale) return;
+
+    scale = newScale;
+    applyPanAndSize(false);
+
+    const { vw, vh } = viewportSize();
+    const targetW = Math.max(2, Math.round(baseW * scale));
+    const { padX, padY } = padsFor(targetW);
+
+    const pxBoard = board.getX(i);
+    const pyBoard = board.getY(j);
+    const centerX = vw / 2;
+    const centerY = vh / 2;
+
+    offsetX = padX + pxBoard - centerX;
+    offsetY = padY + pyBoard - centerY;
+
+    applyPanAndSize(true);
+  }
+
+  function enterFullscreenAtIntersection(i, j){
+    if (isFullscreen) return;
+    ensureFSOverlay();
+
+    returnAnchor = document.createElement('div');
+    returnAnchor.style.display = 'none';
+    mount.parentNode.insertBefore(returnAnchor, mount);
+    stage.appendChild(mount);
+
+    overlay.style.display = 'flex';
+    isFullscreen = true;
+
+    mount.classList.add('is-fullscreen');
+
+    const vwFS = window.innerWidth  || document.documentElement.clientWidth  || 800;
+    const vhFS = window.innerHeight || document.documentElement.clientHeight || 800;
+    baseW = Math.floor(Math.min(vwFS, vhFS));
+    if (baseW % 2) baseW--;
+
+    resetViewLocal();
+
+    requestAnimationFrame(function(){
+      const { vw, vh } = viewportSize();
+      const needToCover   = Math.max(vw, vh) / baseW;
+      const initialFactor = Math.max(1.8, needToCover + 0.02);
+      zoomToIntersection(i, j, initialFactor);
+    });
+  }
+
+  function exitFullscreen(){
+    if (!isFullscreen) return;
+
+    mount.classList.remove('is-fullscreen');
+
+    resetViewLocal();
+
+    if (returnAnchor && returnAnchor.parentNode){
+      returnAnchor.parentNode.insertBefore(mount, returnAnchor);
+      returnAnchor.parentNode.removeChild(returnAnchor);
+      returnAnchor = null;
+    }
+
+    mount.style.width = '';
+    mount.style.height = '';
+    overlay.style.display = 'none';
+    isFullscreen = false;
+
+    document.documentElement.style.overflow = prevOverflow;
+
+    fitBoard();
+  }
+
+  var isPanning = false;
+  var panStart = null;
+  var activePointerId = null;
+
+  function beginPan(e){
+    isPanning = false;
+    panStart = { x: e.clientX, y: e.clientY, ox: offsetX, oy: offsetY };
+    activePointerId = e.pointerId;
+    try { mount.setPointerCapture(e.pointerId); } catch(_) {}
+  }
+  function updatePan(e){
+    if (panStart == null) return;
+    if (!isFullscreen || scale <= 1) return;
+
+    const dx = e.clientX - panStart.x;
+    const dy = e.clientY - panStart.y;
+
+    if (!isPanning && (dx*dx + dy*dy) > 9){
+      isPanning = true;
+      suppressNextBoardClick = true;
+    }
+    if (!isPanning) return;
+
+    offsetX = panStart.ox - dx;
+    offsetY = panStart.oy - dy;
+
+    const { vw, vh } = viewportSize();
+    const targetW = Math.max(2, Math.round(baseW * scale));
+    clampPanWith(vw, vh, targetW);
+    applyPanAndSize(true);
+
+    e.preventDefault();
+  }
+  function endPan(e){
+    if (activePointerId !== null){
+      try { mount.releasePointerCapture(activePointerId); } catch(_) {}
+    }
+    activePointerId = null;
+    panStart = null;
+    setTimeout(function(){ isPanning = false; }, 0);
+  }
+
+  var tapStart = null, suppressNextBoardClick = false;
+
+  mount.addEventListener('pointerdown', function(e){
+    if (!zoomEnabled) return;
+    tapStart = { x:e.clientX, y:e.clientY, t:performance.now() };
+    captureBoardAnchorFromEvent(e);
+    beginPan(e);
+  }, {passive:true});
+
+  mount.addEventListener('pointermove', function(e){
+    if (!zoomEnabled) return;
+    updatePan(e);
+  }, {passive:false});
+
+  mount.addEventListener('pointerup', function(e){
+    if (!zoomEnabled || !tapStart) { endPan(e); return; }
+    if (isPanning){ endPan(e); tapStart = null; return; }
+
+    const dt = performance.now() - tapStart.t;
+    const dx = e.clientX - tapStart.x;
+    const dy = e.clientY - tapStart.y;
+    tapStart = null;
+    endPan(e);
+
+    if (dt < 250 && (dx*dx + dy*dy) < 9){
+      if (scale === 1 && !isFullscreen){
+        e.preventDefault();
+        e.stopPropagation();
+        e.stopImmediatePropagation && e.stopImmediatePropagation();
+        suppressNextBoardClick = true;
+        enterFullscreenAtIntersection(lastTapBoardI, lastTapBoardJ);
+      } else {
+        suppressNextBoardClick = false;
+      }
+    }
+  }, {passive:false, capture:true});
+
+  mount.addEventListener('pointercancel', endPan, {passive:true});
+
+  document.addEventListener('keydown', function(e){
+    if (e.key === 'Escape' && isFullscreen) exitFullscreen();
+  });
+
+  window.JosekiZoom = {
+    isEnabled(){ return zoomEnabled; },
+    setEnabled(v){ zoomEnabled = !!v; if (!zoomEnabled) { if (isFullscreen) exitFullscreen(); else resetViewLocal(); } },
+    resetView: function(){ if (isFullscreen) exitFullscreen(); else resetViewLocal(); },
+    isFullscreen: function(){ return isFullscreen; }
+  };
+
+  function fitBoard(){
+    if (isFullscreen){
+      const vwFS = window.innerWidth || document.documentElement.clientWidth || 800;
+      const vhFS = window.innerHeight || document.documentElement.clientHeight || 800;
+      baseW = Math.floor(Math.min(vwFS, vhFS));
+      if (baseW % 2) baseW--;
+      mount.style.width  = '100vw';
+      mount.style.height = '100vh';
+    } else {
+      var w = mount.clientWidth || 400;
+      w = Math.floor(w); if (w % 2) w--;
+      baseW = w;
+      mount.style.width  = '';
+      mount.style.height = baseW + 'px';
+    }
+    applyPanAndSize(true);
+  }
   window.addEventListener('resize', fitBoard);
   window.addEventListener('orientationchange', function(){ setTimeout(fitBoard, 200); });
   fitBoard();
@@ -950,6 +1320,8 @@ html.no-wood, body.no-wood{
   function gotoNext (){ var cand = getNextCandidates(currentNode); if (!cand.length) return; currentNode = cand[0].node; buildPositionTo(currentNode); }
 
   board.addEventListener('click', function(x,y){
+    if (zoomEnabled && suppressNextBoardClick){ suppressNextBoardClick = false; return; }
+
     if (hasSGF && !freeMode){
       var opts = getTurnCandidates(currentNode); // filtered by turn
       for (var i=0;i<opts.length;i++){
@@ -957,6 +1329,7 @@ html.no-wood, body.no-wood{
           currentNode = opts[i].node;
           buildPositionTo(currentNode);
           try { if (soundEnabled && window.StoneSFX && StoneSFX.play) StoneSFX.play(); } catch(e){}
+          if (zoomEnabled && (scale > 1 || isFullscreen)) setTimeout(exitFullscreen, 10);
           return;
         }
       }
@@ -975,6 +1348,8 @@ html.no-wood, body.no-wood{
     updateDesc();
     updatePassButtonState();
     try { if (soundEnabled && window.StoneSFX && StoneSFX.play) StoneSFX.play(); } catch(e){}
+
+    if (zoomEnabled && (scale > 1 || isFullscreen)) setTimeout(exitFullscreen, 10);
   });
 
   // ---------- controls ----------
@@ -1021,6 +1396,7 @@ html.no-wood, body.no-wood{
     currentNode = chosen;
     buildPositionTo(currentNode);
     try { if (soundEnabled && window.StoneSFX && StoneSFX.play) StoneSFX.play(); } catch(e){}
+    if (zoomEnabled && (scale > 1 || isFullscreen)) setTimeout(exitFullscreen, 10);
   });
 
   hook('jbtnReset',   function(){
@@ -1031,6 +1407,7 @@ html.no-wood, body.no-wood{
       current=0;
       rebuildFromHistory();
     }
+    exitFullscreen();
   });
 
   // ====== In-app "Back to menu" dialog ======
@@ -1089,6 +1466,7 @@ html.no-wood, body.no-wood{
     buildPositionTo(null);
     try { document.getElementById('desc-box').scrollTop = 0; } catch(e){}
     try { window.dispatchEvent(new Event('resize')); } catch(e){}
+    exitFullscreen();
     try { if (window.PageBG && typeof PageBG.add === 'function') PageBG.add(); } catch(e){}
   };
 
@@ -1143,3 +1521,6 @@ html.no-wood, body.no-wood{
 
 </body>
 </html>
+
+
+

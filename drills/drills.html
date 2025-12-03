@@ -461,14 +461,17 @@
   }
 
   /* Lock interactions while notice open */
-  #drills-root.notice-open #drills-overlay .s-inner{ pointer-events:none; }
-
-  @media (max-width:480px){
-@media (max-width:480px){
-  #drills-root .s-inner{
-    padding:16px 12px 80px;
+  #drills-root.notice-open #drills-overlay .s-inner{
+    pointer-events:none;
   }
-}
+
+  /* Mobile: add bottom space so lists clear the floating buttons */
+  @media (max-width:480px){
+    #drills-root .s-inner{
+      padding:16px 12px 96px;  /* 16 top, 12 sides, 96 bottom */
+    }
+  }
+
 
 
   /* Mode cards: push the button to the right */
