@@ -2578,13 +2578,17 @@ if (winRetryBtn){
       menuConfirmOverlay.classList.remove('is-open');
     }
 
-    if (menuConfirmOverlay){
-      menuConfirmOverlay.addEventListener('click', function(e){
-        if (e.target === menuConfirmOverlay) {
-          closeMenuConfirm();
-        }
-      });
+if (menuConfirmOverlay){
+  menuConfirmOverlay.addEventListener('click', function(e){
+    // Intentionally do nothing on background clicks so the user
+    // must choose "No" or "Yes" to close the dialog.
+    if (e.target === menuConfirmOverlay) {
+      e.stopPropagation();
+      e.preventDefault();
     }
+  });
+}
+
 
     if (menuConfirmCancel){
       menuConfirmCancel.addEventListener('click', function(e){
