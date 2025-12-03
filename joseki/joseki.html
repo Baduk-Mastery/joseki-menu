@@ -336,44 +336,30 @@ window._mainBoardMounted = true;
 
   if (!wrap || mount.clientWidth === 0) return setTimeout(mountBoard, 50);
 
-  /* ====================== PAGE BACKGROUND ====================== */
+  /* ====================== PAGE BACKGROUND (match Practice Board) ====================== */
   (function(){
     if (!document.getElementById('site-bg-wood')){
       var css = `
 :root{ --wood-url: url('../img/wood.jpg'); }
 html.bg-wood, body.bg-wood{
   background-image: linear-gradient(rgba(0,0,0,.35), rgba(0,0,0,.45)), var(--wood-url);
-  background-size: cover; background-position: center; background-repeat: no-repeat; background-attachment: fixed; min-height:100%;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-attachment: fixed;
+  min-height:100%;
 }
-body.bg-wood #bubble,
-body.bg-wood .bubble-r-container,
-body.bg-wood #page,
-body.bg-wood .page,
-body.bg-wood #root,
-body.bg-wood [data-visual-element="Page"],
-body.bg-wood .bubble-element.Page{
+#bubble,
+.bubble-r-container,
+#page,
+.page,
+#root,
+[data-visual-element="Page"],
+.bubble-element.Page{
   background: transparent !important;
 }
-html.no-wood, body.no-wood{ background: none !important; }
-
-body.bg-wood .modal-backdrop,
-body.bg-wood .bubble-overlay,
-body.bg-wood .overlay,
-body.bg-wood .popup-dim,
-body.bg-wood .s-dim,
-body.bg-wood .dim,
-body.bg-wood .backdrop{
-  background: transparent !important;
-  backdrop-filter: none !important;
-  filter: none !important;
-}
-body.bg-wood .blur,
-body.bg-wood .blurry,
-body.bg-wood .frost,
-body.bg-wood .frosted,
-body.bg-wood [class*="blur"]{
-  filter: none !important;
-  backdrop-filter: none !important;
+html.no-wood, body.no-wood{
+  background: none !important;
 }
       `;
       var st = document.createElement('style');
@@ -381,53 +367,25 @@ body.bg-wood [class*="blur"]{
       st.textContent = css;
       document.head.appendChild(st);
     }
+
     function addBG(){
       document.documentElement.classList.remove('no-wood');
       document.body.classList.remove('no-wood');
       document.documentElement.classList.add('bg-wood');
       document.body.classList.add('bg-wood');
     }
+
     function removeBG(){
       document.documentElement.classList.remove('bg-wood');
       document.body.classList.remove('bg-wood');
       document.documentElement.classList.add('no-wood');
       document.body.classList.add('no-wood');
     }
+
     window.PageBG = window.PageBG || { add: addBG, remove: removeBG };
 
+    // Standalone joseki-board: always turn the wood background on
     try { PageBG.add(); } catch(e){}
-
-    (function keepBackgroundCrisp(){
-      const SEL = '.modal-backdrop, .bubble-overlay, .overlay, .popup-dim, .s-dim, .dim, .backdrop';
-      function undim(){
-        if (!document.body.classList.contains('bg-wood')) return;
-        document.querySelectorAll(SEL).forEach(el=>{
-          el.style.background = 'transparent';
-          el.style.backdropFilter = 'none';
-          el.style.filter = 'none';
-        });
-      }
-      const mo = new MutationObserver(undim);
-      mo.observe(document.body, { childList:true, subtree:true, attributes:true, attributeFilter:['class','style'] });
-      undim();
-    })();
-
-    function isShown(el){
-      if (!el) return false;
-      var cs = getComputedStyle(el);
-      return cs.display !== 'none' && el.offsetWidth > 0 && el.offsetHeight > 0;
-    }
-    var targets = [ document.getElementById('group-joseki'), wrap ].filter(Boolean);
-    if (targets.length){
-      var mo2 = new MutationObserver(function(){
-        for (var i=0;i<targets.length;i++){
-          if (isShown(targets[i])) { try { PageBG.add(); } catch(e){} break; }
-        }
-      });
-      targets.forEach(function(t){
-        mo2.observe(t, { attributes:true, attributeFilter:['style','class','data-hidden'] });
-      });
-    }
   })();
   /* ==================== /PAGE BACKGROUND ==================== */
 
