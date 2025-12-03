@@ -399,9 +399,11 @@
 
 #practice-overlay .prac-toast .prac-toast-text{
   font-weight:800;
-  font-size:14px;
+  font-size:18px;
   line-height:1.35;
+  margin-bottom:8px; /* match My Patterns / notif headline feel */
 }
+
 
 #practice-overlay .prac-toast .prac-toast-actions{
   margin-top:10px;
@@ -751,7 +753,7 @@
     favToast.setAttribute('aria-modal','true');
 favToast.innerHTML =
   '<div class="s-card prac-toast-card">' +
-    '<div class="prac-toast-text">Remove this pattern?</div>' +
+    '<div class="prac-toast-text">Remove this favorite?</div>' +
     '<div class="prac-toast-actions">' +
       '<button type="button" class="s-btn s-btn-lg" id="prac-remove-cancel">Cancel</button>' +
       '<button type="button" class="s-btn s-btn-lg s-btn-danger" id="prac-remove-yes">Remove</button>' +
