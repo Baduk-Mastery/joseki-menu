@@ -44,18 +44,71 @@
     .jbtn-alt{ background:#e7f0ff; color:#0b4aa2; border-color:#a7c1ff; }
     .jbtn-strong{ background:#111827; color:#fff; border-color:#111827; }
 
-    /* Fullscreen zoom overlay */
-    #go-zoom-overlay{
-      position:fixed; inset:0; z-index:99998;
-      display:none; align-items:center; justify-content:center;
-      background:rgba(0,0,0,.75);
-      -webkit-tap-highlight-color:transparent;
-    }
-    #go-zoom-stage{
-      width:100vw; height:100vh;
-      display:flex; align-items:center; justify-content:center;
-      touch-action:none;
-    }
+    /* Fullscreen zoom overlay – new style (matches Practice behaviour) */
+#go-zoom-overlay{
+  position:fixed;
+  inset:0;
+  z-index:99998;
+  display:none;
+  align-items:center;
+  justify-content:center;
+
+  /* keep the wood background visible behind the board */
+  background:transparent;
+
+  -webkit-tap-highlight-color:transparent;
+}
+#go-zoom-stage{
+  width:100vw;
+  height:100vh;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  touch-action:none;
+}
+
+/* Small “zoom out” box in fullscreen */
+#go-zoom-exit{
+  position:fixed;
+  left:14px;
+  bottom:90px;
+
+  width:120px;
+  height:80px;
+  border-radius:9px;
+
+  background:rgba(148,163,184,.35);
+  border:1px solid rgba(148,163,184,.85);
+  box-shadow:0 6px 16px rgba(0,0,0,.55);
+
+  display:none; /* toggled in JS */
+  cursor:pointer;
+  z-index:99999;
+  backdrop-filter:blur(2px);
+  -webkit-tap-highlight-color:transparent;
+
+  color:#e5e7eb;
+  font-size:16px;
+  font-weight:600;
+  text-align:center;
+  line-height:80px;
+}
+#go-zoom-exit::before{
+  content:"Zoom out";
+}
+
+/* Make the Joseki board good for drag/pan */
+#go-board{
+  box-shadow:
+    0 18px 40px rgba(0,0,0,.32),
+    0 6px 16px rgba(0,0,0,.22) !important;
+  border-radius:10px;
+  touch-action:none; /* prevents browser scroll on drag, smoother panning */
+}
+#go-board.is-fullscreen{
+  box-shadow:none !important;
+}
+
 
     /* Board drop shadow */
     #go-board{
@@ -522,53 +575,121 @@ body.bg-wood [class*="blur"]{
     b.disabled = !on;
   }
 
-  // ---------- fullscreen zoom ----------
-  var zoomEnabled = !!GoPrefs.josekiZoom;
+  // ---------- fullscreen zoom (new, shared behaviour with Practice) ----------
 
+  // Preference from GoPrefs
+  var zoomEnabled = (typeof GoPrefs.josekiZoom !== 'undefined')
+    ? !!GoPrefs.josekiZoom
+    : true;
 
-  var scale = 1, minScale = 1, maxScale = 2.6;
-  var baseW = 0;
-  var offsetX = 0, offsetY = 0;
-  var zoomLayer = null;
-  var animId = 0;
-
+  // Core zoom state
+  var scale    = 1;
+  var minScale = 1;
+  var maxScale = 2.6;
+  var baseW    = 0;     // base board size in px
+  var offsetX  = 0;     // pan in "board space" (see transform below)
+  var offsetY  = 0;
   var isFullscreen = false;
-  var overlay = null, stage = null, returnAnchor = null;
+
+  var zoomLayer   = null;
+  var overlay     = null;
+  var stage       = null;
+  var zoomExitBtn = null;
+  var returnAnchor = null;
   var prevOverflow = "";
 
+  var animId          = 0;
+  var isZoomAnimating = false;
+
+  var isPanning       = false;
+  var panStart        = null;
+  var activePointerId = null;
+
+  var tapStart = null;
+  var TAP_SLOP2 = 64; // squared px (~8px) – small finger jitter allowed
+  var suppressNextBoardClick = false;
+
+  // Convert board (canvas) coordinates to CSS px
+  function canvasCssScale(){
+    var c = mount.querySelector('canvas');
+    if (!c) return 1;
+    var cssW = c.clientWidth || c.getBoundingClientRect().width || 0;
+    var intW = c.width || 0;
+    if (!cssW || !intW) return 1;
+    return cssW / intW;
+  }
+  function getXcss(i){
+    return board.getX(i) * canvasCssScale();
+  }
+  function getYcss(j){
+    return board.getY(j) * canvasCssScale();
+  }
+
+  // Wrap the board contents into a zoomable layer
   function ensureZoomLayer(){
     if (zoomLayer) return;
     mount.style.position = 'relative';
     mount.style.overflow = 'hidden';
+
     zoomLayer = document.createElement('div');
     zoomLayer.style.position = 'absolute';
     zoomLayer.style.left = '0px';
     zoomLayer.style.top  = '0px';
-    zoomLayer.style.willChange = 'left, top, width, height';
+    zoomLayer.style.transformOrigin = '0 0';
+    zoomLayer.style.willChange = 'transform';
+
     while (mount.firstChild) zoomLayer.appendChild(mount.firstChild);
     mount.appendChild(zoomLayer);
+
+    // Put the wood on the moving layer, keep mount clean
+    mount.style.backgroundImage = 'none';
+    zoomLayer.style.backgroundImage = "url('../img/wood.jpg')";
+    zoomLayer.style.backgroundSize = 'cover';
+    zoomLayer.style.backgroundPosition = 'center';
   }
   ensureZoomLayer();
 
-  // Wood texture on moving layer
-  (function(){
-    mount.style.backgroundImage = 'none';
-    zoomLayer.style.backgroundImage = "url('../img/wood.jpg')";
-    zoomLayer.style.backgroundSize = "cover";
-    zoomLayer.style.backgroundPosition = "center";
-  })();
-
+  // Overlay + small "zoom out" button
   function ensureOverlay(){
-    if (overlay) return;
-    overlay = document.createElement('div');
-    overlay.id = 'go-zoom-overlay';
-    overlay.innerHTML = '<div id="go-zoom-stage"></div>';
-    document.body.appendChild(overlay);
-    stage = overlay.querySelector('#go-zoom-stage');
+    if (!overlay){
+      overlay = document.getElementById('go-zoom-overlay');
+      if (!overlay){
+        overlay = document.createElement('div');
+        overlay.id = 'go-zoom-overlay';
+        overlay.innerHTML =
+          '<div id="go-zoom-stage"></div>' +
+          '<button id="go-zoom-exit" aria-label="Zoom out"></button>';
+        document.body.appendChild(overlay);
+      } else {
+        if (!overlay.querySelector('#go-zoom-stage')){
+          var stDiv = document.createElement('div');
+          stDiv.id = 'go-zoom-stage';
+          overlay.appendChild(stDiv);
+        }
+        if (!overlay.querySelector('#go-zoom-exit')){
+          var exBtn = document.createElement('button');
+          exBtn.id = 'go-zoom-exit';
+          exBtn.setAttribute('aria-label','Zoom out');
+          overlay.appendChild(exBtn);
+        }
+      }
+    }
+
+    stage       = overlay.querySelector('#go-zoom-stage');
+    zoomExitBtn = overlay.querySelector('#go-zoom-exit');
+
+    if (zoomExitBtn && !zoomExitBtn._bound){
+      zoomExitBtn._bound = true;
+      zoomExitBtn.addEventListener('click', function(e){
+        e.stopPropagation();
+        e.preventDefault();
+        exitFullscreen();
+      });
+    }
   }
 
   function viewportSize(){
-    if (isFullscreen) {
+    if (isFullscreen){
       return {
         vw: mount.clientWidth  || window.innerWidth  || baseW || 1,
         vh: mount.clientHeight || window.innerHeight || baseW || 1
@@ -580,31 +701,48 @@ body.bg-wood [class*="blur"]{
     };
   }
 
-  function padsFor(targetW){
-    const { vw, vh } = viewportSize();
-    const padX = Math.max(0, (vw - targetW) / 2);
-    const padY = Math.max(0, (vh - targetW) / 2);
-    return { padX, padY };
-  }
+  // Keep the board covering the viewport when zoomed
+  function clampPan(){
+    if (!isFullscreen || scale <= 1){
+      offsetX = 0;
+      offsetY = 0;
+      return;
+    }
 
-  function clampPanWith(vw, vh, tw){
-    const maxX = Math.max(0, tw - vw);
-    const maxY = Math.max(0, tw - vh);
-    offsetX = Math.max(0, Math.min(offsetX, maxX));
-    offsetY = Math.max(0, Math.min(offsetY, maxY));
+    var view = viewportSize();
+    var vw = view.vw, vh = view.vh;
+    var bw = baseW * scale;
+
+    var maxX = Math.max(0, bw - vw);
+    var maxY = Math.max(0, bw - vh);
+
+    if (offsetX < 0) offsetX = 0;
+    if (offsetY < 0) offsetY = 0;
+    if (offsetX > maxX) offsetX = maxX;
+    if (offsetY > maxY) offsetY = maxY;
   }
 
   function applyPanAndSize(redrawAfter){
-    const { vw, vh } = viewportSize();
-    const targetW = Math.max(2, Math.round(baseW * scale));
+    var view = viewportSize();
+    var vw   = view.vw;
+    var targetW = baseW || vw;
 
-    board.setWidth(targetW);
-    zoomLayer.style.width  = targetW + 'px';
-    zoomLayer.style.height = targetW + 'px';
+    if (board._lastW !== targetW){
+      board.setWidth(targetW);
+      if (zoomLayer){
+        zoomLayer.style.width  = targetW + 'px';
+        zoomLayer.style.height = targetW + 'px';
+      }
+      board._lastW = targetW;
+      if (!redrawAfter) redrawAfter = true;
+    }
 
-    const { padX, padY } = padsFor(targetW);
-    zoomLayer.style.left = (padX - offsetX) + 'px';
-    zoomLayer.style.top  = (padY - offsetY) + 'px';
+    clampPan();
+
+    if (zoomLayer){
+      zoomLayer.style.transform =
+        'translate3d(' + (-offsetX) + 'px,' + (-offsetY) + 'px,0) scale(' + scale + ')';
+    }
 
     if (isFullscreen){
       mount.style.width  = '100vw';
@@ -613,75 +751,81 @@ body.bg-wood [class*="blur"]{
       mount.style.width  = '';
       mount.style.height = baseW + 'px';
     }
+
     if (redrawAfter) redraw();
   }
 
   function resetViewLocal(){
-    scale = 1;
+    scale   = 1;
     offsetX = 0;
     offsetY = 0;
     applyPanAndSize(true);
   }
 
-  // Remember which grid intersection we tapped
-  var lastTapBoardI = Math.floor(SIZE / 2);
-  var lastTapBoardJ = Math.floor(SIZE / 2);
+  function animateTo(targetScale, worldX, worldY, sxTarget, syTarget){
+    targetScale = Math.max(minScale, Math.min(maxScale, targetScale));
 
-  function captureBoardAnchorFromEvent(e){
-    const rect = mount.getBoundingClientRect();
-    const pxLocal = e.clientX - rect.left;
-    const pyLocal = e.clientY - rect.top;
+    var s0 = scale;
+    var t0 = performance.now();
+    var dur = 260;
 
-    var best = Infinity, bi = lastTapBoardI, bj = lastTapBoardJ;
-    for (var ix=0; ix<SIZE; ix++){
-      const xPix = board.getX(ix);
-      for (var iy=0; iy<SIZE; iy++){
-        const yPix = board.getY(iy);
-        const dx = xPix - pxLocal;
-        const dy = yPix - pyLocal;
-        const d2 = dx*dx + dy*dy;
-        if (d2 < best){ best = d2; bi = ix; bj = iy; }
-      }
-    }
-    lastTapBoardI = bi;
-    lastTapBoardJ = bj;
-  }
+    cancelAnimationFrame(animId);
+    isZoomAnimating = true;
 
-  function ensureFSOverlay(){
-    ensureOverlay();
-    prevOverflow = document.documentElement.style.overflow || "";
-    document.documentElement.style.overflow = 'hidden';
-  }
-
-  function zoomToIntersection(i, j, factor){
-    if (!zoomEnabled) return;
-
-    var newScale = scale * factor;
-    if (newScale < minScale) newScale = minScale;
-    if (newScale > maxScale) newScale = maxScale;
-    if (newScale === scale) return;
-
-    scale = newScale;
+    // Start from the current scale
+    offsetX = worldX * s0 - sxTarget;
+    offsetY = worldY * s0 - syTarget;
     applyPanAndSize(false);
 
-    const { vw, vh } = viewportSize();
-    const targetW = Math.max(2, Math.round(baseW * scale));
-    const { padX, padY } = padsFor(targetW);
+    (function step(now){
+      var t = (now - t0) / dur;
+      if (t > 1) t = 1;
 
-    const pxBoard = board.getX(i);
-    const pyBoard = board.getY(j);
-    const centerX = vw / 2;
-    const centerY = vh / 2;
+      var e = 1 - Math.pow(1 - t, 3); // ease-out cubic
+      var s = s0 + (targetScale - s0) * e;
 
-    offsetX = padX + pxBoard - centerX;
-    offsetY = padY + pyBoard - centerY;
+      scale   = s;
+      offsetX = worldX * s - sxTarget;
+      offsetY = worldY * s - syTarget;
 
-    applyPanAndSize(true);
+      applyPanAndSize(false);
+
+      if (t < 1){
+        animId = requestAnimationFrame(step);
+      } else {
+        isZoomAnimating = false;
+        applyPanAndSize(true);
+      }
+    })(t0);
   }
 
-  function enterFullscreenAtIntersection(i, j){
-    if (isFullscreen) return;
-    ensureFSOverlay();
+  function centerZoomAtGrid(i, j, factor, tapClientX, tapClientY){
+    var targetScale = Math.max(minScale, Math.min(maxScale, scale * factor));
+
+    var worldX = getXcss(i);
+    var worldY = getYcss(j);
+
+    var rect = mount.getBoundingClientRect();
+    var sxTarget = rect.width  / 2;
+    var syTarget = rect.height / 2;
+
+    if (typeof tapClientX === 'number' && typeof tapClientY === 'number'){
+      sxTarget = tapClientX - rect.left;
+      syTarget = tapClientY - rect.top;
+      sxTarget = Math.max(0, Math.min(sxTarget, rect.width));
+      syTarget = Math.max(0, Math.min(syTarget, rect.height));
+    }
+
+    animateTo(targetScale, worldX, worldY, sxTarget, syTarget);
+  }
+
+  function enterFullscreenAtGrid(i, j, tapClientX, tapClientY){
+    if (!zoomEnabled || isFullscreen) return;
+
+    ensureOverlay();
+
+    prevOverflow = document.documentElement.style.overflow || "";
+    document.documentElement.style.overflow = 'hidden';
 
     returnAnchor = document.createElement('div');
     returnAnchor.style.display = 'none';
@@ -689,22 +833,20 @@ body.bg-wood [class*="blur"]{
     stage.appendChild(mount);
 
     overlay.style.display = 'flex';
+    if (zoomExitBtn) zoomExitBtn.style.display = 'block';
+    mount.classList.add('is-fullscreen');
     isFullscreen = true;
 
-    mount.classList.add('is-fullscreen');
-
-    const vwFS = window.innerWidth  || document.documentElement.clientWidth  || 800;
-    const vhFS = window.innerHeight || document.documentElement.clientHeight || 800;
+    var vwFS = window.innerWidth  || document.documentElement.clientWidth  || 800;
+    var vhFS = window.innerHeight || document.documentElement.clientHeight || 800;
     baseW = Math.floor(Math.min(vwFS, vhFS));
     if (baseW % 2) baseW--;
 
     resetViewLocal();
 
     requestAnimationFrame(function(){
-      const { vw, vh } = viewportSize();
-      const needToCover   = Math.max(vw, vh) / baseW;
-      const initialFactor = Math.max(1.8, needToCover + 0.02);
-      zoomToIntersection(i, j, initialFactor);
+      var factor = 2.0; // slightly deeper than 1:1, but not too crazy
+      centerZoomAtGrid(i, j, factor, tapClientX, tapClientY);
     });
   }
 
@@ -721,9 +863,10 @@ body.bg-wood [class*="blur"]{
       returnAnchor = null;
     }
 
-    mount.style.width = '';
+    mount.style.width  = '';
     mount.style.height = '';
-    overlay.style.display = 'none';
+    if (overlay)     overlay.style.display = 'none';
+    if (zoomExitBtn) zoomExitBtn.style.display = 'none';
     isFullscreen = false;
 
     document.documentElement.style.overflow = prevOverflow;
@@ -731,24 +874,22 @@ body.bg-wood [class*="blur"]{
     fitBoard();
   }
 
-  var isPanning = false;
-  var panStart = null;
-  var activePointerId = null;
-
   function beginPan(e){
     isPanning = false;
     panStart = { x: e.clientX, y: e.clientY, ox: offsetX, oy: offsetY };
     activePointerId = e.pointerId;
     try { mount.setPointerCapture(e.pointerId); } catch(_) {}
   }
+
   function updatePan(e){
     if (panStart == null) return;
     if (!isFullscreen || scale <= 1) return;
 
-    const dx = e.clientX - panStart.x;
-    const dy = e.clientY - panStart.y;
+    var dx = e.clientX - panStart.x;
+    var dy = e.clientY - panStart.y;
+    var dist2 = dx*dx + dy*dy;
 
-    if (!isPanning && (dx*dx + dy*dy) > 9){
+    if (!isPanning && dist2 > TAP_SLOP2){
       isPanning = true;
       suppressNextBoardClick = true;
     }
@@ -756,14 +897,11 @@ body.bg-wood [class*="blur"]{
 
     offsetX = panStart.ox - dx;
     offsetY = panStart.oy - dy;
-
-    const { vw, vh } = viewportSize();
-    const targetW = Math.max(2, Math.round(baseW * scale));
-    clampPanWith(vw, vh, targetW);
-    applyPanAndSize(true);
+    applyPanAndSize(false);
 
     e.preventDefault();
   }
+
   function endPan(e){
     if (activePointerId !== null){
       try { mount.releasePointerCapture(activePointerId); } catch(_) {}
@@ -773,76 +911,134 @@ body.bg-wood [class*="blur"]{
     setTimeout(function(){ isPanning = false; }, 0);
   }
 
-  var tapStart = null, suppressNextBoardClick = false;
-
+  // Tap-to-zoom logic on the Joseki board
   mount.addEventListener('pointerdown', function(e){
     if (!zoomEnabled) return;
-    tapStart = { x:e.clientX, y:e.clientY, t:performance.now() };
-    captureBoardAnchorFromEvent(e);
+    tapStart = {
+      x: e.clientX,
+      y: e.clientY,
+      t: performance.now()
+    };
     beginPan(e);
-  }, {passive:true});
+  }, { passive:true });
 
   mount.addEventListener('pointermove', function(e){
     if (!zoomEnabled) return;
     updatePan(e);
-  }, {passive:false});
+  }, { passive:false });
 
   mount.addEventListener('pointerup', function(e){
-    if (!zoomEnabled || !tapStart) { endPan(e); return; }
-    if (isPanning){ endPan(e); tapStart = null; return; }
-
-    const dt = performance.now() - tapStart.t;
-    const dx = e.clientX - tapStart.x;
-    const dy = e.clientY - tapStart.y;
-    tapStart = null;
-    endPan(e);
-
-    if (dt < 250 && (dx*dx + dy*dy) < 9){
-      if (scale === 1 && !isFullscreen){
-        e.preventDefault();
-        e.stopPropagation();
-        e.stopImmediatePropagation && e.stopImmediatePropagation();
-        suppressNextBoardClick = true;
-        enterFullscreenAtIntersection(lastTapBoardI, lastTapBoardJ);
-      } else {
-        suppressNextBoardClick = false;
-      }
+    if (!zoomEnabled){
+      endPan(e);
+      tapStart = null;
+      return;
     }
-  }, {passive:false, capture:true});
 
-  mount.addEventListener('pointercancel', endPan, {passive:true});
+    var start = tapStart;
+    tapStart = null;
+
+    if (isPanning){
+      endPan(e);
+      return;
+    }
+
+    endPan(e);
+    if (!start) return;
+
+    var dx = e.clientX - start.x;
+    var dy = e.clientY - start.y;
+    var dist2 = dx*dx + dy*dy;
+    var dt = performance.now() - start.t;
+
+    // Not a tap if we moved too far or held too long
+    if (dist2 > TAP_SLOP2 || dt > 300) return;
+
+    // Only tap-to-enter from the normal view
+    if (!isFullscreen && scale === 1){
+      var rect = mount.getBoundingClientRect();
+      var sx   = start.x - rect.left;
+      var sy   = start.y - rect.top;
+
+      var ratio = canvasCssScale();
+      var best  = Infinity;
+      var bi    = Math.floor(SIZE / 2);
+      var bj    = Math.floor(SIZE / 2);
+
+      // Find the nearest grid intersection to the tap
+      for (var ix = 0; ix < SIZE; ix++){
+        var px = board.getX(ix) * ratio;
+        for (var iy = 0; iy < SIZE; iy++){
+          var py = board.getY(iy) * ratio;
+          var ddx = px - sx;
+          var ddy = py - sy;
+          var d2  = ddx*ddx + ddy*ddy;
+          if (d2 < best){
+            best = d2;
+            bi = ix;
+            bj = iy;
+          }
+        }
+      }
+
+      suppressNextBoardClick = true;
+      enterFullscreenAtGrid(bi, bj, start.x, start.y);
+    }
+  }, { passive:false, capture:true });
+
+  mount.addEventListener('pointercancel', function(e){
+    endPan(e);
+    tapStart = null;
+  }, { passive:true });
 
   document.addEventListener('keydown', function(e){
-    if (e.key === 'Escape' && isFullscreen) exitFullscreen();
+    if (e.key === 'Escape' && isFullscreen){
+      exitFullscreen();
+    }
   });
 
+  // Public API for settings page
   window.JosekiZoom = {
-    isEnabled(){ return zoomEnabled; },
-    setEnabled(v){ zoomEnabled = !!v; if (!zoomEnabled) { if (isFullscreen) exitFullscreen(); else resetViewLocal(); } },
-    resetView: function(){ if (isFullscreen) exitFullscreen(); else resetViewLocal(); },
+    isEnabled: function(){ return zoomEnabled; },
+    setEnabled: function(v){
+      zoomEnabled = !!v;
+      if (!zoomEnabled){
+        if (isFullscreen) exitFullscreen();
+        else resetViewLocal();
+      }
+    },
+    resetView: function(){
+      if (isFullscreen) exitFullscreen();
+      else resetViewLocal();
+    },
     isFullscreen: function(){ return isFullscreen; }
   };
 
+  // Initial sizing
   function fitBoard(){
     if (isFullscreen){
-      const vwFS = window.innerWidth || document.documentElement.clientWidth || 800;
-      const vhFS = window.innerHeight || document.documentElement.clientHeight || 800;
+      var vwFS = window.innerWidth  || document.documentElement.clientWidth  || 800;
+      var vhFS = window.innerHeight || document.documentElement.clientHeight || 800;
       baseW = Math.floor(Math.min(vwFS, vhFS));
       if (baseW % 2) baseW--;
       mount.style.width  = '100vw';
       mount.style.height = '100vh';
     } else {
       var w = mount.clientWidth || 400;
-      w = Math.floor(w); if (w % 2) w--;
+      w = Math.floor(w);
+      if (w % 2) w--;
       baseW = w;
       mount.style.width  = '';
       mount.style.height = baseW + 'px';
     }
     applyPanAndSize(true);
   }
+
   window.addEventListener('resize', fitBoard);
-  window.addEventListener('orientationchange', function(){ setTimeout(fitBoard, 200); });
+  window.addEventListener('orientationchange', function(){
+    setTimeout(fitBoard, 200);
+  });
   fitBoard();
+
 
   function addLB(x,y,text){ board.addObject({ x:x, y:y, type:'LB', text:text }); }
 
