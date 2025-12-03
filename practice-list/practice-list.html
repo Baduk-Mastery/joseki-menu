@@ -108,6 +108,8 @@
 <style>
   /* Overlays: scrollable + momentum */
 #practice-overlay, #level-overlay{
+  overscroll-behavior: contain;
+}
   position:fixed; inset:0; z-index:100000; display:none;
   align-items:flex-start; justify-content:center;
   padding:12px 0;
