@@ -617,17 +617,23 @@ body.bg-wood [class*="blur"]{
   }
 
   function resetViewLocal(){
+    if (animId) cancelAnimationFrame(animId);
+    animId = 0;
     scale = 1;
     offsetX = 0;
     offsetY = 0;
     applyPanAndSize(true);
   }
 
-  // Remember which grid intersection we tapped
+
+  // Remember which grid intersection we tapped + last tap position on screen
   var lastTapBoardI = Math.floor(SIZE / 2);
   var lastTapBoardJ = Math.floor(SIZE / 2);
+  var lastTapClientX = null;
+  var lastTapClientY = null;
 
   function captureBoardAnchorFromEvent(e){
+
     const rect = mount.getBoundingClientRect();
     const pxLocal = e.clientX - rect.left;
     const pyLocal = e.clientY - rect.top;
@@ -653,33 +659,77 @@ body.bg-wood [class*="blur"]{
     document.documentElement.style.overflow = 'hidden';
   }
 
-  function zoomToIntersection(i, j, factor){
+   function zoomToIntersection(i, j, factor, tapClientX, tapClientY){
     if (!zoomEnabled) return;
 
-    var newScale = scale * factor;
+    var oldScale = scale;
+    var newScale = oldScale * factor;
     if (newScale < minScale) newScale = minScale;
     if (newScale > maxScale) newScale = maxScale;
-    if (newScale === scale) return;
+    if (newScale === oldScale) return;
 
-    scale = newScale;
-    applyPanAndSize(false);
+    // World-space board coordinates for this intersection (normalized to scale 1)
+    var pxBoard0 = board.getX(i);
+    var pyBoard0 = board.getY(j);
+    var wx = oldScale ? pxBoard0 / oldScale : pxBoard0;
+    var wy = oldScale ? pyBoard0 / oldScale : pyBoard0;
 
-    const { vw, vh } = viewportSize();
-    const targetW = Math.max(2, Math.round(baseW * scale));
-    const { padX, padY } = padsFor(targetW);
+    var size = viewportSize();
+    var vw = size.vw, vh = size.vh;
+    var rect = mount.getBoundingClientRect();
 
-    const pxBoard = board.getX(i);
-    const pyBoard = board.getY(j);
-    const centerX = vw / 2;
-    const centerY = vh / 2;
+    // Anchor point in container coordinates – use tap position if given,
+    // otherwise fall back to center of the visible board area
+    var sx = (typeof tapClientX === 'number') ? (tapClientX - rect.left) : vw / 2;
+    var sy = (typeof tapClientY === 'number') ? (tapClientY - rect.top)  : vh / 2;
 
-    offsetX = padX + pxBoard - centerX;
-    offsetY = padY + pyBoard - centerY;
+    // Clamp anchor inside the visible container
+    if (sx < 0) sx = 0; else if (sx > vw) sx = vw;
+    if (sy < 0) sy = 0; else if (sy > vh) sy = vh;
 
-    applyPanAndSize(true);
+    var startScale  = oldScale;
+    var targetScale = newScale;
+    var t0  = performance.now();
+    var dur = 260; // ms – same feel as Practice
+
+    if (animId) cancelAnimationFrame(animId);
+    animId = 0;
+
+    (function step(now){
+      var t = (now - t0) / dur;
+      if (t > 1) t = 1;
+
+      // Smooth ease-out
+      var e = 1 - Math.pow(1 - t, 3);
+      var s = startScale + (targetScale - startScale) * e;
+
+      scale = s;
+
+      var targetW = Math.max(2, Math.round(baseW * s));
+      var padX = Math.max(0, (vw - targetW) / 2);
+      var padY = Math.max(0, (vh - targetW) / 2);
+
+      var pxBoard = wx * s;
+      var pyBoard = wy * s;
+
+      // Offset so that the chosen intersection stays at (sx, sy)
+      offsetX = padX + pxBoard - sx;
+      offsetY = padY + pyBoard - sy;
+
+      clampPanWith(vw, vh, targetW);
+      applyPanAndSize(false);
+
+      if (t < 1){
+        animId = requestAnimationFrame(step);
+      } else {
+        animId = 0;
+        applyPanAndSize(true);
+      }
+    })(t0);
   }
 
-  function enterFullscreenAtIntersection(i, j){
+
+  function enterFullscreenAtIntersection(i, j, tapClientX, tapClientY){
     if (isFullscreen) return;
     ensureFSOverlay();
 
@@ -701,10 +751,11 @@ body.bg-wood [class*="blur"]{
     resetViewLocal();
 
     requestAnimationFrame(function(){
-      const { vw, vh } = viewportSize();
-      const needToCover   = Math.max(vw, vh) / baseW;
+      const size = viewportSize();
+      const needToCover   = Math.max(size.vw, size.vh) / baseW;
       const initialFactor = Math.max(1.8, needToCover + 0.02);
-      zoomToIntersection(i, j, initialFactor);
+      // Use the same tap position we used to pick the grid intersection
+      zoomToIntersection(i, j, initialFactor, tapClientX, tapClientY);
     });
   }
 
@@ -778,6 +829,8 @@ body.bg-wood [class*="blur"]{
   mount.addEventListener('pointerdown', function(e){
     if (!zoomEnabled) return;
     tapStart = { x:e.clientX, y:e.clientY, t:performance.now() };
+    lastTapClientX = e.clientX;
+    lastTapClientY = e.clientY;
     captureBoardAnchorFromEvent(e);
     beginPan(e);
   }, {passive:true});
@@ -787,7 +840,7 @@ body.bg-wood [class*="blur"]{
     updatePan(e);
   }, {passive:false});
 
-  mount.addEventListener('pointerup', function(e){
+    mount.addEventListener('pointerup', function(e){
     if (!zoomEnabled || !tapStart) { endPan(e); return; }
     if (isPanning){ endPan(e); tapStart = null; return; }
 
@@ -803,12 +856,18 @@ body.bg-wood [class*="blur"]{
         e.stopPropagation();
         e.stopImmediatePropagation && e.stopImmediatePropagation();
         suppressNextBoardClick = true;
-        enterFullscreenAtIntersection(lastTapBoardI, lastTapBoardJ);
+        enterFullscreenAtIntersection(
+          lastTapBoardI,
+          lastTapBoardJ,
+          lastTapClientX,
+          lastTapClientY
+        );
       } else {
         suppressNextBoardClick = false;
       }
     }
   }, {passive:false, capture:true});
+
 
   mount.addEventListener('pointercancel', endPan, {passive:true});
 
