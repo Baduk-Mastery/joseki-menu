@@ -12,22 +12,33 @@
     height:100%;
     font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
 
-    /* Use the same wood background as the overlays so the rubber-band area matches */
+    /* Lock the page itself, scrolling happens inside the overlays */
+    overflow:hidden;
+
+    /* Warm fallback color (in case the image hasn’t loaded yet), NOT black */
+    background-color:#1b1208;
+  }
+
+  /* Stationary full-screen wood backdrop that never moves or scrolls */
+  #wood-backdrop{
+    position:fixed;
+    inset:0;
+    z-index:99999;
+    pointer-events:none;
+
     background-image:
       linear-gradient(rgba(0,0,0,.35), rgba(0,0,0,.45)),
       url('../img/wood.jpg');
     background-size:cover;
     background-position:center;
     background-repeat:no-repeat;
-
-    /* Prevent the page itself from scrolling; only the overlay scrolls */
-    overflow:hidden;
   }
 </style>
 
   <script src="../lib/tier-bridge.js"></script>
 </head>
 <body>
+<div id="wood-backdrop"></div>
 
 <noscript>
   <p>
@@ -106,20 +117,17 @@
 </div>
 
 <style>
-  /* Overlays: scrollable + momentum */
+/* Overlays: scrollable + momentum */
 #practice-overlay, #level-overlay{
   position:fixed; inset:0; z-index:100000; display:none;
   align-items:flex-start; justify-content:center;
   padding:12px 0; overflow:auto; -webkit-overflow-scrolling:touch;
   color:#e6f3ff; -webkit-tap-highlight-color:transparent;
-  background-image:
-    linear-gradient(rgba(0,0,0,.35), rgba(0,0,0,.45)),
-    url('../img/wood.jpg');
-  background-size:cover;
-  background-position:center;
-  background-repeat:no-repeat;
 
-  /* Try to keep scroll/bounce inside the overlay */
+  /* Transparent on top of the fixed wood backdrop, with a soft dark veil */
+  background:linear-gradient(rgba(0,0,0,.12), rgba(0,0,0,.28));
+
+  /* Keep scroll/bounce inside the overlay as much as possible */
   overscroll-behavior:contain;
 }
 
