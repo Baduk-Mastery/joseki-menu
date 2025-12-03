@@ -205,18 +205,19 @@
 }
 
 
- #drills-root .s-inner{
+#drills-root .s-inner{
   width:min(92vw,var(--maxw));
   height:100%;
   max-height:100%;
   margin:0 auto;
 
-  padding:16px 24px 22px;
+  /* bigger bottom padding so cards can scroll above the fixed buttons */
+  padding:16px 24px 80px;
+
   text-align:left;
   position:relative;
   box-sizing:border-box;
 
-  /* This is the only scrollable area */
   overflow:auto;
   -webkit-overflow-scrolling:touch;
 }
@@ -463,8 +464,12 @@
   #drills-root.notice-open #drills-overlay .s-inner{ pointer-events:none; }
 
   @media (max-width:480px){
-    #drills-root .s-inner{ padding:16px 12px 22px; }
+@media (max-width:480px){
+  #drills-root .s-inner{
+    padding:16px 12px 80px;
   }
+}
+
 
   /* Mode cards: push the button to the right */
   #drills-root #drills-mode-view .drill-meta{
