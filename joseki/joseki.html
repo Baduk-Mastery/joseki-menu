@@ -309,11 +309,11 @@ body {
 
     <!-- Buttons -->
     <div id="joseki-ctrls" class="j-ctrls">
-      <button id="jbtnMenu"    class="jbtn jbtn-strong" type="button">Menu</button>
       <button id="jbtnBack"    class="jbtn"             type="button">Back</button>
       <button id="jbtnForward" class="jbtn"             type="button">Next</button>
       <button id="jbtnPass"    class="jbtn"             type="button" disabled>Pass</button>
-      <button id="jbtnReset"   class="jbtn jbtn-alt"    type="button">Reset</button>
+      <button id="jbtnMenu"    class="jbtn" type="button">Menu</button>
+      <button id="jbtnReset"   class="jbtn"    type="button">Reset</button>
     </div>
   </div>
 </div>
@@ -530,8 +530,9 @@ body.bg-wood [class*="blur"]{
   var hasSGF = false, sgfRootSeq = null, currentNode = null;
   var rootLabels = [], rootNote = '', rootAB = [], rootAW = [];
 
-  // Free-play divergence
-  var freeMode = false, josekiAnchor = null;
+// Free-play divergence
+var freeMode = false, josekiAnchor = null, josekiAnchorIndex = 0;
+
 
   // Sound preference (initial from prefs)
   var soundEnabled = !!GoPrefs.soundOn;
@@ -1036,10 +1037,12 @@ function redraw(){
           return;
         }
       }
-      if (grid[y][x] !== null) return;
-      freeMode = true;
-      josekiAnchor = currentNode;
-    }
+  if (grid[y][x] !== null) return;
+  freeMode = true;
+  josekiAnchor = currentNode;
+  josekiAnchorIndex = current;   // how many moves were on the board when we diverged
+}
+
 
     if (current < history.length) history.splice(current);
     var r = attemptPlay(x,y,turn);
@@ -1060,14 +1063,25 @@ function redraw(){
     else setTimeout(function(){ hook(id, fn); }, 50);
   }
 
-  hook('jbtnBack',    function(){
-    if (hasSGF && !freeMode) {
-      gotoPrev();
-    } else if (current>0){
-      current--;
-      rebuildFromHistory();
+hook('jbtnBack', function(){
+  if (hasSGF && !freeMode) {
+    // Normal joseki navigation
+    gotoPrev();
+  } else if (current > 0) {
+    // Free mode or no SGF: step back through history
+    current--;
+    rebuildFromHistory();
+
+    // If we were in free mode and have undone all free moves,
+    // snap back to the joseki branch (same as "Back to Joseki").
+    if (hasSGF && freeMode && current <= josekiAnchorIndex) {
+      freeMode = false;
+      currentNode = josekiAnchor;
+      buildPositionTo(currentNode);
     }
-  });
+  }
+});
+
 
   hook('jbtnForward', function(){
     if (hasSGF && !freeMode) {
