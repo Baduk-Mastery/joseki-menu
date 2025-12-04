@@ -964,54 +964,60 @@ if (!window.StoneSFX) {
     }
   }
 
-  function animateTo(targetScale, pxWorld, pyWorld, sxTarget, syTarget){
-    targetScale = Math.max(minScale, Math.min(maxScale, targetScale));
-    cancelFling();
+function animateTo(targetScale, pxBoard, pyBoard, sxTarget, syTarget){
+  targetScale = Math.max(minScale, Math.min(maxScale, targetScale));
+  cancelFling();
 
-    const s0  = scale;
-    const t0  = performance.now();
-    const dur = 260;
+  const s0  = scale;
+  const t0  = performance.now();
+  const dur = 260;
 
-    function step(now){
-      let t = (now - t0) / dur;
-      if (t > 1) t = 1;
-      const ease = 1 - Math.pow(1 - t, 3);
-      const s = s0 + (targetScale - s0) * ease;
+  function step(now){
+    let t = (now - t0) / dur;
+    if (t > 1) t = 1;
+    const ease = 1 - Math.pow(1 - t, 3);
+    const s = s0 + (targetScale - s0) * ease;
 
-      scale   = s;
-      offsetX = pxWorld * s - sxTarget;
-      offsetY = pyWorld * s - syTarget;
+    // New zoom level
+    scale = s;
 
-      applyPanAndSize(false);
+    // Keep the chosen board point at sxTarget / syTarget
+    // screen = (board - offset) * scale  =>  offset = board - screen/scale
+    offsetX = pxBoard - (sxTarget / s);
+    offsetY = pyBoard - (syTarget / s);
 
-      if (t < 1){
-        requestAnimationFrame(step);
-      } else {
-        applyPanAndSize(true);
-      }
+    applyPanAndSize(false);
+
+    if (t < 1){
+      requestAnimationFrame(step);
+    } else {
+      applyPanAndSize(true);
     }
-    requestAnimationFrame(step);
   }
 
-  function centerZoomAtGrid(i, j, factor, tapClientX, tapClientY){
-    const targetScale = Math.max(minScale, Math.min(maxScale, scale * factor));
+  requestAnimationFrame(step);
+}
 
-    const px_curr  = getXcss(i);
-    const py_curr  = getYcss(j);
-    const px_world = px_curr / scale;
-    const py_world = py_curr / scale;
+function centerZoomAtGrid(i, j, factor, tapClientX, tapClientY){
+  const targetScale = Math.max(minScale, Math.min(maxScale, scale * factor));
 
-    const rect = mount.getBoundingClientRect();
-    let sx_target = rect.width  / 2;
-    let sy_target = rect.height / 2;
+  // Board-space coordinates of the grid point (independent of zoom)
+  const pxBoard = getXcss(i);
+  const pyBoard = getYcss(j);
 
-    if (typeof tapClientX === 'number' && typeof tapClientY === 'number'){
-      sx_target = tapClientX - rect.left;
-      sy_target = tapClientY - rect.top;
-    }
+  const rect = mount.getBoundingClientRect();
+  let sxTarget = rect.width  / 2;
+  let syTarget = rect.height / 2;
 
-    animateTo(targetScale, px_world, py_world, sx_target, sy_target);
+  // If we know the tap position, keep that spot under the finger
+  if (typeof tapClientX === 'number' && typeof tapClientY === 'number'){
+    sxTarget = tapClientX - rect.left;
+    syTarget = tapClientY - rect.top;
   }
+
+  animateTo(targetScale, pxBoard, pyBoard, sxTarget, syTarget);
+}
+
 
   function enterFullscreenAtGrid(i, j, tapClientX, tapClientY){
     if (isFullscreen) return;
