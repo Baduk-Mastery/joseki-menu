@@ -1424,7 +1424,7 @@ function redraw(){
   function gotoNext (){ var cand = getNextCandidates(currentNode); if (!cand.length) return; currentNode = cand[0].node; buildPositionTo(currentNode); }
 
   // click handling with first-click zoom
-  board.addEventListener('click', function(x,y){
+  board.addEventListener('click', function(x, y, event){
     // helper to find joseki candidate at (x,y)
     function findCandidateAt(x,y, list){
       for (var i=0;i<list.length;i++){
@@ -1432,6 +1432,11 @@ function redraw(){
       }
       return null;
     }
+// record click coordinates for zoom anchor
+if (event && event.clientX && event.clientY){
+  lastTapClientX = event.clientX;
+  lastTapClientY = event.clientY;
+}
 
     if (hasSGF && !freeMode){
       var opts = getTurnCandidates(currentNode); // SGF candidates for side to move
