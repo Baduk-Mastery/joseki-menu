@@ -656,19 +656,12 @@ body.bg-wood [class*="blur"]{
   var animId = 0;
   var isZoomAnimating = false;
 
-  // For panning + click suppression
+  // For panning + click suppression (same behavior as Practice Board)
   var isPanning = false;
   var panStart = null;
   var activePointerId = null;
   var suppressNextBoardClick = false;
-  var tapStart = null;
-  var lastTapTime = 0;
-  var lastTapGrid = null;
-  var lastTapClientX = 0;
-  var lastTapClientY = 0;
-  var TAP_SLOP2 = 64;          // ~8px
-  var DOUBLE_TAP_DELAY = 320;
-  var DOUBLE_TAP_SLOP2 = 144;  // ~12px
+  var TAP_SLOP2 = 64;          // ~8px before we treat it as a pan
 
   function canvasCssScale(){
     var c = mount.querySelector('canvas');
@@ -1720,23 +1713,17 @@ body.bg-wood [class*="blur"]{
   function gotoPrev (){ if (!currentNode) return; currentNode = currentNode.prev || null; buildPositionTo(currentNode); }
   function gotoNext (){ var cand = getNextCandidates(currentNode); if (!cand.length) return; currentNode = cand[0].node; buildPositionTo(currentNode); }
 
-  // === Pointer / zoom interaction on the board container ===
+   // === Pointer / zoom interaction on the board container (Practice-style) ===
   mount.addEventListener('pointerdown', function(e){
     if (!zoomEnabled) return;
 
     // Only use touch / pen for panning to avoid weird mouse behaviour
     if (isFullscreen && (e.pointerType === 'touch' || e.pointerType === 'pen')){
       isPanning = false;
-      panStart = { x:e.clientX, y:e.clientY, ox:offsetX, oy:offsetY };
+      panStart = { x: e.clientX, y: e.clientY, ox: offsetX, oy: offsetY };
       activePointerId = e.pointerId;
-      try { mount.setPointerCapture(e.pointerId); } catch(_) {}
+      try { mount.setPointerCapture(e.pointerId); } catch (_) {}
     }
-
-    tapStart = {
-      x: e.clientX,
-      y: e.clientY,
-      t: performance.now()
-    };
   });
 
   mount.addEventListener('pointermove', function(e){
@@ -1749,11 +1736,11 @@ body.bg-wood [class*="blur"]{
     var dy = e.clientY - panStart.y;
     var dist2 = dx*dx + dy*dy;
 
+    // Once the finger has moved a bit, treat it as a pan and suppress the stone click
     if (!isPanning && dist2 > TAP_SLOP2){
       isPanning = true;
       suppressNextBoardClick = true;
     }
-
     if (!isPanning) return;
 
     offsetX = panStart.ox - dx;
@@ -1765,11 +1752,11 @@ body.bg-wood [class*="blur"]{
 
   function endPan(e){
     if (activePointerId != null){
-      try { mount.releasePointerCapture(activePointerId); } catch(_) {}
+      try { mount.releasePointerCapture(activePointerId); } catch (_) {}
     }
     activePointerId = null;
     panStart = null;
-    // we keep isPanning boolean only to detect this gesture; no inertia
+    // keep isPanning only as a gesture flag; no inertia here
     setTimeout(function(){ isPanning = false; }, 0);
   }
 
@@ -1777,46 +1764,15 @@ body.bg-wood [class*="blur"]{
     if (activePointerId !== null && e.pointerId === activePointerId){
       endPan(e);
     }
-
-    if (!tapStart) return;
-    var dt = performance.now() - tapStart.t;
-    var dx = e.clientX - tapStart.x;
-    var dy = e.clientY - tapStart.y;
-    var dist2 = dx*dx + dy*dy;
-    var wasTap = (dt < 280 && dist2 <= TAP_SLOP2);
-
-    // Only double-tap behaviour when NOT fullscreen
-    if (!isFullscreen && wasTap){
-      var gridPos = clientToGrid(e.clientX, e.clientY);
-      if (gridPos){
-        var now = performance.now();
-        var isDouble =
-          lastTapGrid &&
-          (now - lastTapTime) < DOUBLE_TAP_DELAY &&
-          (Math.pow(e.clientX - lastTapClientX,2) + Math.pow(e.clientY - lastTapClientY,2)) < DOUBLE_TAP_SLOP2;
-
-        if (isDouble){
-          // Use last tap's grid (so both taps roughly at same intersection)
-          enterFullscreenAtGrid(lastTapGrid.i, lastTapGrid.j, e.clientX, e.clientY);
-          lastTapGrid = null;
-        } else {
-          lastTapGrid = gridPos;
-          lastTapTime = now;
-          lastTapClientX = e.clientX;
-          lastTapClientY = e.clientY;
-        }
-      }
-    }
-
-    tapStart = null;
+    // No double-tap detection here – Practice Board doesn’t use double-tap zoom
   });
 
   mount.addEventListener('pointercancel', function(e){
     if (activePointerId !== null && e.pointerId === activePointerId){
       endPan(e);
     }
-    tapStart = null;
   });
+
 
   // Desktop double-click zoom
   mount.addEventListener('dblclick', function(e){
