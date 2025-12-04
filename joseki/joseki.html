@@ -532,6 +532,143 @@ body.bg-wood [class*="blur"]{
 
 // Free-play divergence
 var freeMode = false, josekiAnchor = null, josekiAnchorIndex = 0;
+  // ===== Favorites storage (shared with Practice List) =====
+  var FAV_KEY = 'go_favorites';
+
+  function favLineKey(line){
+    var size = line.size || SIZE;
+    var seq = (line.moves || []).map(function(m){
+      return (m.color || 'B')[0] + ':' + m.x + ',' + m.y;
+    }).join('|');
+    return size + '|' + seq;
+  }
+
+  function favReadMap(){
+    try {
+      return JSON.parse(localStorage.getItem(FAV_KEY) || '{}') || {};
+    } catch(e){
+      return {};
+    }
+  }
+
+  function favWriteMap(map){
+    try {
+      localStorage.setItem(FAV_KEY, JSON.stringify(map));
+    } catch(e){}
+  }
+
+  function favIsSaved(line){
+    var map = favReadMap();
+    return !!map[favLineKey(line)];
+  }
+
+  function favAdd(line){
+    var map = favReadMap();
+    map[favLineKey(line)] = {
+      size: line.size || SIZE,
+      rootAB: Array.isArray(line.rootAB) ? line.rootAB : [],
+      rootAW: Array.isArray(line.rootAW) ? line.rootAW : [],
+      moves: (line.moves || []).map(function(p){
+        return { x:p.x, y:p.y, color:p.color };
+      })
+    };
+    favWriteMap(map);
+  }
+
+  // Build a favorite line from current node, respecting pass rules:
+  // - up to 2 initial passes allowed if they are all same color as first stone move
+  // - any later pass counts as "end"; favorite stops at last stone before that pass
+  // Returns { size, rootAB, rootAW, moves[] } or null if not valid.
+  function buildFavoriteLineFromNode(currentNode){
+    if (!hasSGF || !currentNode || freeMode) return null;
+
+    // If we are on a pass node, treat the favorite as ending at the last stone before it
+    var isPassHere = !!nodePassColor(currentNode);
+    var endNode = currentNode;
+
+    if (isPassHere){
+      var pathAll = pathTo(currentNode);
+      var lastMoveNode = null;
+      for (var i = 0; i < pathAll.length; i++){
+        if (nodeMoveXY(pathAll[i])) lastMoveNode = pathAll[i];
+      }
+      if (!lastMoveNode) return null; // only passes, nothing to favorite
+      endNode = lastMoveNode;
+    }
+
+    var path = pathTo(endNode);
+
+    // Find first stone move, count initial passes before it
+    var firstMoveIndex = -1;
+    var firstMoveColor = null;
+    var initialPassCount = 0;
+    var initialPassColors = [];
+
+    for (var idx = 0; idx < path.length; idx++){
+      var n = path[idx];
+      var mv = nodeMoveXY(n);
+      if (mv){
+        firstMoveIndex = idx;
+        firstMoveColor = mv.color;
+        break;
+      }
+      var pc = nodePassColor(n);
+      if (pc){
+        initialPassCount++;
+        initialPassColors.push(pc);
+      }
+    }
+
+    if (firstMoveIndex === -1) return null;            // no stones at all
+    if (initialPassCount > 2) return null;             // too many initial passes
+
+    // all initial passes must match the first stone's color
+    for (var t = 0; t < initialPassColors.length; t++){
+      if (initialPassColors[t] !== firstMoveColor) return null;
+    }
+
+    // Collect all stone moves from firstMoveIndex up to endNode (stones only)
+    var moves = [];
+    for (var k = firstMoveIndex; k < path.length; k++){
+      var n2 = path[k];
+      var mv2 = nodeMoveXY(n2);
+      if (mv2){
+        moves.push({ x: mv2.x, y: mv2.y, color: mv2.color });
+      }
+    }
+
+    if (!moves.length) return null;
+
+    return {
+      size: SIZE,
+      rootAB: rootAB.slice(),
+      rootAW: rootAW.slice(),
+      moves: moves
+    };
+  }
+
+  // Decide if the current joseki position should offer "Add to favorites"
+  function getCurrentFavoriteLineCandidate(){
+    if (!hasSGF || freeMode || !currentNode) return null;
+
+    var isPassHere = !!nodePassColor(currentNode);
+
+    // If we are on a pass node, that itself counts as "end of line"
+    if (isPassHere){
+      return buildFavoriteLineFromNode(currentNode);
+    }
+
+    // Otherwise, only allow favorites at leaf positions that have no further SGF moves or passes
+    var nextStones = getNextCandidates(currentNode) || [];
+    var nextPasses = getPassCandidates(currentNode) || [];
+
+    if (nextStones.length > 0 || nextPasses.length > 0){
+      // There is still at least one SGF continuation (stone or pass) → no favorite button yet
+      return null;
+    }
+
+    return buildFavoriteLineFromNode(currentNode);
+  }
 
 
   // Sound preference (initial from prefs)
@@ -607,13 +744,34 @@ function redraw(){
 }
 
 
-  var descEl = document.getElementById('descText');
-  function updateDesc(){
+   var descEl = document.getElementById('descText');
+
+  // Small helper: safely escape SGF comments for innerHTML
+  function escHTML(s){
+    if (s == null) return '';
+    return String(s).replace(/[&<>"]/g, function(ch){
+      if (ch === '&') return '&amp;';
+      if (ch === '<') return '&lt;';
+      if (ch === '>') return '&gt;';
+      if (ch === '"') return '&quot;';
+      return ch;
+    });
+  }
+
+   function updateDesc(){
     if (!descEl) return;
+
+    // Free-play description (unchanged)
     if (freeMode){
       descEl.innerHTML =
         '<div style="font-weight:600;margin-bottom:8px;">Free Play Mode</div>' +
-        '<button id="backToJosekiBtn" style="display:inline-block;padding:8px 12px;border-radius:8px;border:1px solid #ccc;background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.06);cursor:pointer;">Back to Joseki</button>';
+        '<button id="backToJosekiBtn" ' +
+          'style="display:inline-block;padding:8px 12px;border-radius:8px;' +
+                 'border:1px solid #ccc;background:#fff;' +
+                 'box-shadow:0 1px 2px rgba(0,0,0,.06);cursor:pointer;">' +
+          'Back to Joseki' +
+        '</button>';
+
       var btn = document.getElementById('backToJosekiBtn');
       if (btn){
         btn.onclick = function(){
@@ -624,13 +782,66 @@ function redraw(){
       }
       return;
     }
-    if (hasSGF){
-      if (!currentNode){ descEl.textContent = rootNote || ''; return; }
-      descEl.textContent = currentNode.comment || '';
+
+    // No SGF loaded → nothing to show
+    if (!hasSGF){
+      descEl.textContent = '';
       return;
     }
-    descEl.textContent = '';
+
+    // Base comment text (root comment or node comment)
+    var baseText = '';
+    if (!currentNode){
+      baseText = rootNote || '';
+    } else {
+      baseText = currentNode.comment || '';
+    }
+
+    // Check if this position is a favorite endpoint according to pass rules
+    var favLine = getCurrentFavoriteLineCandidate();
+    var html = '';
+
+    if (baseText && String(baseText).trim().length){
+      html += '<div>' + escHTML(baseText) + '</div>';
+    }
+
+    if (favLine){
+      var already = favIsSaved(favLine);
+      if (already){
+        html += '<div style="margin-top:10px;font-weight:600;color:#047857;">' +
+                  'Already in your favorites' +
+                '</div>';
+      } else {
+        html += '<div style="margin-top:10px;">' +
+                  '<button id="addFavBtn" ' +
+                    'style="display:inline-block;padding:8px 12px;border-radius:8px;' +
+                           'border:1px solid #ccc;background:#fff;' +
+                           'box-shadow:0 1px 2px rgba(0,0,0,.06);cursor:pointer;">' +
+                    'Add this joseki to Favorites' +
+                  '</button>' +
+                '</div>';
+      }
+    }
+
+    if (!html){
+      html = '&nbsp;';
+    }
+
+    descEl.innerHTML = html;
+
+    // Wire up the "Add to favorites" button if present
+    if (favLine && !favIsSaved(favLine)){
+      var addBtn = document.getElementById('addFavBtn');
+      if (addBtn){
+        addBtn.addEventListener('click', function(){
+          favAdd(favLine);
+          addBtn.disabled = true;
+          addBtn.textContent = 'Added to Favorites';
+        });
+      }
+    }
   }
+
 
   function neighbors(x,y){ var ns=[]; if(x>0)ns.push([x-1,y]); if(x<SIZE-1)ns.push([x+1,y]); if(y>0)ns.push([x,y-1]); if(y<SIZE-1)ns.push([x,y+1]); return ns; }
   function groupAndLiberties(x,y){
