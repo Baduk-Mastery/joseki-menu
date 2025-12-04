@@ -265,9 +265,32 @@
       background:rgba(15,23,42,.85);
     }
   </style>
+<style>
+  body{
+    position: relative;
+    min-height: 100vh;
+  }
+
+  /* Fullscreen wood background behind page content */
+  #joseki-wood-bg{
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+
+    background-image:
+      linear-gradient(rgba(0,0,0,.35), rgba(0,0,0,.45)),
+      url('../img/wood.jpg');
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    background-attachment: fixed;
+  }
+</style>
 
 </head>
 <body>
+  <div id="joseki-wood-bg"></div>
 
 <!-- Joseki Board -->
 <div id="go-board-wrap">
