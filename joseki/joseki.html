@@ -556,60 +556,55 @@ body.bg-wood [class*="blur"]{
 
   function addLB(x,y,text){ board.addObject({ x:x, y:y, type:'LB', text:text }); }
 
-  function redraw(){
-    board.removeAllObjects();
+function redraw(){
+  board.removeAllObjects();
 
-    // Stones
-    for (var y=0;y<SIZE;y++){
-      for (var x=0;x<SIZE;x++){
-        var v=grid[y][x];
-        if (v===B) board.addObject({x:x,y:y,c:WGo.B});
-        else if (v===W) board.addObject({x:x,y:y,c:WGo.W});
-      }
-    }
-
-    // Labels and candidate markers
-    if (hasSGF && !freeMode){
-      var allCand = getNextCandidates(currentNode || null) || [];
-      var turnCand = allCand.filter(function(c){ return c.color === turn; });
-
-      // Map of all candidate intersections (any color)
-      var candMap = {};
-      for (var i=0;i<allCand.length;i++){
-        var key = allCand[i].xy.x + ':' + allCand[i].xy.y;
-        candMap[key] = true;
-      }
-
-      // Static LB labels, but skip those on any candidate intersection.
-      var nodeLabels = [];
-      if (!currentNode) nodeLabels = rootLabels;
-      else if (currentNode.LB_) nodeLabels = currentNode.LB_;
-
-      for (var j=0;j<nodeLabels.length;j++){
-        var lab = nodeLabels[j];
-        var lkey = lab.x + ':' + lab.y;
-        if (!candMap[lkey]) addLB(lab.x, lab.y, lab.text);
-      }
-
-      // Dynamic candidate letters only for side to move
-      for (var k=0;k<turnCand.length;k++){
-        addLB(turnCand[k].xy.x, turnCand[k].xy.y, String.fromCharCode(65+k));
-      }
-    } else if (hasSGF && freeMode){
-      // In free mode, show only static labels (no candidate letters)
-      var nodeLabels2 = [];
-      if (!currentNode) nodeLabels2 = rootLabels;
-      else if (currentNode.LB_) nodeLabels2 = currentNode.LB_;
-      for (var m=0;m<nodeLabels2.length;m++){
-        addLB(nodeLabels2[m].x, nodeLabels2[m].y, nodeLabels2[m].text);
-      }
-    }
-
-    if (highlightLastEnabled && current > 0) {
-      var lm = history[current - 1];
-      if (lm) board.addObject({ x: lm.x, y: lm.y, type: 'CR' });
+  // Stones
+  for (var y=0; y<SIZE; y++){
+    for (var x=0; x<SIZE; x++){
+      var v = grid[y][x];
+      if (v === B) board.addObject({ x:x, y:y, c: WGo.B });
+      else if (v === W) board.addObject({ x:x, y:y, c: WGo.W });
     }
   }
+
+  // Labels and candidate markers – ONLY when NOT in free play mode
+  if (hasSGF && !freeMode){
+    var allCand  = getNextCandidates(currentNode || null) || [];
+    var turnCand = allCand.filter(function(c){ return c.color === turn; });
+
+    // Map of all candidate intersections (any color)
+    var candMap = {};
+    for (var i=0; i<allCand.length; i++){
+      var key = allCand[i].xy.x + ':' + allCand[i].xy.y;
+      candMap[key] = true;
+    }
+
+    // Static LB labels, but skip those on any candidate intersection
+    var nodeLabels = [];
+    if (!currentNode) nodeLabels = rootLabels;
+    else if (currentNode.LB_) nodeLabels = currentNode.LB_;
+
+    for (var j=0; j<nodeLabels.length; j++){
+      var lab  = nodeLabels[j];
+      var lkey = lab.x + ':' + lab.y;
+      if (!candMap[lkey]) addLB(lab.x, lab.y, lab.text);
+    }
+
+    // Dynamic candidate letters only for side to move
+    for (var k=0; k<turnCand.length; k++){
+      addLB(turnCand[k].xy.x, turnCand[k].xy.y, String.fromCharCode(65 + k));
+    }
+  }
+  // else: hasSGF && freeMode → no SGF labels at all (clean board)
+
+  // Last-move highlighting still works in both modes
+  if (highlightLastEnabled && current > 0){
+    var lm = history[current - 1];
+    if (lm) board.addObject({ x: lm.x, y: lm.y, type: 'CR' });
+  }
+}
+
 
   var descEl = document.getElementById('descText');
   function updateDesc(){
