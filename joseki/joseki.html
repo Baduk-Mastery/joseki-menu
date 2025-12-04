@@ -14,25 +14,23 @@
     font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   }
 
-  /* Page wood background (no flex here anymore) */
-/* Page wood background + centering */
-body {
-  background-image:
-    linear-gradient(rgba(0,0,0,.35), rgba(0,0,0,.45)),
-    url('../img/wood.jpg');
-  background-size: cover;
-  background-position: center;
-  background-repeat: no-repeat;
-  background-attachment: fixed;
+  /* Page wood background + centering */
+  body {
+    background-image:
+      linear-gradient(rgba(0,0,0,.35), rgba(0,0,0,.45)),
+      url('../img/wood.jpg');
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    background-attachment: fixed;
 
-  /* center the whole joseki block */
-  display: flex;
-  align-items: center;      /* vertical center */
-  justify-content: center;  /* horizontal center */
-  padding: 16px 0;
-  box-sizing: border-box;
-}
-
+    /* center the whole joseki block */
+    display: flex;
+    align-items: center;      /* vertical center */
+    justify-content: center;  /* horizontal center */
+    padding: 16px 0;
+    box-sizing: border-box;
+  }
 
   /* Simple wrapper inside the centered body */
   #page-wrap {
@@ -80,28 +78,29 @@ body {
     border-radius: 10px;
   }
 </style>
-  <style>
-    /* Make the description box's width include its border so edges align */
-    #desc-box { box-sizing: border-box; }
 
-    /* Let the button row use the full width (no side padding),
-       so it lines up exactly with #desc-box */
-    #joseki-ctrls{
-      padding-left: 0 !important;
-      padding-right: 0 !important;
-    }
+<style>
+  /* Make the description box's width include its border so edges align */
+  #desc-box { box-sizing: border-box; }
 
-    /* Keep one-line layout while allowing each button to stretch evenly */
-    #joseki-ctrls .jbtn,
-    #joseki-ctrls .jbtn-strong,
-    #joseki-ctrls .jbtn-alt{
-      flex: 1 1 0;
-      min-width: 0;
-      white-space: nowrap;
-    }
-  </style>
+  /* Let the button row use the full width (no side padding),
+     so it lines up exactly with #desc-box */
+  #joseki-ctrls{
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+  }
 
-  <style>
+  /* Keep one-line layout while allowing each button to stretch evenly */
+  #joseki-ctrls .jbtn,
+  #joseki-ctrls .jbtn-strong,
+  #joseki-ctrls .jbtn-alt{
+    flex: 1 1 0;
+    min-width: 0;
+    white-space: nowrap;
+  }
+</style>
+
+<style>
   /* Joseki Board buttons – same wood style as Practice Board */
   #joseki-ctrls{
     max-width: 720px;
@@ -207,163 +206,190 @@ body {
     transform: none;
     filter: brightness(1) saturate(.9);
   }
-  </style>
+</style>
 
-   <style>
-    /* In-app "Back to menu" dialog – same layout as Practice Board notifications */
+<style>
+  /* In-app "Back to menu" dialog – same layout as Practice Board notifications */
 
-    #menu-confirm-overlay{
-      position:fixed;
-      inset:0;
-      display:none;
-      align-items:center;
-      justify-content:center;
-      background:rgba(0,0,0,.55);
-      z-index:99999;
-      -webkit-tap-highlight-color:transparent;
-    }
-    #menu-confirm-overlay.is-open{
-      display:flex;
-    }
+  #menu-confirm-overlay{
+    position:fixed;
+    inset:0;
+    display:none;
+    align-items:center;
+    justify-content:center;
+    background:rgba(0,0,0,.55);
+    z-index:99999;
+    -webkit-tap-highlight-color:transparent;
+  }
+  #menu-confirm-overlay.is-open{
+    display:flex;
+  }
 
-    /* Typography and layout inside the card */
-    .menu-confirm-title{
-      font-size:18px;
-      font-weight:800;
-      margin-bottom:8px;
-    }
-    .menu-confirm-text{
-      margin-bottom:14px;
-    }
-    .menu-confirm-actions{
-      display:flex;
-      gap:10px;
-      justify-content:center;
-      flex-wrap:wrap;
-      margin-top:10px;
-    }
+  .menu-confirm-title{
+    font-size:18px;
+    font-weight:800;
+    margin-bottom:8px;
+  }
+  .menu-confirm-text{
+    margin-bottom:14px;
+  }
+  .menu-confirm-actions{
+    display:flex;
+    gap:10px;
+    justify-content:center;
+    flex-wrap:wrap;
+    margin-top:10px;
+  }
 
-    /* Shared notification card background (same as Practice Board) */
-    .notif-card{
-      position:relative;
-      z-index:1;
+  .notif-card{
+    position:relative;
+    z-index:1;
+    border-radius:10px;
+    border:1px solid #e2e8f0;
+    box-shadow:0 12px 28px rgba(15,23,42,.18);
+    padding:16px;
+    text-align:center;
+    font-family:system-ui,Segoe UI,Arial,sans-serif;
+    color:#fff3cf;
+    background-image:
+      linear-gradient(
+        to bottom,
+        rgba(0,0,0,.10),
+        rgba(0,0,0,.25)
+      ),
+      url('../img/notification.jpg');
+    background-size:cover;
+    background-position:center;
+    background-repeat:no-repeat;
+  }
+  .notif-card > div{
+    color:inherit !important;
+  }
 
-      border-radius:10px;
-      border:1px solid #e2e8f0;
-      box-shadow:0 12px 28px rgba(15,23,42,.18);
+  .notif-actions{
+    margin-top:10px;
+    display:flex;
+    gap:10px;
+    justify-content:center;
+    flex-wrap:wrap;
+  }
 
-      padding:16px;
-      text-align:center;
-      font-family:system-ui,Segoe UI,Arial,sans-serif;
-      color:#fff3cf;
+  .notif-actions .pbtn,
+  .notif-actions .pbtn-strong,
+  .notif-actions .pbtn-alt{
+    position:relative;
+    min-width:90px;
+    padding:8px 24px;
+    flex:1 1 0;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    box-sizing:border-box;
+    text-align:center;
+    border-radius:10px;
+    border:1px solid rgba(255,255,255,.40);
+    font-size:16px;
+    font-weight:800;
+    line-height:1.1;
+    color:#fff3cf;
+    text-shadow:0 1px 0 rgba(120,60,20,.7);
+    cursor:pointer;
+    user-select:none;
+    -webkit-user-select:none;
+    -moz-user-select:none;
+    -ms-user-select:none;
+    -webkit-tap-highlight-color:transparent;
+    background-image:
+      linear-gradient(
+        to bottom,
+        rgba(255,255,255,.12),
+        rgba(255,255,255,.03) 38%,
+        rgba(0,0,0,.14) 100%
+      ),
+      url('../img/wood.jpg');
+    background-size:100% 100%, cover;
+    background-position:center;
+    background-repeat:no-repeat;
+    filter:brightness(1.08) saturate(.96);
+    box-shadow:
+      0 3px 0 rgba(133,74,26,.85),
+      0 8px 14px rgba(0,0,0,.45);
+    transition:
+      transform .08s ease-out,
+      box-shadow .08s ease-out,
+      filter .12s ease-out;
+  }
 
-      background-image:
-        linear-gradient(
-          to bottom,
-          rgba(0,0,0,.10),
-          rgba(0,0,0,.25)
-        ),
-        url('../img/notification.jpg');
-      background-size:cover;
-      background-position:center;
-      background-repeat:no-repeat;
-    }
-    .notif-card > div{
-      color:inherit !important;
-    }
+  .notif-actions .pbtn:hover,
+  .notif-actions .pbtn-strong:hover,
+  .notif-actions .pbtn-alt:hover{
+    filter:brightness(1.12) saturate(.98);
+    transform:translateY(-1px);
+    box-shadow:
+      0 4px 0 rgba(133,74,26,.9),
+      0 10px 16px rgba(0,0,0,.48);
+  }
 
-    /* Notification action row helper (same as Practice Board) */
-    .notif-actions{
-      margin-top:10px;
-      display:flex;
-      gap:10px;
-      justify-content:center;
-      flex-wrap:wrap;
-    }
+  .notif-actions .pbtn:active,
+  .notif-actions .pbtn-strong:active,
+  .notif-actions .pbtn-alt:active{
+    filter:brightness(.97) saturate(.96);
+    transform:translateY(2px);
+    box-shadow:
+      0 1px 0 rgba(120,60,20,.9),
+      0 4px 8px rgba(0,0,0,.55);
+  }
 
-    /* Wood-style buttons inside notifications – same look as Practice Board .pbtn */
-    .notif-actions .pbtn,
-    .notif-actions .pbtn-strong,
-    .notif-actions .pbtn-alt{
-      position:relative;
-      min-width:90px;
-      padding:8px 24px;
+  .notif-actions .pbtn:focus-visible,
+  .notif-actions .pbtn-strong:focus-visible,
+  .notif-actions .pbtn-alt:focus-visible{
+    outline:2px solid rgba(255,255,255,.9);
+    outline-offset:2px;
+  }
+</style>
 
-      flex:1 1 0;
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      box-sizing:border-box;
-      text-align:center;
-
-      border-radius:10px;
-      border:1px solid rgba(255,255,255,.40);
-
-      font-size:16px;
-      font-weight:800;
-      line-height:1.1;
-      color:#fff3cf;
-      text-shadow:0 1px 0 rgba(120,60,20,.7);
-      cursor:pointer;
-
-      user-select:none;
-      -webkit-user-select:none;
-      -moz-user-select:none;
-      -ms-user-select:none;
-      -webkit-tap-highlight-color:transparent;
-
-      background-image:
-        linear-gradient(
-          to bottom,
-          rgba(255,255,255,.12),
-          rgba(255,255,255,.03) 38%,
-          rgba(0,0,0,.14) 100%
-        ),
-        url('../img/wood.jpg');
-      background-size:100% 100%, cover;
-      background-position:center;
-      background-repeat:no-repeat;
-
-      filter:brightness(1.08) saturate(.96);
-
-      box-shadow:
-        0 3px 0 rgba(133,74,26,.85),
-        0 8px 14px rgba(0,0,0,.45);
-
-      transition:
-        transform .08s ease-out,
-        box-shadow .08s ease-out,
-        filter .12s ease-out;
-    }
-
-    .notif-actions .pbtn:hover,
-    .notif-actions .pbtn-strong:hover,
-    .notif-actions .pbtn-alt:hover{
-      filter:brightness(1.12) saturate(.98);
-      transform:translateY(-1px);
-      box-shadow:
-        0 4px 0 rgba(133,74,26,.9),
-        0 10px 16px rgba(0,0,0,.48);
-    }
-
-    .notif-actions .pbtn:active,
-    .notif-actions .pbtn-strong:active,
-    .notif-actions .pbtn-alt:active{
-      filter:brightness(.97) saturate(.96);
-      transform:translateY(2px);
-      box-shadow:
-        0 1px 0 rgba(120,60,20,.9),
-        0 4px 8px rgba(0,0,0,.55);
-    }
-
-    .notif-actions .pbtn:focus-visible,
-    .notif-actions .pbtn-strong:focus-visible,
-    .notif-actions .pbtn-alt:focus-visible{
-      outline:2px solid rgba(255,255,255,.9);
-      outline-offset:2px;
-    }
-  </style>
-
+<!-- === Joseki fullscreen zoom overlay (similar to Practice Board) === -->
+<style>
+  #go-zoom-overlay-joseki{
+    position:fixed;
+    inset:0;
+    z-index:99998;
+    display:none;
+    align-items:center;
+    justify-content:center;
+    background:transparent;
+    -webkit-tap-highlight-color:transparent;
+  }
+  #go-zoom-stage-joseki{
+    width:100vw;
+    height:100vh;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    touch-action:none;
+  }
+  #go-zoom-exit-joseki{
+    position:fixed;
+    left:14px;
+    bottom:24px;
+    width:120px;
+    height:80px;
+    border-radius:9px;
+    background:rgba(148,163,184,.35);
+    border:1px solid rgba(148,163,184,.85);
+    box-shadow:0 6px 16px rgba(0,0,0,.55);
+    display:none;
+    cursor:pointer;
+    z-index:99999;
+    backdrop-filter:blur(2px);
+    -webkit-tap-highlight-color:transparent;
+    color:#e5e7eb;
+    font-size:18px;
+    font-weight:600;
+    line-height:80px;
+    text-align:center;
+  }
+</style>
 
 </head>
 <body>
@@ -401,7 +427,6 @@ body {
   </div>
 </div>
 
-
 <!-- In-app "Back to menu" confirmation – same layout as Practice Board -->
 <div id="menu-confirm-overlay" aria-hidden="true">
   <div class="menu-confirm-dialog notif-card"
@@ -422,6 +447,11 @@ body {
   </div>
 </div>
 
+<!-- Joseki fullscreen zoom overlay -->
+<div id="go-zoom-overlay-joseki" aria-hidden="true">
+  <div id="go-zoom-stage-joseki"></div>
+  <div id="go-zoom-exit-joseki">Zoom out</div>
+</div>
 
 <!-- Simple click sound (local file) -->
 <script>
@@ -578,6 +608,7 @@ body.bg-wood [class*="blur"]{
   })();
 
   var SIZE = 19, B='B', W='W';
+
   // ===== shared preferences with settings page =====
   var STORAGE_KEY = 'go_prefs';
   var GoPrefs = (window.GoPrefs = window.GoPrefs || {});
@@ -586,13 +617,13 @@ body.bg-wood [class*="blur"]{
     Object.assign(GoPrefs, JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}') || {});
   } catch (e) {}
 
-  // No more josekiZoom preference here – only sound + highlight
   if (typeof GoPrefs.soundOn       === 'undefined') GoPrefs.soundOn       = true;
   if (typeof GoPrefs.highlightLast === 'undefined') GoPrefs.highlightLast = true;
+  if (typeof GoPrefs.josekiZoom    === 'undefined') GoPrefs.josekiZoom    = true;
+  if (typeof GoPrefs.disableAutoZoomOut === 'undefined') GoPrefs.disableAutoZoomOut = false;
 
   // ---------- state ----------
   var board = new WGo.Board(mount, { size: SIZE });
-  // Wood texture under the board (replaces old zoomLayer background)
   mount.style.backgroundImage = "url('../img/wood.jpg')";
   mount.style.backgroundSize = "cover";
   mount.style.backgroundPosition = "center";
@@ -601,27 +632,416 @@ body.bg-wood [class*="blur"]{
   var grid  = Array.from({length:SIZE}, ()=>Array(SIZE).fill(null));
   var history = [];
   var current = 0;
-  var turn    = B;  // side to move
+  var turn    = B;
+
+  var baseBoardWidth = 0;
+
+  // === Zoom state (shared with JosekiZoom API) ===
+  var zoomLayer = null;
+  var zoomOverlay = null;
+  var zoomStage = null;
+  var zoomExitBtn = null;
+  var returnAnchor = null;
+  var prevOverflow = "";
+  var isFullscreen = false;
+
+  var zoomEnabled = !!GoPrefs.josekiZoom;
+  var disableAutoZoomOut = !!GoPrefs.disableAutoZoomOut;
+
+  var scale = 1;
+  var minScale = 1;
+  var maxScale = 2.6;
+  var offsetX = 0;
+  var offsetY = 0;
+  var animId = 0;
+  var isZoomAnimating = false;
+
+  // For panning + click suppression
+  var isPanning = false;
+  var panStart = null;
+  var activePointerId = null;
+  var suppressNextBoardClick = false;
+  var tapStart = null;
+  var lastTapTime = 0;
+  var lastTapGrid = null;
+  var lastTapClientX = 0;
+  var lastTapClientY = 0;
+  var TAP_SLOP2 = 64;          // ~8px
+  var DOUBLE_TAP_DELAY = 320;
+  var DOUBLE_TAP_SLOP2 = 144;  // ~12px
+
+  function canvasCssScale(){
+    var c = mount.querySelector('canvas');
+    if (!c) return 1;
+    var cssW = c.clientWidth || c.getBoundingClientRect().width || 0;
+    var intW = c.width || 0;
+    if (!cssW || !intW) return 1;
+    return cssW / intW;
+  }
+  function getXcss(i){ return board.getX(i) * canvasCssScale(); }
+  function getYcss(j){ return board.getY(j) * canvasCssScale(); }
+
+  function getBoardBounds(){
+    var firstX = getXcss(0);
+    var lastX  = getXcss(SIZE - 1);
+    var firstY = getYcss(0);
+    var lastY  = getYcss(SIZE - 1);
+
+    var spacingX = SIZE > 1 ? Math.abs(getXcss(1) - firstX) : 0;
+    var spacingY = SIZE > 1 ? Math.abs(getYcss(1) - firstY) : 0;
+    if (!spacingX && spacingY) spacingX = spacingY;
+    if (!spacingY && spacingX) spacingY = spacingX;
+
+    var halfX = spacingX * 0.5 || 8;
+    var halfY = spacingY * 0.5 || 8;
+
+    return {
+      minX: firstX - halfX,
+      maxX: lastX  + halfX,
+      minY: firstY - halfY,
+      maxY: lastY  + halfY
+    };
+  }
+
+  function clientToGrid(clientX, clientY){
+    var rect = mount.getBoundingClientRect();
+    var xIn = clientX - rect.left;
+    var yIn = clientY - rect.top;
+
+    var bounds = getBoardBounds();
+    if (xIn < bounds.minX || xIn > bounds.maxX || yIn < bounds.minY || yIn > bounds.maxY){
+      return null;
+    }
+
+    var bestI = 0, bestJ = 0, bestD2 = Infinity;
+    for (var j = 0; j < SIZE; j++){
+      var py = getYcss(j);
+      for (var i = 0; i < SIZE; i++){
+        var px = getXcss(i);
+        var dx = px - xIn;
+        var dy = py - yIn;
+        var d2 = dx*dx + dy*dy;
+        if (d2 < bestD2){
+          bestD2 = d2;
+          bestI = i;
+          bestJ = j;
+        }
+      }
+    }
+    return { i: bestI, j: bestJ };
+  }
+
+  function ensureZoomLayer(){
+    if (zoomLayer) return;
+    mount.style.position = 'relative';
+    mount.style.overflow = 'hidden';
+
+    zoomLayer = document.createElement('div');
+    zoomLayer.style.position = 'absolute';
+    zoomLayer.style.left = '0px';
+    zoomLayer.style.top  = '0px';
+    zoomLayer.style.transformOrigin = '0 0';
+    zoomLayer.style.willChange = 'transform';
+
+    while (mount.firstChild) zoomLayer.appendChild(mount.firstChild);
+    mount.appendChild(zoomLayer);
+
+    zoomLayer.style.backgroundImage = "url('../img/wood.jpg')";
+    zoomLayer.style.backgroundSize = "cover";
+    zoomLayer.style.backgroundPosition = "center";
+  }
+
+  function ensureOverlay(){
+    if (!zoomOverlay){
+      zoomOverlay = document.getElementById('go-zoom-overlay-joseki');
+      if (!zoomOverlay){
+        zoomOverlay = document.createElement('div');
+        zoomOverlay.id = 'go-zoom-overlay-joseki';
+        zoomOverlay.innerHTML =
+          '<div id="go-zoom-stage-joseki"></div>' +
+          '<div id="go-zoom-exit-joseki">Zoom out</div>';
+        document.body.appendChild(zoomOverlay);
+      }
+    }
+    zoomStage = zoomOverlay.querySelector('#go-zoom-stage-joseki');
+    zoomExitBtn = zoomOverlay.querySelector('#go-zoom-exit-joseki');
+
+    if (zoomExitBtn && !zoomExitBtn._bound){
+      zoomExitBtn._bound = true;
+      zoomExitBtn.addEventListener('click', function(e){
+        e.stopPropagation();
+        smoothZoomOutAndExit();
+      });
+    }
+  }
+
+  function viewportSize(){
+    if (isFullscreen){
+      return {
+        vw: window.innerWidth  || document.documentElement.clientWidth  || baseBoardWidth || 1,
+        vh: window.innerHeight || document.documentElement.clientHeight || baseBoardWidth || 1
+      };
+    }
+    return {
+      vw: mount.clientWidth || baseBoardWidth || 1,
+      vh: mount.clientHeight || baseBoardWidth || 1
+    };
+  }
+
+  function clampPan(){
+    if (!isFullscreen || !baseBoardWidth) return;
+    const vp = viewportSize();
+    const vw = vp.vw;
+    const vh = vp.vh;
+
+    const bw = Math.round(baseBoardWidth * scale);
+    const bleedX = Math.ceil(vw * 0.5);
+    const bleedY = Math.ceil(vh * 0.5);
+
+    const minOX = -bleedX;
+    const maxOX = Math.max(0, bw - vw) + bleedX;
+    const minOY = -bleedY;
+    const maxOY = Math.max(0, bw - vh) + bleedY;
+
+    if (offsetX < minOX) offsetX = minOX;
+    if (offsetX > maxOX) offsetX = maxOX;
+    if (offsetY < minOY) offsetY = minOY;
+    if (offsetY > maxOY) offsetY = maxOY;
+  }
+
+  function applyPanAndSize(redrawAfter){
+    if (!zoomLayer) return;
+    if (isFullscreen){
+      var vp = viewportSize();
+      var targetW = baseBoardWidth || Math.min(vp.vw, vp.vh);
+      if (targetW < 2) targetW = 2;
+      targetW = Math.round(targetW);
+      if (board._lastW !== targetW){
+        board.setWidth(targetW);
+        zoomLayer.style.width  = targetW + 'px';
+        zoomLayer.style.height = targetW + 'px';
+        board._lastW = targetW;
+        if (!redrawAfter) redrawAfter = true;
+      }
+      clampPan();
+      zoomLayer.style.transform =
+        'translate3d(' + (-offsetX) + 'px,' + (-offsetY) + 'px,0) scale(' + scale + ')';
+      mount.style.width  = '100vw';
+      mount.style.height = '100vh';
+    } else {
+      // Non-fullscreen: just reset any transform
+      zoomLayer.style.transform = 'translate3d(0,0,0) scale(1)';
+      mount.style.width  = '';
+      mount.style.height = baseBoardWidth ? (baseBoardWidth + 'px') : mount.style.height;
+    }
+
+    if (redrawAfter) redraw();
+  }
+
+  function resetViewLocal(){
+    scale = 1;
+    offsetX = 0;
+    offsetY = 0;
+    if (isFullscreen){
+      applyPanAndSize(true);
+    } else if (zoomLayer){
+      zoomLayer.style.transform = 'translate3d(0,0,0) scale(1)';
+    }
+  }
+
+  function animateTo(targetScale, pxWorld, pyWorld, sxTarget, syTarget, onDone){
+    if (!isFullscreen) return;
+    targetScale = Math.max(minScale, Math.min(maxScale, targetScale));
+
+    cancelAnimationFrame(animId);
+    isZoomAnimating = true;
+
+    var startScale = scale;
+    var startOffsetX = offsetX;
+    var startOffsetY = offsetY;
+    var t0 = performance.now();
+    var dur = 260;
+
+    (function step(now){
+      var t = (now - t0) / dur;
+      if (t > 1) t = 1;
+      var e = 1 - Math.pow(1 - t, 3);
+      var s = startScale + (targetScale - startScale) * e;
+
+      scale = s;
+      offsetX = pxWorld * s - sxTarget;
+      offsetY = pyWorld * s - syTarget;
+
+      applyPanAndSize(false);
+
+      if (t < 1){
+        animId = requestAnimationFrame(step);
+      } else {
+        isZoomAnimating = false;
+        applyPanAndSize(true);
+        if (typeof onDone === 'function') onDone();
+      }
+    })(t0);
+  }
+
+  function centerZoomAtGrid(i, j, factor, tapClientX, tapClientY){
+    if (!isFullscreen || !zoomLayer) return;
+
+    var targetScale = Math.max(minScale, Math.min(maxScale, scale * factor));
+
+    var px_curr = getXcss(i);
+    var py_curr = getYcss(j);
+    var px_world = px_curr / scale;
+    var py_world = py_curr / scale;
+
+    var rect = mount.getBoundingClientRect();
+    var sx_target = rect.width  / 2;
+    var sy_target = rect.height / 2;
+
+    if (typeof tapClientX === 'number' && typeof tapClientY === 'number'){
+      sx_target = tapClientX - rect.left;
+      sy_target = tapClientY - rect.top;
+      if (sx_target < 0) sx_target = 0;
+      if (sx_target > rect.width)  sx_target = rect.width;
+      if (sy_target < 0) sy_target = 0;
+      if (sy_target > rect.height) sy_target = rect.height;
+    }
+
+    animateTo(targetScale, px_world, py_world, sx_target, sy_target);
+  }
+
+  function enterFullscreenAtGrid(i, j, tapClientX, tapClientY){
+    if (!zoomEnabled || isFullscreen) return;
+
+    ensureZoomLayer();
+    ensureOverlay();
+
+    prevOverflow = document.documentElement.style.overflow || "";
+    document.documentElement.style.overflow = 'hidden';
+
+    returnAnchor = document.createElement('div');
+    returnAnchor.style.display = 'none';
+    mount.parentNode.insertBefore(returnAnchor, mount);
+    zoomStage.appendChild(mount);
+
+    zoomOverlay.style.display = 'flex';
+    if (zoomExitBtn) zoomExitBtn.style.display = 'block';
+
+    isFullscreen = true;
+
+    var vp = viewportSize();
+    baseBoardWidth = Math.floor(Math.min(vp.vw, vp.vh));
+    if (baseBoardWidth % 2) baseBoardWidth--;
+
+    scale = 1;
+    offsetX = 0;
+    offsetY = 0;
+    applyPanAndSize(true);
+
+    requestAnimationFrame(function(){
+      var rect = mount.getBoundingClientRect();
+      var clientX = tapClientX;
+      var clientY = tapClientY;
+      // Fallback to board center if we somehow don't have tap coords
+      if (typeof clientX !== 'number' || typeof clientY !== 'number'){
+        clientX = rect.left + rect.width  / 2;
+        clientY = rect.top  + rect.height / 2;
+      }
+      centerZoomAtGrid(i, j, 2.0, clientX, clientY);
+    });
+  }
+
+  function exitFullscreen(){
+    if (!isFullscreen) return;
+
+    cancelAnimationFrame(animId);
+    isZoomAnimating = false;
+
+    if (returnAnchor && returnAnchor.parentNode){
+      returnAnchor.parentNode.insertBefore(mount, returnAnchor);
+      returnAnchor.parentNode.removeChild(returnAnchor);
+      returnAnchor = null;
+    }
+
+    if (zoomOverlay) zoomOverlay.style.display = 'none';
+    if (zoomExitBtn) zoomExitBtn.style.display = 'none';
+
+    document.documentElement.style.overflow = prevOverflow;
+    isFullscreen = false;
+
+    scale = 1;
+    offsetX = 0;
+    offsetY = 0;
+
+    if (zoomLayer){
+      zoomLayer.style.transform = 'translate3d(0,0,0) scale(1)';
+    }
+
+    mount.style.width  = '';
+    mount.style.height = '';
+
+    fitBoard();
+  }
+
+  function smoothZoomOutAndExit(){
+    if (!isFullscreen){
+      return;
+    }
+    // Simple: just exit; you can upgrade to animated zoom-out later if you like.
+    exitFullscreen();
+  }
 
   // Simple responsive sizing (no zoom, no fullscreen)
   function fitBoard(){
+    if (isFullscreen) return;
     var w = mount.clientWidth || 400;
     w = Math.floor(w);
     if (w % 2) w--;
     if (w <= 0) return;
+    baseBoardWidth = w;
     board.setWidth(w);
     mount.style.height = w + 'px';
+
+    if (zoomLayer){
+      zoomLayer.style.width  = w + 'px';
+      zoomLayer.style.height = w + 'px';
+    }
   }
-  window.addEventListener('resize', fitBoard);
-  window.addEventListener('orientationchange', function(){ setTimeout(fitBoard, 200); });
+
+  window.addEventListener('resize', function(){
+    if (isFullscreen){
+      var vp = viewportSize();
+      baseBoardWidth = Math.floor(Math.min(vp.vw, vp.vh));
+      if (baseBoardWidth % 2) baseBoardWidth--;
+      applyPanAndSize(true);
+    } else {
+      fitBoard();
+    }
+  });
+
+  window.addEventListener('orientationchange', function(){
+    setTimeout(function(){
+      if (isFullscreen){
+        var vp = viewportSize();
+        baseBoardWidth = Math.floor(Math.min(vp.vw, vp.vh));
+        if (baseBoardWidth % 2) baseBoardWidth--;
+        applyPanAndSize(true);
+      } else {
+        fitBoard();
+      }
+    }, 200);
+  });
+
   fitBoard();
+  ensureZoomLayer(); // prepare immediately so board + wood move together
 
   // SGF state
   var hasSGF = false, sgfRootSeq = null, currentNode = null;
   var rootLabels = [], rootNote = '', rootAB = [], rootAW = [];
 
-// Free-play divergence
-var freeMode = false, josekiAnchor = null, josekiAnchorIndex = 0;
+  // Free-play divergence
+  var freeMode = false, josekiAnchor = null, josekiAnchorIndex = 0;
+
   // ===== Favorites storage (shared with Practice List) =====
   var FAV_KEY = 'go_favorites';
 
@@ -665,14 +1085,10 @@ var freeMode = false, josekiAnchor = null, josekiAnchorIndex = 0;
     favWriteMap(map);
   }
 
-  // Build a favorite line from current node, respecting pass rules:
-  // - up to 2 initial passes allowed if they are all same color as first stone move
-  // - any later pass counts as "end"; favorite stops at last stone before that pass
-  // Returns { size, rootAB, rootAW, moves[] } or null if not valid.
+  // Build a favorite line from current node, respecting pass rules
   function buildFavoriteLineFromNode(currentNode){
     if (!hasSGF || !currentNode || freeMode) return null;
 
-    // If we are on a pass node, treat the favorite as ending at the last stone before it
     var isPassHere = !!nodePassColor(currentNode);
     var endNode = currentNode;
 
@@ -682,13 +1098,12 @@ var freeMode = false, josekiAnchor = null, josekiAnchorIndex = 0;
       for (var i = 0; i < pathAll.length; i++){
         if (nodeMoveXY(pathAll[i])) lastMoveNode = pathAll[i];
       }
-      if (!lastMoveNode) return null; // only passes, nothing to favorite
+      if (!lastMoveNode) return null;
       endNode = lastMoveNode;
     }
 
     var path = pathTo(endNode);
 
-    // Find first stone move, count initial passes before it
     var firstMoveIndex = -1;
     var firstMoveColor = null;
     var initialPassCount = 0;
@@ -709,15 +1124,13 @@ var freeMode = false, josekiAnchor = null, josekiAnchorIndex = 0;
       }
     }
 
-    if (firstMoveIndex === -1) return null;            // no stones at all
-    if (initialPassCount > 2) return null;             // too many initial passes
+    if (firstMoveIndex === -1) return null;
+    if (initialPassCount > 2) return null;
 
-    // all initial passes must match the first stone's color
     for (var t = 0; t < initialPassColors.length; t++){
       if (initialPassColors[t] !== firstMoveColor) return null;
     }
 
-    // Collect all stone moves from firstMoveIndex up to endNode (stones only)
     var moves = [];
     for (var k = firstMoveIndex; k < path.length; k++){
       var n2 = path[k];
@@ -737,37 +1150,32 @@ var freeMode = false, josekiAnchor = null, josekiAnchorIndex = 0;
     };
   }
 
-  // Decide if the current joseki position should offer "Add to favorites"
   function getCurrentFavoriteLineCandidate(){
     if (!hasSGF || freeMode || !currentNode) return null;
 
     var isPassHere = !!nodePassColor(currentNode);
 
-    // If we are on a pass node, that itself counts as "end of line"
     if (isPassHere){
       return buildFavoriteLineFromNode(currentNode);
     }
 
-    // Otherwise, only allow favorites at leaf positions that have no further SGF moves or passes
     var nextStones = getNextCandidates(currentNode) || [];
     var nextPasses = getPassCandidates(currentNode) || [];
 
     if (nextStones.length > 0 || nextPasses.length > 0){
-      // There is still at least one SGF continuation (stone or pass) → no favorite button yet
       return null;
     }
 
     return buildFavoriteLineFromNode(currentNode);
   }
 
-
-  // Sound preference (initial from prefs)
+  // Sound preference
   var soundEnabled = !!GoPrefs.soundOn;
   function setSoundEnabled(v){
     soundEnabled = !!v;
   }
 
-  // Highlight last move (initial from prefs)
+  // Highlight last move
   var highlightLastEnabled = !!GoPrefs.highlightLast;
 
   // Pass button helpers
@@ -784,59 +1192,50 @@ var freeMode = false, josekiAnchor = null, josekiAnchorIndex = 0;
 
   function addLB(x,y,text){ board.addObject({ x:x, y:y, type:'LB', text:text }); }
 
-function redraw(){
-  board.removeAllObjects();
+  function redraw(){
+    board.removeAllObjects();
 
-  // Stones
-  for (var y=0; y<SIZE; y++){
-    for (var x=0; x<SIZE; x++){
-      var v = grid[y][x];
-      if (v === B) board.addObject({ x:x, y:y, c: WGo.B });
-      else if (v === W) board.addObject({ x:x, y:y, c: WGo.W });
+    for (var y=0; y<SIZE; y++){
+      for (var x=0; x<SIZE; x++){
+        var v = grid[y][x];
+        if (v === B) board.addObject({ x:x, y:y, c: WGo.B });
+        else if (v === W) board.addObject({ x:x, y:y, c: WGo.W });
+      }
+    }
+
+    if (hasSGF && !freeMode){
+      var allCand  = getNextCandidates(currentNode || null) || [];
+      var turnCand = allCand.filter(function(c){ return c.color === turn; });
+
+      var candMap = {};
+      for (var i=0; i<allCand.length; i++){
+        var key = allCand[i].xy.x + ':' + allCand[i].xy.y;
+        candMap[key] = true;
+      }
+
+      var nodeLabels = [];
+      if (!currentNode) nodeLabels = rootLabels;
+      else if (currentNode.LB_) nodeLabels = currentNode.LB_;
+
+      for (var j=0; j<nodeLabels.length; j++){
+        var lab  = nodeLabels[j];
+        var lkey = lab.x + ':' + lab.y;
+        if (!candMap[lkey]) addLB(lab.x, lab.y, lab.text);
+      }
+
+      for (var k=0; k<turnCand.length; k++){
+        addLB(turnCand[k].xy.x, turnCand[k].xy.y, String.fromCharCode(65 + k));
+      }
+    }
+
+    if (highlightLastEnabled && current > 0){
+      var lm = history[current - 1];
+      if (lm) board.addObject({ x: lm.x, y: lm.y, type: 'CR' });
     }
   }
 
-  // Labels and candidate markers – ONLY when NOT in free play mode
-  if (hasSGF && !freeMode){
-    var allCand  = getNextCandidates(currentNode || null) || [];
-    var turnCand = allCand.filter(function(c){ return c.color === turn; });
+  var descEl = document.getElementById('descText');
 
-    // Map of all candidate intersections (any color)
-    var candMap = {};
-    for (var i=0; i<allCand.length; i++){
-      var key = allCand[i].xy.x + ':' + allCand[i].xy.y;
-      candMap[key] = true;
-    }
-
-    // Static LB labels, but skip those on any candidate intersection
-    var nodeLabels = [];
-    if (!currentNode) nodeLabels = rootLabels;
-    else if (currentNode.LB_) nodeLabels = currentNode.LB_;
-
-    for (var j=0; j<nodeLabels.length; j++){
-      var lab  = nodeLabels[j];
-      var lkey = lab.x + ':' + lab.y;
-      if (!candMap[lkey]) addLB(lab.x, lab.y, lab.text);
-    }
-
-    // Dynamic candidate letters only for side to move
-    for (var k=0; k<turnCand.length; k++){
-      addLB(turnCand[k].xy.x, turnCand[k].xy.y, String.fromCharCode(65 + k));
-    }
-  }
-  // else: hasSGF && freeMode → no SGF labels at all (clean board)
-
-  // Last-move highlighting still works in both modes
-  if (highlightLastEnabled && current > 0){
-    var lm = history[current - 1];
-    if (lm) board.addObject({ x: lm.x, y: lm.y, type: 'CR' });
-  }
-}
-
-
-   var descEl = document.getElementById('descText');
-
-  // Small helper: safely escape SGF comments for innerHTML
   function escHTML(s){
     if (s == null) return '';
     return String(s).replace(/[&<>"]/g, function(ch){
@@ -848,10 +1247,9 @@ function redraw(){
     });
   }
 
-   function updateDesc(){
+  function updateDesc(){
     if (!descEl) return;
 
-    // Free-play description (unchanged)
     if (freeMode){
       descEl.innerHTML =
         '<div style="font-weight:600;margin-bottom:8px;">Free Play Mode</div>' +
@@ -873,13 +1271,11 @@ function redraw(){
       return;
     }
 
-    // No SGF loaded → nothing to show
     if (!hasSGF){
       descEl.textContent = '';
       return;
     }
 
-    // Base comment text (root comment or node comment)
     var baseText = '';
     if (!currentNode){
       baseText = rootNote || '';
@@ -887,7 +1283,6 @@ function redraw(){
       baseText = currentNode.comment || '';
     }
 
-    // Check if this position is a favorite endpoint according to pass rules
     var favLine = getCurrentFavoriteLineCandidate();
     var html = '';
 
@@ -919,7 +1314,6 @@ function redraw(){
 
     descEl.innerHTML = html;
 
-    // Wire up the "Add to favorites" button if present
     if (favLine && !favIsSaved(favLine)){
       var addBtn = document.getElementById('addFavBtn');
       if (addBtn){
@@ -931,7 +1325,6 @@ function redraw(){
       }
     }
   }
-
 
   function neighbors(x,y){ var ns=[]; if(x>0)ns.push([x-1,y]); if(x<SIZE-1)ns.push([x+1,y]); if(y>0)ns.push([x,y-1]); if(y<SIZE-1)ns.push([x,y+1]); return ns; }
   function groupAndLiberties(x,y){
@@ -1098,8 +1491,6 @@ function redraw(){
     return out;
   }
 
-  // Helpers that are aware of pass nodes (B[] / W[])
-
   function nodeHasColorProp(n){
     return !!(n && (typeof n.B !== 'undefined' || typeof n.W !== 'undefined'));
   }
@@ -1124,16 +1515,21 @@ function redraw(){
 
     var n = r;
     while(n && !nodeHasMove(n)) n = n.next;
-    if (n && nodeHasMove(n)){ var mv = nodeMoveXY(n); if (mv) out.push({node:n, xy:{x:mv.x,y:mv.y}, color:mv.color}); }
+    if (n && nodeHasMove(n)){
+      var mv = nodeMoveXY(n);
+      if (mv) out.push({node:n, xy:{x:mv.x,y:mv.y}, color:mv.color});
+    }
 
     if (r && r.variations && r.variations.length){
       for (var v=0; v<r.variations.length; v++){
         var seq = r.variations[v];
         if (seq && seq.length){
-          var first = seq[0];
-          var m = first;
+          var m = seq[0];
           while(m && !nodeHasMove(m)) m = m.next;
-          if (m && nodeHasMove(m)){ var mv2=nodeMoveXY(m); if (mv2) out.push({node:m, xy:{x:mv2.x,y:mv2.y}, color:mv2.color}); }
+          if (m && nodeHasMove(m)){
+            var mv2=nodeMoveXY(m);
+            if (mv2) out.push({node:m, xy:{x:mv2.x,y:mv2.y}, color:mv2.color});
+          }
         }
       }
     }
@@ -1145,7 +1541,10 @@ function redraw(){
     var arr=[];
     if (node.next){
       var n=node.next; while(n && !nodeHasMove(n)) n=n.next;
-      if (n && nodeHasMove(n)){ var mv=nodeMoveXY(n); if (mv) arr.push({node:n, xy:{x:mv.x,y:mv.y}, color:mv.color}); }
+      if (n && nodeHasMove(n)){
+        var mv=nodeMoveXY(n);
+        if (mv) arr.push({node:n, xy:{x:mv.x,y:mv.y}, color:mv.color});
+      }
     }
     if (node.variations && node.variations.length){
       for (var v=0; v<node.variations.length; v++){
@@ -1153,14 +1552,16 @@ function redraw(){
         if (seq && seq.length){
           var m = seq[0];
           while(m && !nodeHasMove(m)) m = m.next;
-          if (m && nodeHasMove(m)){ var mv2=nodeMoveXY(m); if (mv2) arr.push({node:m, xy:{x:mv2.x,y:mv2.y}, color:mv2.color}); }
+          if (m && nodeHasMove(m)){
+            var mv2=nodeMoveXY(m);
+            if (mv2) arr.push({node:m, xy:{x:mv2.x,y:mv2.y}, color:mv2.color});
+          }
         }
       }
     }
     return candidatesDedup(arr);
   }
 
-  // Color nodes for "next position" regardless of whether it is a pass or a board move
   function getNextColorNodes(node){
     var arr = [];
     if (!sgfRootSeq || !sgfRootSeq.length) return arr;
@@ -1202,7 +1603,6 @@ function redraw(){
     return arr;
   }
 
-  // All pass-nodes reachable as immediate next positions from the given node (or root)
   function getPassCandidates(node){
     var colorNodes = getNextColorNodes(node || null);
     var out = [];
@@ -1215,15 +1615,12 @@ function redraw(){
     return out;
   }
 
-  // Only candidates for current side to move (board moves, not passes)
   function getTurnCandidates(node){
     var all = getNextCandidates(node);
     if (!all || !all.length) return [];
     return all.filter(function(c){ return c.color === turn; });
   }
 
-  // Decide when the Pass button should be enabled:
-  // enabled only if there is at least one SGF pass node (B[] / W[]) for the current side to move.
   function computePassAvailability(){
     if (!hasSGF || freeMode) return false;
 
@@ -1247,8 +1644,6 @@ function redraw(){
     return out;
   }
 
-  // Apply a single SGF node (including pass) to the board; returns the move color if
-  // this node represents a move or pass, otherwise null.
   function applyNodeToBoard(nd){
     if (!nd) return null;
     var colorProp, color;
@@ -1259,7 +1654,7 @@ function redraw(){
       colorProp = nd.W;
       color = W;
     } else {
-      return null; // no move/pass
+      return null;
     }
 
     var str;
@@ -1267,12 +1662,11 @@ function redraw(){
     else str = colorProp;
 
     if (str === '' || str == null){
-      // Pure pass: change only the side to move, no stones
       return color;
     }
 
     var xy = sgfCoordToXY(str);
-    if (!xy) return color; // treat as "move" for color progression, even if coord is weird
+    if (!xy) return color;
 
     var r = attemptPlay(xy.x, xy.y, color);
     if (r.ok){
@@ -1326,10 +1720,127 @@ function redraw(){
   function gotoPrev (){ if (!currentNode) return; currentNode = currentNode.prev || null; buildPositionTo(currentNode); }
   function gotoNext (){ var cand = getNextCandidates(currentNode); if (!cand.length) return; currentNode = cand[0].node; buildPositionTo(currentNode); }
 
-  // No zoom logic in click handler anymore
+  // === Pointer / zoom interaction on the board container ===
+  mount.addEventListener('pointerdown', function(e){
+    if (!zoomEnabled) return;
+
+    // Only use touch / pen for panning to avoid weird mouse behaviour
+    if (isFullscreen && (e.pointerType === 'touch' || e.pointerType === 'pen')){
+      isPanning = false;
+      panStart = { x:e.clientX, y:e.clientY, ox:offsetX, oy:offsetY };
+      activePointerId = e.pointerId;
+      try { mount.setPointerCapture(e.pointerId); } catch(_) {}
+    }
+
+    tapStart = {
+      x: e.clientX,
+      y: e.clientY,
+      t: performance.now()
+    };
+  });
+
+  mount.addEventListener('pointermove', function(e){
+    if (!isFullscreen) return;
+    if (activePointerId == null || e.pointerId !== activePointerId) return;
+    if (e.pointerType && e.pointerType !== 'touch' && e.pointerType !== 'pen') return;
+    if (!panStart) return;
+
+    var dx = e.clientX - panStart.x;
+    var dy = e.clientY - panStart.y;
+    var dist2 = dx*dx + dy*dy;
+
+    if (!isPanning && dist2 > TAP_SLOP2){
+      isPanning = true;
+      suppressNextBoardClick = true;
+    }
+
+    if (!isPanning) return;
+
+    offsetX = panStart.ox - dx;
+    offsetY = panStart.oy - dy;
+
+    applyPanAndSize(false);
+    e.preventDefault();
+  });
+
+  function endPan(e){
+    if (activePointerId != null){
+      try { mount.releasePointerCapture(activePointerId); } catch(_) {}
+    }
+    activePointerId = null;
+    panStart = null;
+    // we keep isPanning boolean only to detect this gesture; no inertia
+    setTimeout(function(){ isPanning = false; }, 0);
+  }
+
+  mount.addEventListener('pointerup', function(e){
+    if (activePointerId !== null && e.pointerId === activePointerId){
+      endPan(e);
+    }
+
+    if (!tapStart) return;
+    var dt = performance.now() - tapStart.t;
+    var dx = e.clientX - tapStart.x;
+    var dy = e.clientY - tapStart.y;
+    var dist2 = dx*dx + dy*dy;
+    var wasTap = (dt < 280 && dist2 <= TAP_SLOP2);
+
+    // Only double-tap behaviour when NOT fullscreen
+    if (!isFullscreen && wasTap){
+      var gridPos = clientToGrid(e.clientX, e.clientY);
+      if (gridPos){
+        var now = performance.now();
+        var isDouble =
+          lastTapGrid &&
+          (now - lastTapTime) < DOUBLE_TAP_DELAY &&
+          (Math.pow(e.clientX - lastTapClientX,2) + Math.pow(e.clientY - lastTapClientY,2)) < DOUBLE_TAP_SLOP2;
+
+        if (isDouble){
+          // Use last tap's grid (so both taps roughly at same intersection)
+          enterFullscreenAtGrid(lastTapGrid.i, lastTapGrid.j, e.clientX, e.clientY);
+          lastTapGrid = null;
+        } else {
+          lastTapGrid = gridPos;
+          lastTapTime = now;
+          lastTapClientX = e.clientX;
+          lastTapClientY = e.clientY;
+        }
+      }
+    }
+
+    tapStart = null;
+  });
+
+  mount.addEventListener('pointercancel', function(e){
+    if (activePointerId !== null && e.pointerId === activePointerId){
+      endPan(e);
+    }
+    tapStart = null;
+  });
+
+  // Desktop double-click zoom
+  mount.addEventListener('dblclick', function(e){
+    if (!zoomEnabled) return;
+    if (isFullscreen){
+      // double-click while zoomed: just exit
+      smoothZoomOutAndExit();
+      return;
+    }
+    var gridPos = clientToGrid(e.clientX, e.clientY);
+    if (gridPos){
+      enterFullscreenAtGrid(gridPos.i, gridPos.j, e.clientX, e.clientY);
+    }
+  });
+
+  // ---------- board click (stones + free mode) ----------
   board.addEventListener('click', function(x,y){
+    if (suppressNextBoardClick){
+      suppressNextBoardClick = false;
+      return;
+    }
+
     if (hasSGF && !freeMode){
-      var opts = getTurnCandidates(currentNode); // filtered by turn
+      var opts = getTurnCandidates(currentNode);
       for (var i=0;i<opts.length;i++){
         if (opts[i].xy.x===x && opts[i].xy.y===y){
           currentNode = opts[i].node;
@@ -1338,12 +1849,11 @@ function redraw(){
           return;
         }
       }
-  if (grid[y][x] !== null) return;
-  freeMode = true;
-  josekiAnchor = currentNode;
-  josekiAnchorIndex = current;   // how many moves were on the board when we diverged
-}
-
+      if (grid[y][x] !== null) return;
+      freeMode = true;
+      josekiAnchor = currentNode;
+      josekiAnchorIndex = current;
+    }
 
     if (current < history.length) history.splice(current);
     var r = attemptPlay(x,y,turn);
@@ -1357,6 +1867,26 @@ function redraw(){
     try { if (soundEnabled && window.StoneSFX && StoneSFX.play) StoneSFX.play(); } catch(e){}
   });
 
+  // ---------- preferences bridge (from Settings) ----------
+  window.addEventListener('go:prefs-changed', function(e){
+    var d = e.detail || {};
+    if (!d || typeof d.key === 'undefined') return;
+
+    if (d.key === 'highlightLast'){
+      highlightLastEnabled = !!d.value;
+      redraw();
+    } else if (d.key === 'soundOn'){
+      setSoundEnabled(!!d.value);
+    } else if (d.key === 'josekiZoom'){
+      zoomEnabled = !!d.value;
+      if (!zoomEnabled && isFullscreen){
+        exitFullscreen();
+      }
+    } else if (d.key === 'disableAutoZoomOut'){
+      disableAutoZoomOut = !!d.value;
+    }
+  });
+
   // ---------- controls ----------
   function hook(id, fn){
     var el = document.getElementById(id);
@@ -1364,25 +1894,19 @@ function redraw(){
     else setTimeout(function(){ hook(id, fn); }, 50);
   }
 
-hook('jbtnBack', function(){
-  if (hasSGF && !freeMode) {
-    // Normal joseki navigation
-    gotoPrev();
-  } else if (current > 0) {
-    // Free mode or no SGF: step back through history
-    current--;
-    rebuildFromHistory();
-
-    // If we were in free mode and have undone all free moves,
-    // snap back to the joseki branch (same as "Back to Joseki").
-    if (hasSGF && freeMode && current <= josekiAnchorIndex) {
-      freeMode = false;
-      currentNode = josekiAnchor;
-      buildPositionTo(currentNode);
+  hook('jbtnBack', function(){
+    if (hasSGF && !freeMode) {
+      gotoPrev();
+    } else if (current > 0) {
+      current--;
+      rebuildFromHistory();
+      if (hasSGF && freeMode && current <= josekiAnchorIndex) {
+        freeMode = false;
+        currentNode = josekiAnchor;
+        buildPositionTo(currentNode);
+      }
     }
-  }
-});
-
+  });
 
   hook('jbtnForward', function(){
     if (hasSGF && !freeMode) {
@@ -1393,7 +1917,6 @@ hook('jbtnBack', function(){
     }
   });
 
-  // Pass: follow an SGF pass node (B[] / W[]) for the current side to move.
   hook('jbtnPass', function(){
     if (!hasSGF || freeMode) return;
 
@@ -1421,6 +1944,9 @@ hook('jbtnBack', function(){
     } else {
       current=0;
       rebuildFromHistory();
+    }
+    if (isFullscreen){
+      resetViewLocal();
     }
   });
 
@@ -1459,7 +1985,11 @@ hook('jbtnBack', function(){
 
   document.addEventListener('keydown', function(e){
     if (e.key === 'Escape') {
-      closeMenuConfirm();
+      if (isFullscreen){
+        smoothZoomOutAndExit();
+      } else {
+        closeMenuConfirm();
+      }
     }
   });
 
@@ -1493,12 +2023,23 @@ hook('jbtnBack', function(){
     setEnabled: function(v){ highlightLastEnabled = !!v; redraw(); }
   };
 
-  // No-op stub so settings page won't break if it calls JosekiZoom here.
+  // Real JosekiZoom API (used by Settings + potential future UI)
   window.JosekiZoom = {
-    isEnabled: function(){ return false; },
-    setEnabled: function(){},
-    resetView: function(){},
-    isFullscreen: function(){ return false; }
+    isEnabled: function(){ return zoomEnabled; },
+    setEnabled: function(v){
+      zoomEnabled = !!v;
+      if (!zoomEnabled && isFullscreen){
+        exitFullscreen();
+      }
+    },
+    resetView: function(){
+      if (isFullscreen){
+        smoothZoomOutAndExit();
+      } else {
+        resetViewLocal();
+      }
+    },
+    isFullscreen: function(){ return isFullscreen; }
   };
 
   // ---------- load SGF (local file) ----------
@@ -1509,7 +2050,9 @@ hook('jbtnBack', function(){
       if (txt.charCodeAt && txt.charCodeAt(0)===0xFEFF) txt = txt.slice(1);
       var parsed = parseGameTree(txt, txt.indexOf('('));
       var rootSeq = parsed.seq && parsed.seq.length ? parsed.seq : [];
-      if (!rootSeq.length){ hasSGF=false; freeMode=false; redraw(); updateDesc(); updatePassButtonState(); return; }
+      if (!rootSeq.length){
+        hasSGF=false; freeMode=false; redraw(); updateDesc(); updatePassButtonState(); return;
+      }
       linkify(rootSeq, null);
       sgfRootSeq = rootSeq;
       extractRoot(rootSeq);
