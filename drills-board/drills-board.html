@@ -1179,8 +1179,9 @@ if (!window.StoneSFX) {
     const firstY = getYcss(0);
     const lastY  = getYcss(SIZE - 1);
 
-    const spacingX = SIZE > 1 ? Math.abs(getXcss(1) - firstX) : 0;
-    const spacingY = SIZE > 1 ? Math.abs(getYcss(1) - firstY) : 0;
+const spacingX = SIZE > 1 ? Math.abs(getXcss(1) - firstX) : 0;
+const spacingY = SIZE > 1 ? Math.abs(getYcss(1) - firstY) : 0;
+
     const halfX = (spacingX || spacingY || 16) * 0.5;
     const halfY = (spacingY || spacingX || 16) * 0.5;
 
@@ -1200,12 +1201,14 @@ if (!window.StoneSFX) {
     cancelFling();
     e.preventDefault();
 
-    const rect = mount.getBoundingClientRect();
-    const sx = e.clientX - rect.left;
-    const sy = e.clientY - rect.top;
+const rect = mount.getBoundingClientRect();
+const sx = e.clientX - rect.left;
+const sy = e.clientY - rect.top;
 
-    const boardX = (sx + offsetX) / scale;
-    const boardY = (sy + offsetY) / scale;
+// screen → board: s = scale * (p - offset)  =>  p = s/scale + offset
+const boardX = sx / scale + offsetX;
+const boardY = sy / scale + offsetY;
+
 
     const bounds = getBoardBounds();
 
