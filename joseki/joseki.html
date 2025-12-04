@@ -209,15 +209,16 @@ body {
   }
   </style>
 
-  <style>
-    /* In-app "Back to menu" dialog (slate/blue skin) */
+   <style>
+    /* In-app "Back to menu" dialog – same layout as Practice Board notifications */
+
     #menu-confirm-overlay{
       position:fixed;
       inset:0;
       display:none;
       align-items:center;
       justify-content:center;
-      background:rgba(15,23,42,.78);
+      background:rgba(0,0,0,.55);
       z-index:99999;
       -webkit-tap-highlight-color:transparent;
     }
@@ -225,62 +226,144 @@ body {
       display:flex;
     }
 
-    .menu-confirm-dialog{
-      width:min(92vw,360px);
-      border-radius:16px;
-      padding:18px 16px 14px;
-      background:#020617;
-      border:1px solid rgba(148,163,184,.75);
-      box-shadow:0 18px 40px rgba(15,23,42,.7);
-      color:#e5edff;
-      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-    }
+    /* Typography and layout inside the card */
     .menu-confirm-title{
       font-size:18px;
-      font-weight:700;
-      margin-bottom:6px;
+      font-weight:800;
+      margin-bottom:8px;
     }
     .menu-confirm-text{
-      font-size:14px;
-      opacity:.9;
-      margin-bottom:12px;
+      margin-bottom:14px;
     }
     .menu-confirm-actions{
       display:flex;
       gap:10px;
-      margin-top:4px;
+      justify-content:center;
+      flex-wrap:wrap;
+      margin-top:10px;
     }
 
-    .mc-btn{
+    /* Shared notification card background (same as Practice Board) */
+    .notif-card{
+      position:relative;
+      z-index:1;
+
+      border-radius:10px;
+      border:1px solid #e2e8f0;
+      box-shadow:0 12px 28px rgba(15,23,42,.18);
+
+      padding:16px;
+      text-align:center;
+      font-family:system-ui,Segoe UI,Arial,sans-serif;
+      color:#fff3cf;
+
+      background-image:
+        linear-gradient(
+          to bottom,
+          rgba(0,0,0,.10),
+          rgba(0,0,0,.25)
+        ),
+        url('../img/notification.jpg');
+      background-size:cover;
+      background-position:center;
+      background-repeat:no-repeat;
+    }
+    .notif-card > div{
+      color:inherit !important;
+    }
+
+    /* Notification action row helper (same as Practice Board) */
+    .notif-actions{
+      margin-top:10px;
+      display:flex;
+      gap:10px;
+      justify-content:center;
+      flex-wrap:wrap;
+    }
+
+    /* Wood-style buttons inside notifications – same look as Practice Board .pbtn */
+    .notif-actions .pbtn,
+    .notif-actions .pbtn-strong,
+    .notif-actions .pbtn-alt{
+      position:relative;
+      min-width:90px;
+      padding:8px 24px;
+
       flex:1 1 0;
-      padding:10px 12px;
-      border-radius:999px;
-      border:1px solid rgba(148,163,184,.9);
-      font-size:14px;
-      font-weight:600;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      box-sizing:border-box;
+      text-align:center;
+
+      border-radius:10px;
+      border:1px solid rgba(255,255,255,.40);
+
+      font-size:16px;
+      font-weight:800;
+      line-height:1.1;
+      color:#fff3cf;
+      text-shadow:0 1px 0 rgba(120,60,20,.7);
       cursor:pointer;
-      background:rgba(15,23,42,.9);
-      color:#e5edff;
+
+      user-select:none;
+      -webkit-user-select:none;
+      -moz-user-select:none;
+      -ms-user-select:none;
       -webkit-tap-highlight-color:transparent;
-      transition:background .12s, transform .06s, box-shadow .12s;
-    }
-    .mc-btn:active{
-      transform:translateY(1px);
+
+      background-image:
+        linear-gradient(
+          to bottom,
+          rgba(255,255,255,.12),
+          rgba(255,255,255,.03) 38%,
+          rgba(0,0,0,.14) 100%
+        ),
+        url('../img/wood.jpg');
+      background-size:100% 100%, cover;
+      background-position:center;
+      background-repeat:no-repeat;
+
+      filter:brightness(1.08) saturate(.96);
+
+      box-shadow:
+        0 3px 0 rgba(133,74,26,.85),
+        0 8px 14px rgba(0,0,0,.45);
+
+      transition:
+        transform .08s ease-out,
+        box-shadow .08s ease-out,
+        filter .12s ease-out;
     }
 
-    .mc-btn-primary{
-      background:rgba(37,99,235,.26);
-      border-color:rgba(37,99,235,.85);
-      box-shadow:0 8px 20px rgba(15,23,42,.65), inset 0 0 0 1px rgba(255,255,255,.05);
-    }
-    .mc-btn-primary:hover{
-      background:rgba(37,99,235,.32);
+    .notif-actions .pbtn:hover,
+    .notif-actions .pbtn-strong:hover,
+    .notif-actions .pbtn-alt:hover{
+      filter:brightness(1.12) saturate(.98);
+      transform:translateY(-1px);
+      box-shadow:
+        0 4px 0 rgba(133,74,26,.9),
+        0 10px 16px rgba(0,0,0,.48);
     }
 
-    .mc-btn-secondary{
-      background:rgba(15,23,42,.85);
+    .notif-actions .pbtn:active,
+    .notif-actions .pbtn-strong:active,
+    .notif-actions .pbtn-alt:active{
+      filter:brightness(.97) saturate(.96);
+      transform:translateY(2px);
+      box-shadow:
+        0 1px 0 rgba(120,60,20,.9),
+        0 4px 8px rgba(0,0,0,.55);
+    }
+
+    .notif-actions .pbtn:focus-visible,
+    .notif-actions .pbtn-strong:focus-visible,
+    .notif-actions .pbtn-alt:focus-visible{
+      outline:2px solid rgba(255,255,255,.9);
+      outline-offset:2px;
     }
   </style>
+
 
 </head>
 <body>
@@ -303,7 +386,7 @@ body {
              line-height:1.6;font-size:15px;text-align:center;
              scrollbar-width:none;
              cursor:grab;">
-        <div id="descText">Move description will appear here.</div>
+        <div id="descText"></div>
       </div>
     </div>
 
@@ -319,19 +402,26 @@ body {
 </div>
 
 
-<!-- In-app "Back to menu" confirmation -->
+<!-- In-app "Back to menu" confirmation – same layout as Practice Board -->
 <div id="menu-confirm-overlay" aria-hidden="true">
-  <div class="menu-confirm-dialog" role="dialog" aria-modal="true" aria-labelledby="menuConfirmTitle">
-    <div class="menu-confirm-title" id="menuConfirmTitle">Back to menu?</div>
+  <div class="menu-confirm-dialog notif-card"
+       style="width:min(86vw,420px);"
+       role="dialog"
+       aria-modal="true"
+       aria-labelledby="menuConfirmTitle">
+    <div class="menu-confirm-title" id="menuConfirmTitle">
+      Back to menu?
+    </div>
     <div class="menu-confirm-text">
       Do you want to leave this joseki view and return to the main menu?
     </div>
-    <div class="menu-confirm-actions">
-      <button type="button" id="menuConfirmCancel" class="mc-btn mc-btn-secondary">Stay here</button>
-      <button type="button" id="menuConfirmOk" class="mc-btn mc-btn-primary">Yes, go to menu</button>
+    <div class="menu-confirm-actions notif-actions">
+      <button type="button" id="menuConfirmCancel" class="pbtn">Stay here</button>
+      <button type="button" id="menuConfirmOk" class="pbtn">Yes, go to menu</button>
     </div>
   </div>
 </div>
+
 
 <!-- Simple click sound (local file) -->
 <script>
