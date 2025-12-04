@@ -14,25 +14,23 @@
     font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   }
 
-  /* Page wood background (no flex here anymore) */
-/* Page wood background + centering */
-body {
-  background-image:
-    linear-gradient(rgba(0,0,0,.35), rgba(0,0,0,.45)),
-    url('../img/wood.jpg');
-  background-size: cover;
-  background-position: center;
-  background-repeat: no-repeat;
-  background-attachment: fixed;
+  /* Page wood background + centering */
+  body {
+    background-image:
+      linear-gradient(rgba(0,0,0,.35), rgba(0,0,0,.45)),
+      url('../img/wood.jpg');
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    background-attachment: fixed;
 
-  /* center the whole joseki block */
-  display: flex;
-  align-items: center;      /* vertical center */
-  justify-content: center;  /* horizontal center */
-  padding: 16px 0;
-  box-sizing: border-box;
-}
-
+    /* center the whole joseki block */
+    display: flex;
+    align-items: center;      /* vertical center */
+    justify-content: center;  /* horizontal center */
+    padding: 16px 0;
+    box-sizing: border-box;
+  }
 
   /* Simple wrapper inside the centered body */
   #page-wrap {
@@ -592,7 +590,8 @@ body.bg-wood [class*="blur"]{
 
   // ---------- state ----------
   var board = new WGo.Board(mount, { size: SIZE });
-  // Wood texture under the board (replaces old zoomLayer background)
+
+  // Wood texture under the board
   mount.style.backgroundImage = "url('../img/wood.jpg')";
   mount.style.backgroundSize = "cover";
   mount.style.backgroundPosition = "center";
@@ -603,14 +602,112 @@ body.bg-wood [class*="blur"]{
   var current = 0;
   var turn    = B;  // side to move
 
-  // Simple responsive sizing (no zoom, no fullscreen)
+  // --- simple zoom shell (first-click zoom, no buttons / no settings) ---
+  var zoomEnabled   = true;   // always on for now
+  var isZoomed      = false;
+  var zoomScale     = 1;
+  var zoomOffsetX   = 0;
+  var zoomOffsetY   = 0;
+  var zoomLayer     = null;
+  var baseBoardSize = 0;
+  var lastTapClientX = null;
+  var lastTapClientY = null;
+
+  function ensureZoomShell(){
+    if (zoomLayer) return;
+
+    mount.style.position = 'relative';
+    mount.style.overflow = 'hidden';
+
+    zoomLayer = document.createElement('div');
+    zoomLayer.style.position = 'absolute';
+    zoomLayer.style.left = '0px';
+    zoomLayer.style.top  = '0px';
+    zoomLayer.style.width  = '100%';
+    zoomLayer.style.height = '100%';
+    zoomLayer.style.transformOrigin = '0 0';
+    zoomLayer.style.willChange = 'transform';
+    zoomLayer.style.transition = 'transform .22s ease-out';
+
+    while (mount.firstChild){
+      zoomLayer.appendChild(mount.firstChild);
+    }
+    mount.appendChild(zoomLayer);
+
+    // keep same wood under the canvas
+    zoomLayer.style.backgroundImage = "url('../img/wood.jpg')";
+    zoomLayer.style.backgroundSize = "cover";
+    zoomLayer.style.backgroundPosition = "center";
+    zoomLayer.style.backgroundRepeat = "no-repeat";
+  }
+  ensureZoomShell();
+
+  function applyZoom(){
+    if (!zoomLayer) return;
+    if (!isZoomed){
+      zoomScale   = 1;
+      zoomOffsetX = 0;
+      zoomOffsetY = 0;
+    }
+    zoomLayer.style.transform =
+      'translate3d(' + (-zoomOffsetX) + 'px,' + (-zoomOffsetY) + 'px,0) scale(' + zoomScale + ')';
+  }
+
+  function zoomInAtGrid(x, y){
+    if (!zoomEnabled || isZoomed) return;
+    if (!zoomLayer) ensureZoomShell();
+
+    var rect = mount.getBoundingClientRect();
+    var sx = (lastTapClientX != null ? lastTapClientX - rect.left : rect.width / 2);
+    var sy = (lastTapClientY != null ? lastTapClientY - rect.top  : rect.height / 2);
+
+    // clamp anchor inside board rect
+    if (sx < 0 || sx > rect.width || sy < 0 || sy > rect.height){
+      sx = rect.width / 2;
+      sy = rect.height / 2;
+    }
+
+    var px = board.getX(x);
+    var py = board.getY(y);
+
+    var target = 2.3;
+    if (rect.width < 480) target = 2.6;
+    if (rect.width > 720) target = 2.0;
+    zoomScale = target;
+    zoomOffsetX = px * zoomScale - sx;
+    zoomOffsetY = py * zoomScale - sy;
+
+    isZoomed = true;
+    applyZoom();
+  }
+
+  function zoomOut(){
+    if (!isZoomed) return;
+    isZoomed = false;
+    applyZoom();
+  }
+
+  // track last pointer position so zoom can keep the tapped point under the finger
+  mount.addEventListener('pointerdown', function(e){
+    if (e.pointerType && e.pointerType !== 'touch' && e.pointerType !== 'mouse') return;
+    lastTapClientX = e.clientX;
+    lastTapClientY = e.clientY;
+  });
+
+  // Simple responsive sizing (also keeps zoom shell in sync)
   function fitBoard(){
     var w = mount.clientWidth || 400;
     w = Math.floor(w);
     if (w % 2) w--;
     if (w <= 0) return;
+    baseBoardSize = w;
     board.setWidth(w);
     mount.style.height = w + 'px';
+    if (zoomLayer){
+      zoomLayer.style.width  = w + 'px';
+      zoomLayer.style.height = w + 'px';
+    }
+    applyZoom();
   }
   window.addEventListener('resize', fitBoard);
   window.addEventListener('orientationchange', function(){ setTimeout(fitBoard, 200); });
@@ -1001,7 +1098,7 @@ function redraw(){
     updatePassButtonState();
   }
 
-  // ---------- SGF parsing ----------
+  // ---------- SGF parsing ---------->
   function readBracket(str, i){
     var out='', k=i;
     while(k<str.length){
@@ -1326,24 +1423,62 @@ function redraw(){
   function gotoPrev (){ if (!currentNode) return; currentNode = currentNode.prev || null; buildPositionTo(currentNode); }
   function gotoNext (){ var cand = getNextCandidates(currentNode); if (!cand.length) return; currentNode = cand[0].node; buildPositionTo(currentNode); }
 
-  // No zoom logic in click handler anymore
+  // click handling with first-click zoom
   board.addEventListener('click', function(x,y){
+    // helper to find joseki candidate at (x,y)
+    function findCandidateAt(x,y, list){
+      for (var i=0;i<list.length;i++){
+        if (list[i].xy.x === x && list[i].xy.y === y) return list[i];
+      }
+      return null;
+    }
+
     if (hasSGF && !freeMode){
-      var opts = getTurnCandidates(currentNode); // filtered by turn
-      for (var i=0;i<opts.length;i++){
-        if (opts[i].xy.x===x && opts[i].xy.y===y){
-          currentNode = opts[i].node;
+      var opts = getTurnCandidates(currentNode); // SGF candidates for side to move
+
+      if (isZoomed){
+        // second tap while zoomed: try to play a joseki move, then auto-zoom out
+        var cand2 = findCandidateAt(x,y, opts);
+        if (cand2){
+          currentNode = cand2.node;
+          buildPositionTo(currentNode);
+          zoomOut();
+          try { if (soundEnabled && window.StoneSFX && StoneSFX.play) StoneSFX.play(); } catch(e){}
+          return;
+        } else {
+          // tapped non-candidate while zoomed: leave zoom and fall back to normal logic
+          zoomOut();
+        }
+      } else {
+        // not zoomed yet: first tap on a candidate just zooms in
+        var cand1 = findCandidateAt(x,y, opts);
+        if (cand1 && zoomEnabled){
+          zoomInAtGrid(x,y);
+          return;
+        }
+        // if zoom were disabled, clicking candidate would immediately play (keep behaviour)
+        if (cand1){
+          currentNode = cand1.node;
           buildPositionTo(currentNode);
           try { if (soundEnabled && window.StoneSFX && StoneSFX.play) StoneSFX.play(); } catch(e){}
           return;
         }
       }
-  if (grid[y][x] !== null) return;
-  freeMode = true;
-  josekiAnchor = currentNode;
-  josekiAnchorIndex = current;   // how many moves were on the board when we diverged
-}
 
+      // Reaching here: either
+      // - clicked a non-candidate (normal behaviour: go to free-play), or
+      // - clicked non-candidate after zoom and we just exited zoom.
+      if (grid[y][x] !== null) return;
+      freeMode = true;
+      josekiAnchor = currentNode;
+      josekiAnchorIndex = current;   // how many moves were on the board when we diverged
+    }
+
+    // free play / no SGF: play stone in normal view
+    if (isZoomed){
+      // for free-play, always return to full board
+      zoomOut();
+    }
 
     if (current < history.length) history.splice(current);
     var r = attemptPlay(x,y,turn);
@@ -1417,10 +1552,12 @@ hook('jbtnBack', function(){
   hook('jbtnReset',   function(){
     if (hasSGF) {
       freeMode=false; josekiAnchor=null; currentNode=null;
+      zoomOut();
       buildPositionTo(null);
     } else {
       current=0;
       rebuildFromHistory();
+      zoomOut();
     }
   });
 
@@ -1477,6 +1614,7 @@ hook('jbtnBack', function(){
   window.JosekiBoard = window.JosekiBoard || {};
   window.JosekiBoard.reset = function(){
     freeMode = false; josekiAnchor = null; currentNode = null; current = 0; history.length = 0;
+    zoomOut();
     buildPositionTo(null);
     try { document.getElementById('desc-box').scrollTop = 0; } catch(e){}
     try { window.dispatchEvent(new Event('resize')); } catch(e){}
@@ -1542,6 +1680,3 @@ hook('jbtnBack', function(){
 
 </body>
 </html>
-
-
-
