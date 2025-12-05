@@ -1,0 +1,890 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Joseki Master – Clean Board</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+  <style>
+    html, body{
+      margin:0; padding:0; height:100%;
+      overflow: hidden; 
+      font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+      background-color:#1b1208;
+      touch-action: none;
+    }
+
+    #core-root{
+      --wood:url('../img/wood.jpg'); 
+      position: absolute; inset: 0;
+      display:flex; align-items:center; justify-content:center;
+      background-color:#1b1208;
+      background-image: linear-gradient(rgba(0,0,0,.35), rgba(0,0,0,.45)), var(--wood);
+      background-size:cover; background-position:center;
+    }
+
+    #core-inner{ width:min(92vw, 720px); margin:0 auto; z-index: 1; pointer-events: none; }
+    #core-board-wrap{ width:100%; max-width:720px; margin:0 auto; position: relative; pointer-events: auto; }
+
+    #core-board{
+      position:relative; width:100%;
+      border-radius:10px; overflow:hidden; 
+      margin:0 auto;
+      box-shadow: 0 18px 40px rgba(0,0,0,.32), 0 6px 16px rgba(0,0,0,.22);
+      background:none; 
+      touch-action: none; user-select: none; -webkit-user-select: none;
+      transform-origin: 0 0;
+    }
+
+    /* ZOOM OUT BUTTON - MATCHING REFERENCE EXACTLY */
+    #zoom-exit-btn{
+      position:fixed;
+      left:14px;
+      bottom:90px;
+      
+      width:120px;
+      height:80px;
+      border-radius:9px;
+      
+      background:rgba(148,163,184,.35);
+      border:1px solid rgba(148,163,184,.85);
+      box-shadow:0 6px 16px rgba(0,0,0,.55);
+      
+      display:none; /* toggled in JS */
+      cursor:pointer;
+      z-index:99999;
+      
+      backdrop-filter:blur(2px);
+      -webkit-tap-highlight-color:transparent;
+      
+      color:#e5e7eb;
+      font-size:18px;
+      font-weight:600;
+      
+      /* Flex to center text */
+      align-items:center;
+      justify-content:center;
+    }
+    /* Text Content */
+    #zoom-exit-btn::after { content: ""; }
+
+    #core-board.is-fullscreen {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100vw !important;
+      height: 100vh !important;
+      border-radius: 0 !important;
+      box-shadow: none !important;
+      z-index: 9999;
+      margin: 0;
+    }
+  </style>
+
+  <script>
+    (function ensureWGo(){
+      if (window.WGo) return;
+      var s = document.createElement('script');
+      s.src = "https://3d85c7a311526e02aeeeb19e952d0c09.cdn.bubble.io/f1754893285939x971907393576095400/wgo.min.js";
+      s.async = true;
+      document.head.appendChild(s);
+    })();
+  </script>
+
+  <script>
+  (function(){
+    var STORAGE_KEY = 'go_prefs';
+    var GoPrefs = (window.GoPrefs = window.GoPrefs || {});
+    try {
+      var saved = localStorage.getItem(STORAGE_KEY);
+      if (saved) Object.assign(GoPrefs, JSON.parse(saved) || {});
+    } catch (e) {}
+    
+    if (typeof GoPrefs.josekiZoom === 'undefined')         GoPrefs.josekiZoom = true;
+    if (typeof GoPrefs.soundOn === 'undefined')            GoPrefs.soundOn = true;
+    if (typeof GoPrefs.highlightLast === 'undefined')      GoPrefs.highlightLast = true;
+    if (typeof GoPrefs.disableAutoZoomOut === 'undefined') GoPrefs.disableAutoZoomOut = false;
+    
+    window.GoPrefsSave = function(){ try { localStorage.setItem(STORAGE_KEY, JSON.stringify(GoPrefs)); } catch (e) {} };
+  })();
+  </script>
+
+  <script>
+  if (!window.StoneSFX) {
+    window.StoneSFX = (() => {
+      let pool = [], i = 0;
+      function init(url, voices = 5){
+        pool = Array.from({ length: voices }, () => {
+          const a = new Audio(url); a.preload = 'auto'; a.volume = 0.35; return a;
+        });
+        const unlock = () => {
+          pool.forEach(a => { try{ a.play().then(()=>a.pause()).catch(()=>{}); a.currentTime=0; }catch(e){} });
+          window.removeEventListener('touchstart', unlock); window.removeEventListener('mousedown', unlock);
+        };
+        window.addEventListener('touchstart', unlock, { once:true });
+        window.addEventListener('mousedown', unlock, { once:true });
+      }
+      function play(){
+        if (!pool.length) return;
+        const a = pool[i++ % pool.length];
+        try { a.currentTime=0; a.playbackRate=0.97+Math.random()*0.06; a.play(); } catch(e){}
+      }
+      return { init, play };
+    })();
+  }
+  if (!window._stoneSFXInit) { StoneSFX.init("../sound/click.mp3"); window._stoneSFXInit = true; }
+  
+  (function(){
+    if (!window.StoneSFX || window._soundBridgeReady) return;
+    window._soundBridgeReady = true;
+    if (typeof StoneSFX.play === 'function' && !('_enabled' in StoneSFX)){
+      StoneSFX._enabled = (window.GoPrefs ? !!window.GoPrefs.soundOn : true);
+      const _origPlay = StoneSFX.play.bind(StoneSFX);
+      StoneSFX.play = function(){ if (StoneSFX._enabled) _origPlay(); };
+    }
+  })();
+  </script>
+</head>
+<body>
+
+<div id="core-root">
+  <div id="core-inner">
+    <div id="core-board-wrap">
+      <div id="core-board"></div>
+    </div>
+  </div>
+</div>
+
+<div id="zoom-exit-btn"></div>
+
+<script>
+(function(){
+  var SIZE  = 19;
+  var mount = document.getElementById('core-board');
+  var wrap  = document.getElementById('core-board-wrap');
+  var exitBtn = document.getElementById('zoom-exit-btn');
+  var board = null;
+
+  // Zoom Engine State
+  var scale = 1, minScale = 1, maxScale = 2.6;
+  var offsetX = 0, offsetY = 0;
+  var baseW = 0; 
+  var zoomLayer = null;
+  var isFullscreen = false;
+  var isZoomAnimating = false;
+  var animId = 0;
+  var returnAnchor = null; 
+
+  var isPanning = false, panStart = null, tapStart = null;
+  var TAP_SLOP2 = 64; 
+  var isFlinging = false, flingId = 0, flingVX = 0, flingVY = 0, flingLastTime = 0;
+  var panSamplePrev = null, panSampleCurr = null;
+
+  // Game State
+  var grid = Array.from({ length: SIZE }, () => Array(SIZE).fill(null));
+  var turn = 'B';
+  var lastMove = null;
+  var koPoint = null; // {x,y} where immediate recapture is forbidden (simple ko)
+
+  // Settings (Loaded from GoPrefs)
+  var zoomEnabled = (window.GoPrefs && typeof window.GoPrefs.josekiZoom !== 'undefined') ? !!window.GoPrefs.josekiZoom : true;
+  var highlightLastEnabled = (window.GoPrefs && typeof window.GoPrefs.highlightLast !== 'undefined') ? !!window.GoPrefs.highlightLast : true;
+  var disableAutoZoomOut = (window.GoPrefs && typeof window.GoPrefs.disableAutoZoomOut !== 'undefined') ? !!window.GoPrefs.disableAutoZoomOut : false;
+  
+  // Listen for Settings Changes
+  window.addEventListener('go:prefs-changed', function(e){
+    var d = e.detail || {};
+    if (!d || typeof d.key === 'undefined') return;
+
+    if (d.key === 'highlightLast') {
+      highlightLastEnabled = !!d.value;
+      try { redrawBoard(); } catch(_) {}
+    } else if (d.key === 'josekiZoom') {
+      zoomEnabled = !!d.value;
+      if (!zoomEnabled && (isFullscreen || scale > 1)) {
+         smoothZoomOutAndExit();
+      }
+    } else if (d.key === 'soundOn') {
+       if (window.StoneSFX) StoneSFX._enabled = !!d.value;
+    } else if (d.key === 'disableAutoZoomOut') {
+      disableAutoZoomOut = !!d.value;
+    }
+  });
+
+  // --- 1. SETUP DOM ---
+
+  function ensureZoomLayer(){
+    if (zoomLayer) return;
+    
+    zoomLayer = document.createElement('div');
+    zoomLayer.style.position = 'absolute';
+    zoomLayer.style.left = '0px';
+    zoomLayer.style.top = '0px';
+    zoomLayer.style.transformOrigin = '0 0';
+    zoomLayer.style.willChange = 'transform';
+    
+    while (mount.firstChild) zoomLayer.appendChild(mount.firstChild);
+    mount.appendChild(zoomLayer);
+    
+    zoomLayer.style.backgroundImage = "url('../img/wood.jpg')";
+    zoomLayer.style.backgroundSize = "cover";
+    zoomLayer.style.backgroundPosition = "center";
+    mount.style.background = "none"; 
+  }
+
+  /* Page background helper (wood) - from reference */
+  (function(){
+    if (!document.getElementById('site-bg-wood')){
+        var css = `
+        :root{ --wood-url: url('../img/wood.jpg'); }
+        html.bg-wood, body.bg-wood{
+            background-image: linear-gradient(rgba(0,0,0,.35), rgba(0,0,0,.45)), var(--wood-url);
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            background-attachment: fixed;
+            min-height:100%;
+        }
+        html.no-wood, body.no-wood{ background: none !important; }
+        `;
+        var st = document.createElement('style');
+        st.id = 'site-bg-wood';
+        st.textContent = css;
+        document.head.appendChild(st);
+    }
+    function addBG(){
+        document.documentElement.classList.remove('no-wood');
+        document.body.classList.remove('no-wood');
+        document.documentElement.classList.add('bg-wood');
+        document.body.classList.add('bg-wood');
+    }
+    function removeBG(){
+        document.documentElement.classList.remove('bg-wood');
+        document.body.classList.remove('bg-wood');
+        document.documentElement.classList.add('no-wood');
+        document.body.classList.add('no-wood');
+    }
+    window.PageBG = window.PageBG || { add: addBG, remove: removeBG };
+  })();
+
+  // --- 2. ZOOM ENGINE ---
+
+  function canvasCssScale(){
+    var c = mount.querySelector('canvas');
+    if (!c) return 1;
+    var cssW = c.clientWidth || c.getBoundingClientRect().width || 0;
+    var intW = c.width || 0;
+    if (!cssW || !intW) return 1;
+    return cssW / intW;
+  }
+
+  function getXcss(i){ return board.getX(i) * canvasCssScale(); }
+  function getYcss(j){ return board.getY(j) * canvasCssScale(); }
+
+  function viewportSize(){
+    return { vw: mount.clientWidth, vh: mount.clientHeight };
+  }
+
+  function clampPan(){
+    if (isZoomAnimating) return;
+    const {vw, vh} = viewportSize();
+    const bw = Math.round(baseW * scale);
+    const bleedX = Math.ceil(vw * 0.5); 
+    const bleedY = Math.ceil(vh * 0.5);
+    const minOX = -bleedX;
+    const maxOX = Math.max(0, bw - vw) + bleedX;
+    const minOY = -bleedY;
+    const maxOY = Math.max(0, bw - vh) + bleedY;
+    
+    offsetX = Math.max(minOX, Math.min(offsetX, maxOX));
+    offsetY = Math.max(minOY, Math.min(offsetY, maxOY));
+  }
+
+  function applyPanAndSize(redrawAfter){
+    const targetW = baseW;
+    
+    if (board && board._lastW !== targetW) {
+      board.setWidth(targetW);
+      if (zoomLayer) {
+        zoomLayer.style.width = targetW + 'px';
+        zoomLayer.style.height = targetW + 'px';
+      }
+      board._lastW = targetW;
+      if (!redrawAfter) redrawAfter = true;
+    }
+
+    clampPan();
+
+    if (zoomLayer) {
+      zoomLayer.style.transform = 
+        'translate3d(' + (-offsetX) + 'px,' + (-offsetY) + 'px,0) scale(' + scale + ')';
+    }
+    
+    if (redrawAfter) redrawBoard();
+  }
+
+  function animateTo(targetScale, pxWorld, pyWorld, sxTarget, syTarget, onDone){
+    targetScale = Math.max(minScale, Math.min(maxScale, targetScale));
+    cancelFling();
+    
+    const s0 = scale;
+    const ox0 = offsetX;
+    const oy0 = offsetY;
+    
+    const t0 = performance.now();
+    const dur = 300; 
+    
+    cancelAnimationFrame(animId);
+    isZoomAnimating = true;
+    
+    const targetOffsetX = (pxWorld * targetScale) - sxTarget;
+    const targetOffsetY = (pyWorld * targetScale) - syTarget;
+
+    (function step(now){
+      let t = (now - t0) / dur;
+      if (t > 1) t = 1;
+      const e = 1 - Math.pow(1 - t, 3); 
+      
+      scale = s0 + (targetScale - s0) * e;
+      offsetX = ox0 + (targetOffsetX - ox0) * e;
+      offsetY = oy0 + (targetOffsetY - oy0) * e;
+      
+      applyPanAndSize(false);
+      
+      if (t < 1){
+        animId = requestAnimationFrame(step);
+      } else {
+        isZoomAnimating = false;
+        applyPanAndSize(true);
+        if (typeof onDone === 'function') onDone();
+      }
+    })(t0);
+  }
+
+  function enterFullscreenAtGrid(i, j, tapClientX, tapClientY){
+    if (isFullscreen) return;
+    cancelFling();
+
+    if (window.PageBG && typeof PageBG.add === 'function') PageBG.add();
+
+    returnAnchor = document.createElement('div');
+    returnAnchor.style.width = mount.clientWidth + 'px';
+    returnAnchor.style.height = mount.clientHeight + 'px';
+    mount.parentNode.insertBefore(returnAnchor, mount);
+
+    document.body.appendChild(mount);
+    mount.classList.add('is-fullscreen');
+    isFullscreen = true;
+    exitBtn.style.display = 'flex';
+
+    mount.style.width = '100vw';
+    mount.style.height = '100vh';
+
+    scale = 1; offsetX = 0; offsetY = 0;
+    
+    const vw = window.innerWidth;
+    const vh = window.innerHeight;
+    baseW = Math.floor(Math.min(vw, vh));
+    if (baseW % 2) baseW--;
+    
+    requestAnimationFrame(function(){
+      applyPanAndSize(true);
+      
+      const initialFactor = 2.4; 
+      const px_curr = getXcss(i); 
+      const py_curr = getYcss(j);
+      
+      const rect = mount.getBoundingClientRect();
+      let sx = rect.width / 2;
+      let sy = rect.height / 2;
+      
+      if (typeof tapClientX === 'number' && typeof tapClientY === 'number'){
+        sx = tapClientX - rect.left;
+        sy = tapClientY - rect.top;
+      }
+      
+      offsetX = px_curr * 1.0 - sx;
+      offsetY = py_curr * 1.0 - sy;
+      applyPanAndSize(false);
+
+      animateTo(initialFactor, px_curr, py_curr, sx, sy);
+    });
+  }
+
+  function exitFullscreen(){
+    cancelFling();
+    cancelAnimationFrame(animId);
+    isZoomAnimating = false;
+
+    mount.classList.remove('is-fullscreen');
+    exitBtn.style.display = 'none';
+    isFullscreen = false;
+    
+    if (window.PageBG && typeof PageBG.remove === 'function') PageBG.remove();
+
+    if (returnAnchor && returnAnchor.parentNode){
+      returnAnchor.parentNode.insertBefore(mount, returnAnchor);
+      returnAnchor.parentNode.removeChild(returnAnchor);
+      returnAnchor = null;
+    }
+
+    mount.style.width = '';
+    mount.style.height = '';
+    
+    fitBoard(); 
+    resetViewLocal();
+  }
+
+  function resetViewLocal(){
+    scale = 1; offsetX = 0; offsetY = 0;
+    applyPanAndSize(true);
+  }
+
+  function smoothZoomOutAndExit(){
+    if (!zoomEnabled) return;
+
+    cancelFling();
+    cancelAnimationFrame(animId);
+    isZoomAnimating = false;
+
+    scale   = 1;
+    offsetX = 0;
+    offsetY = 0;
+
+    applyPanAndSize(true); 
+
+    if (isFullscreen){
+      exitFullscreen();
+    }
+  }
+  
+  window.PracticeZoom = {
+      isEnabled(){ return zoomEnabled; },
+      setEnabled(v){ zoomEnabled = !!v; if (!zoomEnabled) { if (isFullscreen) exitFullscreen(); else resetViewLocal(); } },
+      resetView: function(){ if (isFullscreen) exitFullscreen(); else resetViewLocal(); },
+      isFullscreen: function(){ return isFullscreen; }
+  };
+
+ function bindClicks(){
+    // Helper: Calculate the visual distance between grid lines
+    function getGridSpacing(){
+        // Get visual coordinates of line 0 and line 1 to determine spacing
+        var sX = Math.abs(getXcss(1) - getXcss(0));
+        var sY = Math.abs(getYcss(1) - getYcss(0));
+        return { x: sX, y: sY };
+    }
+
+    mount.addEventListener('pointerdown', function(e){
+      if (!zoomEnabled) return;
+      if (e.pointerType !== 'touch' && e.button !== 0) return;
+      cancelFling();
+      
+      const r = mount.getBoundingClientRect();
+      const sx = e.clientX - r.left;
+      const sy = e.clientY - r.top;
+      
+      const boardX = (sx + offsetX) / scale;
+      const boardY = (sy + offsetY) / scale;
+      
+      // 1. Find closest point
+      let bestI = -1, bestJ = -1, bestDx = 1e9, bestDy = 1e9;
+      for (let i = 0; i < SIZE; i++){
+        const dx = Math.abs(getXcss(i) - boardX);
+        if (dx < bestDx){ bestDx = dx; bestI = i; }
+      }
+      for (let j = 0; j < SIZE; j++){
+        const dy = Math.abs(getYcss(j) - boardY);
+        if (dy < bestDy){ bestDy = dy; bestJ = j; }
+      }
+
+      // 2. NEW: Threshold Check
+      // If the click is further than 50% of a cell size away from the line,
+      // it means we clicked in the gutter/border.
+      const spacing = getGridSpacing();
+      const limitX = spacing.x * 0.5; 
+      const limitY = spacing.y * 0.5;
+
+      // Initialize panStart immediately so dragging works even on the border
+      panStart = { x: e.clientX, y: e.clientY, ox: offsetX, oy: offsetY };
+      panSamplePrev = panSampleCurr = null;
+      try { mount.setPointerCapture(e.pointerId); } catch(_){}
+
+      // 3. If outside valid grid area, do NOT set tapStart.
+      // This prevents the "pointerup" from triggering Zoom or Stone Placement.
+      if (bestDx > limitX || bestDy > limitY) {
+          tapStart = null; 
+          return;
+      }
+
+      tapStart = { x: e.clientX, y: e.clientY, ox: offsetX, oy: offsetY, gridI: bestI, gridJ: bestJ };
+    }, {passive:false});
+
+    mount.addEventListener('pointermove', function(e){
+      if (!zoomEnabled) return;
+      if (!panStart) return;
+      if (scale <= 1.01 && !isFullscreen) return;
+
+      const dx = e.clientX - panStart.x;
+      const dy = e.clientY - panStart.y;
+      
+      if (!isPanning && (dx*dx + dy*dy > TAP_SLOP2)) isPanning = true;
+      
+      if (isPanning) {
+        offsetX = panStart.ox - dx;
+        offsetY = panStart.oy - dy;
+        applyPanAndSize(false);
+        e.preventDefault();
+        
+        const now = performance.now();
+        panSamplePrev = panSampleCurr;
+        panSampleCurr = { ox: offsetX, oy: offsetY, t: now };
+      }
+    }, {passive:false});
+
+    mount.addEventListener('pointerup', function(e){
+      // CASE A: Zoom Disabled (Non-zooming mode)
+      if (!zoomEnabled) {
+         const r = mount.getBoundingClientRect();
+         const sx = e.clientX - r.left;
+         const sy = e.clientY - r.top;
+         const bx = sx; const by = sy;
+         
+         let bestI = -1, bestJ = -1, bestDx = 1e9, bestDy = 1e9;
+         for (let i=0; i<SIZE; i++){
+            const dx = Math.abs(getXcss(i) - bx);
+            if (dx<bestDx){ bestDx=dx; bestI=i; }
+         }
+         for (let j=0; j<SIZE; j++){
+            const dy = Math.abs(getYcss(j) - by);
+            if (dy<bestDy){ bestDy=dy; bestJ=j; }
+         }
+         
+         // Threshold Check for non-zoom mode
+         const spacing = getGridSpacing();
+         if (bestDx > spacing.x * 0.5 || bestDy > spacing.y * 0.5) {
+             return; // Clicked border, do nothing
+         }
+         
+         e.preventDefault();
+         playAt(bestI, bestJ);
+         return;
+      }
+
+      // CASE B: Zoom Enabled
+      // If tapStart is null (because we filtered it in pointerdown), exit.
+      if (!tapStart) {
+          if (panStart) {
+             // Clean up capture if we were just panning from border
+             try { mount.releasePointerCapture(e.pointerId); } catch(_){}
+             panStart = null;
+          }
+          return;
+      }
+
+      try { mount.releasePointerCapture(e.pointerId); } catch(_){}
+      
+      const dist2 = (e.clientX - tapStart.x)**2 + (e.clientY - tapStart.y)**2;
+      const { gridI, gridJ } = tapStart;
+      const tapX = tapStart.x;
+      const tapY = tapStart.y;
+      
+      tapStart = null; panStart = null;
+
+      if (isPanning) {
+        isPanning = false;
+        if (panSamplePrev && panSampleCurr) {
+          const dt = panSampleCurr.t - panSamplePrev.t;
+          if (dt > 0 && dt < 120) {
+            startFling((panSampleCurr.ox - panSamplePrev.ox)/dt, (panSampleCurr.oy - panSamplePrev.oy)/dt);
+          }
+        }
+        return;
+      }
+
+      if (dist2 <= TAP_SLOP2) {
+        e.preventDefault();
+        if (scale <= 1.05 && !isFullscreen) {
+          enterFullscreenAtGrid(gridI, gridJ, tapX, tapY);
+        } else {
+          playAt(gridI, gridJ);
+        }
+      }
+    }, {passive:false});
+    
+    // WGo Default Fallback
+    board.addEventListener('click', function(x, y){
+      if (zoomEnabled && (isFullscreen || scale > 1)) return;
+      // Note: WGo usually handles borders internally, but our custom
+      // pointer events usually intercept before this fires.
+      playAt(x, y);
+    });
+  }
+
+function startFling(vx, vy){
+    if (scale <= 1) return;
+    cancelFling();
+    
+    var speed = Math.sqrt(vx*vx + vy*vy);
+    
+    // Reference logic: Cap max speed
+    var MAX_SPEED = 0.50; 
+    if (speed > MAX_SPEED){
+      var s = MAX_SPEED / speed;
+      vx *= s;
+      vy *= s;
+      speed = MAX_SPEED;
+    }
+    
+    // Reference logic: Ignore tiny velocities
+    if (speed < 0.04) return;
+
+    isFlinging = true;
+    
+    // Reference logic: No initial * 0.5 dampening here
+    flingVX = vx; 
+    flingVY = vy; 
+    
+    flingLastTime = performance.now();
+    
+    (function step(now){
+      if (!isFlinging) return;
+      var dt = now - flingLastTime;
+      if (dt <= 0){
+        flingId = requestAnimationFrame(step);
+        return;
+      }
+      if (dt > 50) dt = 50;
+      flingLastTime = now;
+      
+      offsetX += flingVX * dt;
+      offsetY += flingVY * dt;
+      
+      // Reference logic: Linear friction
+      var friction = 0.0010; // px/ms²
+      var currentSpeed = Math.sqrt(flingVX*flingVX + flingVY*flingVY);
+      var decel = friction * dt;
+      
+      if (currentSpeed <= 0.01 || decel >= currentSpeed){
+        cancelFling();
+        applyPanAndSize(true);
+        return;
+      }
+      
+      var newSpeed = currentSpeed - decel;
+      var scaleFactor = newSpeed / currentSpeed;
+      
+      flingVX *= scaleFactor;
+      flingVY *= scaleFactor;
+      
+      applyPanAndSize(false);
+      flingId = requestAnimationFrame(step);
+    })(performance.now());
+}
+
+  function cancelFling(){
+    isFlinging = false;
+    if (flingId) { cancelAnimationFrame(flingId); flingId = 0; }
+  }
+
+  // --- 3. GAME LOGIC (with simple KO) ---
+
+  function getGroupStones(x, y){
+    var color = grid[y][x];
+    if (!color) return [];
+    var stack = [[x,y]], seen = {}, stones = [];
+    while(stack.length){
+      var p = stack.pop();
+      var k = p[0]+','+p[1];
+      if(seen[k]) continue; 
+      seen[k]=true; 
+      stones.push({x:p[0], y:p[1]});
+      [[0,1],[0,-1],[1,0],[-1,0]].forEach(d=>{
+        var nx=p[0]+d[0], ny=p[1]+d[1];
+        if(nx>=0 && nx<SIZE && ny>=0 && ny<SIZE && grid[ny][nx]===color && !seen[nx+','+ny]){
+          stack.push([nx,ny]);
+        }
+      });
+    }
+    return stones;
+  }
+
+  function playAt(x, y){
+    if (x<0 || y<0 || x>=SIZE || y>=SIZE) return;
+    if (grid[y][x] !== null) return;
+
+    // KO check: forbid immediate recapture on ko point
+    if (koPoint && koPoint.x === x && koPoint.y === y) return;
+    
+    var me = turn;
+    var opp = (me === 'B') ? 'W' : 'B';
+
+    // Tentatively place
+    grid[y][x] = me;
+    
+    // Capture adjacent opponent groups if they have no liberties
+    var captured = [];
+    var dirs = [[0,1],[0,-1],[1,0],[-1,0]];
+    dirs.forEach(d => {
+      var nx=x+d[0], ny=y+d[1];
+      if(nx>=0 && nx<SIZE && ny>=0 && ny<SIZE && grid[ny][nx]===opp){
+        if (checkCapture(nx, ny)) {
+          var removed = removeGroup(nx, ny);
+          if (removed && removed.length) captured = captured.concat(removed);
+        }
+      }
+    });
+    
+    // Suicide check
+    if (countLiberties(x,y, me) === 0) { 
+      // revert placement
+      grid[y][x] = null; 
+      // restore is complex; but in this simplified engine we assume suicide won't be used
+      // in real play. Still, to be safe, undo captures too by re-adding them:
+      // (only possible because we know their color)
+      captured.forEach(p => { grid[p.y][p.x] = opp; });
+      return; 
+    }
+
+    // Determine KO point (simple ko)
+    // Condition: exactly one stone captured AND the capturing group is size 1
+    // AND that single stone now has exactly one liberty.
+    if (captured.length === 1) {
+      var myGroup = getGroupStones(x, y);
+      if (myGroup.length === 1 && countLiberties(x, y, me) === 1) {
+        koPoint = { x: captured[0].x, y: captured[0].y };
+      } else {
+        koPoint = null;
+      }
+    } else {
+      koPoint = null;
+    }
+
+    turn = opp;
+    lastMove = {x:x, y:y};
+    
+    try{ if(window.StoneSFX) StoneSFX.play(); }catch(e){}
+    
+    if (!disableAutoZoomOut && scale > 1) {
+       setTimeout(smoothZoomOutAndExit, 10); 
+    }
+    
+    redrawBoard();
+  }
+
+  function checkCapture(x, y){
+    var color = grid[y][x];
+    var stack = [[x,y]], seen = {};
+    while(stack.length){
+      var p = stack.pop();
+      var k = p[0]+','+p[1];
+      if(seen[k]) continue; 
+      seen[k]=true;
+
+      var hasLib = false;
+      [[0,1],[0,-1],[1,0],[-1,0]].forEach(d=>{
+        var nx=p[0]+d[0], ny=p[1]+d[1];
+        if(nx>=0 && nx<SIZE && ny>=0 && ny<SIZE){
+          var v = grid[ny][nx];
+          if(v===null) hasLib=true;
+          else if(v===color && !seen[nx+','+ny]) stack.push([nx,ny]);
+        }
+      });
+      if(hasLib) return false;
+    }
+    return true;
+  }
+
+  // Remove a connected group and return list of removed stones
+  function removeGroup(x, y){
+    var color = grid[y][x];
+    var stack = [[x,y]], seen = {}, removed = [];
+    while(stack.length){
+      var p = stack.pop();
+      var k = p[0]+','+p[1];
+      if(seen[k]) continue; 
+      seen[k]=true;
+
+      if (grid[p[1]][p[0]] === color){
+        grid[p[1]][p[0]] = null;
+        removed.push({x:p[0], y:p[1]});
+      }
+
+      [[0,1],[0,-1],[1,0],[-1,0]].forEach(d=>{
+        var nx=p[0]+d[0], ny=p[1]+d[1];
+        if(nx>=0 && nx<SIZE && ny>=0 && ny<SIZE && grid[ny][nx]===color && !seen[nx+','+ny]){
+          stack.push([nx,ny]);
+        }
+      });
+    }
+    return removed;
+  }
+
+  function countLiberties(x,y,c){
+    var stack=[[x,y]], seen={}, libs=0;
+    while(stack.length){
+      var p=stack.pop(), k=p[0]+','+p[1];
+      if(seen[k]) continue; 
+      seen[k]=true;
+      [[0,1],[0,-1],[1,0],[-1,0]].forEach(d=>{
+        var nx=p[0]+d[0], ny=p[1]+d[1];
+        if(nx>=0&&nx<SIZE&&ny>=0&&ny<SIZE){
+          var v=grid[ny][nx];
+          if(v===null) libs++;
+          else if(v===c && !seen[nx+','+ny]) stack.push([nx,ny]);
+        }
+      });
+    }
+    return libs;
+  }
+
+  function redrawBoard(){
+    if (!board) return;
+    board.removeAllObjects();
+    for(var y=0; y<SIZE; y++){
+      for(var x=0; x<SIZE; x++){
+        var v = grid[y][x];
+        if(v==='B') board.addObject({x:x, y:y, c:WGo.B});
+        if(v==='W') board.addObject({x:x, y:y, c:WGo.W});
+      }
+    }
+    if (lastMove && highlightLastEnabled) board.addObject({x:lastMove.x, y:lastMove.y, type:'CR'});
+  }
+
+  function createBoard(){
+    if (board || !window.WGo) return;
+    board = new WGo.Board(mount, { size: SIZE, background: '' });
+    ensureZoomLayer();
+    fitBoard();
+    redrawBoard();
+    bindClicks();
+    
+    exitBtn.addEventListener('click', function(e){
+      e.stopPropagation();
+      smoothZoomOutAndExit();
+    });
+
+    window.addEventListener('resize', fitBoard);
+    window.addEventListener('orientationchange', () => setTimeout(fitBoard, 150));
+  }
+
+  function fitBoard(){
+    if (isFullscreen) return; 
+    var w = wrap.getBoundingClientRect().width;
+    w = Math.floor(w); if(w%2) w--;
+    baseW = w;
+    mount.style.width = w+'px';
+    mount.style.height = w+'px';
+    applyPanAndSize(true);
+  }
+
+  function initWhenReady(){
+    var tries = 0;
+    (function wait(){
+      if (window.WGo) createBoard();
+      else if (tries++ < 120) setTimeout(wait, 50);
+    })();
+  }
+
+  window.addEventListener('load', initWhenReady);
+})();
+</script>
+</body>
+</html>

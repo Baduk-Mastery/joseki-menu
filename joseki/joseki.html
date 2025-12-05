@@ -364,6 +364,56 @@ body {
     }
   </style>
 
+<style>
+  /* Zoom support for Joseki Board */
+  #go-board{
+    position: relative;
+    touch-action: none;
+    user-select: none;
+    -webkit-user-select: none;
+    transform-origin: 0 0;
+  }
+
+  /* Exit button (same visual as core) */
+  #zoom-exit-btn{
+    position:fixed;
+    left:14px;
+    bottom:90px;
+
+    width:120px;
+    height:80px;
+    border-radius:9px;
+
+    background:rgba(148,163,184,.35);
+    border:1px solid rgba(148,163,184,.85);
+    box-shadow:0 6px 16px rgba(0,0,0,.55);
+
+    display:none;
+    cursor:pointer;
+    z-index:99999;
+
+    backdrop-filter:blur(2px);
+    -webkit-tap-highlight-color:transparent;
+
+    color:#e5e7eb;
+    font-size:18px;
+    font-weight:600;
+
+    align-items:center;
+    justify-content:center;
+  }
+
+  #go-board.is-fullscreen{
+    position: fixed;
+    top: 0; left: 0;
+    width: 100vw !important;
+    height: 100vh !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    z-index: 9999;
+    margin: 0;
+  }
+</style>
 
 </head>
 <body>
@@ -421,6 +471,7 @@ body {
     </div>
   </div>
 </div>
+<div id="zoom-exit-btn"></div>
 
 
 <!-- Simple click sound (local file) -->
@@ -586,17 +637,17 @@ body.bg-wood [class*="blur"]{
     Object.assign(GoPrefs, JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}') || {});
   } catch (e) {}
 
-  // No more josekiZoom preference here – only sound + highlight
+    if (typeof GoPrefs.josekiZoom         === 'undefined') GoPrefs.josekiZoom         = true;
+  if (typeof GoPrefs.disableAutoZoomOut === 'undefined') GoPrefs.disableAutoZoomOut = false;
+
   if (typeof GoPrefs.soundOn       === 'undefined') GoPrefs.soundOn       = true;
   if (typeof GoPrefs.highlightLast === 'undefined') GoPrefs.highlightLast = true;
 
+
   // ---------- state ----------
   var board = new WGo.Board(mount, { size: SIZE });
-  // Wood texture under the board (replaces old zoomLayer background)
-  mount.style.backgroundImage = "url('../img/wood.jpg')";
-  mount.style.backgroundSize = "cover";
-  mount.style.backgroundPosition = "center";
-  mount.style.backgroundRepeat = "no-repeat";
+  ensureZoomLayer();
+  bindZoomPointerHandlers();
 
   var grid  = Array.from({length:SIZE}, ()=>Array(SIZE).fill(null));
   var history = [];
@@ -604,14 +655,407 @@ body.bg-wood [class*="blur"]{
   var turn    = B;  // side to move
 
   // Simple responsive sizing (no zoom, no fullscreen)
+  // Zoom engine state
+  var zoomLayer = null;
+  var scale = 1, minScale = 1, maxScale = 2.6;
+  var offsetX = 0, offsetY = 0;
+  var baseW = 0;
+  var isFullscreen = false;
+  var isZoomAnimating = false;
+  var animId = 0;
+  var returnAnchor = null;
+
+  var isPanning = false, panStart = null, tapStart = null;
+  var TAP_SLOP2 = 64;
+  var isFlinging = false, flingId = 0, flingVX = 0, flingVY = 0, flingLastTime = 0;
+  var panSamplePrev = null, panSampleCurr = null;
+
+  var exitBtn = document.getElementById('zoom-exit-btn');
+  if (exitBtn){
+    exitBtn.addEventListener('click', function(e){
+      e.stopPropagation();
+      smoothZoomOutAndExit();
+    });
+  }
+
+  // Settings
+  var zoomEnabled = (typeof GoPrefs.josekiZoom !== 'undefined') ? !!GoPrefs.josekiZoom : true;
+  var disableAutoZoomOut = (typeof GoPrefs.disableAutoZoomOut !== 'undefined') ? !!GoPrefs.disableAutoZoomOut : false;
+
+  function ensureZoomLayer(){
+    if (zoomLayer) return;
+
+    zoomLayer = document.createElement('div');
+    zoomLayer.style.position = 'absolute';
+    zoomLayer.style.left = '0px';
+    zoomLayer.style.top = '0px';
+    zoomLayer.style.transformOrigin = '0 0';
+    zoomLayer.style.willChange = 'transform';
+
+    while (mount.firstChild) zoomLayer.appendChild(mount.firstChild);
+    mount.appendChild(zoomLayer);
+
+    zoomLayer.style.backgroundImage = "url('../img/wood.jpg')";
+    zoomLayer.style.backgroundSize = "cover";
+    zoomLayer.style.backgroundPosition = "center";
+    zoomLayer.style.backgroundRepeat = "no-repeat";
+    mount.style.background = "none";
+  }
+
+  function canvasCssScale(){
+    var c = mount.querySelector('canvas');
+    if (!c) return 1;
+    var cssW = c.clientWidth || c.getBoundingClientRect().width || 0;
+    var intW = c.width || 0;
+    if (!cssW || !intW) return 1;
+    return cssW / intW;
+  }
+  function getXcss(i){ return board.getX(i) * canvasCssScale(); }
+  function getYcss(j){ return board.getY(j) * canvasCssScale(); }
+
+  function viewportSize(){
+    return { vw: mount.clientWidth, vh: mount.clientHeight };
+  }
+
+  function clampPan(){
+    if (isZoomAnimating) return;
+    const {vw, vh} = viewportSize();
+    const bw = Math.round(baseW * scale);
+    const bleedX = Math.ceil(vw * 0.5);
+    const bleedY = Math.ceil(vh * 0.5);
+    const minOX = -bleedX;
+    const maxOX = Math.max(0, bw - vw) + bleedX;
+    const minOY = -bleedY;
+    const maxOY = Math.max(0, bw - vh) + bleedY;
+
+    offsetX = Math.max(minOX, Math.min(offsetX, maxOX));
+    offsetY = Math.max(minOY, Math.min(offsetY, maxOY));
+  }
+
+  function applyPanAndSize(redrawAfter){
+    const targetW = baseW;
+
+    if (board && board._lastW !== targetW) {
+      board.setWidth(targetW);
+      if (zoomLayer) {
+        zoomLayer.style.width = targetW + 'px';
+        zoomLayer.style.height = targetW + 'px';
+      }
+      board._lastW = targetW;
+      if (!redrawAfter) redrawAfter = true;
+    }
+
+    clampPan();
+
+    if (zoomLayer) {
+      zoomLayer.style.transform =
+        'translate3d(' + (-offsetX) + 'px,' + (-offsetY) + 'px,0) scale(' + scale + ')';
+    }
+
+    if (redrawAfter) redraw();
+  }
+
+  function cancelFling(){
+    isFlinging = false;
+    if (flingId) { cancelAnimationFrame(flingId); flingId = 0; }
+  }
+
+  function startFling(vx, vy){
+    if (scale <= 1) return;
+    cancelFling();
+
+    var speed = Math.sqrt(vx*vx + vy*vy);
+    var MAX_SPEED = 0.50;
+    if (speed > MAX_SPEED){
+      var s = MAX_SPEED / speed;
+      vx *= s; vy *= s; speed = MAX_SPEED;
+    }
+    if (speed < 0.04) return;
+
+    isFlinging = true;
+    flingVX = vx; flingVY = vy;
+    flingLastTime = performance.now();
+
+    (function step(now){
+      if (!isFlinging) return;
+      var dt = now - flingLastTime;
+      if (dt <= 0){
+        flingId = requestAnimationFrame(step);
+        return;
+      }
+      if (dt > 50) dt = 50;
+      flingLastTime = now;
+
+      offsetX += flingVX * dt;
+      offsetY += flingVY * dt;
+
+      var friction = 0.0010;
+      var currentSpeed = Math.sqrt(flingVX*flingVX + flingVY*flingVY);
+      var decel = friction * dt;
+
+      if (currentSpeed <= 0.01 || decel >= currentSpeed){
+        cancelFling();
+        applyPanAndSize(true);
+        return;
+      }
+
+      var newSpeed = currentSpeed - decel;
+      var scaleFactor = newSpeed / currentSpeed;
+      flingVX *= scaleFactor;
+      flingVY *= scaleFactor;
+
+      applyPanAndSize(false);
+      flingId = requestAnimationFrame(step);
+    })(performance.now());
+  }
+
+  function animateTo(targetScale, pxWorld, pyWorld, sxTarget, syTarget, onDone){
+    targetScale = Math.max(minScale, Math.min(maxScale, targetScale));
+    cancelFling();
+
+    const s0 = scale, ox0 = offsetX, oy0 = offsetY;
+    const t0 = performance.now();
+    const dur = 300;
+
+    cancelAnimationFrame(animId);
+    isZoomAnimating = true;
+
+    const targetOffsetX = (pxWorld * targetScale) - sxTarget;
+    const targetOffsetY = (pyWorld * targetScale) - syTarget;
+
+    (function step(now){
+      let t = (now - t0) / dur;
+      if (t > 1) t = 1;
+      const e = 1 - Math.pow(1 - t, 3);
+
+      scale = s0 + (targetScale - s0) * e;
+      offsetX = ox0 + (targetOffsetX - ox0) * e;
+      offsetY = oy0 + (targetOffsetY - oy0) * e;
+
+      applyPanAndSize(false);
+
+      if (t < 1){
+        animId = requestAnimationFrame(step);
+      } else {
+        isZoomAnimating = false;
+        applyPanAndSize(true);
+        if (typeof onDone === 'function') onDone();
+      }
+    })(t0);
+  }
+
+  function enterFullscreenAtGrid(i, j, tapClientX, tapClientY){
+    if (isFullscreen) return;
+    cancelFling();
+
+    returnAnchor = document.createElement('div');
+    returnAnchor.style.width = mount.clientWidth + 'px';
+    returnAnchor.style.height = mount.clientHeight + 'px';
+    mount.parentNode.insertBefore(returnAnchor, mount);
+
+    document.body.appendChild(mount);
+    mount.classList.add('is-fullscreen');
+    isFullscreen = true;
+    if (exitBtn) exitBtn.style.display = 'flex';
+
+    mount.style.width = '100vw';
+    mount.style.height = '100vh';
+
+    scale = 1; offsetX = 0; offsetY = 0;
+
+    const vw = window.innerWidth;
+    const vh = window.innerHeight;
+    baseW = Math.floor(Math.min(vw, vh));
+    if (baseW % 2) baseW--;
+
+    requestAnimationFrame(function(){
+      applyPanAndSize(true);
+
+      const initialFactor = 2.4;
+      const px_curr = getXcss(i);
+      const py_curr = getYcss(j);
+
+      const rect = mount.getBoundingClientRect();
+      let sx = rect.width / 2;
+      let sy = rect.height / 2;
+
+      if (typeof tapClientX === 'number' && typeof tapClientY === 'number'){
+        sx = tapClientX - rect.left;
+        sy = tapClientY - rect.top;
+      }
+
+      offsetX = px_curr * 1.0 - sx;
+      offsetY = py_curr * 1.0 - sy;
+      applyPanAndSize(false);
+
+      animateTo(initialFactor, px_curr, py_curr, sx, sy);
+    });
+  }
+
+  function exitFullscreen(){
+    cancelFling();
+    cancelAnimationFrame(animId);
+    isZoomAnimating = false;
+
+    mount.classList.remove('is-fullscreen');
+    if (exitBtn) exitBtn.style.display = 'none';
+    isFullscreen = false;
+
+    if (returnAnchor && returnAnchor.parentNode){
+      returnAnchor.parentNode.insertBefore(mount, returnAnchor);
+      returnAnchor.parentNode.removeChild(returnAnchor);
+      returnAnchor = null;
+    }
+
+    mount.style.width = '';
+    mount.style.height = '';
+
+    fitBoard();
+    resetViewLocal();
+  }
+
+  function resetViewLocal(){
+    scale = 1; offsetX = 0; offsetY = 0;
+    applyPanAndSize(true);
+  }
+
+  function smoothZoomOutAndExit(){
+    cancelFling();
+    cancelAnimationFrame(animId);
+    isZoomAnimating = false;
+
+    scale = 1; offsetX = 0; offsetY = 0;
+    applyPanAndSize(true);
+
+    if (isFullscreen) exitFullscreen();
+  }
+
   function fitBoard(){
+    if (isFullscreen) return;
     var w = mount.clientWidth || 400;
     w = Math.floor(w);
     if (w % 2) w--;
     if (w <= 0) return;
-    board.setWidth(w);
+
+    baseW = w;
     mount.style.height = w + 'px';
+
+    ensureZoomLayer();
+    applyPanAndSize(true);
   }
+  function getGridSpacing(){
+    var sX = Math.abs(getXcss(1) - getXcss(0));
+    var sY = Math.abs(getYcss(1) - getYcss(0));
+    return { x: sX, y: sY };
+  }
+
+  function bindZoomPointerHandlers(){
+    mount.addEventListener('pointerdown', function(e){
+      if (!zoomEnabled) return;
+      if (e.pointerType !== 'touch' && e.button !== 0) return;
+
+      cancelFling();
+
+      const r = mount.getBoundingClientRect();
+      const sx = e.clientX - r.left;
+      const sy = e.clientY - r.top;
+
+      const boardX = (sx + offsetX) / scale;
+      const boardY = (sy + offsetY) / scale;
+
+      let bestI = -1, bestJ = -1, bestDx = 1e9, bestDy = 1e9;
+      for (let i = 0; i < SIZE; i++){
+        const dx = Math.abs(getXcss(i) - boardX);
+        if (dx < bestDx){ bestDx = dx; bestI = i; }
+      }
+      for (let j = 0; j < SIZE; j++){
+        const dy = Math.abs(getYcss(j) - boardY);
+        if (dy < bestDy){ bestDy = dy; bestJ = j; }
+      }
+
+      const spacing = getGridSpacing();
+      const limitX = spacing.x * 0.5;
+      const limitY = spacing.y * 0.5;
+
+      panStart = { x: e.clientX, y: e.clientY, ox: offsetX, oy: offsetY };
+      panSamplePrev = panSampleCurr = null;
+      try { mount.setPointerCapture(e.pointerId); } catch(_){}
+
+      if (bestDx > limitX || bestDy > limitY) {
+        tapStart = null;
+        return;
+      }
+
+      tapStart = { x: e.clientX, y: e.clientY, ox: offsetX, oy: offsetY, gridI: bestI, gridJ: bestJ };
+    }, {passive:false});
+
+    mount.addEventListener('pointermove', function(e){
+      if (!zoomEnabled) return;
+      if (!panStart) return;
+      if (scale <= 1.01 && !isFullscreen) return;
+
+      const dx = e.clientX - panStart.x;
+      const dy = e.clientY - panStart.y;
+
+      if (!isPanning && (dx*dx + dy*dy > TAP_SLOP2)) isPanning = true;
+
+      if (isPanning) {
+        offsetX = panStart.ox - dx;
+        offsetY = panStart.oy - dy;
+        applyPanAndSize(false);
+        e.preventDefault();
+
+        const now = performance.now();
+        panSamplePrev = panSampleCurr;
+        panSampleCurr = { ox: offsetX, oy: offsetY, t: now };
+      }
+    }, {passive:false});
+
+    mount.addEventListener('pointerup', function(e){
+      if (!zoomEnabled) return;
+
+      if (!tapStart) {
+        if (panStart) {
+          try { mount.releasePointerCapture(e.pointerId); } catch(_){}
+          panStart = null;
+        }
+        return;
+      }
+
+      try { mount.releasePointerCapture(e.pointerId); } catch(_){}
+
+      const dist2 = (e.clientX - tapStart.x)**2 + (e.clientY - tapStart.y)**2;
+      const { gridI, gridJ } = tapStart;
+      const tapX = tapStart.x;
+      const tapY = tapStart.y;
+
+      tapStart = null; panStart = null;
+
+      if (isPanning) {
+        isPanning = false;
+        if (panSamplePrev && panSampleCurr) {
+          const dt = panSampleCurr.t - panSamplePrev.t;
+          if (dt > 0 && dt < 120) {
+            startFling((panSampleCurr.ox - panSamplePrev.ox)/dt, (panSampleCurr.oy - panSamplePrev.oy)/dt);
+          }
+        }
+        return;
+      }
+
+      if (dist2 <= TAP_SLOP2) {
+        e.preventDefault();
+        if (scale <= 1.05 && !isFullscreen) {
+          enterFullscreenAtGrid(gridI, gridJ, tapX, tapY);
+        } else {
+          handleBoardTap(gridI, gridJ);
+          if (!disableAutoZoomOut && scale > 1) {
+            setTimeout(smoothZoomOutAndExit, 10);
+          }
+        }
+      }
+    }, {passive:false});
+  }
+
   window.addEventListener('resize', fitBoard);
   window.addEventListener('orientationchange', function(){ setTimeout(fitBoard, 200); });
   fitBoard();
@@ -1326,8 +1770,8 @@ function redraw(){
   function gotoPrev (){ if (!currentNode) return; currentNode = currentNode.prev || null; buildPositionTo(currentNode); }
   function gotoNext (){ var cand = getNextCandidates(currentNode); if (!cand.length) return; currentNode = cand[0].node; buildPositionTo(currentNode); }
 
-  // No zoom logic in click handler anymore
-  board.addEventListener('click', function(x,y){
+  // Shared tap handler used by normal click + zoom-tap
+  function handleBoardTap(x,y){
     if (hasSGF && !freeMode){
       var opts = getTurnCandidates(currentNode); // filtered by turn
       for (var i=0;i<opts.length;i++){
@@ -1338,12 +1782,11 @@ function redraw(){
           return;
         }
       }
-  if (grid[y][x] !== null) return;
-  freeMode = true;
-  josekiAnchor = currentNode;
-  josekiAnchorIndex = current;   // how many moves were on the board when we diverged
-}
-
+      if (grid[y][x] !== null) return;
+      freeMode = true;
+      josekiAnchor = currentNode;
+      josekiAnchorIndex = current;   // how many moves were on the board when we diverged
+    }
 
     if (current < history.length) history.splice(current);
     var r = attemptPlay(x,y,turn);
@@ -1355,7 +1798,10 @@ function redraw(){
     updateDesc();
     updatePassButtonState();
     try { if (soundEnabled && window.StoneSFX && StoneSFX.play) StoneSFX.play(); } catch(e){}
-  });
+  }
+
+  board.addEventListener('click', handleBoardTap);
+
 
   // ---------- controls ----------
   function hook(id, fn){
@@ -1495,11 +1941,24 @@ hook('jbtnBack', function(){
 
   // No-op stub so settings page won't break if it calls JosekiZoom here.
   window.JosekiZoom = {
-    isEnabled: function(){ return false; },
-    setEnabled: function(){},
-    resetView: function(){},
-    isFullscreen: function(){ return false; }
+    isEnabled: function(){ return !!zoomEnabled; },
+    setEnabled: function(v){
+      zoomEnabled = !!v;
+      GoPrefs.josekiZoom = zoomEnabled;
+      try { localStorage.setItem(STORAGE_KEY, JSON.stringify(GoPrefs)); } catch(e){}
+
+      if (!zoomEnabled) {
+        if (isFullscreen || scale > 1) smoothZoomOutAndExit();
+        else resetViewLocal();
+      }
+    },
+    resetView: function(){
+      if (isFullscreen) exitFullscreen();
+      else resetViewLocal();
+    },
+    isFullscreen: function(){ return !!isFullscreen; }
   };
+
 
   // ---------- load SGF (local file) ----------
   var SGF_URL = "../sgf/library-1.sgf";
@@ -1542,6 +2001,8 @@ hook('jbtnBack', function(){
 
 </body>
 </html>
+
+
 
 
 
