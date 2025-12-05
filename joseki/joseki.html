@@ -414,6 +414,45 @@ body {
     margin: 0;
   }
 </style>
+<style>
+  /* Bottom dock for Joseki controls while fullscreen zoom is active */
+  #go-zoom-ui-joseki{
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+
+    /* same feel as Practice */
+    padding: 0 12px 18px;
+
+    display: none;
+    flex-direction: column;
+    align-items: center;
+
+    /* allow board gestures through gaps, but buttons clickable */
+    pointer-events: none;
+
+    /* above fullscreen board (9999) but below confirm overlay (99999+) */
+    z-index: 99998;
+  }
+  #go-zoom-ui-joseki > *{
+    pointer-events: auto;
+  }
+
+  /* When in zoom mode, tighten the control row for dock use */
+  body.joseki-zoom-mode #joseki-ctrls{
+    margin: 0 !important;
+    padding: 0 !important;
+    width: 100%;
+    max-width: 720px;
+  }
+
+  /* Show only the first 3 buttons while zoomed */
+  body.joseki-zoom-mode #jbtnMenu,
+  body.joseki-zoom-mode #jbtnReset{
+    display: none !important;
+  }
+</style>
 
 </head>
 <body>
@@ -439,7 +478,7 @@ body {
         <div id="descText"></div>
       </div>
     </div>
-
+<div id="joseki-ctrls-anchor"></div>
     <!-- Buttons -->
     <div id="joseki-ctrls" class="j-ctrls">
       <button id="jbtnBack"    class="jbtn"             type="button">Back</button>
@@ -472,7 +511,7 @@ body {
   </div>
 </div>
 <div id="zoom-exit-btn"></div>
-
+<div id="go-zoom-ui-joseki"></div>
 
 <!-- Simple click sound (local file) -->
 <script>
@@ -678,6 +717,50 @@ body.bg-wood [class*="blur"]{
       smoothZoomOutAndExit();
     });
   }
+  // ===== Zoom dock wiring (Joseki controls) =====
+  var dock = document.getElementById('go-zoom-ui-joseki');
+  var ctrls = document.getElementById('joseki-ctrls');
+  var ctrlsAnchor = document.getElementById('joseki-ctrls-anchor');
+
+  var ctrlsHomeParent = null;
+  var ctrlsHomeNext = null;
+
+  function enableDockMode(){
+    if (!dock || !ctrls) return;
+
+    document.body.classList.add('joseki-zoom-mode');
+    dock.style.display = 'flex';
+
+    // remember original position once
+    if (!ctrlsHomeParent){
+      ctrlsHomeParent = ctrls.parentNode;
+      ctrlsHomeNext = ctrls.nextSibling;
+    }
+
+    // move controls into dock
+    dock.appendChild(ctrls);
+  }
+
+  function disableDockMode(){
+    document.body.classList.remove('joseki-zoom-mode');
+    if (dock) dock.style.display = 'none';
+
+    if (!ctrls) return;
+
+    // restore to anchor if it exists, otherwise restore to remembered parent/next
+    if (ctrlsAnchor && ctrlsAnchor.parentNode){
+      ctrlsAnchor.parentNode.insertBefore(ctrls, ctrlsAnchor.nextSibling);
+      return;
+    }
+
+    if (ctrlsHomeParent){
+      if (ctrlsHomeNext && ctrlsHomeNext.parentNode === ctrlsHomeParent){
+        ctrlsHomeParent.insertBefore(ctrls, ctrlsHomeNext);
+      } else {
+        ctrlsHomeParent.appendChild(ctrls);
+      }
+    }
+  }
 
   // Settings
   var zoomEnabled = (typeof GoPrefs.josekiZoom !== 'undefined') ? !!GoPrefs.josekiZoom : true;
@@ -858,6 +941,8 @@ body.bg-wood [class*="blur"]{
     mount.classList.add('is-fullscreen');
     isFullscreen = true;
     if (exitBtn) exitBtn.style.display = 'flex';
+    enableDockMode();
+
 
     mount.style.width = '100vw';
     mount.style.height = '100vh';
@@ -901,6 +986,7 @@ body.bg-wood [class*="blur"]{
     mount.classList.remove('is-fullscreen');
     if (exitBtn) exitBtn.style.display = 'none';
     isFullscreen = false;
+    disableDockMode();
 
     if (returnAnchor && returnAnchor.parentNode){
       returnAnchor.parentNode.insertBefore(mount, returnAnchor);
@@ -2011,6 +2097,8 @@ koPoint = null;
       try { localStorage.setItem(STORAGE_KEY, JSON.stringify(GoPrefs)); } catch(e){}
 
       if (!zoomEnabled) {
+        disableDockMode();
+
         if (isFullscreen || scale > 1) smoothZoomOutAndExit();
         else resetViewLocal();
       }
@@ -2064,10 +2152,4 @@ koPoint = null;
 
 </body>
 </html>
-
-
-
-
-
-
 
