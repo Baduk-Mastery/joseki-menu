@@ -653,6 +653,7 @@ body.bg-wood [class*="blur"]{
   var history = [];
   var current = 0;
   var turn    = B;  // side to move
+  var koPoint = null; // {x,y} where immediate recapture is forbidden (simple ko)
 
   // Simple responsive sizing (no zoom, no fullscreen)
   // Zoom engine state
@@ -953,7 +954,8 @@ body.bg-wood [class*="blur"]{
     mount.addEventListener('pointerdown', function(e){
       if (!zoomEnabled) return;
       if (e.pointerType !== 'touch' && e.button !== 0) return;
-
+      isPanning = false;   // reset per gesture
+      tapStart = null;
       cancelFling();
 
       const r = mount.getBoundingClientRect();
@@ -1022,6 +1024,7 @@ body.bg-wood [class*="blur"]{
         return;
       }
 
+
       try { mount.releasePointerCapture(e.pointerId); } catch(_){}
 
       const dist2 = (e.clientX - tapStart.x)**2 + (e.clientY - tapStart.y)**2;
@@ -1054,6 +1057,22 @@ body.bg-wood [class*="blur"]{
         }
       }
     }, {passive:false});
+    mount.addEventListener('pointercancel', function(e){
+      if (!zoomEnabled) return;
+
+      try { mount.releasePointerCapture(e.pointerId); } catch(_){}
+
+      // Reset gesture state
+      tapStart = null;
+      panStart = null;
+      isPanning = false;
+      panSamplePrev = null;
+      panSampleCurr = null;
+
+      // Stop momentum if a gesture was canceled mid-flight
+      cancelFling();
+    }, {passive:false});
+
   }
 
   window.addEventListener('resize', fitBoard);
@@ -1392,28 +1411,64 @@ function redraw(){
     }
     return {stones:stones, liberties:libs};
   }
-  function attemptPlay(x,y,color){
-    if(grid[y][x]!==null) return {ok:false, captures:[]};
-    grid[y][x]=color;
-    var opp=(color===B?W:B), captures=[], ns=neighbors(x,y);
-    for(var i=0;i<ns.length;i++){
-      var nx=ns[i][0], ny=ns[i][1];
-      if(grid[ny][nx]===opp){
-        var g=groupAndLiberties(nx,ny);
-        if(g.liberties===0){
-          for(var j=0;j<g.stones.length;j++){ var s=g.stones[j]; grid[s[1]][s[0]]=null; captures.push([s[0],s[1]]); }
+   function attemptPlay(x,y,color){
+    if (grid[y][x] !== null) return {ok:false, captures:[]};
+
+    // Simple KO check
+    if (koPoint && koPoint.x === x && koPoint.y === y) {
+      return {ok:false, captures:[]};
+    }
+
+    grid[y][x] = color;
+
+    var opp = (color === B ? W : B);
+    var captures = [];
+    var ns = neighbors(x,y);
+
+    for (var i=0; i<ns.length; i++){
+      var nx = ns[i][0], ny = ns[i][1];
+      if (grid[ny][nx] === opp){
+        var g = groupAndLiberties(nx,ny);
+        if (g.liberties === 0){
+          for (var j=0; j<g.stones.length; j++){
+            var s = g.stones[j];
+            grid[s[1]][s[0]] = null;
+            captures.push([s[0], s[1]]);
+          }
         }
       }
     }
-    var self=groupAndLiberties(x,y);
-    if(captures.length===0 && self.liberties===0){ grid[y][x]=null; return {ok:false, captures:[]}; }
+
+    var self = groupAndLiberties(x,y);
+
+    // Suicide (only allowed if you captured something)
+    if (captures.length === 0 && self.liberties === 0){
+      grid[y][x] = null;
+      return {ok:false, captures:[]};
+    }
+
+    // Determine next KO point (simple ko)
+    // Condition: exactly one stone captured and the capturing group is a single stone
+    // with exactly one liberty.
+    if (captures.length === 1){
+      var myGroup = groupAndLiberties(x,y);
+      if (myGroup.stones.length === 1 && myGroup.liberties === 1){
+        koPoint = { x: captures[0][0], y: captures[0][1] };
+      } else {
+        koPoint = null;
+      }
+    } else {
+      koPoint = null;
+    }
+
     return {ok:true, captures:captures};
   }
+
 
   function rebuildFromHistory(){
     if (current < 0) current = 0;
     if (current > history.length) current = history.length;
-
+koPoint = null;
     for (var y = 0; y < SIZE; y++) grid[y].fill(null);
 
     if (hasSGF){
@@ -1729,7 +1784,7 @@ function redraw(){
   function buildPositionTo(node){
     for (var y=0;y<SIZE;y++) grid[y].fill(null);
     history.length = 0;
-
+koPoint = null;
     for (var i=0;i<rootAB.length;i++){ var p=rootAB[i]; grid[p.y][p.x]=B; }
     for (var j=0;j<rootAW.length;j++){ var q=rootAW[j]; grid[q.y][q.x]=W; }
 
@@ -1800,7 +1855,14 @@ function redraw(){
     try { if (soundEnabled && window.StoneSFX && StoneSFX.play) StoneSFX.play(); } catch(e){}
   }
 
-  board.addEventListener('click', handleBoardTap);
+  board.addEventListener('click', function(x, y){
+    // When zoom is enabled we rely on our pointer pipeline.
+    // This prevents double-fires and prevents WGo's click mapping
+    // from misreading coordinates under CSS transforms.
+    if (zoomEnabled) return;
+    handleBoardTap(x, y);
+  });
+
 
 
   // ---------- controls ----------
@@ -1923,6 +1985,7 @@ hook('jbtnBack', function(){
   window.JosekiBoard = window.JosekiBoard || {};
   window.JosekiBoard.reset = function(){
     freeMode = false; josekiAnchor = null; currentNode = null; current = 0; history.length = 0;
+koPoint = null;
     buildPositionTo(null);
     try { document.getElementById('desc-box').scrollTop = 0; } catch(e){}
     try { window.dispatchEvent(new Event('resize')); } catch(e){}
@@ -2001,6 +2064,8 @@ hook('jbtnBack', function(){
 
 </body>
 </html>
+
+
 
 
 
