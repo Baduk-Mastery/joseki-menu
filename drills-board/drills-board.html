@@ -130,7 +130,7 @@
   </div>
 </div>
 
-
+<!-- All Done -->
 <div id="drill-done" style="display:none;position:fixed;inset:0;z-index:99999;align-items:center;justify-content:center;">
   <div style="position:absolute;inset:0;background:rgba(0,0,0,.55);"></div>
   <div style="position:relative;z-index:1;background:#fff;border:1px solid #e2e8f0;border-radius:10px;box-shadow:0 12px 28px rgba(15,23,42,.18);width:min(86vw,460px);padding:16px;text-align:center;font-family:system-ui,Segoe UI,Arial,sans-serif;color:#0f172a;">
@@ -204,13 +204,24 @@ if (!window.StoneSFX) {
   })();
   StoneSFX.init("https://3d85c7a311526e02aeeeb19e952d0c09.cdn.bubble.io/f1754926303439x491369894441766600/klick.mp3");
 }
+(function bridgeSoundSetting(){
+  if (window._drillSoundInit) return;
+  window._drillSoundInit = true;
+  if (typeof StoneSFX.play === 'function' && !('_enabled' in StoneSFX)){
+    StoneSFX._enabled = (window.GoPrefs ? !!window.GoPrefs.soundOn : true);
+    const _orig = StoneSFX.play.bind(StoneSFX);
+    StoneSFX.play = function(){ if (StoneSFX._enabled) _orig(); };
+  }
+  window.JosekiSound = window.JosekiSound || {
+    isEnabled(){ return !!StoneSFX._enabled; },
+    setEnabled(v){ StoneSFX._enabled = !!v; }
+  };
+})();
 </script>
 
 <script>
-(function(){
-  console.log("Drill Script Starting...");
-
-  // --- 1. SGF UTILS ---
+(function DrillBoardMount(){
+  // --- SGF Parsing & Game Logic ---
   function parseSZ(sz){ if(!sz) return 19; const n=parseInt(sz.split(':')[0],10); return (n>=2&&n<=52)?n:19; }
   function xy(s,S){ if(!s||s.length<2) return null; const x=s.charCodeAt(0)-97,y=s.charCodeAt(1)-97; if(x<0||y<0||x>=S||y>=S) return null; return {x,y}; }
   function nodeMove(n,S){ if(!n) return null; if(n.B){ const p=xy(n.B,S); if(p) return {x:p.x,y:p.y,color:'B'}; } if(n.W){ const p=xy(n.W,S); if(p) return {x:p.x,y:p.y,color:'W'}; } return null; }
@@ -265,7 +276,7 @@ if (!window.StoneSFX) {
     return lines.map(nodes=>nodes.map(n=>nodeMove(n,S)).filter(Boolean));
   }
 
-  // --- 2. TRANSFORMS ---
+  // --- TRANSFORMS ---
   function t_identity(p){ return {x:p.x,y:p.y}; }
   function t_swap(p){ return {x:p.y, y:p.x}; }
   function t_rot90(p,S){  return {x: S-1 - p.y, y: p.x}; }
@@ -289,10 +300,10 @@ if (!window.StoneSFX) {
     return { size:S, rootAB: swap ? AW : AB, rootAW: swap ? AB : AW, moves: mv };
   }
 
-  // --- 3. STATE & UI VARIABLES ---
+  // --- MAIN VARIABLES ---
   var SIZE = 19;
-  var mount = document.getElementById('core-board');
-  var wrap  = document.getElementById('core-board-wrap');
+  var mount = document.getElementById('go-board-drill');
+  var wrap  = document.getElementById('go-board-drill-wrap');
   var exitBtn = document.getElementById('zoom-exit-btn');
   var board = null;
   var grid = []; 
@@ -323,10 +334,17 @@ if (!window.StoneSFX) {
   var panSamplePrev = null, panSampleCurr = null;
 
   // Prefs
-  var zoomEnabled = (window.GoPrefs && typeof window.GoPrefs.josekiZoom !== 'undefined') ? !!window.GoPrefs.josekiZoom : true;
-  var disableAutoZoomOut = (window.GoPrefs && typeof window.GoPrefs.disableAutoZoomOut !== 'undefined') ? !!window.GoPrefs.disableAutoZoomOut : false;
+  var STORAGE_KEY = 'go_prefs';
+  var GoPrefs = (window.GoPrefs = window.GoPrefs || {});
+  try {
+    var saved = localStorage.getItem(STORAGE_KEY);
+    if (saved) Object.assign(GoPrefs, JSON.parse(saved) || {});
+  } catch (e) {}
+  
+  var zoomEnabled = (typeof GoPrefs.josekiZoom !== 'undefined') ? !!GoPrefs.josekiZoom : true;
+  var disableAutoZoomOut = (typeof GoPrefs.disableAutoZoomOut !== 'undefined') ? !!GoPrefs.disableAutoZoomOut : false;
 
-  // --- 4. BOARD INIT ---
+  // --- BOARD INIT ---
   function ensureTimerEl(){
     if (timerEl || !blitzMode) return;
     timerEl = document.createElement('div');
@@ -365,16 +383,18 @@ if (!window.StoneSFX) {
     mount.style.position = 'relative'; mount.style.overflow = 'hidden';
     zoomLayer = mount.__woodLayer || mount;
     
+    // Safety delay for flexbox centering
     setTimeout(function(){ fitBoard(); }, 50);
 
     bindClicks();
     window.addEventListener('resize', () => setTimeout(fitBoard, 10));
-    exitBtn.addEventListener('click', (e)=>{ e.stopPropagation(); smoothZoomOutAndExit(); });
+    if (exitBtn) exitBtn.addEventListener('click', (e)=>{ e.stopPropagation(); smoothZoomOutAndExit(); });
     
-    loadAndStart();
+    // Auto-load drills once board is ready
+    autoStartStandalone();
   }
 
-  // --- 5. ZOOM LOGIC ---
+  // --- ZOOM ENGINE ---
   function canvasCssScale(){
     var c = mount.querySelector('canvas');
     if (!c) return 1;
@@ -434,7 +454,8 @@ if (!window.StoneSFX) {
     returnAnchor.style.width = mount.clientWidth + 'px'; returnAnchor.style.height = mount.clientHeight + 'px';
     mount.parentNode.insertBefore(returnAnchor, mount);
     document.body.appendChild(mount);
-    mount.classList.add('is-fullscreen'); isFullscreen = true; exitBtn.style.display = 'flex';
+    mount.classList.add('is-fullscreen'); isFullscreen = true; 
+    if (exitBtn) exitBtn.style.display = 'flex';
     mount.style.width = '100vw'; mount.style.height = '100vh';
     scale = 1; offsetX = 0; offsetY = 0;
     const vw = window.innerWidth, vh = window.innerHeight;
@@ -454,7 +475,9 @@ if (!window.StoneSFX) {
 
   function exitFullscreen(){
     cancelFling(); cancelAnimationFrame(animId); isZoomAnimating = false;
-    mount.classList.remove('is-fullscreen'); exitBtn.style.display = 'none'; isFullscreen = false;
+    mount.classList.remove('is-fullscreen'); 
+    if (exitBtn) exitBtn.style.display = 'none'; 
+    isFullscreen = false;
     if (returnAnchor && returnAnchor.parentNode){
       returnAnchor.parentNode.insertBefore(mount, returnAnchor);
       returnAnchor.parentNode.removeChild(returnAnchor); returnAnchor = null;
@@ -563,7 +586,7 @@ if (!window.StoneSFX) {
   function cancelFling(){ isFlinging = false; if (flingId) { cancelAnimationFrame(flingId); flingId = 0; } }
 
 
-  // --- 7. GAME ENGINE ---
+  // --- 7. GAME LOGIC ---
   function resetGrid(){ grid = Array.from({length:SIZE}, ()=>Array(SIZE).fill(null)); }
   function addStone(x,y,color){ grid[y][x]=color; }
   
@@ -582,6 +605,7 @@ if (!window.StoneSFX) {
        }
        return {stones, libs:libs.size};
     }
+    // Remove group helper
     function removeGroup(gx, gy){
         const c = grid[gy][gx]; if(!c) return;
         const stack=[{x:gx,y:gy}], seen=new Set(); seen.add(gx+','+gy);
