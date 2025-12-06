@@ -6,13 +6,15 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
   
   <style>
-    /* --- 1. CORE LAYOUT & ZOOM (From Clean Board) --- */
+    /* --- 1. CORE LAYOUT & ZOOM --- */
     html, body{
       margin:0; padding:0; height:100%;
       overflow: hidden; 
       font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
       background-color:#1b1208;
       touch-action: none;
+      /* Centering */
+      display: flex; align-items: center; justify-content: center;
     }
 
     #core-root{
@@ -24,10 +26,8 @@
       background-size:cover; background-position:center;
     }
 
-    /* Wrapper limits width but allows board to scale */
     #core-inner{ width:min(92vw, 720px); margin:0 auto; z-index: 1; pointer-events: none; }
     
-    /* The Board Container */
     #core-board-wrap{ 
         width:100%; max-width:720px; margin:0 auto; 
         position: relative; pointer-events: auto; 
@@ -43,7 +43,6 @@
       transform-origin: 0 0;
     }
 
-    /* Fullscreen State */
     #core-board.is-fullscreen {
       position: fixed; top: 0; left: 0;
       width: 100vw !important; height: 100vh !important;
@@ -51,7 +50,6 @@
       z-index: 9999; margin: 0;
     }
 
-    /* Zoom Exit Button */
     #zoom-exit-btn{
       position:fixed; left:14px; bottom:90px;
       width:120px; height:80px; border-radius:9px;
@@ -64,9 +62,7 @@
     }
     #zoom-exit-btn::after { content: "Zoom Out"; }
 
-    /* --- 2. DRILL UI ELEMENTS (Controls, Timer, Overlays) --- */
-    
-    /* Controls Bar */
+    /* --- 2. DRILL UI ELEMENTS --- */
     .prac-ctrls{
       max-width:720px; margin:10px auto 0;
       padding:8px 12px; display:flex; gap:10px; justify-content:center; flex-wrap:wrap;
@@ -81,7 +77,6 @@
     .pbtn-strong{ background:#111827; color:#fff; border-color:#111827; }
     .pbtn-alt{ background:#e7f0ff; color:#0b4aa2; border-color:#a7c1ff; }
 
-    /* Blitz timer chip */
     #blitz-timer{
       position:absolute; right:10px; top:10px; z-index:4;
       padding:6px 10px; border-radius:10px;
@@ -89,10 +84,9 @@
       background:rgba(15,23,42,.88); color:#e6f3ff; border:1px solid rgba(148,163,184,.35);
       box-shadow:0 6px 16px rgba(2,6,23,.35);
       letter-spacing:0.5px;
-      display:none; /* Hidden by default */
+      display:none; 
     }
 
-    /* Overlays (Wrong, Cleared, Done) */
     .drill-overlay {
         display:none; position:fixed; inset:0; z-index:99999;
         align-items:center; justify-content:center;
@@ -209,6 +203,8 @@
 
 <script>
 (function(){
+  console.log("Drill Script Starting...");
+
   // --- 1. SGF UTILS & DRILL LOGIC ---
   function parseSZ(sz){ if(!sz) return 19; const n=parseInt(sz.split(':')[0],10); return (n>=2&&n<=52)?n:19; }
   function xy(s,S){ if(!s||s.length<2) return null; const x=s.charCodeAt(0)-97,y=s.charCodeAt(1)-97; if(x<0||y<0||x>=S||y>=S) return null; return {x,y}; }
@@ -672,6 +668,7 @@
 
   // --- 6. DRILL FLOW ---
   function startDrill(i){
+    console.log("Starting drill index: " + i);
     index = i;
     if (index >= slots.length){ showDone(); return; }
     const slot = slots[index], base = slot.base, key = slot.key;
@@ -763,7 +760,7 @@
   });
   document.getElementById('dbtn-next').addEventListener('click', ()=>{ if(slots.length) startDrill(index+1); });
 
-  // --- 7. AUTO START (FIXED) ---
+  // --- 7. AUTO START (ROBUST) ---
   function getDrillSelections(){
     try {
       if (typeof sessionStorage !== 'undefined') {
@@ -789,96 +786,98 @@
   }
   function lineKey(line){ const s=line.size||19, seq=(line.moves||[]).map(m=>(m.color||'B')[0]+':'+m.x+','+m.y).join('|'); return `${s}|${seq}`; }
   
+  function startWithLines(usableLines, perJoseki){
+      if (usableLines.length === 0) { alert("No patterns available to drill."); return; }
+      console.log("Starting with " + usableLines.length + " patterns.");
+      
+      slots = []; lineToSlotIdxs = {}; runPlan = {};
+      for(const base of usableLines){
+         const key = lineKey(base);
+         for(let k=0; k<perJoseki; k++) slots.push({key, base});
+      }
+      slots = shuffle(slots); 
+      for(let i=0; i<slots.length; i++){
+         const key = slots[i].key;
+         if(!lineToSlotIdxs[key]) lineToSlotIdxs[key]=[];
+         lineToSlotIdxs[key].push(i);
+      }
+      if(slots.length > 0) startDrill(0);
+  }
+
   function autoStartStandalone(){
      const sel = getDrillSelections();
      const PER = 3;
      blitzMode = (sel && sel.mode==='blitz');
      
-     // FIXED URL - Relative path to your library
-     const SGF_URL = "../sgf/library-1.sgf"; 
+     // 1. Try Local SGF First
+     const LOCAL_URL = "../sgf/library-1.sgf";
+     const CDN_URL = "https://3d85c7a311526e02aeeeb19e952d0c09.cdn.bubble.io/f1756283064420x481184906507390100/game%20(1).sgf";
      
      const favMap   = readFavs();
      const favLines = Object.values(favMap).map(normalizeLineLike);
      const ownAll   = loadOwnPatterns();
      const ownPick  = ownAll.map(normalizeLineLike); 
 
-     fetch(SGF_URL)
+     function processSGF(text){
+        const trees = parseAllTrees(text);
+        const libLines = [];
+        for(const seq of trees){
+           linkify(seq,null);
+           const size = parseSZ(seq[0]?.SZ);
+           const rootAB = listCoords(seq[0]?.AB, size);
+           const rootAW = listCoords(seq[0]?.AW, size);
+           const paths = enumerateLines(seq,size);
+           for(const moves of paths){
+              if((moves?.length||0)>=MIN_MOVES) libLines.push({size, rootAB, rootAW, moves});
+           }
+        }
+        
+        let usable = [];
+        if (sel) {
+            if (sel.library && sel.library.length) usable = usable.concat(libLines.filter(l => sel.library.includes(lineKey(l))));
+            if (sel.favorites && sel.favorites.length) usable = usable.concat(favLines.filter(l => sel.favorites.includes(lineKey(l))));
+            if (sel.own && sel.own.length) usable = usable.concat(ownPick); 
+        } else {
+            usable = libLines;
+        }
+        startWithLines(usable, PER);
+     }
+
+     console.log("Attempting to fetch local SGF...");
+     fetch(LOCAL_URL)
        .then(r => {
-          if (!r.ok) throw new Error("SGF Load Failed");
+          if (!r.ok) throw new Error("Local Load Failed");
           return r.text();
        })
        .then(txt => {
-          const trees = parseAllTrees(txt);
-          const libLines = [];
-          for(const seq of trees){
-             linkify(seq,null);
-             const size = parseSZ(seq[0]?.SZ);
-             const rootAB = listCoords(seq[0]?.AB, size);
-             const rootAW = listCoords(seq[0]?.AW, size);
-             const paths = enumerateLines(seq,size);
-             for(const moves of paths){
-                if((moves?.length||0)>=MIN_MOVES) libLines.push({size, rootAB, rootAW, moves});
-             }
-          }
-          
-          let usable = [];
-          if (sel) {
-              if (sel.library && sel.library.length) usable = usable.concat(libLines.filter(l => sel.library.includes(lineKey(l))));
-              if (sel.favorites && sel.favorites.length) usable = usable.concat(favLines.filter(l => sel.favorites.includes(lineKey(l))));
-              if (sel.own && sel.own.length) usable = usable.concat(ownPick); 
-          } else {
-              usable = libLines;
-          }
-          
-          if (usable.length === 0) { alert("No patterns available to drill."); return; }
-
-          slots = []; lineToSlotIdxs = {}; runPlan = {};
-          for(const base of usable){
-             const key = lineKey(base);
-             for(let k=0; k<PER; k++) slots.push({key, base});
-          }
-          slots = shuffle(slots); 
-          for(let i=0; i<slots.length; i++){
-             const key = slots[i].key;
-             if(!lineToSlotIdxs[key]) lineToSlotIdxs[key]=[];
-             lineToSlotIdxs[key].push(i);
-          }
-          
-          if(slots.length > 0) startDrill(0);
+          console.log("Local SGF loaded.");
+          processSGF(txt);
        })
        .catch(err => {
-          // If fetch fails (e.g. running from disk without server), try loading favs/own only
-          console.warn("SGF Fetch failed, trying local data", err);
-          let usable = [];
-          if (sel && sel.favorites && sel.favorites.length) usable = usable.concat(favLines.filter(l => sel.favorites.includes(lineKey(l))));
-          if (sel && sel.own && sel.own.length) usable = usable.concat(ownPick);
-          
-          if (usable.length > 0) {
-             slots = []; lineToSlotIdxs = {}; runPlan = {};
-             for(const base of usable){
-                const key = lineKey(base);
-                for(let k=0; k<PER; k++) slots.push({key, base});
-             }
-             slots = shuffle(slots);
-             for(let i=0; i<slots.length; i++){
-                const key = slots[i].key;
-                if(!lineToSlotIdxs[key]) lineToSlotIdxs[key]=[];
-                lineToSlotIdxs[key].push(i);
-             }
-             startDrill(0);
-          } else {
-             alert("Could not load library drills (check SGF path) and no local patterns found.");
-          }
+          console.warn("Local SGF failed, trying CDN fallback...", err);
+          fetch(CDN_URL)
+            .then(r => {
+                if(!r.ok) throw new Error("CDN Load Failed");
+                return r.text();
+            })
+            .then(txt => {
+                console.log("CDN SGF loaded.");
+                processSGF(txt);
+            })
+            .catch(err2 => {
+                console.warn("CDN failed too. Checking local storage only.", err2);
+                let usable = [];
+                if (sel && sel.favorites && sel.favorites.length) usable = usable.concat(favLines.filter(l => sel.favorites.includes(lineKey(l))));
+                if (sel && sel.own && sel.own.length) usable = usable.concat(ownPick);
+                
+                if (usable.length > 0) startWithLines(usable, PER);
+                else alert("Could not load drills. Please check internet connection.");
+            });
        });
   }
   
-  // Make DrillBoard available globally if needed by other scripts
-  window.DrillBoard = {
-     load: function() { location.reload(); } // Simple reload for now
-  };
+  window.DrillBoard = { load: function() { location.reload(); } };
 
   if (mount && !board) initBoard();
 })();
 </script>
-</body>
-</html>
