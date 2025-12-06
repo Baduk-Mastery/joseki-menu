@@ -1246,84 +1246,87 @@ const boardY = sy / scale + offsetY;
     beginPan(e);
   }, { passive:false });
 
-  // Use capture so we intercept before WGo's own click handler
-  mount.addEventListener('pointerup', function(e){
-    if (!zoomEnabled || !tapStart){
-      endPan(e);
-      return;
-    }
-    if (e.pointerType && e.pointerType !== 'touch'){
-      endPan(e);
-      tapStart = null;
-      return;
-    }
+// Use capture so we intercept before WGo's own click handler
+  mount.addEventListener('pointerup', function(e){
+    if (!zoomEnabled || !tapStart){
+      endPan(e);
+      return;
+    }
+    if (e.pointerType && e.pointerType !== 'touch'){
+      endPan(e);
+      tapStart = null;
+      return;
+    }
 
-    const dx = e.clientX - tapStart.x;
-    const dy = e.clientY - tapStart.y;
-    const dist2 = dx*dx + dy*dy;
+    const dx = e.clientX - tapStart.x;
+    const dy = e.clientY - tapStart.y;
+    const dist2 = dx*dx + dy*dy;
 
-    const gi = tapStart.gridI;
-    const gj = tapStart.gridJ;
-    const tapClientX = tapStart.x;
-    const tapClientY = tapStart.y;
+    const gi = tapStart.gridI;
+    const gj = tapStart.gridJ;
+    const tapClientX = tapStart.x;
+    const tapClientY = tapStart.y;
 
-    tapStart = null;
-    const wasPanning = isPanning;
-    endPan(e);
+    tapStart = null;
+    const wasPanning = isPanning;
+    endPan(e);
 
-    if (wasPanning) return;
+    if (wasPanning) return;
 
-    if (dist2 <= TAP_SLOP2){
-      const baseView = (!isFullscreen && scale === 1);
+    if (dist2 <= TAP_SLOP2){
+      const baseView = (!isFullscreen && scale === 1);
 
-      if (baseView){
-        // Tap from base view – zoom in around tap
-        let ti = gi;
-        let tj = gj;
+      if (baseView){
+        // Tap from base view – zoom in around tap
+        let ti = gi;
+        let tj = gj;
 
-        if (ti == null || tj == null ||
-            ti < 0 || tj < 0 || ti >= SIZE || tj >= SIZE){
-          const rect = mount.getBoundingClientRect();
-          const sx = tapClientX - rect.left;
-          const sy = tapClientY - rect.top;
+        // ... [logic for calculating ti/tj if null] ...
+        // (This logic was fine, we keep it, but for brevity in instructions I'm focusing on the fix)
+        // Ensure robust coordinate calculation if gridI/gridJ were missed on pointerdown
+        if (ti == null || tj == null ||
+            ti < 0 || tj < 0 || ti >= SIZE || tj >= SIZE){
+          const rect = mount.getBoundingClientRect();
+          const sx = tapClientX - rect.left;
+          const sy = tapClientY - rect.top;
 
-          let bestI = 0, bestDx = Infinity;
-          for (let i = 0; i < SIZE; i++){
-            const dxI = Math.abs(getXcss(i) - sx);
-            if (dxI < bestDx){ bestDx = dxI; bestI = i; }
-          }
-          let bestJ = 0, bestDy = Infinity;
-          for (let j = 0; j < SIZE; j++){
-            const dyJ = Math.abs(getYcss(j) - sy);
-            if (dyJ < bestDy){ bestDy = dyJ; bestJ = j; }
-          }
-          ti = bestI;
-          tj = bestJ;
-        }
+          let bestI = 0, bestDx = Infinity;
+          for (let i = 0; i < SIZE; i++){
+            const dxI = Math.abs(getXcss(i) - sx);
+            if (dxI < bestDx){ bestDx = dxI; bestI = i; }
+          }
+          let bestJ = 0, bestDy = Infinity;
+          for (let j = 0; j < SIZE; j++){
+            const dyJ = Math.abs(getYcss(j) - sy);
+            if (dyJ < bestDy){ bestDy = dyJ; bestJ = j; }
+          }
+          ti = bestI;
+          tj = bestJ;
+        }
 
-        e.preventDefault();
-        e.stopPropagation();
-        if (e.stopImmediatePropagation) e.stopImmediatePropagation();
+        e.preventDefault();
+        e.stopPropagation();
+        if (e.stopImmediatePropagation) e.stopImmediatePropagation();
 
-        suppressNextBoardClick = true;
-        enterFullscreenAtGrid(ti, tj, tapClientX, tapClientY);
-        return;
-      }
+        suppressNextBoardClick = true;
+        enterFullscreenAtGrid(ti, tj, tapClientX, tapClientY);
+        return;
+      }
 
-      // Already zoomed – treat tap as move if on the grid
-      if (gi == null || gj == null ||
-          gi < 0 || gj < 0 || gi >= SIZE || gj >= SIZE){
-        return;
-      }
+      // Already zoomed – treat tap as move if on the grid
+      if (gi == null || gj == null ||
+          gi < 0 || gj < 0 || gi >= SIZE || gj >= SIZE){
+        return;
+      }
 
-      e.preventDefault();
-      e.stopPropagation();
-      if (e.stopImmediatePropagation) e.stopImmediatePropagation();
+      e.preventDefault();
+      e.stopPropagation();
+      if (e.stopImmediatePropagation) e.stopImmediatePropagation();
 
-      suppressNextBoardClick = true;
-      onBoardClick(gi, gj);
-    }
-  }, { passive:false, capture:true });
+      suppressNextBoardClick = true;
+      onBoardClick(gi, gj);
+    }
+  }, { passive:false, capture:true });
 
   mount.addEventListener('pointermove', function(e){
     if (!zoomEnabled) return;
