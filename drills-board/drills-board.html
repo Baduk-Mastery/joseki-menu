@@ -502,7 +502,11 @@ if (!window.StoneSFX) {
     if (!board) return 0;
     return board.getY(j) * canvasCssScale();
   }
-
+function getGridSpacing(){
+    var sX = Math.abs(getXcss(1) - getXcss(0));
+    var sY = Math.abs(getYcss(1) - getYcss(0));
+    return { x: sX, y: sY };
+  }
 
   // session control
   let solvedCount = 0;
@@ -1257,9 +1261,40 @@ const boardY = sy / scale + offsetY;
     beginPan(e);
   }, { passive:false });
 
-  // Use capture so we intercept before WGo's own click handler
+// Use capture so we intercept before WGo's own click handler
   mount.addEventListener('pointerup', function(e){
-    if (!zoomEnabled || !tapStart){
+    // --- CASE A: Zoom Disabled (Match Core Board behavior) ---
+    if (!zoomEnabled) {
+      if (e.pointerType && e.pointerType !== 'touch') return; // Let mouse use WGo default
+
+      const r = mount.getBoundingClientRect();
+      const bx = e.clientX - r.left;
+      const by = e.clientY - r.top;
+
+      let bestI = -1, bestJ = -1, bestDx = 1e9, bestDy = 1e9;
+      for (let i = 0; i < SIZE; i++){
+        const dx = Math.abs(getXcss(i) - bx);
+        if (dx < bestDx){ bestDx = dx; bestI = i; }
+      }
+      for (let j = 0; j < SIZE; j++){
+        const dy = Math.abs(getYcss(j) - by);
+        if (dy < bestDy){ bestDy = dy; bestJ = j; }
+      }
+
+      // Threshold Check (Ignore clicks in the gutter/border)
+      const spacing = getGridSpacing();
+      if (bestDx > spacing.x * 0.5 || bestDy > spacing.y * 0.5) {
+        return; 
+      }
+
+      e.preventDefault();
+      // Use the Drills board move handler
+      onBoardClick(bestI, bestJ);
+      return;
+    }
+
+    // --- CASE B: Zoom Enabled ---
+    if (!tapStart){
       endPan(e);
       return;
     }
@@ -1292,8 +1327,8 @@ const boardY = sy / scale + offsetY;
         let ti = gi;
         let tj = gj;
 
-        if (ti == null || tj == null ||
-            ti < 0 || tj < 0 || ti >= SIZE || tj >= SIZE){
+        // If tap was in gutter, recalculate best grid point based on click coords
+        if (ti == null || tj == null || ti < 0 || tj < 0 || ti >= SIZE || tj >= SIZE){
           const rect = mount.getBoundingClientRect();
           const sx = tapClientX - rect.left;
           const sy = tapClientY - rect.top;
@@ -1322,8 +1357,7 @@ const boardY = sy / scale + offsetY;
       }
 
       // Already zoomed – treat tap as move if on the grid
-      if (gi == null || gj == null ||
-          gi < 0 || gj < 0 || gi >= SIZE || gj >= SIZE){
+      if (gi == null || gj == null || gi < 0 || gj < 0 || gi >= SIZE || gj >= SIZE){
         return;
       }
 
@@ -1333,6 +1367,14 @@ const boardY = sy / scale + offsetY;
 
       suppressNextBoardClick = true;
       onBoardClick(gi, gj);
+
+      // Auto-zoom out check (Match Core Board behavior)
+      if (GoPrefs && !GoPrefs.disableAutoZoomOut && scale > 1) {
+         setTimeout(function(){
+            if(isFullscreen) exitFullscreen();
+            else resetViewLocal();
+         }, 10);
+      }
     }
   }, { passive:false, capture:true });
 
