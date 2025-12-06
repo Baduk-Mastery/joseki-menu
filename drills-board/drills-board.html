@@ -98,23 +98,20 @@
 </head>
 <body>
 
-<!-- ================= DRILL BOARD (adds Blitz mode) ================= -->
 <div id="go-board-drill-wrap" style="width:100%;max-width:720px;margin:0 auto;box-sizing:border-box;">
   <div id="go-board-drill"
        style="position:relative;width:100%;border-radius:10px;overflow:hidden;box-shadow:
         0 18px 40px rgba(0,0,0,.32),
         0 6px 16px rgba(0,0,0,.22);">
-    <!-- Blitz timer (created by JS if needed) -->
-  </div>
+    </div>
 
   <div id="drill-ctrls" class="prac-ctrls">
     <button id="dbtn-menu"  class="pbtn pbtn-strong" type="button">Back</button>
-    <button id="dbtn-next"  class="pbtn pbtn-alt"   type="button">Next</button>
+    <button id="dbtn-next"  class="pbtn pbtn-alt"    type="button">Next</button>
     <div id="drill-progress" style="font-weight:800;opacity:.9;">1 / 1</div>
   </div>
 </div>
 
-<!-- Wrong Move (drill) -->
 <div id="drill-wrong" style="display:none;position:fixed;inset:0;z-index:99999;align-items:center;justify-content:center;">
   <div style="position:absolute;inset:0;background:rgba(0,0,0,.55);"></div>
   <div style="position:relative;z-index:1;background:#fff;border:1px solid #e2e8f0;border-radius:10px;box-shadow:0 12px 28px rgba(15,23,42,.18);width:min(86vw,420px);padding:16px;text-align:center;font-family:system-ui,Segoe UI,Arial,sans-serif;color:#0f172a;">
@@ -122,7 +119,6 @@
   </div>
 </div>
 
-<!-- Drill Cleared (auto-dismiss) -->
 <div id="drill-cleared" style="display:none;position:fixed;inset:0;z-index:99999;align-items:center;justify-content:center;">
   <div style="position:absolute;inset:0;background:rgba(0,0,0,.55);"></div>
   <div style="position:relative;z-index:1;background:#fff;border:1px solid #e2e8f0;border-radius:10px;box-shadow:0 12px 28px rgba(15,23,42,.18);width:min(86vw,420px);padding:16px;text-align:center;font-family:system-ui,Segoe UI,Arial,sans-serif;color:#0f172a;">
@@ -130,13 +126,11 @@
   </div>
 </div>
 
-<!-- All Done -->
 <div id="drill-done" style="display:none;position:fixed;inset:0;z-index:99999;align-items:center;justify-content:center;">
   <div style="position:absolute;inset:0;background:rgba(0,0,0,.55);"></div>
   <div style="position:relative;z-index:1;background:#fff;border:1px solid #e2e8f0;border-radius:10px;box-shadow:0 12px 28px rgba(15,23,42,.18);width:min(86vw,460px);padding:16px;text-align:center;font-family:system-ui,Segoe UI,Arial,sans-serif;color:#0f172a;">
     <div id="drill-done-title" style="font-weight:800;font-size:18px;margin-bottom:8px;">All Drills Complete</div>
 
-    <!-- Stats block -->
     <div id="drill-stats" style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin:6px 0 10px;">
       <div style="border:1px solid #e2e8f0;border-radius:10px;padding:10px 14px;min-width:140px;">
         <div style="font-weight:800;opacity:.8;margin-bottom:2px;">Solved</div>
@@ -148,7 +142,6 @@
       </div>
     </div>
 
-    <!-- Message BELOW the stats -->
     <div id="drill-done-msg" style="color:#334155;margin-bottom:14px;">Session finished. You can retry the set or go back to selection.</div>
 
     <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap;">
@@ -158,7 +151,6 @@
   </div>
 </div>
 
-<!-- Run Cap overlay -->
 <div id="drill-cap" style="display:none;position:fixed;inset:0;z-index:100000;align-items:center;justify-content:center;">
   <div style="position:absolute;inset:0;background:rgba(0,0,0,.55);"></div>
   <div style="position:relative;z-index:1;background:#fff;border:1px solid #e2e8f0;border-radius:10px;box-shadow:0 12px 28px rgba(15,23,42,.18);width:min(86vw,460px);padding:16px;text-align:center;font-family:system-ui,Segoe UI,Arial,sans-serif;color:#0f172a;">
@@ -170,17 +162,15 @@
   </div>
 </div>
 
-<!-- WGo (if not already loaded) -->
 <script>
 if (!window.WGo) {
   var s = document.createElement('script');
-  s.src = "https://3d85c7a311526e02aeeeb19e952d0c09.cdn.bubble.io/f1754893285939x971907393576095400/wgo.min.js";
+  s.src = "../lib/wgo.min.js"; // Use local lib for consistency
   s.async = true;
   document.head.appendChild(s);
 }
 </script>
 
-<!-- Sound bridge (respects Settings → Sound) -->
 <script>
 if (!window.StoneSFX) {
   window.StoneSFX = (() => {
@@ -202,7 +192,8 @@ if (!window.StoneSFX) {
     function play(){ if (!pool.length) return; const a = pool[i++ % pool.length]; try { a.currentTime=0; a.playbackRate=0.97+Math.random()*0.06; a.play(); } catch(e){} }
     return { init, play };
   })();
-  StoneSFX.init("https://3d85c7a311526e02aeeeb19e952d0c09.cdn.bubble.io/f1754926303439x491369894441766600/klick.mp3");
+  // Use local sound path
+  StoneSFX.init("../sound/click.mp3");
 }
 (function bridgeSoundSetting(){
   if (window._drillSoundInit) return;
@@ -249,7 +240,7 @@ if (!window.StoneSFX) {
 
  /* ===== Run cap (Start + Retry)
      - Disabled: limits are handled per mode/day on drills.html
-  ================================= */
+ ================================= */
   const RUN_LIMIT_FREE = Infinity;
   // ---- Daily Drills limit: shared with drills.html (per mode) ----
   const FREE_DAILY_LIMIT_COMPLETE = 2;
@@ -313,7 +304,7 @@ if (!window.StoneSFX) {
   }
 
   function dailyAttemptsLeftForCurrentMode(){
-    const m     = currentModeForDaily();
+    const m      = currentModeForDaily();
     const limit = getDailyLimitForMode(m);
     if (!Number.isFinite(limit)) return Infinity;
     const used  = getDrillsUsedToday(m);
@@ -465,9 +456,9 @@ if (!window.StoneSFX) {
   const ROT_IDX_ONLY = [0,2,4,6]; // pure rotations (corners)
 
   // --- UI elements ---
-  const wrap   = document.getElementById('go-board-drill-wrap');
-  const mount  = document.getElementById('go-board-drill');
-  const btnMenu= document.getElementById('dbtn-menu');
+  const wrap    = document.getElementById('go-board-drill-wrap');
+  const mount   = document.getElementById('go-board-drill');
+  const btnMenu = document.getElementById('dbtn-menu');
   const btnNext = document.getElementById('dbtn-next');
   const progEl  = document.getElementById('drill-progress');
 
@@ -577,7 +568,7 @@ if (!window.StoneSFX) {
       layer.style.top  = '0';
       layer.style.right = '0';
       layer.style.bottom = '0';
-      layer.style.backgroundImage = "url('https://3d85c7a311526e02aeeeb19e952d0c09.cdn.bubble.io/f1755870506985x437178801728222500/wood.jpg')";
+      layer.style.backgroundImage = "url('../img/wood.jpg')"; // Use local path
       layer.style.backgroundSize = 'cover';
       layer.style.backgroundPosition = 'center';
       layer.style.backgroundRepeat = 'no-repeat';
@@ -820,30 +811,21 @@ if (!window.StoneSFX) {
   let offsetY = 0;
 
   let isFullscreen = false;
-  let zoomLayer = null;
+  let isZoomAnimating = false;
+  let animId = 0;
+  let returnAnchor = null;
+
+  let isPanning = false, panStart = null, tapStart = null;
+  let TAP_SLOP2 = 64;
+  let isFlinging = false, flingId = 0, flingVX = 0, flingVY = 0, flingLastTime = 0;
+  let panSamplePrev = null, panSampleCurr = null;
 
   let overlay = null;
   let stage = null;
   let zoomExitBtn = null;
-  let returnAnchor = null;
   let prevOverflow = "";
 
-  // Kinetic pan / fling
-  let flingId = 0;
-  let isFlinging = false;
-  let flingVX = 0;
-  let flingVY = 0;
-  let flingLastTime = 0;
-
-  // Pointer tracking
-  let isPanning = false;
-  let panStart = null;
-  let activePointerId = null;
-  let panSamplePrev = null;
-  let panSampleCurr = null;
-  let tapStart = null;
-  let suppressNextBoardClick = false;
-  const TAP_SLOP2 = 64; // squared px (~8px movement)
+  // Kinetic pan / fling logic
 
   function cancelFling(){
     isFlinging = false;
@@ -951,7 +933,7 @@ if (!window.StoneSFX) {
       document.body.appendChild(overlay);
     }
 
-    stage       = overlay.querySelector('#go-zoom-stage-drill');
+    stage        = overlay.querySelector('#go-zoom-stage-drill');
     zoomExitBtn = overlay.querySelector('#go-zoom-exit-drill');
 
     if (zoomExitBtn && !zoomExitBtn._bound){
@@ -1502,7 +1484,7 @@ const boardY = sy / scale + offsetY;
 
     if (statSolvedEl) statSolvedEl.textContent = String(solvedCount);
     if (statFailedEl) statFailedEl.textContent = String(failedCount);
-    if (doneTitle)    doneTitle.textContent   = customTitle || 'All Drills Complete';
+    if (doneTitle)    doneTitle.textContent    = customTitle || 'All Drills Complete';
 
     const left = dailyAttemptsLeftForCurrentMode();
 
@@ -1825,6 +1807,3 @@ const boardY = sy / scale + offsetY;
 
 </body>
 </html>
-
-
-
