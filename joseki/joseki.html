@@ -25,21 +25,24 @@ body {
   background-repeat: no-repeat;
   background-attachment: fixed;
 
-  /* center the whole joseki block */
-  display: flex;
-  align-items: center;      /* vertical center */
-  justify-content: center;  /* horizontal center */
-  padding: 16px 0;
-  box-sizing: border-box;
+position: relative;
+padding: 0;
+box-sizing: border-box;
 }
 
 
   /* Simple wrapper inside the centered body */
-  #page-wrap {
-    width: 100%;
-    max-width: 720px;
-    margin: 0 auto;
-  }
+ #page-wrap {
+  width: 100%;
+  max-width: 720px;
+  margin: 0 auto;
+
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
 
   /* Board wrapper */
   #go-board-wrap {
@@ -57,21 +60,6 @@ body {
   #desc-box::-webkit-scrollbar { display: none; }
   #desc-box.grabbing { cursor: grabbing; }
 
-  .j-ctrls{
-    width:100%; max-width:720px; margin:10px auto 0;
-    padding:8px 12px; gap:10px; justify-content:center; flex-wrap:wrap;
-    display:flex; box-sizing:border-box;
-  }
-  .jbtn{
-    padding:12px 16px; border-radius:12px; border:1px solid #cbd5e1;
-    background:#fff; font-weight:800; font-size:15px; color:#0f172a;
-    cursor:pointer; box-shadow:0 2px 8px rgba(15,23,42,.06);
-    -webkit-tap-highlight-color: transparent;
-  }
-  .jbtn:active{ transform:translateY(1px); }
-  .jbtn-alt{ background:#e7f0ff; color:#0b4aa2; border-color:#a7c1ff; }
-  .jbtn-strong{ background:#111827; color:#fff; border-color:#111827; }
-
   /* Board drop shadow */
   #go-board{
     box-shadow:
@@ -81,132 +69,123 @@ body {
   }
 </style>
   <style>
-    /* Make the description box's width include its border so edges align */
-    #desc-box { box-sizing: border-box; }
+/* Make the description box's width include its border so edges align */
+#desc-box { box-sizing: border-box; }
 
-    /* Let the button row use the full width (no side padding),
-       so it lines up exactly with #desc-box */
-    #joseki-ctrls{
-      padding-left: 0 !important;
-      padding-right: 0 !important;
-    }
-
-    /* Keep one-line layout while allowing each button to stretch evenly */
-    #joseki-ctrls .jbtn,
-    #joseki-ctrls .jbtn-strong,
-    #joseki-ctrls .jbtn-alt{
-      flex: 1 1 0;
-      min-width: 0;
-      white-space: nowrap;
-    }
+/* Keep the same stretch behavior as Practice */
+#joseki-ctrls .jbtn,
+#joseki-ctrls .jbtn-strong,
+#joseki-ctrls .jbtn-alt{
+  flex: 1 1 0;
+  min-width: 0;
+  white-space: nowrap;
+}
   </style>
 
   <style>
-  /* Joseki Board buttons – same wood style as Practice Board */
-  #joseki-ctrls{
-    max-width: 720px;
-    width: 100%;
-    box-sizing: border-box;
-    margin: 14px auto 0;
-    padding: 0 12px 18px;
-    display: flex;
-    justify-content: center;
-    gap: 12px;
-    flex-wrap: wrap;
-  }
+ /* Joseki Board buttons – match Practice Board */
+#joseki-ctrls{
+  max-width: 720px;
+  width: 100%;
+  box-sizing: border-box;
+  margin: 14px auto 0;
+  padding: 0 12px 18px;
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
 
-  #joseki-ctrls .jbtn,
-  #joseki-ctrls .jbtn-strong,
-  #joseki-ctrls .jbtn-alt{
-    position: relative;
-    min-width: 90px;
-    padding: 8px 24px;
+#joseki-ctrls .jbtn,
+#joseki-ctrls .jbtn-strong,
+#joseki-ctrls .jbtn-alt{
+  position: relative;
+  min-width: 90px;
+  padding: 8px 24px;
 
-    /* same layout idea as Practice buttons */
-    flex: 1 1 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    box-sizing: border-box;
-    text-align: center;
+  flex: 1 1 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  text-align: center;
 
-    border-radius: 10px;
-    border: 1px solid rgba(255,255,255,.40);
+  border-radius: 10px;
+  border: 1px solid rgba(255,255,255,.40);
 
-    font-size: 16px;
-    font-weight: 800;
-    line-height: 1.1;
-    color: #fff3cf;
-    text-shadow: 0 1px 0 rgba(120,60,20,.7);
-    cursor: pointer;
+  font-size: 16px;
+  font-weight: 800;
+  line-height: 1.1;
+  color: #fff3cf;
+  text-shadow: 0 1px 0 rgba(120,60,20,.7);
+  cursor: pointer;
 
-    user-select: none;
-    -webkit-user-select: none;
-    -moz-user-select: none;
-    -ms-user-select: none;
-    -webkit-tap-highlight-color: transparent;
+  user-select: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  -webkit-tap-highlight-color: transparent;
 
-    background-image:
-      linear-gradient(
-        to bottom,
-        rgba(255,255,255,.12),
-        rgba(255,255,255,.03) 38%,
-        rgba(0,0,0,.14) 100%
-      ),
-      url('../img/wood.jpg');
-    background-size: 100% 100%, cover;
-    background-position: center;
-    background-repeat: no-repeat;
+  background-image:
+    linear-gradient(
+      to bottom,
+      rgba(255,255,255,.12),
+      rgba(255,255,255,.03) 38%,
+      rgba(0,0,0,.14) 100%
+    ),
+    url('../img/wood.jpg');
+  background-size: 100% 100%, cover;
+  background-position: center;
+  background-repeat: no-repeat;
 
-    filter: brightness(1.08) saturate(.96);
+  filter: brightness(1.08) saturate(.96);
 
-    box-shadow:
-      0 3px 0 rgba(133,74,26,.85),
-      0 8px 14px rgba(0,0,0,.45);
+  box-shadow:
+    0 3px 0 rgba(133,74,26,.85),
+    0 8px 14px rgba(0,0,0,.45);
 
-    transition:
-      transform .08s ease-out,
-      box-shadow .08s ease-out,
-      filter .12s ease-out;
-  }
+  transition:
+    transform .08s ease-out,
+    box-shadow .08s ease-out,
+    filter .12s ease-out;
+}
 
-  #joseki-ctrls .jbtn:hover,
-  #joseki-ctrls .jbtn-strong:hover,
-  #joseki-ctrls .jbtn-alt:hover{
-    filter: brightness(1.12) saturate(.98);
-    transform: translateY(-1px);
-    box-shadow:
-      0 4px 0 rgba(133,74,26,.9),
-      0 10px 16px rgba(0,0,0,.48);
-  }
+#joseki-ctrls .jbtn:hover,
+#joseki-ctrls .jbtn-strong:hover,
+#joseki-ctrls .jbtn-alt:hover{
+  filter: brightness(1.12) saturate(.98);
+  transform: translateY(-1px);
+  box-shadow:
+    0 4px 0 rgba(133,74,26,.9),
+    0 10px 16px rgba(0,0,0,.48);
+}
 
-  #joseki-ctrls .jbtn:active,
-  #joseki-ctrls .jbtn-strong:active,
-  #joseki-ctrls .jbtn-alt:active{
-    filter: brightness(.97) saturate(.96);
-    transform: translateY(2px);
-    box-shadow:
-      0 1px 0 rgba(120,60,20,.9),
-      0 4px 8px rgba(0,0,0,.55);
-  }
+#joseki-ctrls .jbtn:active,
+#joseki-ctrls .jbtn-strong:active,
+#joseki-ctrls .jbtn-alt:active{
+  filter: brightness(.97) saturate(.96);
+  transform: translateY(2px);
+  box-shadow:
+    0 1px 0 rgba(120,60,20,.9),
+    0 4px 8px rgba(0,0,0,.55);
+}
 
-  #joseki-ctrls .jbtn:focus-visible,
-  #joseki-ctrls .jbtn-strong:focus-visible,
-  #joseki-ctrls .jbtn-alt:focus-visible{
-    outline: 2px solid rgba(255,255,255,.9);
-    outline-offset: 2px;
-  }
+#joseki-ctrls .jbtn:focus-visible,
+#joseki-ctrls .jbtn-strong:focus-visible,
+#joseki-ctrls .jbtn-alt:focus-visible{
+  outline: 2px solid rgba(255,255,255,.9);
+  outline-offset: 2px;
+}
 
-  /* Disabled state – match Practice behavior */
-  #joseki-ctrls .jbtn[disabled],
-  #joseki-ctrls .jbtn-strong[disabled],
-  #joseki-ctrls .jbtn-alt[disabled]{
-    opacity: .45;
-    cursor: default;
-    box-shadow: none;
-    transform: none;
-    filter: brightness(1) saturate(.9);
-  }
+#joseki-ctrls .jbtn[disabled],
+#joseki-ctrls .jbtn-strong[disabled],
+#joseki-ctrls .jbtn-alt[disabled]{
+  opacity: .45;
+  cursor: default;
+  box-shadow: none;
+  transform: none;
+  filter: brightness(1) saturate(.9);
+}
   </style>
 
    <style>
@@ -422,12 +401,13 @@ body {
     right: 0;
     bottom: 0;
 
-    /* same feel as Practice */
+    /* RESTORED padding: Match Practice Board's outer dock padding */
     padding: 0 12px 18px;
 
     display: none;
     flex-direction: column;
     align-items: center;
+    justify-content: flex-end;
 
     /* allow board gestures through gaps, but buttons clickable */
     pointer-events: none;
@@ -441,10 +421,19 @@ body {
 
   /* When in zoom mode, tighten the control row for dock use */
   body.joseki-zoom-mode #joseki-ctrls{
-    margin: 0 !important;
-    padding: 0 !important;
+    /* Keep margin auto to center, but remove top margin */
+    margin: 0 auto !important;
+    
+    /* Match Practice: Padding ALSO on the inner controls (double padding creates the look) */
+    padding: 0 12px 18px !important;
+    
     width: 100%;
     max-width: 720px;
+  }
+
+  /* Hide the description box while zoomed to save space */
+  body.joseki-zoom-mode #desc-wrap{
+    display: none !important;
   }
 
   /* Show only the first 3 buttons while zoomed */
@@ -453,7 +442,6 @@ body {
     display: none !important;
   }
 </style>
-
 </head>
 <body>
 
@@ -1978,12 +1966,26 @@ hook('jbtnBack', function(){
 });
 
 
-  hook('jbtnForward', function(){
+hook('jbtnForward', function(){
+    var didMove = false;
+
     if (hasSGF && !freeMode) {
-      gotoNext();
-    } else if (current<history.length){
+      // Check if a next move actually exists before trying to go there
+      var cand = getNextCandidates(currentNode);
+      if (cand.length) {
+        gotoNext();
+        didMove = true;
+      }
+    } else if (current < history.length){
+      // Replaying from history
       current++;
       rebuildFromHistory();
+      didMove = true;
+    }
+
+    // Play sound if a move actually happened
+    if (didMove) {
+      try { if (soundEnabled && window.StoneSFX && StoneSFX.play) StoneSFX.play(); } catch(e){}
     }
   });
 
@@ -2152,4 +2154,8 @@ koPoint = null;
 
 </body>
 </html>
+
+
+
+
 
