@@ -805,11 +805,22 @@ if (!window.StoneSFX) {
   let blitzCornerState = null;
   // ===== Practice-style Zoom & Pan for Drills =====
 
-  // Respect GoPrefs.josekiZoom if Settings exist
-  let zoomEnabled =
-    (window.GoPrefs && typeof window.GoPrefs.josekiZoom !== 'undefined')
-      ? !!window.GoPrefs.josekiZoom
-      : true;
+  // ===== Shared preferences (Fix: Load from storage so zoom setting is respected) =====
+  var STORAGE_KEY = 'go_prefs';
+  var GoPrefs = (window.GoPrefs = window.GoPrefs || {});
+  try {
+    var saved = localStorage.getItem(STORAGE_KEY);
+    if (saved) Object.assign(GoPrefs, JSON.parse(saved) || {});
+  } catch (e) {}
+
+  // Defaults
+  if (typeof GoPrefs.josekiZoom === 'undefined') GoPrefs.josekiZoom = true;
+  if (typeof GoPrefs.soundOn === 'undefined') GoPrefs.soundOn = true;
+  if (typeof GoPrefs.highlightLast === 'undefined') GoPrefs.highlightLast = true;
+  if (typeof GoPrefs.disableAutoZoomOut === 'undefined') GoPrefs.disableAutoZoomOut = false;
+
+  // Now set the local variable based on the loaded prefs
+  let zoomEnabled = !!GoPrefs.josekiZoom;
 
   // Zoom / pan state
   let scale = 1;
