@@ -6,22 +6,16 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <style>
-  html, body {
-      margin: 0;
-      padding: 0;
-      height: 100%;
-      min-height: 100%;
-      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      background-image: url("../img/wood.jpg");
-      background-size: cover;
-      background-position: center;
-      background-repeat: no-repeat;
-      overscroll-behavior: none;
-      
-      /* --- Centering Logic from Core Board --- */
-      display: flex;
-      align-items: center;
-      justify-content: center;
+    html, body{
+      margin:0;
+      padding:0;
+      min-height:100%;
+      font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+      background-image:url("../img/wood.jpg");
+      background-size:cover;
+      background-position:center;
+      background-repeat:no-repeat;
+      overscroll-behavior:none;
     }
 
     @media (max-width: 480px){
@@ -571,38 +565,52 @@ function getGridSpacing(){
   function stopTimer(){ if (timerId){ clearInterval(timerId); timerId=null; } }
 
   // board helpers
-function initBoard(){
+  function initBoard(){
     if (!window.WGo) return setTimeout(initBoard, 40);
-    if (board) return; 
+    if (board) return; // safety
 
-    // Create board
     board = new WGo.Board(mount, { size: SIZE });
 
-    // Ensure wood background layer exists (keep your existing code here)
-    (function ensureDrillWoodLayer(){ 
-       // ... keep your existing wood layer code ...
+    // wood bg inside mount – also serves as the zoom "layer"
+    (function ensureDrillWoodLayer(){
+      if (mount.__woodLayerReady) return;
+      const layer = document.createElement('div');
+      layer.id = 'go-drill-wood';
+      layer.style.position = 'absolute';
+      layer.style.left = '0';
+      layer.style.top  = '0';
+      layer.style.right = '0';
+      layer.style.bottom = '0';
+      layer.style.backgroundImage = "url('https://3d85c7a311526e02aeeeb19e952d0c09.cdn.bubble.io/f1755870506985x437178801728222500/wood.jpg')";
+      layer.style.backgroundSize = 'cover';
+      layer.style.backgroundPosition = 'center';
+      layer.style.backgroundRepeat = 'no-repeat';
+      layer.style.willChange = 'left, top, width, height';
+      mount.appendChild(layer);
+
+      function moveChildrenIntoLayer(){
+        const kids = Array.from(mount.childNodes).filter(n => n !== layer);
+        for (const n of kids) layer.appendChild(n);
+      }
+      moveChildrenIntoLayer();
+
+      const mo = new MutationObserver(moveChildrenIntoLayer);
+      mo.observe(mount, { childList: true });
+
+      mount.__woodLayerReady = true;
+      mount.__woodLayer = layer;
+      mount.__woodObserver = mo;
     })();
 
-    // Setup zoom container
+    // Prepare container for zoom transformations
     mount.style.position = 'relative';
     mount.style.overflow = 'hidden';
+
+    // This is what gets translated+scaled
     zoomLayer = mount.__woodLayer || mount;
 
-    // --- FORCE SIZE UPDATE IMMEDIATELY ---
-    // This ensures it calculates based on the centered flex container
-    setTimeout(function(){
-       fitBoard();
-    }, 10);
-
-    // Click handler...
-    board.addEventListener('click', function(x, y){
-      if (suppressNextBoardClick){
-        suppressNextBoardClick = false;
-        return;
-      }
-      onBoardClick(x, y);
-    });
-  }
+    // Initial sizing
+    fitBoard();
 
     // Click handler – respect zoom touch handler's suppression flag
     board.addEventListener('click', function(x, y){
@@ -1255,10 +1263,9 @@ const boardY = sy / scale + offsetY;
 
 // Use capture so we intercept before WGo's own click handler
   mount.addEventListener('pointerup', function(e){
-    
     // --- CASE A: Zoom Disabled (Match Core Board behavior) ---
     if (!zoomEnabled) {
-      if (e.pointerType && e.pointerType !== 'touch') return; 
+      if (e.pointerType && e.pointerType !== 'touch') return; // Let mouse use WGo default
 
       const r = mount.getBoundingClientRect();
       const bx = e.clientX - r.left;
@@ -1281,6 +1288,7 @@ const boardY = sy / scale + offsetY;
       }
 
       e.preventDefault();
+      // Use the Drills board move handler
       onBoardClick(bestI, bestJ);
       return;
     }
@@ -1296,9 +1304,12 @@ const boardY = sy / scale + offsetY;
       return;
     }
 
-    const dist2 = (e.clientX - tapStart.x)**2 + (e.clientY - tapStart.y)**2;
-    let gi = tapStart.gridI;
-    let gj = tapStart.gridJ;
+    const dx = e.clientX - tapStart.x;
+    const dy = e.clientY - tapStart.y;
+    const dist2 = dx*dx + dy*dy;
+
+    const gi = tapStart.gridI;
+    const gj = tapStart.gridJ;
     const tapClientX = tapStart.x;
     const tapClientY = tapStart.y;
 
@@ -1311,57 +1322,14 @@ const boardY = sy / scale + offsetY;
     if (dist2 <= TAP_SLOP2){
       const baseView = (!isFullscreen && scale === 1);
 
-      // --- Recalculate grid point if missing (Crucial Fix for Zoomed Play) ---
-      if (gi == null || gj == null || gi < 0 || gj < 0 || gi >= SIZE || gj >= SIZE) {
-         const rect = mount.getBoundingClientRect();
-         const sx = tapClientX - rect.left;
-         const sy = tapClientY - rect.top;
-         
-         // Convert screen tap to board coordinates
-         const boardX = sx / scale + offsetX;
-         const boardY = sy / scale + offsetY;
-
-         let bestI = 0, bestDx = Infinity;
-         for (let i = 0; i < SIZE; i++){
-           const dxI = Math.abs(getXcss(i) - boardX);
-           if (dxI < bestDx){ bestDx = dxI; bestI = i; }
-         }
-         let bestJ = 0, bestDy = Infinity;
-         for (let j = 0; j < SIZE; j++){
-           const dyJ = Math.abs(getYcss(j) - boardY);
-           if (dyJ < bestDy){ bestDy = dyJ; bestJ = j; }
-         }
-         gi = bestI;
-         gj = bestJ;
-      }
-
       if (baseView){
-        e.preventDefault();
-        e.stopPropagation();
-        if (e.stopImmediatePropagation) e.stopImmediatePropagation();
-        suppressNextBoardClick = true;
-        enterFullscreenAtGrid(gi, gj, tapClientX, tapClientY);
-        return;
-      }
+        // Tap from base view – zoom in around tap
+        let ti = gi;
+        let tj = gj;
 
-      // If we are here, we are Zoomed In. Play the move.
-      e.preventDefault();
-      e.stopPropagation();
-      if (e.stopImmediatePropagation) e.stopImmediatePropagation();
-
-      suppressNextBoardClick = true;
-      onBoardClick(gi, gj);
-
-      // Auto-zoom out check (Match Core Board behavior)
-      if (GoPrefs && !GoPrefs.disableAutoZoomOut && scale > 1) {
-         setTimeout(function(){
-            if(isFullscreen) exitFullscreen();
-            else resetViewLocal();
-         }, 10);
-      }
-    }
-  }, { passive:false, capture:true });
- mount.getBoundingClientRect();
+        // If tap was in gutter, recalculate best grid point based on click coords
+        if (ti == null || tj == null || ti < 0 || tj < 0 || ti >= SIZE || tj >= SIZE){
+          const rect = mount.getBoundingClientRect();
           const sx = tapClientX - rect.left;
           const sy = tapClientY - rect.top;
 
@@ -1910,6 +1878,8 @@ const boardY = sy / scale + offsetY;
 
 </body>
 </html>
+
+
 
 
 
