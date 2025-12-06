@@ -6,16 +6,21 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <style>
-    html, body{
-      margin:0;
-      padding:0;
-      min-height:100%;
-      font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
-      background-image:url("../img/wood.jpg");
-      background-size:cover;
-      background-position:center;
-      background-repeat:no-repeat;
-      overscroll-behavior:none;
+html, body {
+      margin: 0;
+      padding: 0;
+      height: 100%; /* Changed from min-height to height for flex centering */
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background-image: url("../img/wood.jpg");
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
+      overscroll-behavior: none;
+      
+      /* --- Centering Logic --- */
+      display: flex;
+      align-items: center;     /* Vertically Center */
+      justify-content: center; /* Horizontally Center */
     }
 
     @media (max-width: 480px){
@@ -565,13 +570,15 @@ function getGridSpacing(){
   function stopTimer(){ if (timerId){ clearInterval(timerId); timerId=null; } }
 
   // board helpers
-  function initBoard(){
+function initBoard(){
+    // 1. Wait for WGo to load
     if (!window.WGo) return setTimeout(initBoard, 40);
-    if (board) return; // safety
+    if (board) return; 
 
+    // 2. Create the board object
     board = new WGo.Board(mount, { size: SIZE });
 
-    // wood bg inside mount – also serves as the zoom "layer"
+    // 3. Setup the background layer (Wood texture)
     (function ensureDrillWoodLayer(){
       if (mount.__woodLayerReady) return;
       const layer = document.createElement('div');
@@ -602,6 +609,26 @@ function getGridSpacing(){
       mount.__woodObserver = mo;
     })();
 
+    // 4. Prepare container
+    mount.style.position = 'relative';
+    mount.style.overflow = 'hidden';
+    zoomLayer = mount.__woodLayer || mount;
+
+    // --- SAFETY FIX: Wait 50ms for the Flexbox layout to settle ---
+    // This prevents the "width = 0" bug that makes the board disappear
+    setTimeout(function(){
+       fitBoard();
+    }, 50);
+
+    // 5. Attach Click Handler
+    board.addEventListener('click', function(x, y){
+      if (suppressNextBoardClick){
+        suppressNextBoardClick = false;
+        return;
+      }
+      onBoardClick(x, y);
+    });
+  }
     // Prepare container for zoom transformations
     mount.style.position = 'relative';
     mount.style.overflow = 'hidden';
