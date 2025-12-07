@@ -17,16 +17,11 @@
   overflow: hidden;
   touch-action: none;
 }
-/* Core-style hard fullscreen guarantee for drills mount */
+/* Fullscreen visual reset only (positioning handled by overlay + JS) */
 #go-board-drill.is-fullscreen{
-  position: fixed !important;
-  inset: 0 !important;
-  width: 100vw !important;
-  height: 100vh !important;
   border-radius: 0 !important;
   box-shadow: none !important;
   margin: 0 !important;
-  z-index: 99998 !important;
 }
 
 #go-board-drill{
@@ -1738,22 +1733,37 @@ function enterFullscreenAtGrid(i, j, tapClientX, tapClientY){
 
   stage.appendChild(mount);
 
-  overlay.style.display = 'flex';
-  if (zoomExitBtn) zoomExitBtn.style.display = 'block';
+   overlay.style.display = 'flex';
+
+  // IMPORTANT: do NOT show/enable the exit box in the same tap frame
+  if (zoomExitBtn){
+    zoomExitBtn.style.display = 'none';
+    zoomExitBtn.style.pointerEvents = 'none';
+  }
+
   isFullscreen = true;
-mount.classList.add('is-fullscreen');
+  mount.classList.add('is-fullscreen');
 
   document.body.classList.add('drill-zoom-mode');
-// NEW safety: explicitly enable hit-testing in zoom mode
-if (overlay) overlay.style.pointerEvents = 'auto';
-if (zoomExitBtn) zoomExitBtn.style.pointerEvents = 'auto';
+
+  // Keep overlay non-blocking until we’re fully in zoom mode
+  if (overlay) overlay.style.pointerEvents = 'auto';
 
   // Reset baseline sizing/state
   resetViewLocal();
   moveZoomUIIn();
 
+  // Enable the exit box only on the next frame
   requestAnimationFrame(function(){
-    // Match core-style "pre-pan then zoom"
+    if (!isFullscreen) return;
+    if (zoomExitBtn){
+      zoomExitBtn.style.display = 'block';
+      zoomExitBtn.style.pointerEvents = 'auto';
+    }
+  });
+
+  // Your existing zoom-in animation frame
+  requestAnimationFrame(function(){
     const initialFactor = 2.0;
 
     const px_curr = getXcss(i);
@@ -1768,14 +1778,12 @@ if (zoomExitBtn) zoomExitBtn.style.pointerEvents = 'auto';
       sy = tapClientY - rect.top;
     }
 
-    // Pre-align the tapped grid point at scale = 1
     scale = 1;
     offsetX = px_curr * 1.0 - sx;
     offsetY = py_curr * 1.0 - sy;
 
     applyPanAndSize(false);
 
-    // Now animate purely to the target scale
     animateTo(initialFactor, px_curr, py_curr, sx, sy);
   });
 }
@@ -1795,7 +1803,11 @@ if (zoomExitBtn) zoomExitBtn.style.pointerEvents = 'none';
 
     if (overlay) overlay.style.display = 'none';
 
-    if (zoomExitBtn) zoomExitBtn.style.display = 'none';
+    if (zoomExitBtn){
+      zoomExitBtn.style.display = 'none';
+      zoomExitBtn.style.pointerEvents = 'none';
+    }
+
 
     if (returnAnchor && returnAnchor.parentNode){
       returnAnchor.parentNode.insertBefore(mount, returnAnchor);
