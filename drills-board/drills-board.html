@@ -390,6 +390,54 @@
     content:"";
   }
 </style>
+<style>
+  /* =========================
+     Drills: overlay UI while zoomed (Practice-style)
+     ========================= */
+
+  /* Top overlay container (Back left, Timer right) */
+  #go-zoom-top-drill{
+    position:fixed;
+    top:0; left:0; right:0;
+    padding:12px 12px 0;
+    display:none;                 /* toggled by JS */
+    pointer-events:none;
+    z-index:99999;
+  }
+  #go-zoom-top-drill > *{
+    pointer-events:auto;
+  }
+
+  /* Bottom overlay container (Next bottom-center) */
+  #go-zoom-ui-drill{
+    position:fixed;
+    left:0; right:0; bottom:0;
+    padding:0 12px 18px;
+    display:none;                 /* toggled by JS */
+    pointer-events:none;
+    z-index:99999;
+  }
+  #go-zoom-ui-drill > *{
+    pointer-events:auto;
+  }
+
+  /* When the top bar is inside fullscreen container,
+     let it span the screen edges */
+  #go-zoom-top-drill #drill-topbar{
+    max-width:none;
+    width:100%;
+    margin:0;
+    padding:0;
+  }
+
+  /* Same for bottom controls bar */
+  #go-zoom-ui-drill #drill-ctrls{
+    max-width:none;
+    width:100%;
+    margin:0;
+    padding:0;
+  }
+</style>
 
 </head>
 <body>
@@ -1168,6 +1216,82 @@ mount.appendChild(layer);
   let zoomExitBtn = null;
   let returnAnchor = null;
   let prevOverflow = "";
+  // ===== NEW: Practice-style UI re-homing for fullscreen =====
+  let zoomTopUI = null;
+  let zoomBottomUI = null;
+
+  const zoomUIStore = {
+    topbar: { parent:null, next:null },
+    ctrls:  { parent:null, next:null }
+  };
+
+  function ensureZoomUIContainers(){
+    if (!zoomTopUI){
+      zoomTopUI = document.getElementById('go-zoom-top-drill');
+      if (!zoomTopUI){
+        zoomTopUI = document.createElement('div');
+        zoomTopUI.id = 'go-zoom-top-drill';
+        document.body.appendChild(zoomTopUI);
+      }
+    }
+    if (!zoomBottomUI){
+      zoomBottomUI = document.getElementById('go-zoom-ui-drill');
+      if (!zoomBottomUI){
+        zoomBottomUI = document.createElement('div');
+        zoomBottomUI.id = 'go-zoom-ui-drill';
+        document.body.appendChild(zoomBottomUI);
+      }
+    }
+  }
+
+  function stashAndMove(el, slot, container){
+    if (!el || !container) return;
+    if (!zoomUIStore[slot].parent){
+      zoomUIStore[slot].parent = el.parentNode;
+      zoomUIStore[slot].next   = el.nextSibling;
+    }
+    container.appendChild(el);
+  }
+
+  function restoreStashed(el, slot){
+    if (!el) return;
+    const store = zoomUIStore[slot];
+    const p = store.parent;
+    const n = store.next;
+    if (p){
+      if (n && n.parentNode === p) p.insertBefore(el, n);
+      else p.appendChild(el);
+    }
+    store.parent = null;
+    store.next   = null;
+  }
+
+  function moveZoomUIIn(){
+    ensureZoomUIContainers();
+
+    // Ensure timer exists before moving topbar if we're in blitz
+    if (blitzMode) ensureTimerEl();
+
+    const tb = document.getElementById('drill-topbar');
+    const bc = document.getElementById('drill-ctrls');
+
+    stashAndMove(tb, 'topbar', zoomTopUI);
+    stashAndMove(bc, 'ctrls',  zoomBottomUI);
+
+    if (zoomTopUI)    zoomTopUI.style.display = 'flex';
+    if (zoomBottomUI) zoomBottomUI.style.display = 'flex';
+  }
+
+  function restoreZoomUIOut(){
+    const tb = document.getElementById('drill-topbar');
+    const bc = document.getElementById('drill-ctrls');
+
+    restoreStashed(tb, 'topbar');
+    restoreStashed(bc, 'ctrls');
+
+    if (zoomTopUI)    zoomTopUI.style.display = 'none';
+    if (zoomBottomUI) zoomBottomUI.style.display = 'none';
+  }
 
   // Kinetic pan / fling
   let flingId = 0;
@@ -1388,6 +1512,7 @@ function enterFullscreenAtGrid(i, j, tapClientX, tapClientY){
 
   // Reset baseline sizing/state
   resetViewLocal();
+  moveZoomUIIn();
 
   requestAnimationFrame(function(){
     // Match core-style "pre-pan then zoom"
@@ -1422,9 +1547,13 @@ function enterFullscreenAtGrid(i, j, tapClientX, tapClientY){
     if (!isFullscreen) return;
     cancelFling();
 
+    // NEW: restore bars back into normal layout
+    restoreZoomUIOut();
+
     isFullscreen = false;
 
     if (overlay) overlay.style.display = 'none';
+
     if (zoomExitBtn) zoomExitBtn.style.display = 'none';
 
     if (returnAnchor && returnAnchor.parentNode){
