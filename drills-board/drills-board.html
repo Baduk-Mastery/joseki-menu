@@ -75,28 +75,39 @@
     .pbtn-alt{ background:#e7f0ff; color:#0b4aa2; border-color:#a7c1ff; }
 
 /* Blitz timer chip (topbar-aligned) */
+/* Blitz timer – same "size/feel" as Back button */
 #blitz-timer{
+  margin-left:auto;
   display:inline-flex;
   align-items:center;
   justify-content:center;
 
-  padding:6px 10px;
-  border-radius:10px;
+  /* safety in case class is removed later */
+  padding:6px 12px;
+  border-radius:8px;
 
-  font-weight:900;
-  font-family:ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-
-  background:rgba(15,23,42,.88);
-  color:#e6f3ff;
-  border:1px solid rgba(148,163,184,.35);
-  box-shadow:0 6px 16px rgba(2,6,23,.35);
-
-  letter-spacing:0.5px;
   white-space:nowrap;
-
-  /* safety if justify-content changes later */
-  margin-left:auto;
 }
+
+/* Small overrides on top of .s-back */
+.blitz-chip{
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-weight:900;
+  letter-spacing:0.5px;
+
+  /* locks visual width so 10.0s -> 9.9s doesn't shrink */
+  min-width: 7ch;
+
+  text-align:center;
+  cursor:default;
+}
+
+/* Keep it stable on desktop hover/active */
+#blitz-timer:hover,
+#blitz-timer:active{
+  transform:none;
+}
+
   </style>
 <style>
 /* =========================
@@ -819,7 +830,9 @@ function ensureTimerEl(){
 
   timerEl = document.createElement('div');
   timerEl.id = 'blitz-timer';
+  timerEl.className = 's-back blitz-chip';
   timerEl.textContent = '0.0s';
+
 
   const topbar = document.getElementById('drill-topbar');
 
