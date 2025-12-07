@@ -2,72 +2,91 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <title>Joseki Master – Clean Board</title>
+  <title>Joseki Master – Drills Board (Core-Based)</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+
   <style>
     html, body{
       margin:0; padding:0; height:100%;
-      overflow: hidden; 
+      overflow: hidden;
       font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
       background-color:#1b1208;
       touch-action: none;
+      overscroll-behavior:none;
     }
 
+    /* ===== Core wood background root ===== */
     #core-root{
-      --wood:url('../img/wood.jpg'); 
+      --wood:url('../img/wood.jpg');
       position: absolute; inset: 0;
       display:flex; align-items:center; justify-content:center;
       background-color:#1b1208;
       background-image: linear-gradient(rgba(0,0,0,.35), rgba(0,0,0,.45)), var(--wood);
       background-size:cover; background-position:center;
+      background-repeat:no-repeat;
     }
 
-    #core-inner{ width:min(92vw, 720px); margin:0 auto; z-index: 1; pointer-events: none; }
-    #core-board-wrap{ width:100%; max-width:720px; margin:0 auto; position: relative; pointer-events: auto; }
+    /* IMPORTANT: make inner interactive (old core had pointer-events:none) */
+    #core-inner{
+      width:min(92vw, 720px);
+      margin:0 auto;
+      z-index: 1;
+      pointer-events: auto;
+
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+    }
+
+    #core-board-wrap{
+      width:100%;
+      max-width:720px;
+      margin:0 auto;
+      position: relative;
+      pointer-events: auto;
+    }
 
     #core-board{
       position:relative; width:100%;
-      border-radius:10px; overflow:hidden; 
+      border-radius:10px; overflow:hidden;
       margin:0 auto;
       box-shadow: 0 18px 40px rgba(0,0,0,.32), 0 6px 16px rgba(0,0,0,.22);
-      background:none; 
+      background:none;
       touch-action: none; user-select: none; -webkit-user-select: none;
       transform-origin: 0 0;
     }
 
-    /* ZOOM OUT BUTTON - MATCHING REFERENCE EXACTLY */
+    /* ===== Zoom out button (core reference) ===== */
     #zoom-exit-btn{
       position:fixed;
       left:14px;
       bottom:90px;
-      
+
       width:120px;
       height:80px;
       border-radius:9px;
-      
+
       background:rgba(148,163,184,.35);
       border:1px solid rgba(148,163,184,.85);
       box-shadow:0 6px 16px rgba(0,0,0,.55);
-      
-      display:none; /* toggled in JS */
+
+      display:none;
       cursor:pointer;
       z-index:99999;
-      
+
       backdrop-filter:blur(2px);
       -webkit-tap-highlight-color:transparent;
-      
+
       color:#e5e7eb;
       font-size:18px;
       font-weight:600;
-      
-      /* Flex to center text */
+
       align-items:center;
       justify-content:center;
     }
-    /* Text Content */
     #zoom-exit-btn::after { content: ""; }
 
-    #core-board.is-fullscreen {
+    #core-board.is-fullscreen{
       position: fixed;
       top: 0; left: 0;
       width: 100vw !important;
@@ -77,8 +96,232 @@
       z-index: 9999;
       margin: 0;
     }
+
+    /* =========================
+       Drills Topbar (old drills element)
+       ========================= */
+    #drill-topbar{
+      max-width:720px;
+      width:100%;
+      margin:16px auto 10px;
+      padding:0;
+      box-sizing:border-box;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+    }
+
+    /* Wood-style Back button – copied from old drills */
+    .s-back{
+      position:relative;
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      gap:6px;
+
+      padding:6px 12px;
+      border-radius:8px;
+      border:1px solid rgba(255,255,255,.40);
+
+      font-size:14px;
+      font-weight:800;
+      line-height:1.1;
+      color:#fff3cf;
+      text-shadow:0 1px 0 rgba(120,60,20,.7);
+      cursor:pointer;
+
+      user-select:none;
+      -webkit-user-select:none;
+      -moz-user-select:none;
+      -ms-user-select:none;
+      -webkit-tap-highlight-color:transparent;
+
+      background-image:
+        linear-gradient(
+          to bottom,
+          rgba(255,255,255,.12),
+          rgba(255,255,255,.03) 38%,
+          rgba(0,0,0,.14) 100%
+        ),
+        url('../img/wood.jpg');
+      background-size:100% 100%, cover;
+      background-position:center;
+      background-repeat:no-repeat;
+
+      filter:brightness(1.08) saturate(.96);
+
+      box-shadow:
+        0 3px 0 rgba(133,74,26,.85),
+        0 8px 14px rgba(0,0,0,.45);
+
+      transition:
+        transform .08s ease-out,
+        box-shadow .08s ease-out,
+        filter .12s ease-out;
+    }
+    .s-back:hover{
+      filter:brightness(1.12) saturate(.98);
+      transform:translateY(-1px);
+      box-shadow:
+        0 4px 0 rgba(133,74,26,.9),
+        0 10px 16px rgba(0,0,0,.48);
+    }
+    .s-back:active{
+      filter:brightness(.97) saturate(.96);
+      transform:translateY(2px);
+      box-shadow:
+        0 1px 0 rgba(120,60,20,.9),
+        0 4px 8px rgba(0,0,0,.55);
+    }
+
+    /* =========================
+       Blitz timer chip – from old drills
+       ========================= */
+    #blitz-timer{
+      margin-left:auto;
+      display:none; /* shown by JS in blitz mode */
+      align-items:center;
+      justify-content:center;
+
+      padding:6px 12px;
+      border-radius:8px;
+      min-width:7ch;
+
+      white-space:nowrap;
+      text-align:center;
+
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-weight:900;
+      font-size:14px;
+      line-height:1.1;
+      letter-spacing:0.5px;
+
+      color:#fff3cf;
+      text-shadow:0 1px 0 rgba(0,0,0,.35);
+
+      background:
+        linear-gradient(
+          to bottom,
+          rgba(255,255,255,.10),
+          rgba(0,0,0,.18)
+        ),
+        rgba(0,0,0,.28);
+
+      border:1px solid rgba(255,255,255,.35);
+
+      box-shadow:
+        inset 0 1px 0 rgba(255,255,255,.12),
+        0 4px 10px rgba(0,0,0,.35);
+
+      cursor:default;
+      user-select:none;
+      -webkit-user-select:none;
+      -webkit-tap-highlight-color:transparent;
+    }
+
+    /* =========================
+       Drills bottom bar – old alignment fix
+       ========================= */
+    #drill-ctrls{
+      max-width: 720px;
+      width: 100%;
+      box-sizing: border-box;
+      margin: 14px auto 0;
+      padding: 0 12px 18px;
+
+      display: grid;
+      grid-template-columns: 1fr auto 1fr;
+      align-items: center;
+      gap: 0;
+    }
+
+    /* Wood button skin for bottom bar (reuse old pbtn look) */
+    #drill-ctrls .pbtn{
+      position: relative;
+      width: auto;
+      justify-self: center;
+
+      padding: 8px 24px;
+      border-radius: 10px;
+      border: 1px solid rgba(255,255,255,.40);
+
+      font-size: 16px;
+      font-weight: 800;
+      line-height: 1.1;
+      color: #fff3cf;
+      text-shadow: 0 1px 0 rgba(120,60,20,.7);
+      cursor: pointer;
+
+      user-select: none;
+      -webkit-user-select: none;
+      -moz-user-select: none;
+      -ms-user-select: none;
+      -webkit-tap-highlight-color: transparent;
+
+      background-image:
+        linear-gradient(
+          to bottom,
+          rgba(255,255,255,.12),
+          rgba(255,255,255,.03) 38%,
+          rgba(0,0,0,.14) 100%
+        ),
+        url('../img/wood.jpg');
+      background-size: 100% 100%, cover;
+      background-position: center;
+      background-repeat: no-repeat;
+
+      filter: brightness(1.08) saturate(.96);
+
+      box-shadow:
+        0 3px 0 rgba(133,74,26,.85),
+        0 8px 14px rgba(0,0,0,.45);
+
+      transition:
+        transform .08s ease-out,
+        box-shadow .08s ease-out,
+        filter .12s ease-out;
+    }
+
+    #drill-ctrls .pbtn:hover{
+      filter: brightness(1.12) saturate(.98);
+      transform: translateY(-1px);
+      box-shadow:
+        0 4px 0 rgba(133,74,26,.9),
+        0 10px 16px rgba(0,0,0,.48);
+    }
+    #drill-ctrls .pbtn:active{
+      filter: brightness(.97) saturate(.96);
+      transform: translateY(2px);
+      box-shadow:
+        0 1px 0 rgba(120,60,20,.9),
+        0 4px 8px rgba(0,0,0,.55);
+    }
+
+    /* Center column */
+    #drill-ctrls #dbtn-next{
+      grid-column: 2;
+      justify-self: center;
+    }
+
+    /* Right column */
+    #drill-ctrls #drill-progress{
+      grid-column: 3;
+      justify-self: end;
+      text-align: right;
+      min-width: 60px;
+      font-weight:800;
+      opacity:.9;
+      color:#fff3cf;
+      text-shadow:0 1px 0 rgba(120,60,20,.7);
+    }
+
+    @media (max-width: 480px){
+      #core-inner{ width: min(94vw, 720px); }
+    }
   </style>
 
+  <!-- WGo loader (same CDN you used) -->
   <script>
     (function ensureWGo(){
       if (window.WGo) return;
@@ -89,6 +332,7 @@
     })();
   </script>
 
+  <!-- Shared prefs store -->
   <script>
   (function(){
     var STORAGE_KEY = 'go_prefs';
@@ -97,16 +341,19 @@
       var saved = localStorage.getItem(STORAGE_KEY);
       if (saved) Object.assign(GoPrefs, JSON.parse(saved) || {});
     } catch (e) {}
-    
+
     if (typeof GoPrefs.josekiZoom === 'undefined')         GoPrefs.josekiZoom = true;
     if (typeof GoPrefs.soundOn === 'undefined')            GoPrefs.soundOn = true;
     if (typeof GoPrefs.highlightLast === 'undefined')      GoPrefs.highlightLast = true;
     if (typeof GoPrefs.disableAutoZoomOut === 'undefined') GoPrefs.disableAutoZoomOut = false;
-    
-    window.GoPrefsSave = function(){ try { localStorage.setItem(STORAGE_KEY, JSON.stringify(GoPrefs)); } catch (e) {} };
+
+    window.GoPrefsSave = function(){
+      try { localStorage.setItem(STORAGE_KEY, JSON.stringify(GoPrefs)); } catch (e) {}
+    };
   })();
   </script>
 
+  <!-- Sound bridge -->
   <script>
   if (!window.StoneSFX) {
     window.StoneSFX = (() => {
@@ -117,7 +364,8 @@
         });
         const unlock = () => {
           pool.forEach(a => { try{ a.play().then(()=>a.pause()).catch(()=>{}); a.currentTime=0; }catch(e){} });
-          window.removeEventListener('touchstart', unlock); window.removeEventListener('mousedown', unlock);
+          window.removeEventListener('touchstart', unlock);
+          window.removeEventListener('mousedown', unlock);
         };
         window.addEventListener('touchstart', unlock, { once:true });
         window.addEventListener('mousedown', unlock, { once:true });
@@ -131,7 +379,7 @@
     })();
   }
   if (!window._stoneSFXInit) { StoneSFX.init("../sound/click.mp3"); window._stoneSFXInit = true; }
-  
+
   (function(){
     if (!window.StoneSFX || window._soundBridgeReady) return;
     window._soundBridgeReady = true;
@@ -143,17 +391,34 @@
   })();
   </script>
 </head>
+
 <body>
 
-<div id="core-root">
-  <div id="core-inner">
-    <div id="core-board-wrap">
-      <div id="core-board"></div>
+  <div id="core-root">
+    <div id="core-inner">
+
+      <!-- Top bar (from old drills) -->
+      <div id="drill-topbar">
+        <button id="dbtn-menu" class="s-back" type="button" aria-label="Back">← Back</button>
+        <div id="blitz-timer" class="blitz-chip">0.0s</div>
+      </div>
+
+      <!-- Board -->
+      <div id="core-board-wrap">
+        <div id="core-board"></div>
+      </div>
+
+      <!-- Bottom controls (from old drills) -->
+      <div id="drill-ctrls">
+        <button id="dbtn-next" class="pbtn" type="button">Skip</button>
+        <div id="drill-progress">1 / 1</div>
+      </div>
+
     </div>
   </div>
-</div>
 
-<div id="zoom-exit-btn"></div>
+  <!-- Core-style zoom out button -->
+  <div id="zoom-exit-btn"></div>
 
 <script>
 (function(){
@@ -161,35 +426,84 @@
   var mount = document.getElementById('core-board');
   var wrap  = document.getElementById('core-board-wrap');
   var exitBtn = document.getElementById('zoom-exit-btn');
+
+  // UI refs (old drills elements)
+  var btnMenu = document.getElementById('dbtn-menu');
+  var btnNext = document.getElementById('dbtn-next');
+  var progEl  = document.getElementById('drill-progress');
+  var timerEl = document.getElementById('blitz-timer');
+
   var board = null;
 
-  // Zoom Engine State
+  // ===== Lightweight “mode” detection for timer visibility =====
+  function readSelectionMode(){
+    try{
+      var raw = sessionStorage.getItem('go:drills_next_selection');
+      if (!raw) return 'complete';
+      var obj = JSON.parse(raw);
+      return (obj && obj.mode === 'blitz') ? 'blitz' : 'complete';
+    }catch(_){
+      return 'complete';
+    }
+  }
+  var blitzMode = (readSelectionMode() === 'blitz');
+
+  // ===== Simple timer UI (stopwatch placeholder) =====
+  var timerId = null;
+  var timerStart = 0;
+
+  function fmtMs(ms){
+    if (ms < 0) ms = 0;
+    var s = ms/1000;
+    var m = Math.floor(s/60);
+    var r = s - m*60;
+    if (m > 0) {
+      var sec = r.toFixed(1).padStart(4,'0');
+      return m + ":" + sec;
+    }
+    return r.toFixed(1) + "s";
+  }
+
+  function startBlitzUI(){
+    if (!blitzMode || !timerEl) return;
+    timerEl.style.display = 'inline-flex';
+    timerStart = performance.now();
+    stopBlitzUI();
+    timerId = setInterval(function(){
+      var ms = performance.now() - timerStart;
+      timerEl.textContent = fmtMs(ms);
+    }, 100);
+  }
+  function stopBlitzUI(){
+    if (timerId){ clearInterval(timerId); timerId = null; }
+  }
+
+  // ===== Core zoom engine state (unchanged) =====
   var scale = 1, minScale = 1, maxScale = 2.6;
   var offsetX = 0, offsetY = 0;
-  var baseW = 0; 
+  var baseW = 0;
   var zoomLayer = null;
   var isFullscreen = false;
   var isZoomAnimating = false;
   var animId = 0;
-  var returnAnchor = null; 
+  var returnAnchor = null;
 
   var isPanning = false, panStart = null, tapStart = null;
-  var TAP_SLOP2 = 64; 
+  var TAP_SLOP2 = 64;
   var isFlinging = false, flingId = 0, flingVX = 0, flingVY = 0, flingLastTime = 0;
   var panSamplePrev = null, panSampleCurr = null;
 
-  // Game State
+  // ===== Game state (simple core free-play) =====
   var grid = Array.from({ length: SIZE }, () => Array(SIZE).fill(null));
   var turn = 'B';
   var lastMove = null;
-  var koPoint = null; // {x,y} where immediate recapture is forbidden (simple ko)
+  var koPoint = null;
 
-  // Settings (Loaded from GoPrefs)
+  // Settings
   var zoomEnabled = (window.GoPrefs && typeof window.GoPrefs.josekiZoom !== 'undefined') ? !!window.GoPrefs.josekiZoom : true;
   var highlightLastEnabled = (window.GoPrefs && typeof window.GoPrefs.highlightLast !== 'undefined') ? !!window.GoPrefs.highlightLast : true;
   var disableAutoZoomOut = (window.GoPrefs && typeof window.GoPrefs.disableAutoZoomOut !== 'undefined') ? !!window.GoPrefs.disableAutoZoomOut : false;
-  
-  // Listen for Settings Changes
+
   window.addEventListener('go:prefs-changed', function(e){
     var d = e.detail || {};
     if (!d || typeof d.key === 'undefined') return;
@@ -200,72 +514,34 @@
     } else if (d.key === 'josekiZoom') {
       zoomEnabled = !!d.value;
       if (!zoomEnabled && (isFullscreen || scale > 1)) {
-         smoothZoomOutAndExit();
+        smoothZoomOutAndExit();
       }
     } else if (d.key === 'soundOn') {
-       if (window.StoneSFX) StoneSFX._enabled = !!d.value;
+      if (window.StoneSFX) StoneSFX._enabled = !!d.value;
     } else if (d.key === 'disableAutoZoomOut') {
       disableAutoZoomOut = !!d.value;
     }
   });
 
-  // --- 1. SETUP DOM ---
-
+  // ===== Zoom layer wrapper for core =====
   function ensureZoomLayer(){
     if (zoomLayer) return;
-    
+
     zoomLayer = document.createElement('div');
     zoomLayer.style.position = 'absolute';
     zoomLayer.style.left = '0px';
     zoomLayer.style.top = '0px';
     zoomLayer.style.transformOrigin = '0 0';
     zoomLayer.style.willChange = 'transform';
-    
+
     while (mount.firstChild) zoomLayer.appendChild(mount.firstChild);
     mount.appendChild(zoomLayer);
-    
+
     zoomLayer.style.backgroundImage = "url('../img/wood.jpg')";
     zoomLayer.style.backgroundSize = "cover";
     zoomLayer.style.backgroundPosition = "center";
-    mount.style.background = "none"; 
+    mount.style.background = "none";
   }
-
-  /* Page background helper (wood) - from reference */
-  (function(){
-    if (!document.getElementById('site-bg-wood')){
-        var css = `
-        :root{ --wood-url: url('../img/wood.jpg'); }
-        html.bg-wood, body.bg-wood{
-            background-image: linear-gradient(rgba(0,0,0,.35), rgba(0,0,0,.45)), var(--wood-url);
-            background-size: cover;
-            background-position: center;
-            background-repeat: no-repeat;
-            background-attachment: fixed;
-            min-height:100%;
-        }
-        html.no-wood, body.no-wood{ background: none !important; }
-        `;
-        var st = document.createElement('style');
-        st.id = 'site-bg-wood';
-        st.textContent = css;
-        document.head.appendChild(st);
-    }
-    function addBG(){
-        document.documentElement.classList.remove('no-wood');
-        document.body.classList.remove('no-wood');
-        document.documentElement.classList.add('bg-wood');
-        document.body.classList.add('bg-wood');
-    }
-    function removeBG(){
-        document.documentElement.classList.remove('bg-wood');
-        document.body.classList.remove('bg-wood');
-        document.documentElement.classList.add('no-wood');
-        document.body.classList.add('no-wood');
-    }
-    window.PageBG = window.PageBG || { add: addBG, remove: removeBG };
-  })();
-
-  // --- 2. ZOOM ENGINE ---
 
   function canvasCssScale(){
     var c = mount.querySelector('canvas');
@@ -275,7 +551,6 @@
     if (!cssW || !intW) return 1;
     return cssW / intW;
   }
-
   function getXcss(i){ return board.getX(i) * canvasCssScale(); }
   function getYcss(j){ return board.getY(j) * canvasCssScale(); }
 
@@ -285,22 +560,25 @@
 
   function clampPan(){
     if (isZoomAnimating) return;
-    const {vw, vh} = viewportSize();
-    const bw = Math.round(baseW * scale);
-    const bleedX = Math.ceil(vw * 0.5); 
-    const bleedY = Math.ceil(vh * 0.5);
-    const minOX = -bleedX;
-    const maxOX = Math.max(0, bw - vw) + bleedX;
-    const minOY = -bleedY;
-    const maxOY = Math.max(0, bw - vh) + bleedY;
-    
+    var v = viewportSize();
+    var vw = v.vw, vh = v.vh;
+    var bw = Math.round(baseW * scale);
+
+    var bleedX = Math.ceil(vw * 0.5);
+    var bleedY = Math.ceil(vh * 0.5);
+
+    var minOX = -bleedX;
+    var maxOX = Math.max(0, bw - vw) + bleedX;
+    var minOY = -bleedY;
+    var maxOY = Math.max(0, bw - vh) + bleedY;
+
     offsetX = Math.max(minOX, Math.min(offsetX, maxOX));
     offsetY = Math.max(minOY, Math.min(offsetY, maxOY));
   }
 
   function applyPanAndSize(redrawAfter){
-    const targetW = baseW;
-    
+    var targetW = baseW;
+
     if (board && board._lastW !== targetW) {
       board.setWidth(targetW);
       if (zoomLayer) {
@@ -314,41 +592,38 @@
     clampPan();
 
     if (zoomLayer) {
-      zoomLayer.style.transform = 
+      zoomLayer.style.transform =
         'translate3d(' + (-offsetX) + 'px,' + (-offsetY) + 'px,0) scale(' + scale + ')';
     }
-    
+
     if (redrawAfter) redrawBoard();
   }
 
   function animateTo(targetScale, pxWorld, pyWorld, sxTarget, syTarget, onDone){
     targetScale = Math.max(minScale, Math.min(maxScale, targetScale));
     cancelFling();
-    
-    const s0 = scale;
-    const ox0 = offsetX;
-    const oy0 = offsetY;
-    
-    const t0 = performance.now();
-    const dur = 300; 
-    
+
+    var s0 = scale, ox0 = offsetX, oy0 = offsetY;
+    var t0 = performance.now();
+    var dur = 300;
+
     cancelAnimationFrame(animId);
     isZoomAnimating = true;
-    
-    const targetOffsetX = (pxWorld * targetScale) - sxTarget;
-    const targetOffsetY = (pyWorld * targetScale) - syTarget;
+
+    var targetOffsetX = (pxWorld * targetScale) - sxTarget;
+    var targetOffsetY = (pyWorld * targetScale) - syTarget;
 
     (function step(now){
-      let t = (now - t0) / dur;
+      var t = (now - t0) / dur;
       if (t > 1) t = 1;
-      const e = 1 - Math.pow(1 - t, 3); 
-      
+      var e = 1 - Math.pow(1 - t, 3);
+
       scale = s0 + (targetScale - s0) * e;
       offsetX = ox0 + (targetOffsetX - ox0) * e;
       offsetY = oy0 + (targetOffsetY - oy0) * e;
-      
+
       applyPanAndSize(false);
-      
+
       if (t < 1){
         animId = requestAnimationFrame(step);
       } else {
@@ -362,8 +637,6 @@
   function enterFullscreenAtGrid(i, j, tapClientX, tapClientY){
     if (isFullscreen) return;
     cancelFling();
-
-    if (window.PageBG && typeof PageBG.add === 'function') PageBG.add();
 
     returnAnchor = document.createElement('div');
     returnAnchor.style.width = mount.clientWidth + 'px';
@@ -379,28 +652,28 @@
     mount.style.height = '100vh';
 
     scale = 1; offsetX = 0; offsetY = 0;
-    
-    const vw = window.innerWidth;
-    const vh = window.innerHeight;
+
+    var vw = window.innerWidth;
+    var vh = window.innerHeight;
     baseW = Math.floor(Math.min(vw, vh));
     if (baseW % 2) baseW--;
-    
+
     requestAnimationFrame(function(){
       applyPanAndSize(true);
-      
-      const initialFactor = 2.4; 
-      const px_curr = getXcss(i); 
-      const py_curr = getYcss(j);
-      
-      const rect = mount.getBoundingClientRect();
-      let sx = rect.width / 2;
-      let sy = rect.height / 2;
-      
+
+      var initialFactor = 2.4;
+      var px_curr = getXcss(i);
+      var py_curr = getYcss(j);
+
+      var rect = mount.getBoundingClientRect();
+      var sx = rect.width / 2;
+      var sy = rect.height / 2;
+
       if (typeof tapClientX === 'number' && typeof tapClientY === 'number'){
         sx = tapClientX - rect.left;
         sy = tapClientY - rect.top;
       }
-      
+
       offsetX = px_curr * 1.0 - sx;
       offsetY = py_curr * 1.0 - sy;
       applyPanAndSize(false);
@@ -417,8 +690,6 @@
     mount.classList.remove('is-fullscreen');
     exitBtn.style.display = 'none';
     isFullscreen = false;
-    
-    if (window.PageBG && typeof PageBG.remove === 'function') PageBG.remove();
 
     if (returnAnchor && returnAnchor.parentNode){
       returnAnchor.parentNode.insertBefore(mount, returnAnchor);
@@ -428,8 +699,8 @@
 
     mount.style.width = '';
     mount.style.height = '';
-    
-    fitBoard(); 
+
+    fitBoard();
     resetViewLocal();
   }
 
@@ -445,73 +716,265 @@
     cancelAnimationFrame(animId);
     isZoomAnimating = false;
 
-    scale   = 1;
+    scale = 1;
     offsetX = 0;
     offsetY = 0;
 
-    applyPanAndSize(true); 
+    applyPanAndSize(true);
 
     if (isFullscreen){
       exitFullscreen();
     }
   }
-  
-  window.PracticeZoom = {
-      isEnabled(){ return zoomEnabled; },
-      setEnabled(v){ zoomEnabled = !!v; if (!zoomEnabled) { if (isFullscreen) exitFullscreen(); else resetViewLocal(); } },
-      resetView: function(){ if (isFullscreen) exitFullscreen(); else resetViewLocal(); },
-      isFullscreen: function(){ return isFullscreen; }
-  };
 
- function bindClicks(){
-    // Helper: Calculate the visual distance between grid lines
+  function startFling(vx, vy){
+    if (scale <= 1) return;
+    cancelFling();
+
+    var speed = Math.sqrt(vx*vx + vy*vy);
+    var MAX_SPEED = 0.50;
+    if (speed > MAX_SPEED){
+      var s = MAX_SPEED / speed;
+      vx *= s; vy *= s; speed = MAX_SPEED;
+    }
+    if (speed < 0.04) return;
+
+    isFlinging = true;
+    flingVX = vx; flingVY = vy;
+    flingLastTime = performance.now();
+
+    (function step(now){
+      if (!isFlinging) return;
+      var dt = now - flingLastTime;
+      if (dt <= 0){
+        flingId = requestAnimationFrame(step);
+        return;
+      }
+      if (dt > 50) dt = 50;
+      flingLastTime = now;
+
+      offsetX += flingVX * dt;
+      offsetY += flingVY * dt;
+
+      var friction = 0.0010;
+      var currentSpeed = Math.sqrt(flingVX*flingVX + flingVY*flingVY);
+      var decel = friction * dt;
+
+      if (currentSpeed <= 0.01 || decel >= currentSpeed){
+        cancelFling();
+        applyPanAndSize(true);
+        return;
+      }
+
+      var newSpeed = currentSpeed - decel;
+      var scaleFactor = newSpeed / currentSpeed;
+      flingVX *= scaleFactor;
+      flingVY *= scaleFactor;
+
+      applyPanAndSize(false);
+      flingId = requestAnimationFrame(step);
+    })(performance.now());
+  }
+
+  function cancelFling(){
+    isFlinging = false;
+    if (flingId) { cancelAnimationFrame(flingId); flingId = 0; }
+  }
+
+  // ===== Simple KO logic from your core =====
+  function getGroupStones(x, y){
+    var color = grid[y][x];
+    if (!color) return [];
+    var stack = [[x,y]], seen = {}, stones = [];
+    while(stack.length){
+      var p = stack.pop();
+      var k = p[0]+','+p[1];
+      if(seen[k]) continue;
+      seen[k]=true;
+      stones.push({x:p[0], y:p[1]});
+      [[0,1],[0,-1],[1,0],[-1,0]].forEach(function(d){
+        var nx=p[0]+d[0], ny=p[1]+d[1];
+        if(nx>=0 && nx<SIZE && ny>=0 && ny<SIZE && grid[ny][nx]===color && !seen[nx+','+ny]){
+          stack.push([nx,ny]);
+        }
+      });
+    }
+    return stones;
+  }
+
+  function countLiberties(x,y,c){
+    var stack=[[x,y]], seen={}, libs=0;
+    while(stack.length){
+      var p=stack.pop(), k=p[0]+','+p[1];
+      if(seen[k]) continue;
+      seen[k]=true;
+      [[0,1],[0,-1],[1,0],[-1,0]].forEach(function(d){
+        var nx=p[0]+d[0], ny=p[1]+d[1];
+        if(nx>=0&&nx<SIZE&&ny>=0&&ny<SIZE){
+          var v=grid[ny][nx];
+          if(v===null) libs++;
+          else if(v===c && !seen[nx+','+ny]) stack.push([nx,ny]);
+        }
+      });
+    }
+    return libs;
+  }
+
+  function checkCapture(x, y){
+    var color = grid[y][x];
+    var stack = [[x,y]], seen = {};
+    while(stack.length){
+      var p = stack.pop();
+      var k = p[0]+','+p[1];
+      if(seen[k]) continue;
+      seen[k]=true;
+
+      var hasLib = false;
+      [[0,1],[0,-1],[1,0],[-1,0]].forEach(function(d){
+        var nx=p[0]+d[0], ny=p[1]+d[1];
+        if(nx>=0 && nx<SIZE && ny>=0 && ny<SIZE){
+          var v = grid[ny][nx];
+          if(v===null) hasLib=true;
+          else if(v===color && !seen[nx+','+ny]) stack.push([nx,ny]);
+        }
+      });
+      if(hasLib) return false;
+    }
+    return true;
+  }
+
+  function removeGroup(x, y){
+    var color = grid[y][x];
+    var stack = [[x,y]], seen = {}, removed = [];
+    while(stack.length){
+      var p = stack.pop();
+      var k = p[0]+','+p[1];
+      if(seen[k]) continue;
+      seen[k]=true;
+
+      if (grid[p[1]][p[0]] === color){
+        grid[p[1]][p[0]] = null;
+        removed.push({x:p[0], y:p[1]});
+      }
+
+      [[0,1],[0,-1],[1,0],[-1,0]].forEach(function(d){
+        var nx=p[0]+d[0], ny=p[1]+d[1];
+        if(nx>=0 && nx<SIZE && ny>=0 && ny<SIZE && grid[ny][nx]===color && !seen[nx+','+ny]){
+          stack.push([nx,ny]);
+        }
+      });
+    }
+    return removed;
+  }
+
+  function playAt(x, y){
+    if (x<0 || y<0 || x>=SIZE || y>=SIZE) return;
+    if (grid[y][x] !== null) return;
+
+    if (koPoint && koPoint.x === x && koPoint.y === y) return;
+
+    var me = turn;
+    var opp = (me === 'B') ? 'W' : 'B';
+
+    grid[y][x] = me;
+
+    var captured = [];
+    var dirs = [[0,1],[0,-1],[1,0],[-1,0]];
+    dirs.forEach(function(d){
+      var nx=x+d[0], ny=y+d[1];
+      if(nx>=0 && nx<SIZE && ny>=0 && ny<SIZE && grid[ny][nx]===opp){
+        if (checkCapture(nx, ny)) {
+          var removed = removeGroup(nx, ny);
+          if (removed && removed.length) captured = captured.concat(removed);
+        }
+      }
+    });
+
+    if (countLiberties(x,y, me) === 0) {
+      grid[y][x] = null;
+      captured.forEach(function(p){ grid[p.y][p.x] = opp; });
+      return;
+    }
+
+    if (captured.length === 1) {
+      var myGroup = getGroupStones(x, y);
+      if (myGroup.length === 1 && countLiberties(x, y, me) === 1) {
+        koPoint = { x: captured[0].x, y: captured[0].y };
+      } else {
+        koPoint = null;
+      }
+    } else {
+      koPoint = null;
+    }
+
+    turn = opp;
+    lastMove = {x:x, y:y};
+
+    try{ if(window.StoneSFX) StoneSFX.play(); }catch(e){}
+
+    if (!disableAutoZoomOut && scale > 1) {
+      setTimeout(smoothZoomOutAndExit, 10);
+    }
+
+    redrawBoard();
+  }
+
+  function redrawBoard(){
+    if (!board) return;
+    board.removeAllObjects();
+    for(var y=0; y<SIZE; y++){
+      for(var x=0; x<SIZE; x++){
+        var v = grid[y][x];
+        if(v==='B') board.addObject({x:x, y:y, c:WGo.B});
+        if(v==='W') board.addObject({x:x, y:y, c:WGo.W});
+      }
+    }
+    if (lastMove && highlightLastEnabled) {
+      board.addObject({x:lastMove.x, y:lastMove.y, type:'CR'});
+    }
+  }
+
+  // ===== Click binding from your core (kept) =====
+  function bindClicks(){
     function getGridSpacing(){
-        // Get visual coordinates of line 0 and line 1 to determine spacing
-        var sX = Math.abs(getXcss(1) - getXcss(0));
-        var sY = Math.abs(getYcss(1) - getYcss(0));
-        return { x: sX, y: sY };
+      var sX = Math.abs(getXcss(1) - getXcss(0));
+      var sY = Math.abs(getYcss(1) - getYcss(0));
+      return { x: sX, y: sY };
     }
 
     mount.addEventListener('pointerdown', function(e){
       if (!zoomEnabled) return;
       if (e.pointerType !== 'touch' && e.button !== 0) return;
       cancelFling();
-      
-      const r = mount.getBoundingClientRect();
-      const sx = e.clientX - r.left;
-      const sy = e.clientY - r.top;
-      
-      const boardX = (sx + offsetX) / scale;
-      const boardY = (sy + offsetY) / scale;
-      
-      // 1. Find closest point
-      let bestI = -1, bestJ = -1, bestDx = 1e9, bestDy = 1e9;
-      for (let i = 0; i < SIZE; i++){
-        const dx = Math.abs(getXcss(i) - boardX);
+
+      var r = mount.getBoundingClientRect();
+      var sx = e.clientX - r.left;
+      var sy = e.clientY - r.top;
+
+      var boardX = (sx + offsetX) / scale;
+      var boardY = (sy + offsetY) / scale;
+
+      var bestI = -1, bestJ = -1, bestDx = 1e9, bestDy = 1e9;
+      for (var i = 0; i < SIZE; i++){
+        var dx = Math.abs(getXcss(i) - boardX);
         if (dx < bestDx){ bestDx = dx; bestI = i; }
       }
-      for (let j = 0; j < SIZE; j++){
-        const dy = Math.abs(getYcss(j) - boardY);
+      for (var j = 0; j < SIZE; j++){
+        var dy = Math.abs(getYcss(j) - boardY);
         if (dy < bestDy){ bestDy = dy; bestJ = j; }
       }
 
-      // 2. NEW: Threshold Check
-      // If the click is further than 50% of a cell size away from the line,
-      // it means we clicked in the gutter/border.
-      const spacing = getGridSpacing();
-      const limitX = spacing.x * 0.5; 
-      const limitY = spacing.y * 0.5;
+      var spacing = getGridSpacing();
+      var limitX = spacing.x * 0.5;
+      var limitY = spacing.y * 0.5;
 
-      // Initialize panStart immediately so dragging works even on the border
       panStart = { x: e.clientX, y: e.clientY, ox: offsetX, oy: offsetY };
       panSamplePrev = panSampleCurr = null;
       try { mount.setPointerCapture(e.pointerId); } catch(_){}
 
-      // 3. If outside valid grid area, do NOT set tapStart.
-      // This prevents the "pointerup" from triggering Zoom or Stone Placement.
       if (bestDx > limitX || bestDy > limitY) {
-          tapStart = null; 
-          return;
+        tapStart = null;
+        return;
       }
 
       tapStart = { x: e.clientX, y: e.clientY, ox: offsetX, oy: offsetY, gridI: bestI, gridJ: bestJ };
@@ -522,76 +985,70 @@
       if (!panStart) return;
       if (scale <= 1.01 && !isFullscreen) return;
 
-      const dx = e.clientX - panStart.x;
-      const dy = e.clientY - panStart.y;
-      
+      var dx = e.clientX - panStart.x;
+      var dy = e.clientY - panStart.y;
+
       if (!isPanning && (dx*dx + dy*dy > TAP_SLOP2)) isPanning = true;
-      
+
       if (isPanning) {
         offsetX = panStart.ox - dx;
         offsetY = panStart.oy - dy;
         applyPanAndSize(false);
         e.preventDefault();
-        
-        const now = performance.now();
+
+        var now = performance.now();
         panSamplePrev = panSampleCurr;
         panSampleCurr = { ox: offsetX, oy: offsetY, t: now };
       }
     }, {passive:false});
 
     mount.addEventListener('pointerup', function(e){
-      // CASE A: Zoom Disabled (Non-zooming mode)
       if (!zoomEnabled) {
-         const r = mount.getBoundingClientRect();
-         const sx = e.clientX - r.left;
-         const sy = e.clientY - r.top;
-         const bx = sx; const by = sy;
-         
-         let bestI = -1, bestJ = -1, bestDx = 1e9, bestDy = 1e9;
-         for (let i=0; i<SIZE; i++){
-            const dx = Math.abs(getXcss(i) - bx);
-            if (dx<bestDx){ bestDx=dx; bestI=i; }
-         }
-         for (let j=0; j<SIZE; j++){
-            const dy = Math.abs(getYcss(j) - by);
-            if (dy<bestDy){ bestDy=dy; bestJ=j; }
-         }
-         
-         // Threshold Check for non-zoom mode
-         const spacing = getGridSpacing();
-         if (bestDx > spacing.x * 0.5 || bestDy > spacing.y * 0.5) {
-             return; // Clicked border, do nothing
-         }
-         
-         e.preventDefault();
-         playAt(bestI, bestJ);
-         return;
+        var r = mount.getBoundingClientRect();
+        var sx = e.clientX - r.left;
+        var sy = e.clientY - r.top;
+        var bx = sx, by = sy;
+
+        var bestI = -1, bestJ = -1, bestDx = 1e9, bestDy = 1e9;
+        for (var i2=0; i2<SIZE; i2++){
+          var dx2 = Math.abs(getXcss(i2) - bx);
+          if (dx2<bestDx){ bestDx=dx2; bestI=i2; }
+        }
+        for (var j2=0; j2<SIZE; j2++){
+          var dy2 = Math.abs(getYcss(j2) - by);
+          if (dy2<bestDy){ bestDy=dy2; bestJ=j2; }
+        }
+
+        var spacing = getGridSpacing();
+        if (bestDx > spacing.x * 0.5 || bestDy > spacing.y * 0.5) return;
+
+        e.preventDefault();
+        playAt(bestI, bestJ);
+        return;
       }
 
-      // CASE B: Zoom Enabled
-      // If tapStart is null (because we filtered it in pointerdown), exit.
       if (!tapStart) {
-          if (panStart) {
-             // Clean up capture if we were just panning from border
-             try { mount.releasePointerCapture(e.pointerId); } catch(_){}
-             panStart = null;
-          }
-          return;
+        if (panStart) {
+          try { mount.releasePointerCapture(e.pointerId); } catch(_){}
+          panStart = null;
+        }
+        return;
       }
 
       try { mount.releasePointerCapture(e.pointerId); } catch(_){}
-      
-      const dist2 = (e.clientX - tapStart.x)**2 + (e.clientY - tapStart.y)**2;
-      const { gridI, gridJ } = tapStart;
-      const tapX = tapStart.x;
-      const tapY = tapStart.y;
-      
+
+      var dist2 = (e.clientX - tapStart.x)*(e.clientX - tapStart.x) + (e.clientY - tapStart.y)*(e.clientY - tapStart.y);
+      var gridI = tapStart.gridI;
+      var gridJ = tapStart.gridJ;
+      var tapX = tapStart.x;
+      var tapY = tapStart.y;
+
       tapStart = null; panStart = null;
 
       if (isPanning) {
         isPanning = false;
         if (panSamplePrev && panSampleCurr) {
-          const dt = panSampleCurr.t - panSamplePrev.t;
+          var dt = panSampleCurr.t - panSamplePrev.t;
           if (dt > 0 && dt < 120) {
             startFling((panSampleCurr.ox - panSamplePrev.ox)/dt, (panSampleCurr.oy - panSamplePrev.oy)/dt);
           }
@@ -608,246 +1065,14 @@
         }
       }
     }, {passive:false});
-    
-    // WGo Default Fallback
+
     board.addEventListener('click', function(x, y){
       if (zoomEnabled && (isFullscreen || scale > 1)) return;
-      // Note: WGo usually handles borders internally, but our custom
-      // pointer events usually intercept before this fires.
       playAt(x, y);
     });
   }
 
-function startFling(vx, vy){
-    if (scale <= 1) return;
-    cancelFling();
-    
-    var speed = Math.sqrt(vx*vx + vy*vy);
-    
-    // Reference logic: Cap max speed
-    var MAX_SPEED = 0.50; 
-    if (speed > MAX_SPEED){
-      var s = MAX_SPEED / speed;
-      vx *= s;
-      vy *= s;
-      speed = MAX_SPEED;
-    }
-    
-    // Reference logic: Ignore tiny velocities
-    if (speed < 0.04) return;
-
-    isFlinging = true;
-    
-    // Reference logic: No initial * 0.5 dampening here
-    flingVX = vx; 
-    flingVY = vy; 
-    
-    flingLastTime = performance.now();
-    
-    (function step(now){
-      if (!isFlinging) return;
-      var dt = now - flingLastTime;
-      if (dt <= 0){
-        flingId = requestAnimationFrame(step);
-        return;
-      }
-      if (dt > 50) dt = 50;
-      flingLastTime = now;
-      
-      offsetX += flingVX * dt;
-      offsetY += flingVY * dt;
-      
-      // Reference logic: Linear friction
-      var friction = 0.0010; // px/ms²
-      var currentSpeed = Math.sqrt(flingVX*flingVX + flingVY*flingVY);
-      var decel = friction * dt;
-      
-      if (currentSpeed <= 0.01 || decel >= currentSpeed){
-        cancelFling();
-        applyPanAndSize(true);
-        return;
-      }
-      
-      var newSpeed = currentSpeed - decel;
-      var scaleFactor = newSpeed / currentSpeed;
-      
-      flingVX *= scaleFactor;
-      flingVY *= scaleFactor;
-      
-      applyPanAndSize(false);
-      flingId = requestAnimationFrame(step);
-    })(performance.now());
-}
-
-  function cancelFling(){
-    isFlinging = false;
-    if (flingId) { cancelAnimationFrame(flingId); flingId = 0; }
-  }
-
-  // --- 3. GAME LOGIC (with simple KO) ---
-
-  function getGroupStones(x, y){
-    var color = grid[y][x];
-    if (!color) return [];
-    var stack = [[x,y]], seen = {}, stones = [];
-    while(stack.length){
-      var p = stack.pop();
-      var k = p[0]+','+p[1];
-      if(seen[k]) continue; 
-      seen[k]=true; 
-      stones.push({x:p[0], y:p[1]});
-      [[0,1],[0,-1],[1,0],[-1,0]].forEach(d=>{
-        var nx=p[0]+d[0], ny=p[1]+d[1];
-        if(nx>=0 && nx<SIZE && ny>=0 && ny<SIZE && grid[ny][nx]===color && !seen[nx+','+ny]){
-          stack.push([nx,ny]);
-        }
-      });
-    }
-    return stones;
-  }
-
-  function playAt(x, y){
-    if (x<0 || y<0 || x>=SIZE || y>=SIZE) return;
-    if (grid[y][x] !== null) return;
-
-    // KO check: forbid immediate recapture on ko point
-    if (koPoint && koPoint.x === x && koPoint.y === y) return;
-    
-    var me = turn;
-    var opp = (me === 'B') ? 'W' : 'B';
-
-    // Tentatively place
-    grid[y][x] = me;
-    
-    // Capture adjacent opponent groups if they have no liberties
-    var captured = [];
-    var dirs = [[0,1],[0,-1],[1,0],[-1,0]];
-    dirs.forEach(d => {
-      var nx=x+d[0], ny=y+d[1];
-      if(nx>=0 && nx<SIZE && ny>=0 && ny<SIZE && grid[ny][nx]===opp){
-        if (checkCapture(nx, ny)) {
-          var removed = removeGroup(nx, ny);
-          if (removed && removed.length) captured = captured.concat(removed);
-        }
-      }
-    });
-    
-    // Suicide check
-    if (countLiberties(x,y, me) === 0) { 
-      // revert placement
-      grid[y][x] = null; 
-      // restore is complex; but in this simplified engine we assume suicide won't be used
-      // in real play. Still, to be safe, undo captures too by re-adding them:
-      // (only possible because we know their color)
-      captured.forEach(p => { grid[p.y][p.x] = opp; });
-      return; 
-    }
-
-    // Determine KO point (simple ko)
-    // Condition: exactly one stone captured AND the capturing group is size 1
-    // AND that single stone now has exactly one liberty.
-    if (captured.length === 1) {
-      var myGroup = getGroupStones(x, y);
-      if (myGroup.length === 1 && countLiberties(x, y, me) === 1) {
-        koPoint = { x: captured[0].x, y: captured[0].y };
-      } else {
-        koPoint = null;
-      }
-    } else {
-      koPoint = null;
-    }
-
-    turn = opp;
-    lastMove = {x:x, y:y};
-    
-    try{ if(window.StoneSFX) StoneSFX.play(); }catch(e){}
-    
-    if (!disableAutoZoomOut && scale > 1) {
-       setTimeout(smoothZoomOutAndExit, 10); 
-    }
-    
-    redrawBoard();
-  }
-
-  function checkCapture(x, y){
-    var color = grid[y][x];
-    var stack = [[x,y]], seen = {};
-    while(stack.length){
-      var p = stack.pop();
-      var k = p[0]+','+p[1];
-      if(seen[k]) continue; 
-      seen[k]=true;
-
-      var hasLib = false;
-      [[0,1],[0,-1],[1,0],[-1,0]].forEach(d=>{
-        var nx=p[0]+d[0], ny=p[1]+d[1];
-        if(nx>=0 && nx<SIZE && ny>=0 && ny<SIZE){
-          var v = grid[ny][nx];
-          if(v===null) hasLib=true;
-          else if(v===color && !seen[nx+','+ny]) stack.push([nx,ny]);
-        }
-      });
-      if(hasLib) return false;
-    }
-    return true;
-  }
-
-  // Remove a connected group and return list of removed stones
-  function removeGroup(x, y){
-    var color = grid[y][x];
-    var stack = [[x,y]], seen = {}, removed = [];
-    while(stack.length){
-      var p = stack.pop();
-      var k = p[0]+','+p[1];
-      if(seen[k]) continue; 
-      seen[k]=true;
-
-      if (grid[p[1]][p[0]] === color){
-        grid[p[1]][p[0]] = null;
-        removed.push({x:p[0], y:p[1]});
-      }
-
-      [[0,1],[0,-1],[1,0],[-1,0]].forEach(d=>{
-        var nx=p[0]+d[0], ny=p[1]+d[1];
-        if(nx>=0 && nx<SIZE && ny>=0 && ny<SIZE && grid[ny][nx]===color && !seen[nx+','+ny]){
-          stack.push([nx,ny]);
-        }
-      });
-    }
-    return removed;
-  }
-
-  function countLiberties(x,y,c){
-    var stack=[[x,y]], seen={}, libs=0;
-    while(stack.length){
-      var p=stack.pop(), k=p[0]+','+p[1];
-      if(seen[k]) continue; 
-      seen[k]=true;
-      [[0,1],[0,-1],[1,0],[-1,0]].forEach(d=>{
-        var nx=p[0]+d[0], ny=p[1]+d[1];
-        if(nx>=0&&nx<SIZE&&ny>=0&&ny<SIZE){
-          var v=grid[ny][nx];
-          if(v===null) libs++;
-          else if(v===c && !seen[nx+','+ny]) stack.push([nx,ny]);
-        }
-      });
-    }
-    return libs;
-  }
-
-  function redrawBoard(){
-    if (!board) return;
-    board.removeAllObjects();
-    for(var y=0; y<SIZE; y++){
-      for(var x=0; x<SIZE; x++){
-        var v = grid[y][x];
-        if(v==='B') board.addObject({x:x, y:y, c:WGo.B});
-        if(v==='W') board.addObject({x:x, y:y, c:WGo.W});
-      }
-    }
-    if (lastMove && highlightLastEnabled) board.addObject({x:lastMove.x, y:lastMove.y, type:'CR'});
-  }
-
+  // ===== Board setup =====
   function createBoard(){
     if (board || !window.WGo) return;
     board = new WGo.Board(mount, { size: SIZE, background: '' });
@@ -855,18 +1080,18 @@ function startFling(vx, vy){
     fitBoard();
     redrawBoard();
     bindClicks();
-    
+
     exitBtn.addEventListener('click', function(e){
       e.stopPropagation();
       smoothZoomOutAndExit();
     });
 
     window.addEventListener('resize', fitBoard);
-    window.addEventListener('orientationchange', () => setTimeout(fitBoard, 150));
+    window.addEventListener('orientationchange', function(){ setTimeout(fitBoard, 150); });
   }
 
   function fitBoard(){
-    if (isFullscreen) return; 
+    if (isFullscreen) return;
     var w = wrap.getBoundingClientRect().width;
     w = Math.floor(w); if(w%2) w--;
     baseW = w;
@@ -883,8 +1108,37 @@ function startFling(vx, vy){
     })();
   }
 
+  // ===== UI actions =====
+  if (btnMenu){
+    btnMenu.addEventListener('click', function(){
+      try{ window.location.href = '../drills/drills.html'; }catch(e){}
+    });
+  }
+
+  function resetGame(){
+    grid = Array.from({ length: SIZE }, () => Array(SIZE).fill(null));
+    turn = 'B';
+    lastMove = null;
+    koPoint = null;
+    redrawBoard();
+  }
+
+  if (btnNext){
+    btnNext.addEventListener('click', function(){
+      // Placeholder behavior for now:
+      // clear the board so the button is visibly “alive”
+      resetGame();
+      if (progEl) progEl.textContent = '1 / 1';
+    });
+  }
+
+  // Timer UI start
+  if (blitzMode) startBlitzUI();
+  else if (timerEl) timerEl.style.display = 'none';
+
   window.addEventListener('load', initWhenReady);
 })();
 </script>
+
 </body>
 </html>
