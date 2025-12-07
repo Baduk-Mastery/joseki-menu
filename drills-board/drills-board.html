@@ -1582,69 +1582,50 @@ function clampPan(){
   else if (offsetY > maxOY) offsetY = maxOY;
 }
 
-function applyPanAndSize(redrawAfter){
-  if (!board || !mount) return;
+  function applyPanAndSize(redrawAfter){
+    if (!board || !mount) return;
 
-  const { vw, vh } = viewportSize();
-  let targetW;
+    const { vw, vh } = viewportSize();
+    let targetW;
 
-  if (isFullscreen){
-    // Fullscreen: Board size is determined by the smaller viewport dimension (square)
-    targetW = Math.floor(Math.min(vw, vh));
-    if (targetW % 2) targetW--;
-    baseW = targetW;
-    
-    // Ensure mount fills viewport and centers the board content
-    mount.style.width  = '100vw';
-    mount.style.height = '100vh';
-    mount.style.display = 'flex'; // Enable flex centering
-    mount.style.alignItems = 'center';
-    mount.style.justifyContent = 'center';
-    
-  } else {
-    // Inline: Match container width
-    targetW = Math.floor(vw);
-    if (targetW % 2) targetW--;
-    baseW = targetW;
+    if (isFullscreen){
+      targetW = Math.floor(Math.min(vw, vh));
+      if (targetW % 2) targetW--;
+      baseW = targetW;
+      mount.style.width  = '100vw';
+      mount.style.height = '100vh';
+    } else {
+  targetW = Math.floor(vw);
+  if (targetW % 2) targetW--;
+  baseW = targetW;
 
-    /* core-style: mount is an explicit square */
-    mount.style.width  = targetW + 'px';
-    mount.style.height = targetW + 'px';
-    
-    // Reset flex properties for inline mode
-    mount.style.display = '';
-    mount.style.alignItems = '';
-    mount.style.justifyContent = '';
-  }
+  /* core-style: mount is an explicit square */
+  mount.style.width  = targetW + 'px';
+  mount.style.height = targetW + 'px';
+}
 
 
-  if (targetW <= 0) return;
+    if (targetW <= 0) return;
 
-  if (board._lastW !== targetW){
-    board.setWidth(targetW);
-    if (zoomLayer){
-      // IMPORTANT: In fullscreen, allow the zoomLayer (wood texture) to fill the mount (100% of 100vw/100vh).
-      if (isFullscreen){
-        zoomLayer.style.width  = '100%';
-        zoomLayer.style.height = '100%';
-      } else {
-        // In inline mode, keep it square based on targetW
+    if (board._lastW !== targetW){
+      board.setWidth(targetW);
+      if (zoomLayer){
         zoomLayer.style.width  = targetW + 'px';
         zoomLayer.style.height = targetW + 'px';
       }
+      board._lastW = targetW;
     }
-    board._lastW = targetW;
+
+    clampPan();
+
+    if (zoomLayer){
+      zoomLayer.style.transform =
+        'translate3d(' + (-offsetX) + 'px,' + (-offsetY) + 'px,0) scale(' + scale + ')';
+    }
+
+    if (redrawAfter) redraw();
   }
 
-  clampPan();
-
-  if (zoomLayer){
-    zoomLayer.style.transform =
-      'translate3d(' + (-offsetX) + 'px,' + (-offsetY) + 'px,0) scale(' + scale + ')';
-  }
-
-  if (redrawAfter) redraw();
-}
   function resetViewLocal(){
     cancelFling();
     scale = 1;
@@ -1762,8 +1743,7 @@ function enterFullscreenAtGrid(i, j, tapClientX, tapClientY){
 
   isFullscreen = true;
   mount.classList.add('is-fullscreen');
-mount.style.maxWidth = 'none';
-  mount.style.maxHeight = 'none';
+
   document.body.classList.add('drill-zoom-mode');
 
   // Keep overlay non-blocking until we’re fully in zoom mode
@@ -2663,6 +2643,7 @@ btnNext.addEventListener('click', function(){
 
 </body>
 </html>
+
 
 
 
