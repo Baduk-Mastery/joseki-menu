@@ -121,18 +121,35 @@
    Practice-style Back + Controls for Drills
    ========================= */
 
+/* === Drills top bar alignment fix ===
+   Back stays board-left, timer aligns board-right */
 #drill-topbar{
   max-width:720px;
   width:100%;
   margin:16px auto 10px;
   padding:0;
   box-sizing:border-box;
-  display:flex;
+
+  display:grid;
+  grid-template-columns: 1fr auto 1fr;
   align-items:center;
-  justify-content:space-between;
-  gap:10px;
+  gap:0;
 }
 
+/* Left column: Back */
+#drill-topbar #dbtn-menu{
+  grid-column: 1;
+  justify-self: start;
+}
+
+/* Right column: Blitz timer (if present) */
+#drill-topbar #blitz-timer{
+  grid-column: 3;
+  justify-self: end;
+
+  /* neutralize the flex trick used in the timer chip */
+  margin-left: 0;
+}
 
 
 /* Wood-style Back button – copied from Practice */
