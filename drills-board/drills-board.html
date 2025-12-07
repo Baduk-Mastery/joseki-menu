@@ -1703,38 +1703,26 @@ function enterFullscreenAtGrid(i, j, tapClientX, tapClientY){
   isFullscreen = true;
   document.body.classList.add('drill-zoom-mode');
 
+  // FIX: Calculate fullscreen baseW explicitly before resetting view
+  const vwFS = window.innerWidth || document.documentElement.clientWidth || 800;
+  const vhFS = window.innerHeight || document.documentElement.clientHeight || 800;
+  baseW = Math.floor(Math.min(vwFS, vhFS));
+  if (baseW % 2) baseW--;
+
   // Reset baseline sizing/state
   resetViewLocal();
   moveZoomUIIn();
 
   requestAnimationFrame(function(){
-    // Match core-style "pre-pan then zoom"
-    const initialFactor = 2.0;
+    // FIX: Calculate dynamic factor to ensure screen coverage
+    const {vw, vh} = viewportSize();
+    const needToCover = Math.max(vw, vh) / baseW;
+    const initialFactor = Math.max(1.8, needToCover + 0.02);
 
-    const px_curr = getXcss(i);
-    const py_curr = getYcss(j);
-
-    const rect = mount.getBoundingClientRect();
-    let sx = rect.width  / 2;
-    let sy = rect.height / 2;
-
-    if (typeof tapClientX === 'number' && typeof tapClientY === 'number'){
-      sx = tapClientX - rect.left;
-      sy = tapClientY - rect.top;
-    }
-
-    // Pre-align the tapped grid point at scale = 1
-    scale = 1;
-    offsetX = px_curr * 1.0 - sx;
-    offsetY = py_curr * 1.0 - sy;
-
-    applyPanAndSize(false);
-
-    // Now animate purely to the target scale
-    animateTo(initialFactor, px_curr, py_curr, sx, sy);
+    // FIX: Use standard animation instead of manual pre-alignment
+    centerZoomAtGrid(i, j, initialFactor, tapClientX, tapClientY);
   });
 }
-
 
   function exitFullscreen(){
     if (!isFullscreen) return;
