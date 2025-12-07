@@ -1743,7 +1743,8 @@ function enterFullscreenAtGrid(i, j, tapClientX, tapClientY){
 
   isFullscreen = true;
   mount.classList.add('is-fullscreen');
-
+mount.style.maxWidth = 'none';
+  mount.style.maxHeight = 'none';
   document.body.classList.add('drill-zoom-mode');
 
   // Keep overlay non-blocking until we’re fully in zoom mode
