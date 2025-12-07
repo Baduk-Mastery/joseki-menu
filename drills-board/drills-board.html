@@ -961,11 +961,12 @@ function ensureTimerEl(){
       if (mount.__woodLayerReady) return;
       const layer = document.createElement('div');
       layer.id = 'go-drill-wood';
-      layer.style.position = 'absolute';
-      layer.style.left = '0';
-      layer.style.top  = '0';
-      layer.style.right = '0';
-      layer.style.bottom = '0';
+layer.style.position = 'absolute';
+layer.style.left = '0';
+layer.style.top  = '0';
+layer.style.width  = '100%';
+layer.style.height = '100%';
+
       layer.style.backgroundImage = "url('https://3d85c7a311526e02aeeeb19e952d0c09.cdn.bubble.io/f1755870506985x437178801728222500/wood.jpg')";
       layer.style.backgroundSize = 'cover';
       layer.style.backgroundPosition = 'center';
@@ -1334,24 +1335,59 @@ mount.appendChild(layer);
     }
   }
 
-function viewportSize(){
+function applyPanAndSize(redrawAfter){
+  if (!board || !mount) return;
+
+  const { vw, vh } = viewportSize();
+  let targetW;
+
   if (isFullscreen){
-    const vw = window.innerWidth  || document.documentElement.clientWidth  || 800;
-    const vh = window.innerHeight || document.documentElement.clientHeight || 800;
-    return { vw, vh };
+    const w = Math.floor(vw);
+    const h = Math.floor(vh);
+
+    // Avoid 100vw/100vh quirks; use explicit px
+    mount.style.width  = w + 'px';
+    mount.style.height = h + 'px';
+
+    targetW = Math.floor(Math.min(w, h));
+    if (targetW % 2) targetW--;
+    baseW = targetW;
+  } else {
+    targetW = Math.floor(vw);
+    if (targetW % 2) targetW--;
+    baseW = targetW;
+
+    mount.style.width  = targetW + 'px';
+    mount.style.height = targetW + 'px';
   }
 
-  const rect = mount.getBoundingClientRect();
-  const wrapRect = wrap ? wrap.getBoundingClientRect() : rect;
-  const wrapW =
-    (wrapRect && wrapRect.width) ||
-    (wrap && wrap.clientWidth) ||
-    rect.width ||
-    400;
+  if (targetW <= 0) return;
 
-  // board area is square
-  return { vw: wrapW, vh: wrapW };
+  // Force-refresh board size reliably
+  if (board._lastW !== targetW){
+    board.setWidth(targetW);
+    board._lastW = targetW;
+  } else {
+    // Re-assert anyway because we reparent mount during fullscreen
+    board.setWidth(targetW);
+  }
+
+  // Always re-assert zoomLayer size
+  if (zoomLayer){
+    zoomLayer.style.width  = targetW + 'px';
+    zoomLayer.style.height = targetW + 'px';
+  }
+
+  clampPan();
+
+  if (zoomLayer){
+    zoomLayer.style.transform =
+      'translate3d(' + (-offsetX) + 'px,' + (-offsetY) + 'px,0) scale(' + scale + ')';
+  }
+
+  if (redrawAfter) redraw();
 }
+
 
 
 function clampPan(){
@@ -1525,6 +1561,9 @@ function enterFullscreenAtGrid(i, j, tapClientX, tapClientY){
   overlay.style.display = 'flex';
   if (zoomExitBtn) zoomExitBtn.style.display = 'block';
   isFullscreen = true;
+// Force a cold resize after reparenting
+if (board) board._lastW = 0;
+
   document.body.classList.add('drill-zoom-mode');
 
   // Reset baseline sizing/state
@@ -1589,6 +1628,7 @@ mount.style.height = '';
 scale = 1;
 offsetX = 0;
 offsetY = 0;
+if (board) board._lastW = 0;
 
 applyPanAndSize(true);
 
@@ -1908,6 +1948,15 @@ const boardY = (sy + offsetY) / scale;
   window.addEventListener('resize', function(){
     setTimeout(fitBoard, 10);
   });
+if (window.visualViewport){
+  window.visualViewport.addEventListener('resize', function(){
+    setTimeout(fitBoard, 10);
+  });
+  window.visualViewport.addEventListener('scroll', function(){
+    // Some mobile browsers change the visual viewport on scroll/address-bar changes
+    setTimeout(fitBoard, 10);
+  });
+}
 
   // Optional: let Settings toggle zoom
   window.DrillZoom = {
