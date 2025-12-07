@@ -1214,28 +1214,25 @@ function viewportSize(){
 }
 
 
-  function clampPan(){
-    if (!board || scale <= 1){
-      offsetX = 0;
-      offsetY = 0;
-      return;
-    }
-    const { vw, vh } = viewportSize();
-    const bw = Math.round(baseW * scale);
-    const bleedX = Math.ceil(vw * 0.5);
-    const bleedY = Math.ceil(vh * 0.5);
+function clampPan(){
+  if (!board) return;
 
-    const minOX = -bleedX;
-    const maxOX = Math.max(0, bw - vw) + bleedX;
-    const minOY = -bleedY;
-    const maxOY = Math.max(0, bw - vh) + bleedY;
+  const { vw, vh } = viewportSize();
+  const bw = Math.round(baseW * scale);
+  const bleedX = Math.ceil(vw * 0.5);
+  const bleedY = Math.ceil(vh * 0.5);
 
-    if (offsetX < minOX) offsetX = minOX;
-    else if (offsetX > maxOX) offsetX = maxOX;
+  const minOX = -bleedX;
+  const maxOX = Math.max(0, bw - vw) + bleedX;
+  const minOY = -bleedY;
+  const maxOY = Math.max(0, bw - vh) + bleedY;
 
-    if (offsetY < minOY) offsetY = minOY;
-    else if (offsetY > maxOY) offsetY = maxOY;
-  }
+  if (offsetX < minOX) offsetX = minOX;
+  else if (offsetX > maxOX) offsetX = maxOX;
+
+  if (offsetY < minOY) offsetY = minOY;
+  else if (offsetY > maxOY) offsetY = maxOY;
+}
 
   function applyPanAndSize(redrawAfter){
     if (!board || !mount) return;
@@ -1371,32 +1368,55 @@ function centerZoomAtGrid(i, j, factor, tapClientX, tapClientY){
 }
 
 
-  function enterFullscreenAtGrid(i, j, tapClientX, tapClientY){
-    if (isFullscreen) return;
-    if (!zoomLayer) zoomLayer = mount.__woodLayer || mount;
+function enterFullscreenAtGrid(i, j, tapClientX, tapClientY){
+  if (isFullscreen) return;
+  if (!zoomLayer) zoomLayer = mount.__woodLayer || mount;
 
-    ensureOverlay();
-    prevOverflow = document.documentElement.style.overflow || "";
-    document.documentElement.style.overflow = 'hidden';
+  ensureOverlay();
+  prevOverflow = document.documentElement.style.overflow || "";
+  document.documentElement.style.overflow = 'hidden';
 
-    returnAnchor = document.createElement('div');
-    returnAnchor.style.display = 'none';
-    mount.parentNode.insertBefore(returnAnchor, mount);
+  returnAnchor = document.createElement('div');
+  returnAnchor.style.display = 'none';
+  mount.parentNode.insertBefore(returnAnchor, mount);
 
-    stage.appendChild(mount);
+  stage.appendChild(mount);
 
-    overlay.style.display = 'flex';
-    if (zoomExitBtn) zoomExitBtn.style.display = 'block';
-    isFullscreen = true;
+  overlay.style.display = 'flex';
+  if (zoomExitBtn) zoomExitBtn.style.display = 'block';
+  isFullscreen = true;
 
-    resetViewLocal(); // sets baseW & sizes
+  // Reset baseline sizing/state
+  resetViewLocal();
 
-    requestAnimationFrame(function(){
-      // Initial zoom factor (similar to Practice)
-      const initialFactor = 2.0;
-      centerZoomAtGrid(i, j, initialFactor, tapClientX, tapClientY);
-    });
-  }
+  requestAnimationFrame(function(){
+    // Match core-style "pre-pan then zoom"
+    const initialFactor = 2.0;
+
+    const px_curr = getXcss(i);
+    const py_curr = getYcss(j);
+
+    const rect = mount.getBoundingClientRect();
+    let sx = rect.width  / 2;
+    let sy = rect.height / 2;
+
+    if (typeof tapClientX === 'number' && typeof tapClientY === 'number'){
+      sx = tapClientX - rect.left;
+      sy = tapClientY - rect.top;
+    }
+
+    // Pre-align the tapped grid point at scale = 1
+    scale = 1;
+    offsetX = px_curr * 1.0 - sx;
+    offsetY = py_curr * 1.0 - sy;
+
+    applyPanAndSize(false);
+
+    // Now animate purely to the target scale
+    animateTo(initialFactor, px_curr, py_curr, sx, sy);
+  });
+}
+
 
   function exitFullscreen(){
     if (!isFullscreen) return;
