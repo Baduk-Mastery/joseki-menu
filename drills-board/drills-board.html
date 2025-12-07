@@ -1654,6 +1654,9 @@ function clampPan(){
 
     stage       = overlay.querySelector('#go-zoom-stage-drill');
     zoomExitBtn = overlay.querySelector('#go-zoom-exit-drill');
+// NEW safety: ensure hidden state never captures taps
+if (overlay) overlay.style.pointerEvents = 'none';
+if (zoomExitBtn) zoomExitBtn.style.pointerEvents = 'none';
 
     if (zoomExitBtn && !zoomExitBtn._bound){
       zoomExitBtn._bound = true;
@@ -1741,6 +1744,9 @@ function enterFullscreenAtGrid(i, j, tapClientX, tapClientY){
 mount.classList.add('is-fullscreen');
 
   document.body.classList.add('drill-zoom-mode');
+// NEW safety: explicitly enable hit-testing in zoom mode
+if (overlay) overlay.style.pointerEvents = 'auto';
+if (zoomExitBtn) zoomExitBtn.style.pointerEvents = 'auto';
 
   // Reset baseline sizing/state
   resetViewLocal();
@@ -1781,6 +1787,9 @@ mount.classList.add('is-fullscreen');
 mount.classList.remove('is-fullscreen');
     restoreZoomUIOut();
   document.body.classList.remove('drill-zoom-mode');
+// NEW safety: explicitly disable hit-testing outside zoom mode
+if (overlay) overlay.style.pointerEvents = 'none';
+if (zoomExitBtn) zoomExitBtn.style.pointerEvents = 'none';
 
     isFullscreen = false;
 
