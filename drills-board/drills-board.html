@@ -28,6 +28,10 @@
   margin: 0 !important;
   z-index: 99998 !important;
 }
+body.drill-zoom-mode #go-board-drill{
+  position: fixed !important;
+}
+
 
 #go-board-drill{
   touch-action: none;
@@ -470,7 +474,6 @@ body.drill-zoom-mode #drill-ctrls{
   padding:0 12px 18px;
   box-sizing:border-box;
 }
-</style>
 </style>
 
 <style>
@@ -1156,11 +1159,11 @@ function ensureTimerEl(){
       if (mount.__woodLayerReady) return;
       const layer = document.createElement('div');
       layer.id = 'go-drill-wood';
-      layer.style.position = 'absolute';
-      layer.style.left = '0';
-      layer.style.top  = '0';
-      layer.style.right = '0';
-      layer.style.bottom = '0';
+layer.style.position = 'absolute';
+layer.style.left = '0';
+layer.style.top  = '0';
+layer.style.width  = '100%';
+layer.style.height = '100%';
       layer.style.backgroundImage = "url('https://3d85c7a311526e02aeeeb19e952d0c09.cdn.bubble.io/f1755870506985x437178801728222500/wood.jpg')";
       layer.style.backgroundSize = 'cover';
       layer.style.backgroundPosition = 'center';
@@ -1621,31 +1624,27 @@ function clampPan(){
     applyPanAndSize(true);
   }
 
-  function ensureOverlay(){
-    if (overlay) return;
+function ensureOverlay(){
+  // We only need a stable, fixed exit button (core-style).
+  zoomExitBtn = document.getElementById('go-zoom-exit-drill');
 
-    overlay = document.getElementById('go-zoom-overlay-drill');
-    if (!overlay){
-      overlay = document.createElement('div');
-      overlay.id = 'go-zoom-overlay-drill';
-      overlay.innerHTML =
-        '<div id="go-zoom-stage-drill"></div>' +
-        '<div id="go-zoom-exit-drill" aria-label="Zoom out"></div>';
-      document.body.appendChild(overlay);
-    }
-
-    stage       = overlay.querySelector('#go-zoom-stage-drill');
-    zoomExitBtn = overlay.querySelector('#go-zoom-exit-drill');
-
-    if (zoomExitBtn && !zoomExitBtn._bound){
-      zoomExitBtn._bound = true;
-      zoomExitBtn.addEventListener('click', function(e){
-        e.stopPropagation();
-        e.preventDefault();
-        exitFullscreen();
-      });
-    }
+  if (!zoomExitBtn){
+    zoomExitBtn = document.createElement('div');
+    zoomExitBtn.id = 'go-zoom-exit-drill';
+    zoomExitBtn.setAttribute('aria-label', 'Zoom out');
+    document.body.appendChild(zoomExitBtn);
   }
+
+  if (!zoomExitBtn._bound){
+    zoomExitBtn._bound = true;
+    zoomExitBtn.addEventListener('click', function(e){
+      e.stopPropagation();
+      e.preventDefault();
+      exitFullscreen();
+    });
+  }
+}
+
 
 function animateTo(targetScale, pxBoard, pyBoard, sxTarget, syTarget){
   targetScale = Math.max(minScale, Math.min(maxScale, targetScale));
@@ -1708,28 +1707,33 @@ function enterFullscreenAtGrid(i, j, tapClientX, tapClientY){
   if (!zoomLayer) zoomLayer = mount.__woodLayer || mount;
 
   ensureOverlay();
-  prevOverflow = document.documentElement.style.overflow || "";
-  document.documentElement.style.overflow = 'hidden';
 
+  // Lock scroll (both html + body for mobile safari consistency)
+  prevOverflow = document.documentElement.style.overflow || "";
+  const prevBodyOverflow = document.body.style.overflow || "";
+  document.documentElement.style.overflow = 'hidden';
+  document.body.style.overflow = 'hidden';
+  mount.__prevBodyOverflow = prevBodyOverflow;
+
+  // Anchor to restore position
   returnAnchor = document.createElement('div');
   returnAnchor.style.display = 'none';
   mount.parentNode.insertBefore(returnAnchor, mount);
 
-  stage.appendChild(mount);
+  // Core-style: put the board directly under body
+  document.body.appendChild(mount);
 
-  overlay.style.display = 'flex';
-  if (zoomExitBtn) zoomExitBtn.style.display = 'block';
   isFullscreen = true;
-mount.classList.add('is-fullscreen');
-
+  mount.classList.add('is-fullscreen');
   document.body.classList.add('drill-zoom-mode');
+
+  if (zoomExitBtn) zoomExitBtn.style.display = 'block';
 
   // Reset baseline sizing/state
   resetViewLocal();
   moveZoomUIIn();
 
   requestAnimationFrame(function(){
-    // Match core-style "pre-pan then zoom"
     const initialFactor = 2.0;
 
     const px_curr = getXcss(i);
@@ -1744,51 +1748,54 @@ mount.classList.add('is-fullscreen');
       sy = tapClientY - rect.top;
     }
 
-    // Pre-align the tapped grid point at scale = 1
+    // Pre-align at scale=1
     scale = 1;
     offsetX = px_curr * 1.0 - sx;
     offsetY = py_curr * 1.0 - sy;
 
     applyPanAndSize(false);
 
-    // Now animate purely to the target scale
+    // Animate to zoom
     animateTo(initialFactor, px_curr, py_curr, sx, sy);
   });
 }
 
 
-  function exitFullscreen(){
-    if (!isFullscreen) return;
-    cancelFling();
-mount.classList.remove('is-fullscreen');
-    restoreZoomUIOut();
+function exitFullscreen(){
+  if (!isFullscreen) return;
+
+  cancelFling();
+
+  mount.classList.remove('is-fullscreen');
+  restoreZoomUIOut();
   document.body.classList.remove('drill-zoom-mode');
 
-    isFullscreen = false;
+  isFullscreen = false;
 
-    if (overlay) overlay.style.display = 'none';
+  if (zoomExitBtn) zoomExitBtn.style.display = 'none';
 
-    if (zoomExitBtn) zoomExitBtn.style.display = 'none';
-
-    if (returnAnchor && returnAnchor.parentNode){
-      returnAnchor.parentNode.insertBefore(mount, returnAnchor);
-      returnAnchor.parentNode.removeChild(returnAnchor);
-      returnAnchor = null;
-    }
-
-document.documentElement.style.overflow = prevOverflow;
-
-// important: remove fullscreen inline sizing first
-mount.style.width = '';
-mount.style.height = '';
-
-scale = 1;
-offsetX = 0;
-offsetY = 0;
-
-applyPanAndSize(true);
-
+  // Restore DOM position
+  if (returnAnchor && returnAnchor.parentNode){
+    returnAnchor.parentNode.insertBefore(mount, returnAnchor);
+    returnAnchor.parentNode.removeChild(returnAnchor);
+    returnAnchor = null;
   }
+
+  // Restore scroll
+  document.documentElement.style.overflow = prevOverflow;
+  document.body.style.overflow = mount.__prevBodyOverflow || "";
+  mount.__prevBodyOverflow = "";
+
+  // Remove fullscreen inline sizing first
+  mount.style.width = '';
+  mount.style.height = '';
+
+  scale = 1;
+  offsetX = 0;
+  offsetY = 0;
+
+  applyPanAndSize(true);
+}
 
   function beginPan(e){
     isPanning = false;
