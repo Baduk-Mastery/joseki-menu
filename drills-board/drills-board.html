@@ -74,15 +74,29 @@
     .pbtn-strong{ background:#111827; color:#fff; border-color:#111827; }
     .pbtn-alt{ background:#e7f0ff; color:#0b4aa2; border-color:#a7c1ff; }
 
-    /* Blitz timer chip */
-    #blitz-timer{
-      position:absolute; right:10px; top:10px; z-index:4;
-      padding:6px 10px; border-radius:10px;
-      font-weight:900; font-family:ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-      background:rgba(15,23,42,.88); color:#e6f3ff; border:1px solid rgba(148,163,184,.35);
-      box-shadow:0 6px 16px rgba(2,6,23,.35);
-      letter-spacing:0.5px;
-    }
+/* Blitz timer chip (topbar-aligned) */
+#blitz-timer{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+
+  padding:6px 10px;
+  border-radius:10px;
+
+  font-weight:900;
+  font-family:ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+
+  background:rgba(15,23,42,.88);
+  color:#e6f3ff;
+  border:1px solid rgba(148,163,184,.35);
+  box-shadow:0 6px 16px rgba(2,6,23,.35);
+
+  letter-spacing:0.5px;
+  white-space:nowrap;
+
+  /* safety if justify-content changes later */
+  margin-left:auto;
+}
   </style>
 <style>
 /* =========================
@@ -92,13 +106,15 @@
 #drill-topbar{
   max-width:720px;
   width:100%;
-  margin:16px auto 10px; /* same vertical spacing as Practice */
-  padding:0;             /* IMPORTANT: no extra padding, so it lines up with the board */
+  margin:16px auto 10px;
+  padding:0;
   box-sizing:border-box;
   display:flex;
   align-items:center;
-  justify-content:flex-start;
+  justify-content:space-between;
+  gap:10px;
 }
+
 
 
 /* Wood-style Back button – copied from Practice */
@@ -259,6 +275,46 @@
   outline: 2px solid rgba(255,255,255,.9);
   outline-offset: 2px;
 }
+/* === Drills bottom bar alignment fix ===
+   Next stays dead-center, progress aligns to board-right */
+#drill-ctrls{
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 0;
+
+  /* keep your existing sizing/spacing intent */
+  max-width: 720px;
+  width: 100%;
+  margin: 14px auto 0;
+  padding: 0 12px 18px;
+  box-sizing: border-box;
+}
+
+/* Center column */
+#drill-ctrls #dbtn-next{
+  grid-column: 2;
+  justify-self: center;
+  width: auto;
+}
+
+/* Right column */
+#drill-ctrls #drill-progress{
+  grid-column: 3;
+  justify-self: end;
+  text-align: right;
+  min-width: 60px;
+}
+
+/* Neutralize the "3 buttons per row" sizing for this bar */
+#drill-ctrls .pbtn,
+#drill-ctrls .pbtn-strong,
+#drill-ctrls .pbtn-alt{
+  flex: initial;
+  max-width: none;
+  min-width: 0;
+}
+
 </style>
 
 <style>
@@ -758,13 +814,23 @@ function getGridSpacing(){
   let blitzCornerPlannedMoves = 0;
   let timeUp = false;
 
-  function ensureTimerEl(){
-    if (timerEl || !blitzMode) return;
-    timerEl = document.createElement('div');
-    timerEl.id = 'blitz-timer';
-    timerEl.textContent = '0.0s';
+function ensureTimerEl(){
+  if (timerEl || !blitzMode) return;
+
+  timerEl = document.createElement('div');
+  timerEl.id = 'blitz-timer';
+  timerEl.textContent = '0.0s';
+
+  const topbar = document.getElementById('drill-topbar');
+
+  if (topbar){
+    topbar.appendChild(timerEl);
+  } else {
+    // fallback (shouldn't happen, but keeps it robust)
     mount.appendChild(timerEl);
   }
+}
+
   function fmtMs(ms){
     if (ms < 0) ms = 0;
     const s = ms/1000;
