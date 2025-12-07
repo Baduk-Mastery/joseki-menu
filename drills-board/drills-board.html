@@ -452,6 +452,176 @@ body.drill-zoom-mode #drill-ctrls{
   box-sizing:border-box;
 }
 </style>
+/* =========================
+   Drills notifications – match My Patterns notice/toast look
+   ========================= */
+
+.drill-notif{
+  position:fixed;
+  inset:0;
+  z-index:100000;
+  display:none;
+  align-items:center;
+  justify-content:center;
+  padding:0;
+  background:rgba(0,0,0,.55);
+}
+
+/* Card skin copied from My Patterns own-notice-card / own-toast-card */
+.drill-notif-card{
+  position:relative;
+  border-radius:10px;
+  border:1px solid #e2e8f0;
+  box-shadow:0 12px 28px rgba(15,23,42,.18);
+  padding:16px;
+  text-align:center;
+  font-family:system-ui, "Segoe UI", Arial, sans-serif;
+
+  color:#fff3cf;
+
+  background-image:
+    linear-gradient(
+      to bottom,
+      rgba(0,0,0,.10),
+      rgba(0,0,0,.25)
+    ),
+    url('../img/notification.jpg');
+  background-size:cover;
+  background-position:center;
+  background-repeat:no-repeat;
+
+  min-width:280px;
+  max-width:min(86vw, 460px);
+  max-height:calc(100vh - 32px);
+  overflow:auto;
+}
+
+/* Ensure we don’t get random inline color clashes */
+.drill-notif-card > *{
+  color:inherit !important;
+}
+
+.drill-notif-title{
+  font-weight:800;
+  font-size:18px;
+  line-height:1.35;
+  margin-bottom:8px;
+}
+
+.drill-notif-desc{
+  font-size:16px;
+  line-height:1.4;
+  margin-bottom:14px;
+  opacity:.96;
+}
+
+/* Done stats styling to fit the notif skin */
+.drill-stats{
+  display:flex;
+  gap:10px;
+  justify-content:center;
+  flex-wrap:wrap;
+  margin:6px 0 10px;
+}
+
+.drill-stat-box{
+  border:1px solid rgba(255,255,255,.25);
+  border-radius:10px;
+  padding:10px 14px;
+  min-width:140px;
+  background:rgba(0,0,0,.18);
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,.06);
+}
+
+.drill-stat-label{
+  font-weight:800;
+  opacity:.85;
+  margin-bottom:2px;
+}
+
+.drill-stat-value{
+  font-weight:900;
+  font-size:22px;
+  line-height:1;
+}
+
+/* Wood-style buttons for notif actions (mirrors My Patterns .s-btn) */
+.drill-notif-btn{
+  position:relative;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  gap:6px;
+
+  padding:8px 18px;
+  border-radius:10px;
+  border:1px solid rgba(255,255,255,.40);
+
+  font-size:16px;
+  font-weight:800;
+  line-height:1.1;
+  color:#fff3cf;
+  text-shadow:0 1px 0 rgba(120,60,20,.7);
+  cursor:pointer;
+
+  user-select:none;
+  -webkit-user-select:none;
+  -moz-user-select:none;
+  -ms-user-select:none;
+  -webkit-tap-highlight-color:transparent;
+
+  background-image:
+    linear-gradient(
+      to bottom,
+      rgba(255,255,255,.12),
+      rgba(255,255,255,.03) 38%,
+      rgba(0,0,0,.14) 100%
+    ),
+    url('../img/wood.jpg');
+  background-size:100% 100%, cover;
+  background-position:center;
+  background-repeat:no-repeat;
+
+  filter:brightness(1.08) saturate(.96);
+
+  box-shadow:
+    0 3px 0 rgba(133,74,26,.85),
+    0 8px 14px rgba(0,0,0,.45);
+
+  transition:
+    transform .08s ease-out,
+    box-shadow .08s ease-out,
+    filter .12s ease-out;
+}
+
+.drill-notif-btn:hover{
+  filter:brightness(1.12) saturate(.98);
+  transform:translateY(-1px);
+  box-shadow:
+    0 4px 0 rgba(133,74,26,.9),
+    0 10px 16px rgba(0,0,0,.48);
+}
+
+.drill-notif-btn:active{
+  filter:brightness(.97) saturate(.96);
+  transform:translateY(2px);
+  box-shadow:
+    0 1px 0 rgba(120,60,20,.9),
+    0 4px 8px rgba(0,0,0,.55);
+}
+
+.drill-notif-btn-lg{
+  padding:10px 22px;
+}
+
+/* Container for action rows */
+.drill-notif-actions{
+  margin-top:10px;
+  display:flex;
+  gap:10px;
+  justify-content:center;
+  flex-wrap:wrap;
+}
 
 </head>
 <body>
@@ -485,61 +655,65 @@ body.drill-zoom-mode #drill-ctrls{
   </div>
 </div>
 
-<!-- Wrong Move (drill) -->
-<div id="drill-wrong" style="display:none;position:fixed;inset:0;z-index:99999;align-items:center;justify-content:center;">
-  <div style="position:absolute;inset:0;background:rgba(0,0,0,.55);"></div>
-  <div style="position:relative;z-index:1;background:#fff;border:1px solid #e2e8f0;border-radius:10px;box-shadow:0 12px 28px rgba(15,23,42,.18);width:min(86vw,420px);padding:16px;text-align:center;font-family:system-ui,Segoe UI,Arial,sans-serif;color:#0f172a;">
-    <div style="font-weight:800;font-size:18px;margin-bottom:2px;">Wrong</div>
+<!-- Wrong Move (drill) – My Patterns style -->
+<div id="drill-wrong" class="drill-notif" role="alert" aria-live="polite">
+  <div class="drill-notif-card">
+    <div class="drill-notif-title">Wrong</div>
   </div>
 </div>
 
-<!-- Drill Cleared (auto-dismiss) -->
-<div id="drill-cleared" style="display:none;position:fixed;inset:0;z-index:99999;align-items:center;justify-content:center;">
-  <div style="position:absolute;inset:0;background:rgba(0,0,0,.55);"></div>
-  <div style="position:relative;z-index:1;background:#fff;border:1px solid #e2e8f0;border-radius:10px;box-shadow:0 12px 28px rgba(15,23,42,.18);width:min(86vw,420px);padding:16px;text-align:center;font-family:system-ui,Segoe UI,Arial,sans-serif;color:#0f172a;">
-    <div style="font-weight:800;font-size:18px;margin-bottom:2px;">Cleared</div>
+
+<!-- Drill Cleared (auto-dismiss) – My Patterns style -->
+<div id="drill-cleared" class="drill-notif" role="alert" aria-live="polite">
+  <div class="drill-notif-card">
+    <div class="drill-notif-title">Cleared</div>
   </div>
 </div>
 
-<!-- All Done -->
-<div id="drill-done" style="display:none;position:fixed;inset:0;z-index:99999;align-items:center;justify-content:center;">
-  <div style="position:absolute;inset:0;background:rgba(0,0,0,.55);"></div>
-  <div style="position:relative;z-index:1;background:#fff;border:1px solid #e2e8f0;border-radius:10px;box-shadow:0 12px 28px rgba(15,23,42,.18);width:min(86vw,460px);padding:16px;text-align:center;font-family:system-ui,Segoe UI,Arial,sans-serif;color:#0f172a;">
-    <div id="drill-done-title" style="font-weight:800;font-size:18px;margin-bottom:8px;">All Drills Complete</div>
 
-    <!-- Stats block -->
-    <div id="drill-stats" style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin:6px 0 10px;">
-      <div style="border:1px solid #e2e8f0;border-radius:10px;padding:10px 14px;min-width:140px;">
-        <div style="font-weight:800;opacity:.8;margin-bottom:2px;">Solved</div>
-        <div id="drill-stat-solved" style="font-weight:900;font-size:22px;line-height:1;">0</div>
+<!-- All Done – My Patterns style -->
+<div id="drill-done" class="drill-notif" role="dialog" aria-modal="true">
+  <div class="drill-notif-card">
+    <div id="drill-done-title" class="drill-notif-title">All Drills Complete</div>
+
+    <div id="drill-stats" class="drill-stats">
+      <div class="drill-stat-box">
+        <div class="drill-stat-label">Solved</div>
+        <div id="drill-stat-solved" class="drill-stat-value">0</div>
       </div>
-      <div style="border:1px solid #e2e8f0;border-radius:10px;padding:10px 14px;min-width:140px;">
-        <div style="font-weight:800;opacity:.8;margin-bottom:2px;">Failed</div>
-        <div id="drill-stat-failed" style="font-weight:900;font-size:22px;line-height:1;">0</div>
+      <div class="drill-stat-box">
+        <div class="drill-stat-label">Failed</div>
+        <div id="drill-stat-failed" class="drill-stat-value">0</div>
       </div>
     </div>
 
-    <!-- Message BELOW the stats -->
-    <div id="drill-done-msg" style="color:#334155;margin-bottom:14px;">Session finished. You can retry the set or go back to selection.</div>
+    <div id="drill-done-msg" class="drill-notif-desc">
+      Session finished. You can retry the set or go back to selection.
+    </div>
 
-    <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap;">
-      <button id="drill-done-back"  style="padding:8px 14px;border-radius:8px;border:1px solid #cbd5e1;background:#e7f0ff;color:#0b4aa2;font-weight:700;cursor:pointer;">Back to selection</button>
-      <button id="drill-done-retry" style="padding:8px 14px;border-radius:8px;border:1px solid #cbd5e1;background:#f1f5f9;color:#0f172a;font-weight:700;cursor:pointer;">Retry set</button>
+    <div class="drill-notif-actions">
+      <button id="drill-done-back" class="drill-notif-btn drill-notif-btn-lg" type="button">
+        Back to selection
+      </button>
+      <button id="drill-done-retry" class="drill-notif-btn drill-notif-btn-lg" type="button">
+        Retry set
+      </button>
     </div>
   </div>
 </div>
 
-<!-- Run Cap overlay -->
-<div id="drill-cap" style="display:none;position:fixed;inset:0;z-index:100000;align-items:center;justify-content:center;">
-  <div style="position:absolute;inset:0;background:rgba(0,0,0,.55);"></div>
-  <div style="position:relative;z-index:1;background:#fff;border:1px solid #e2e8f0;border-radius:10px;box-shadow:0 12px 28px rgba(15,23,42,.18);width:min(86vw,460px);padding:16px;text-align:center;font-family:system-ui,Segoe UI,Arial,sans-serif;color:#0f172a;">
-    <div style="font-weight:800;font-size:18px;margin-bottom:8px;">Limit Reached</div>
-    <div style="color:#334155;margin-bottom:14px;">You’ve reached your current drills limit.</div>
-    <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap;">
-      <button id="drill-cap-ok" style="padding:8px 14px;border-radius:8px;border:1px solid #cbd5e1;background:#f1f5f9;color:#0f172a;font-weight:700;cursor:pointer;">OK</button>
+
+<!-- Run Cap overlay – My Patterns style -->
+<div id="drill-cap" class="drill-notif" role="dialog" aria-modal="true">
+  <div class="drill-notif-card">
+    <div class="drill-notif-title">Limit Reached</div>
+    <div class="drill-notif-desc">You’ve reached your current drills limit.</div>
+    <div class="drill-notif-actions">
+      <button id="drill-cap-ok" class="drill-notif-btn drill-notif-btn-lg" type="button">OK</button>
     </div>
   </div>
 </div>
+
 
 <!-- WGo (if not already loaded) -->
 <script>
