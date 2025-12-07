@@ -626,6 +626,24 @@ body.drill-zoom-mode #drill-ctrls{
   flex-wrap:wrap;
 }
 </style>
+/* Hard guarantee for drills fullscreen zoom */
+#go-board-drill.drill-fullscreen{
+  position: fixed !important;
+  inset: 0 !important;
+
+  width: 100vw !important;
+  height: 100vh !important;
+
+  max-width: none !important;
+  max-height: none !important;
+  margin: 0 !important;
+
+  border-radius: 0 !important;
+  box-shadow: none !important;
+
+  /* below your top/bottom zoom UI (99999), above normal page */
+  z-index: 99997;
+}
 
 </head>
 <body>
@@ -1696,57 +1714,76 @@ function enterFullscreenAtGrid(i, j, tapClientX, tapClientY){
   returnAnchor.style.display = 'none';
   mount.parentNode.insertBefore(returnAnchor, mount);
 
-  stage.appendChild(mount);
+ stage.appendChild(mount);
 
-  overlay.style.display = 'flex';
-  if (zoomExitBtn) zoomExitBtn.style.display = 'block';
-  isFullscreen = true;
-  document.body.classList.add('drill-zoom-mode');
+/* Hard assert fullscreen sizing like Joseki */
+mount.classList.add('drill-fullscreen');
+mount.style.maxWidth  = 'none';
+mount.style.maxHeight = 'none';
 
-  // Reset baseline sizing/state
-  resetViewLocal();
-  moveZoomUIIn();
+/* Force WGo to resize even if a cached width matches by accident */
+if (board) board._lastW = 0;
 
-  requestAnimationFrame(function(){
-    // Match core-style "pre-pan then zoom"
-    const initialFactor = 2.0;
+overlay.style.display = 'flex';
+if (zoomExitBtn) zoomExitBtn.style.display = 'block';
+isFullscreen = true;
+document.body.classList.add('drill-zoom-mode');
 
-    const px_curr = getXcss(i);
-    const py_curr = getYcss(j);
+// Reset baseline sizing/state
+resetViewLocal();
+moveZoomUIIn();
 
-    const rect = mount.getBoundingClientRect();
-    let sx = rect.width  / 2;
-    let sy = rect.height / 2;
+/* One extra layout settle frame improves the "sometimes windowed" bug */
+requestAnimationFrame(function(){
+  if (board) board._lastW = 0;
 
-    if (typeof tapClientX === 'number' && typeof tapClientY === 'number'){
-      sx = tapClientX - rect.left;
-      sy = tapClientY - rect.top;
-    }
+  // Ensure mount/zoomLayer sizes are recalculated in fullscreen context
+  applyPanAndSize(false);
 
-    // Pre-align the tapped grid point at scale = 1
-    scale = 1;
-    offsetX = px_curr * 1.0 - sx;
-    offsetY = py_curr * 1.0 - sy;
+  // Match core-style "pre-pan then zoom"
+  const initialFactor = 2.0;
 
-    applyPanAndSize(false);
+  const px_curr = getXcss(i);
+  const py_curr = getYcss(j);
 
-    // Now animate purely to the target scale
-    animateTo(initialFactor, px_curr, py_curr, sx, sy);
-  });
+  const rect = mount.getBoundingClientRect();
+  let sx = rect.width  / 2;
+  let sy = rect.height / 2;
+
+  if (typeof tapClientX === 'number' && typeof tapClientY === 'number'){
+    sx = tapClientX - rect.left;
+    sy = tapClientY - rect.top;
+  }
+
+  // Pre-align the tapped grid point at scale = 1
+  scale = 1;
+  offsetX = px_curr * 1.0 - sx;
+  offsetY = py_curr * 1.0 - sy;
+
+  applyPanAndSize(false);
+
+  // Now animate purely to the target scale
+  animateTo(initialFactor, px_curr, py_curr, sx, sy);
+});
 }
 
 
-  function exitFullscreen(){
-    if (!isFullscreen) return;
-    cancelFling();
+function exitFullscreen(){
+  if (!isFullscreen) return;
+  cancelFling();
 
-    // NEW: restore bars back into normal layout
-    restoreZoomUIOut();
+  // NEW: restore bars back into normal layout
+  restoreZoomUIOut();
   document.body.classList.remove('drill-zoom-mode');
 
-    isFullscreen = false;
+  // Remove hard fullscreen assertion
+  mount.classList.remove('drill-fullscreen');
+  mount.style.maxWidth  = '';
+  mount.style.maxHeight = '';
 
-    if (overlay) overlay.style.display = 'none';
+  isFullscreen = false;
+
+  if (overlay) overlay.style.display = 'none';
 
     if (zoomExitBtn) zoomExitBtn.style.display = 'none';
 
