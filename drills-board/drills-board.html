@@ -23,7 +23,7 @@
   display:flex;
   align-items:center;
   justify-content:center;
-  padding:0;
+  padding:16px 0 22px;
   box-sizing:border-box;
 
   background-color:#1b1208;
@@ -60,6 +60,19 @@
 
     /* we don’t hide the wrapper via data-hidden now, so it’s always visible */
     #go-board-drill canvas{ display:block; margin:0 auto; }
+
+    .prac-ctrls{
+      max-width:720px; margin:10px auto 0;
+      padding:8px 12px; display:flex; gap:10px; justify-content:center; flex-wrap:wrap;
+    }
+    .pbtn{
+      padding:12px 16px; border-radius:12px; border:1px solid #cbd5e1;
+      background:#fff; font-weight:800; font-size:15px; color:#0f172a;
+      cursor:pointer; box-shadow:0 2px 8px rgba(15,23,42,.06);
+    }
+    .pbtn:active{ transform:translateY(1px); }
+    .pbtn-strong{ background:#111827; color:#fff; border-color:#111827; }
+    .pbtn-alt{ background:#e7f0ff; color:#0b4aa2; border-color:#a7c1ff; }
 
 #blitz-timer{
   margin-left:auto;
@@ -117,69 +130,109 @@
    Practice-style Back + Controls for Drills
    ========================= */
 
-/* =========================
-   Drills top bar – align with Practice
-   ========================= */
-
 #drill-topbar{
   max-width:720px;
   width:100%;
   margin:16px auto 10px;
   padding:0;
   box-sizing:border-box;
-
   display:flex;
   align-items:center;
   justify-content:space-between;
-  gap:8px;
-  flex-wrap:wrap;
+  gap:10px;
 }
 
-/* Timer should not rely on auto-margin when we already use space-between */
-#blitz-timer{
-  margin-left: 0;
+
+
+/* Wood-style Back button – copied from Practice */
+.s-back{
+  position:relative;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  gap:6px;
+
+  padding:6px 12px;
+  border-radius:8px;
+  border:1px solid rgba(255,255,255,.40);
+
+  font-size:14px;
+  font-weight:800;
+  line-height:1.1;
+  color:#fff3cf;
+  text-shadow:0 1px 0 rgba(120,60,20,.7);
+  cursor:pointer;
+
+  user-select:none;
+  -webkit-user-select:none;
+  -moz-user-select:none;
+  -ms-user-select:none;
+  -webkit-tap-highlight-color:transparent;
+
+  background-image:
+    linear-gradient(
+      to bottom,
+      rgba(255,255,255,.12),
+      rgba(255,255,255,.03) 38%,
+      rgba(0,0,0,.14) 100%
+    ),
+    url('../img/wood.jpg');
+  background-size:100% 100%, cover;
+  background-position:center;
+  background-repeat:no-repeat;
+
+  filter:brightness(1.08) saturate(.96);
+
+  box-shadow:
+    0 3px 0 rgba(133,74,26,.85),
+    0 8px 14px rgba(0,0,0,.45);
+
+  transition:
+    transform .08s ease-out,
+    box-shadow .08s ease-out,
+    filter .12s ease-out;
 }
 
-/* =========================
-   Drills bottom controls – align with Practice spacing
-   Next centered, progress right
-   ========================= */
+.s-back:hover{
+  filter:brightness(1.12) saturate(.98);
+  transform:translateY(-1px);
+  box-shadow:
+    0 4px 0 rgba(133,74,26,.9),
+    0 10px 16px rgba(0,0,0,.48);
+}
 
+.s-back:active{
+  filter:brightness(.97) saturate(.96);
+  transform:translateY(2px);
+  box-shadow:
+    0 1px 0 rgba(120,60,20,.9),
+    0 4px 8px rgba(0,0,0,.55);
+}
+
+/* Drill controls container – match Practice spacing */
 #drill-ctrls{
   max-width: 720px;
   width: 100%;
   box-sizing: border-box;
   margin: 14px auto 0;
   padding: 0 12px 18px;
-
-  display: grid;
-  grid-template-columns: 1fr auto 1fr;
+  display: flex;
+  justify-content: center;
   align-items: center;
-  gap: 0;
+  gap: 12px;
+  flex-wrap: wrap;
 }
 
-#drill-ctrls #dbtn-next{
-  grid-column: 2;
-  justify-self: center;
-  width: auto;
-}
-
-#drill-ctrls #drill-progress{
-  grid-column: 3;
-  justify-self: end;
-  text-align: right;
-  min-width: 60px;
-  font-weight: 800;
-  opacity: .9;
-}
-
-/* Wood skin for drills controls – same structure as Practice buttons */
 #drill-ctrls .pbtn,
 #drill-ctrls .pbtn-strong,
 #drill-ctrls .pbtn-alt{
   position: relative;
   min-width: 90px;
   padding: 8px 24px;
+
+  /* Approx. same width as if there were 3 buttons on the line */
+  flex: 0 1 calc((100% - 24px) / 3);
+  max-width: 240px;
 
   display: flex;
   align-items: center;
@@ -200,6 +253,8 @@
 
   user-select: none;
   -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
   -webkit-tap-highlight-color: transparent;
 
   background-image:
@@ -226,6 +281,7 @@
     filter .12s ease-out;
 }
 
+
 #drill-ctrls .pbtn:hover{
   filter: brightness(1.12) saturate(.98);
   transform: translateY(-1px);
@@ -246,7 +302,6 @@
   outline: 2px solid rgba(255,255,255,.9);
   outline-offset: 2px;
 }
-
 /* === Drills bottom bar alignment fix ===
    Next stays dead-center, progress aligns to board-right */
 #drill-ctrls{
@@ -335,54 +390,6 @@
     content:"";
   }
 </style>
-<style>
-  /* =========================
-     Drills: overlay UI while zoomed (Practice-style)
-     ========================= */
-
-  /* Top overlay container (Back left, Timer right) */
-  #go-zoom-top-drill{
-    position:fixed;
-    top:0; left:0; right:0;
-    padding:12px 12px 0;
-    display:none;                 /* toggled by JS */
-    pointer-events:none;
-    z-index:99999;
-  }
-  #go-zoom-top-drill > *{
-    pointer-events:auto;
-  }
-
-  /* Bottom overlay container (Next bottom-center) */
-  #go-zoom-ui-drill{
-    position:fixed;
-    left:0; right:0; bottom:0;
-    padding:0 12px 18px;
-    display:none;                 /* toggled by JS */
-    pointer-events:none;
-    z-index:99999;
-  }
-  #go-zoom-ui-drill > *{
-    pointer-events:auto;
-  }
-
-  /* When the top bar is inside fullscreen container,
-     let it span the screen edges */
-  #go-zoom-top-drill #drill-topbar{
-    max-width:none;
-    width:100%;
-    margin:0;
-    padding:0;
-  }
-
-  /* Same for bottom controls bar */
-  #go-zoom-ui-drill #drill-ctrls{
-    max-width:none;
-    width:100%;
-    margin:0;
-    padding:0;
-  }
-</style>
 
 </head>
 <body>
@@ -406,7 +413,7 @@
   </div>
 
   <!-- Bottom controls: keep Next + progress -->
-<div id="drill-ctrls">
+  <div id="drill-ctrls" class="prac-ctrls">
     <button id="dbtn-next" class="pbtn pbtn-alt" type="button">Next</button>
     <div id="drill-progress" style="font-weight:800;opacity:.9;">1 / 1</div>
   </div>
@@ -1161,82 +1168,6 @@ mount.appendChild(layer);
   let zoomExitBtn = null;
   let returnAnchor = null;
   let prevOverflow = "";
-  // ===== NEW: Practice-style UI re-homing for fullscreen =====
-  let zoomTopUI = null;
-  let zoomBottomUI = null;
-
-  const zoomUIStore = {
-    topbar: { parent:null, next:null },
-    ctrls:  { parent:null, next:null }
-  };
-
-  function ensureZoomUIContainers(){
-    if (!zoomTopUI){
-      zoomTopUI = document.getElementById('go-zoom-top-drill');
-      if (!zoomTopUI){
-        zoomTopUI = document.createElement('div');
-        zoomTopUI.id = 'go-zoom-top-drill';
-        document.body.appendChild(zoomTopUI);
-      }
-    }
-    if (!zoomBottomUI){
-      zoomBottomUI = document.getElementById('go-zoom-ui-drill');
-      if (!zoomBottomUI){
-        zoomBottomUI = document.createElement('div');
-        zoomBottomUI.id = 'go-zoom-ui-drill';
-        document.body.appendChild(zoomBottomUI);
-      }
-    }
-  }
-
-  function stashAndMove(el, slot, container){
-    if (!el || !container) return;
-    if (!zoomUIStore[slot].parent){
-      zoomUIStore[slot].parent = el.parentNode;
-      zoomUIStore[slot].next   = el.nextSibling;
-    }
-    container.appendChild(el);
-  }
-
-  function restoreStashed(el, slot){
-    if (!el) return;
-    const store = zoomUIStore[slot];
-    const p = store.parent;
-    const n = store.next;
-    if (p){
-      if (n && n.parentNode === p) p.insertBefore(el, n);
-      else p.appendChild(el);
-    }
-    store.parent = null;
-    store.next   = null;
-  }
-
-  function moveZoomUIIn(){
-    ensureZoomUIContainers();
-
-    // Ensure timer exists before moving topbar if we're in blitz
-    if (blitzMode) ensureTimerEl();
-
-    const tb = document.getElementById('drill-topbar');
-    const bc = document.getElementById('drill-ctrls');
-
-    stashAndMove(tb, 'topbar', zoomTopUI);
-    stashAndMove(bc, 'ctrls',  zoomBottomUI);
-
-    if (zoomTopUI)    zoomTopUI.style.display = 'flex';
-    if (zoomBottomUI) zoomBottomUI.style.display = 'flex';
-  }
-
-  function restoreZoomUIOut(){
-    const tb = document.getElementById('drill-topbar');
-    const bc = document.getElementById('drill-ctrls');
-
-    restoreStashed(tb, 'topbar');
-    restoreStashed(bc, 'ctrls');
-
-    if (zoomTopUI)    zoomTopUI.style.display = 'none';
-    if (zoomBottomUI) zoomBottomUI.style.display = 'none';
-  }
 
   // Kinetic pan / fling
   let flingId = 0;
@@ -1457,7 +1388,6 @@ function enterFullscreenAtGrid(i, j, tapClientX, tapClientY){
 
   // Reset baseline sizing/state
   resetViewLocal();
-  moveZoomUIIn();
 
   requestAnimationFrame(function(){
     // Match core-style "pre-pan then zoom"
@@ -1491,9 +1421,6 @@ function enterFullscreenAtGrid(i, j, tapClientX, tapClientY){
   function exitFullscreen(){
     if (!isFullscreen) return;
     cancelFling();
-
-    // NEW: restore bars back into normal layout
-    restoreZoomUIOut();
 
     isFullscreen = false;
 
@@ -2316,3 +2243,6 @@ const boardY = (sy + offsetY) / scale;
 
 </body>
 </html>
+
+
+
