@@ -650,7 +650,7 @@ body.drill-zoom-mode #drill-ctrls{
 
   <!-- Bottom controls: keep Next + progress -->
   <div id="drill-ctrls">
-    <button id="dbtn-next" class="pbtn pbtn-alt" type="button">Next</button>
+    <button id="dbtn-next" class="pbtn pbtn-alt" type="button">Skip</button>
     <div id="drill-progress" style="font-weight:800;opacity:.9;">1 / 1</div>
   </div>
 </div>
@@ -2126,38 +2126,52 @@ const boardY = (sy + offsetY) / scale;
     redraw();
   }
 
-  function startDrill(i){
-    index = i;
-    if (index >= slots.length){ showDone(); return; }
-    const slot = slots[index], base = slot.base, key  = slot.key;
+function startDrill(i, opts){
+  opts = opts || {};
+  const fromSkip = !!opts.fromSkip;
 
-    SIZE = base.size || 19;
-    if (!board) initBoard();
-    clearTimers();
+  index = i;
+  if (index >= slots.length){ showDone(); return; }
 
-    ensureRunPlanFor(key, base);
-    const variant = runPlan[key].get(index);
-    const tline = makeTransformed(base, variant.orientIdx, variant.swap);
-    currentTransformed = tline;
+  const slot = slots[index], base = slot.base, key  = slot.key;
 
-    prepareCorner(tline, variant.startIndex);
+  SIZE = base.size || 19;
+  if (!board) initBoard();
+  clearTimers();
 
-    blitzCornerPlannedMoves = remain.length;
-    if (blitzMode){
-      ensureTimerEl();
+  ensureRunPlanFor(key, base);
+  const variant = runPlan[key].get(index);
+  const tline = makeTransformed(base, variant.orientIdx, variant.swap);
+  currentTransformed = tline;
+
+  prepareCorner(tline, variant.startIndex);
+
+  blitzCornerPlannedMoves = remain.length;
+
+  if (blitzMode){
+    ensureTimerEl();
+
+    // IMPORTANT:
+    // Only add the per-corner time budget if we did NOT skip into this corner.
+    // This prevents "Skip spamming" from growing the timer.
+    if (!fromSkip){
       timerMs += blitzCornerPlannedMoves * 1500;
-      if (!timerId) startTimer();
-      if (timerEl) timerEl.textContent = fmtMs(timerMs);
-      blitzCornerState = {
-        tline,
-        startIndex: variant.startIndex,
-        plannedN: blitzCornerPlannedMoves
-      };
     }
 
-    setProgress();
-    locked = false;
+    if (!timerId) startTimer();
+    if (timerEl) timerEl.textContent = fmtMs(timerMs);
+
+    blitzCornerState = {
+      tline,
+      startIndex: variant.startIndex,
+      plannedN: blitzCornerPlannedMoves
+    };
   }
+
+  setProgress();
+  locked = false;
+}
+
 
   function restartSameCornerBlitz(){
     if (!blitzMode || !blitzCornerState) return;
@@ -2319,10 +2333,13 @@ const boardY = (sy + offsetY) / scale;
     }
   });
 
-  btnNext.addEventListener('click',  function(){
-    if (!slots.length) return;
-    startDrill(index+1);
-  });
+btnNext.addEventListener('click', function(){
+  if (!slots.length) return;
+
+  // Skip should not grant Blitz time for the next corner.
+  startDrill(index + 1, { fromSkip: true });
+});
+
 
   btnMenu.addEventListener('click',  function(){
     try{ window.location.href = '../drills/drills.html'; }catch(e){}
@@ -2566,12 +2583,4 @@ const boardY = (sy + offsetY) / scale;
 
 </body>
 </html>
-
-
-
-
-
-
-
-
 
