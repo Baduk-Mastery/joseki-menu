@@ -337,28 +337,52 @@
 
 <style>
   /* Fullscreen zoom overlay for drills (Practice-style zoom) */
-  #go-zoom-overlay-drill{
-    position:fixed;
-    inset:0;
-    z-index:99998;
-    display:none;
-    align-items:center;
-    justify-content:center;
-    background:transparent;
-    -webkit-tap-highlight-color:transparent;
-    touch-action:none;
-  }
-
-#go-zoom-stage-drill{
-  position: relative;
+/* Fullscreen zoom overlay for drills (Practice-style zoom) */
+#go-zoom-overlay-drill{
+  position:fixed;
+  inset:0;
+  z-index:99998;
+  display:none;
+  align-items:center;
+  justify-content:center;
+  background:transparent;
+  -webkit-tap-highlight-color:transparent;
+  touch-action:none;
 }
-    width:100vw;
-    height:100vh;
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    touch-action:none;
-  }
+
+/* Stage that hosts the board in fullscreen */
+#go-zoom-stage-drill{
+  position:relative;
+  width:100vw;
+  height:100vh;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  touch-action:none;
+}
+
+#go-zoom-exit-drill{
+  position:fixed;
+  left:14px;
+  bottom:90px;
+  width:120px;
+  height:80px;
+  border-radius:9px;
+
+  background:rgba(148,163,184,.35);
+  border:1px solid rgba(148,163,184,.85);
+  box-shadow:0 6px 16px rgba(0,0,0,.55);
+
+  display:none;
+  cursor:pointer;
+  z-index:99999;
+  backdrop-filter:blur(2px);
+  -webkit-tap-highlight-color:transparent;
+}
+
+#go-zoom-exit-drill::before{
+  content:"";
+}
 
   #go-zoom-exit-drill{
     position:fixed;
@@ -1707,6 +1731,67 @@ function enterFullscreenAtGrid(i, j, tapClientX, tapClientY){
   if (!zoomLayer) zoomLayer = mount.__woodLayer || mount;
 
   ensureOverlay();
+// ===== Zoom return + desync helpers (DRILLS) =====
+function getHomeWrap(){
+  return document.getElementById('go-board-drill-wrap') || wrap || null;
+}
+
+function getCtrls(){
+  return document.getElementById('drill-ctrls') || null;
+}
+
+function placeReturnAnchorInHome(){
+  const home = getHomeWrap();
+  if (!home) return;
+
+  // Remove old anchor if any
+  if (returnAnchor && returnAnchor.parentNode){
+    try { returnAnchor.parentNode.removeChild(returnAnchor); } catch(_){}
+  }
+
+  returnAnchor = document.createComment('drill-return-anchor');
+
+  // If mount is currently in home, place anchor right after it
+  if (mount && mount.parentNode === home){
+    if (mount.nextSibling) home.insertBefore(returnAnchor, mount.nextSibling);
+    else home.appendChild(returnAnchor);
+  } else {
+    // Fallback: place before controls if present
+    const ctrl = getCtrls();
+    home.insertBefore(returnAnchor, ctrl || null);
+  }
+}
+
+// Defensive sync to avoid state/DOM mismatch throwing the zoom system off
+function fixZoomDesyncIfNeeded(){
+  // Try to discover overlay/stage if not yet cached
+  if (!overlay){
+    overlay = document.getElementById('go-zoom-overlay-drill');
+    if (overlay){
+      stage = overlay.querySelector('#go-zoom-stage-drill');
+      zoomExitBtn = overlay.querySelector('#go-zoom-exit-drill');
+    }
+  }
+
+  const stageHasMount = !!(stage && mount && stage.contains(mount));
+
+  if (stageHasMount && !isFullscreen){
+    isFullscreen = true;
+    document.body.classList.add('drill-zoom-mode');
+    mount.classList.add('drill-fullscreen');
+    if (overlay) overlay.style.display = 'flex';
+    if (zoomExitBtn) zoomExitBtn.style.display = 'block';
+  }
+
+  if (!stageHasMount && isFullscreen){
+    isFullscreen = false;
+    document.body.classList.remove('drill-zoom-mode');
+    mount.classList.remove('drill-fullscreen');
+    if (overlay) overlay.style.display = 'none';
+    if (zoomExitBtn) zoomExitBtn.style.display = 'none';
+  }
+}
+
   fixZoomDesyncIfNeeded();
 
   // Lock scroll
