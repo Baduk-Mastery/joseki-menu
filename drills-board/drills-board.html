@@ -62,6 +62,16 @@
   max-width:720px;
   box-sizing:border-box;
 }
+/* Safety net: transformed ancestors can "box" position:fixed
+   on some browsers if re-homing ever hiccups */
+body.drill-zoom-mode #drill-inner{
+  transform: none !important;
+}
+
+body.drill-zoom-mode #go-board-drill-wrap{
+  position: static !important;
+}
+
 
 /* Same mobile padding logic as Practice */
 @media (max-width: 480px){
@@ -1642,6 +1652,23 @@ function ensureOverlay(){
       exitFullscreen();
     });
   }
+function enforceFullscreenStyles(){
+  if (!mount) return;
+
+  // Last-resort inline override to guarantee true fullscreen
+  mount.style.position = 'fixed';
+  mount.style.left = '0';
+  mount.style.top = '0';
+  mount.style.right = '0';
+  mount.style.bottom = '0';
+  mount.style.width = '100vw';
+  mount.style.height = '100vh';
+  mount.style.margin = '0';
+  mount.style.borderRadius = '0';
+  mount.style.boxShadow = 'none';
+  mount.style.zIndex = '99998';
+}
+
 
   // overlay/stage are no longer used for fullscreen
   overlay = null;
@@ -1713,7 +1740,14 @@ function enterFullscreenAtGrid(i, j, tapClientX, tapClientY){
   prevOverflow = document.documentElement.style.overflow || "";
   document.documentElement.style.overflow = "hidden";
 
-  // core-style placeholder so layout doesn’t jump
+  // Activate CSS safety net early
+  document.body.classList.add("drill-zoom-mode");
+
+  // Clear any square sizing from normal mode
+  mount.style.width = "";
+  mount.style.height = "";
+
+  // Placeholder so layout doesn’t jump
   const rectBefore = mount.getBoundingClientRect();
   returnAnchor = document.createElement("div");
   returnAnchor.style.width = rectBefore.width + "px";
@@ -1723,19 +1757,30 @@ function enterFullscreenAtGrid(i, j, tapClientX, tapClientY){
     mount.parentNode.insertBefore(returnAnchor, mount);
   }
 
-  // core-style: move mount to body
+  // Move mount to body
   document.body.appendChild(mount);
+
   mount.classList.add("is-fullscreen");
   isFullscreen = true;
 
   if (zoomExitBtn) zoomExitBtn.style.display = "block";
-  document.body.classList.add("drill-zoom-mode");
 
-  // reset baseline sizing/state
+  // Hard guarantee even if some state races
+  enforceFullscreenStyles();
+
   resetViewLocal();
   moveZoomUIIn();
 
   requestAnimationFrame(function(){
+    // Re-assert state in case anything reverted
+    if (mount.parentNode !== document.body){
+      document.body.appendChild(mount);
+    }
+    if (!mount.classList.contains("is-fullscreen")){
+      mount.classList.add("is-fullscreen");
+    }
+    enforceFullscreenStyles();
+
     const initialFactor = 2.0;
 
     const px_curr = getXcss(i);
@@ -1750,14 +1795,14 @@ function enterFullscreenAtGrid(i, j, tapClientX, tapClientY){
       sy = tapClientY - rect.top;
     }
 
-    // pre-align the tapped grid point at scale = 1
+    // Pre-align at scale = 1
     scale = 1;
-    offsetX = px_curr * 1.0 - sx;
-    offsetY = py_curr * 1.0 - sy;
+    offsetX = px_curr - sx;
+    offsetY = py_curr - sy;
 
     applyPanAndSize(false);
 
-    // now animate to the target scale
+    // Animate to target scale
     animateTo(initialFactor, px_curr, py_curr, sx, sy);
   });
 }
@@ -1786,8 +1831,19 @@ function exitFullscreen(){
   document.documentElement.style.overflow = prevOverflow;
 
   // clear fullscreen inline sizing
+  // Clear enforced fullscreen inline styles
+  mount.style.position = "";
+  mount.style.left = "";
+  mount.style.top = "";
+  mount.style.right = "";
+  mount.style.bottom = "";
   mount.style.width = "";
   mount.style.height = "";
+  mount.style.margin = "";
+  mount.style.borderRadius = "";
+  mount.style.boxShadow = "";
+  mount.style.zIndex = "";
+
 
   scale = 1;
   offsetX = 0;
