@@ -3,7 +3,8 @@
 <head>
   <meta charset="utf-8" />
   <title>Joseki Master – Drills Board</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+
 
   <style>
  html, body{
@@ -1621,31 +1622,32 @@ function clampPan(){
     applyPanAndSize(true);
   }
 
-  function ensureOverlay(){
-    if (overlay) return;
+function ensureOverlay(){
+  if (zoomExitBtn) return;
 
-    overlay = document.getElementById('go-zoom-overlay-drill');
-    if (!overlay){
-      overlay = document.createElement('div');
-      overlay.id = 'go-zoom-overlay-drill';
-      overlay.innerHTML =
-        '<div id="go-zoom-stage-drill"></div>' +
-        '<div id="go-zoom-exit-drill" aria-label="Zoom out"></div>';
-      document.body.appendChild(overlay);
-    }
+  // use a single, fixed exit button (core-style)
+  zoomExitBtn = document.getElementById('go-zoom-exit-drill');
 
-    stage       = overlay.querySelector('#go-zoom-stage-drill');
-    zoomExitBtn = overlay.querySelector('#go-zoom-exit-drill');
-
-    if (zoomExitBtn && !zoomExitBtn._bound){
-      zoomExitBtn._bound = true;
-      zoomExitBtn.addEventListener('click', function(e){
-        e.stopPropagation();
-        e.preventDefault();
-        exitFullscreen();
-      });
-    }
+  if (!zoomExitBtn){
+    zoomExitBtn = document.createElement('div');
+    zoomExitBtn.id = 'go-zoom-exit-drill';
+    document.body.appendChild(zoomExitBtn);
   }
+
+  if (!zoomExitBtn._bound){
+    zoomExitBtn._bound = true;
+    zoomExitBtn.addEventListener('click', function(e){
+      e.stopPropagation();
+      e.preventDefault();
+      exitFullscreen();
+    });
+  }
+
+  // overlay/stage are no longer used for fullscreen
+  overlay = null;
+  stage = null;
+}
+
 
 function animateTo(targetScale, pxBoard, pyBoard, sxTarget, syTarget){
   targetScale = Math.max(minScale, Math.min(maxScale, targetScale));
@@ -1709,87 +1711,90 @@ function enterFullscreenAtGrid(i, j, tapClientX, tapClientY){
 
   ensureOverlay();
   prevOverflow = document.documentElement.style.overflow || "";
-  document.documentElement.style.overflow = 'hidden';
+  document.documentElement.style.overflow = "hidden";
 
-  returnAnchor = document.createElement('div');
-  returnAnchor.style.display = 'none';
-  mount.parentNode.insertBefore(returnAnchor, mount);
+  // core-style placeholder so layout doesn’t jump
+  const rectBefore = mount.getBoundingClientRect();
+  returnAnchor = document.createElement("div");
+  returnAnchor.style.width = rectBefore.width + "px";
+  returnAnchor.style.height = rectBefore.height + "px";
 
-  stage.appendChild(mount);
+  if (mount.parentNode){
+    mount.parentNode.insertBefore(returnAnchor, mount);
+  }
 
-  overlay.style.display = 'flex';
-  if (zoomExitBtn) zoomExitBtn.style.display = 'block';
+  // core-style: move mount to body
+  document.body.appendChild(mount);
+  mount.classList.add("is-fullscreen");
   isFullscreen = true;
-mount.classList.add('is-fullscreen');
 
-  document.body.classList.add('drill-zoom-mode');
+  if (zoomExitBtn) zoomExitBtn.style.display = "block";
+  document.body.classList.add("drill-zoom-mode");
 
-  // Reset baseline sizing/state
+  // reset baseline sizing/state
   resetViewLocal();
   moveZoomUIIn();
 
   requestAnimationFrame(function(){
-    // Match core-style "pre-pan then zoom"
     const initialFactor = 2.0;
 
     const px_curr = getXcss(i);
     const py_curr = getYcss(j);
 
     const rect = mount.getBoundingClientRect();
-    let sx = rect.width  / 2;
+    let sx = rect.width / 2;
     let sy = rect.height / 2;
 
-    if (typeof tapClientX === 'number' && typeof tapClientY === 'number'){
+    if (typeof tapClientX === "number" && typeof tapClientY === "number"){
       sx = tapClientX - rect.left;
       sy = tapClientY - rect.top;
     }
 
-    // Pre-align the tapped grid point at scale = 1
+    // pre-align the tapped grid point at scale = 1
     scale = 1;
     offsetX = px_curr * 1.0 - sx;
     offsetY = py_curr * 1.0 - sy;
 
     applyPanAndSize(false);
 
-    // Now animate purely to the target scale
+    // now animate to the target scale
     animateTo(initialFactor, px_curr, py_curr, sx, sy);
   });
 }
 
 
-  function exitFullscreen(){
-    if (!isFullscreen) return;
-    cancelFling();
-mount.classList.remove('is-fullscreen');
-    restoreZoomUIOut();
-  document.body.classList.remove('drill-zoom-mode');
+function exitFullscreen(){
+  if (!isFullscreen) return;
+  cancelFling();
 
-    isFullscreen = false;
+  mount.classList.remove("is-fullscreen");
 
-    if (overlay) overlay.style.display = 'none';
+  restoreZoomUIOut();
+  document.body.classList.remove("drill-zoom-mode");
 
-    if (zoomExitBtn) zoomExitBtn.style.display = 'none';
+  isFullscreen = false;
 
-    if (returnAnchor && returnAnchor.parentNode){
-      returnAnchor.parentNode.insertBefore(mount, returnAnchor);
-      returnAnchor.parentNode.removeChild(returnAnchor);
-      returnAnchor = null;
-    }
+  if (zoomExitBtn) zoomExitBtn.style.display = "none";
 
-document.documentElement.style.overflow = prevOverflow;
-
-// important: remove fullscreen inline sizing first
-mount.style.width = '';
-mount.style.height = '';
-
-scale = 1;
-offsetX = 0;
-offsetY = 0;
-
-applyPanAndSize(true);
-
+  // move mount back to its original place
+  if (returnAnchor && returnAnchor.parentNode){
+    returnAnchor.parentNode.insertBefore(mount, returnAnchor);
+    returnAnchor.parentNode.removeChild(returnAnchor);
+    returnAnchor = null;
   }
 
+  document.documentElement.style.overflow = prevOverflow;
+
+  // clear fullscreen inline sizing
+  mount.style.width = "";
+  mount.style.height = "";
+
+  scale = 1;
+  offsetX = 0;
+  offsetY = 0;
+
+  applyPanAndSize(true);
+}
   function beginPan(e){
     isPanning = false;
     panStart = { x: e.clientX, y: e.clientY, ox: offsetX, oy: offsetY };
