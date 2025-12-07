@@ -2,2623 +2,889 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <title>Joseki Master – Drills Board</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-
+  <title>Joseki Master – Clean Board</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
   <style>
- html, body{
-  margin:0;
-  padding:0;
-  height:100%;
-  min-height:100%;
-  font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
-  background-color:#1b1208;
-  overscroll-behavior:none;
-  overflow: hidden;
-  touch-action: none;
-}
-/* Core-style hard fullscreen guarantee for drills mount */
-#go-board-drill.is-fullscreen{
-  position: fixed !important;
-  inset: 0 !important;
-  width: 100vw !important;
-  height: 100vh !important;
-  border-radius: 0 !important;
-  box-shadow: none !important;
-  margin: 0 !important;
-  z-index: 99998 !important;
-}
-
-
-#go-board-drill{
-  touch-action: none;
-  user-select: none;
-  -webkit-user-select: none;
-  -webkit-tap-highlight-color: transparent;
-}
-
-#drill-root{
-  --wood:url('../img/wood.jpg');
-  position:fixed;
-  inset:0;
-
-  background-color:#1b1208;
-  background-image:
-    linear-gradient(rgba(0,0,0,.35), rgba(0,0,0,.45)),
-    var(--wood);
-  background-size:cover;
-  background-position:center;
-  background-repeat:no-repeat;
-}
-
-/* Practice-style centering of the whole drills block */
-#drill-inner{
-  position:absolute;
-  top:50%;
-  left:50%;
-  transform:translate(-50%, -50%);
-
-  width:100%;
-  max-width:720px;
-  box-sizing:border-box;
-}
-
-/* Same mobile padding logic as Practice */
-@media (max-width: 480px){
-  #drill-inner{ padding:8px 12px 0; }
-}
-
-
-    /* we don’t hide the wrapper via data-hidden now, so it’s always visible */
-    #go-board-drill canvas{ display:block; margin:0 auto; }
-
-    .prac-ctrls{
-      max-width:720px; margin:10px auto 0;
-      padding:8px 12px; display:flex; gap:10px; justify-content:center; flex-wrap:wrap;
+    html, body{
+      margin:0; padding:0; height:100%;
+      overflow: hidden; 
+      font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+      background-color:#1b1208;
+      touch-action: none;
     }
-    .pbtn{
-      padding:12px 16px; border-radius:12px; border:1px solid #cbd5e1;
-      background:#fff; font-weight:800; font-size:15px; color:#0f172a;
-      cursor:pointer; box-shadow:0 2px 8px rgba(15,23,42,.06);
+
+    #core-root{
+      --wood:url('../img/wood.jpg'); 
+      position: absolute; inset: 0;
+      display:flex; align-items:center; justify-content:center;
+      background-color:#1b1208;
+      background-image: linear-gradient(rgba(0,0,0,.35), rgba(0,0,0,.45)), var(--wood);
+      background-size:cover; background-position:center;
     }
-    .pbtn:active{ transform:translateY(1px); }
-    .pbtn-strong{ background:#111827; color:#fff; border-color:#111827; }
-    .pbtn-alt{ background:#e7f0ff; color:#0b4aa2; border-color:#a7c1ff; }
 
-#blitz-timer{
-  margin-left:auto;
-  display:inline-flex;
-  align-items:center;
-  justify-content:center;
+    #core-inner{ width:min(92vw, 720px); margin:0 auto; z-index: 1; pointer-events: none; }
+    #core-board-wrap{ width:100%; max-width:720px; margin:0 auto; position: relative; pointer-events: auto; }
 
-  /* keep the size you wanted */
-  padding:6px 12px;
-  border-radius:8px;
+    #core-board{
+      position:relative; width:100%;
+      border-radius:10px; overflow:hidden; 
+      margin:0 auto;
+      box-shadow: 0 18px 40px rgba(0,0,0,.32), 0 6px 16px rgba(0,0,0,.22);
+      background:none; 
+      touch-action: none; user-select: none; -webkit-user-select: none;
+      transform-origin: 0 0;
+    }
 
-  /* lock width so 10.0s -> 9.9s doesn't shrink */
-  min-width:7ch;
+    /* ZOOM OUT BUTTON - MATCHING REFERENCE EXACTLY */
+    #zoom-exit-btn{
+      position:fixed;
+      left:14px;
+      bottom:90px;
+      
+      width:120px;
+      height:80px;
+      border-radius:9px;
+      
+      background:rgba(148,163,184,.35);
+      border:1px solid rgba(148,163,184,.85);
+      box-shadow:0 6px 16px rgba(0,0,0,.55);
+      
+      display:none; /* toggled in JS */
+      cursor:pointer;
+      z-index:99999;
+      
+      backdrop-filter:blur(2px);
+      -webkit-tap-highlight-color:transparent;
+      
+      color:#e5e7eb;
+      font-size:18px;
+      font-weight:600;
+      
+      /* Flex to center text */
+      align-items:center;
+      justify-content:center;
+    }
+    /* Text Content */
+    #zoom-exit-btn::after { content: ""; }
 
-  white-space:nowrap;
-  text-align:center;
-
-  /* chip styling (not a wood button) */
-  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-  font-weight:900;
-  font-size:14px;
-  line-height:1.1;
-  letter-spacing:0.5px;
-
-  color:#fff3cf;
-  text-shadow:0 1px 0 rgba(0,0,0,.35);
-
-  background:
-    linear-gradient(
-      to bottom,
-      rgba(255,255,255,.10),
-      rgba(0,0,0,.18)
-    ),
-    rgba(0,0,0,.28);
-
-  border:1px solid rgba(255,255,255,.35);
-
-  box-shadow:
-    inset 0 1px 0 rgba(255,255,255,.12),
-    0 4px 10px rgba(0,0,0,.35);
-
-  cursor:default;
-  user-select:none;
-  -webkit-user-select:none;
-  -webkit-tap-highlight-color:transparent;
-}
-
-/* class kept for clarity/future tweaks */
-.blitz-chip{ }
-
-
+    #core-board.is-fullscreen {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100vw !important;
+      height: 100vh !important;
+      border-radius: 0 !important;
+      box-shadow: none !important;
+      z-index: 9999;
+      margin: 0;
+    }
   </style>
-<style>
-/* =========================
-   Practice-style Back + Controls for Drills
-   ========================= */
 
-#drill-topbar{
-  max-width:720px;
-  width:100%;
-  margin:16px auto 10px;
-  padding:0;
-  box-sizing:border-box;
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  gap:10px;
-}
+  <script>
+    (function ensureWGo(){
+      if (window.WGo) return;
+      var s = document.createElement('script');
+      s.src = "https://3d85c7a311526e02aeeeb19e952d0c09.cdn.bubble.io/f1754893285939x971907393576095400/wgo.min.js";
+      s.async = true;
+      document.head.appendChild(s);
+    })();
+  </script>
 
+  <script>
+  (function(){
+    var STORAGE_KEY = 'go_prefs';
+    var GoPrefs = (window.GoPrefs = window.GoPrefs || {});
+    try {
+      var saved = localStorage.getItem(STORAGE_KEY);
+      if (saved) Object.assign(GoPrefs, JSON.parse(saved) || {});
+    } catch (e) {}
+    
+    if (typeof GoPrefs.josekiZoom === 'undefined')         GoPrefs.josekiZoom = true;
+    if (typeof GoPrefs.soundOn === 'undefined')            GoPrefs.soundOn = true;
+    if (typeof GoPrefs.highlightLast === 'undefined')      GoPrefs.highlightLast = true;
+    if (typeof GoPrefs.disableAutoZoomOut === 'undefined') GoPrefs.disableAutoZoomOut = false;
+    
+    window.GoPrefsSave = function(){ try { localStorage.setItem(STORAGE_KEY, JSON.stringify(GoPrefs)); } catch (e) {} };
+  })();
+  </script>
 
-
-/* Wood-style Back button – copied from Practice */
-.s-back{
-  position:relative;
-  display:inline-flex;
-  align-items:center;
-  justify-content:center;
-  gap:6px;
-
-  padding:6px 12px;
-  border-radius:8px;
-  border:1px solid rgba(255,255,255,.40);
-
-  font-size:14px;
-  font-weight:800;
-  line-height:1.1;
-  color:#fff3cf;
-  text-shadow:0 1px 0 rgba(120,60,20,.7);
-  cursor:pointer;
-
-  user-select:none;
-  -webkit-user-select:none;
-  -moz-user-select:none;
-  -ms-user-select:none;
-  -webkit-tap-highlight-color:transparent;
-
-  background-image:
-    linear-gradient(
-      to bottom,
-      rgba(255,255,255,.12),
-      rgba(255,255,255,.03) 38%,
-      rgba(0,0,0,.14) 100%
-    ),
-    url('../img/wood.jpg');
-  background-size:100% 100%, cover;
-  background-position:center;
-  background-repeat:no-repeat;
-
-  filter:brightness(1.08) saturate(.96);
-
-  box-shadow:
-    0 3px 0 rgba(133,74,26,.85),
-    0 8px 14px rgba(0,0,0,.45);
-
-  transition:
-    transform .08s ease-out,
-    box-shadow .08s ease-out,
-    filter .12s ease-out;
-}
-
-.s-back:hover{
-  filter:brightness(1.12) saturate(.98);
-  transform:translateY(-1px);
-  box-shadow:
-    0 4px 0 rgba(133,74,26,.9),
-    0 10px 16px rgba(0,0,0,.48);
-}
-
-.s-back:active{
-  filter:brightness(.97) saturate(.96);
-  transform:translateY(2px);
-  box-shadow:
-    0 1px 0 rgba(120,60,20,.9),
-    0 4px 8px rgba(0,0,0,.55);
-}
-
-/* Drill controls container – match Practice spacing */
-#drill-ctrls{
-  max-width: 720px;
-  width: 100%;
-  box-sizing: border-box;
-  margin: 14px auto 0;
-  padding: 0 12px 18px;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  gap: 12px;
-  flex-wrap: wrap;
-}
-
-#drill-ctrls .pbtn,
-#drill-ctrls .pbtn-strong,
-#drill-ctrls .pbtn-alt{
-  position: relative;
-  min-width: 90px;
-  padding: 8px 24px;
-
-  /* Approx. same width as if there were 3 buttons on the line */
-  flex: 0 1 calc((100% - 24px) / 3);
-  max-width: 240px;
-
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-sizing: border-box;
-
-  text-align: center;
-
-  border-radius: 10px;
-  border: 1px solid rgba(255,255,255,.40);
-
-  font-size: 16px;
-  font-weight: 800;
-  line-height: 1.1;
-  color: #fff3cf;
-  text-shadow: 0 1px 0 rgba(120,60,20,.7);
-  cursor: pointer;
-
-  user-select: none;
-  -webkit-user-select: none;
-  -moz-user-select: none;
-  -ms-user-select: none;
-  -webkit-tap-highlight-color: transparent;
-
-  background-image:
-    linear-gradient(
-      to bottom,
-      rgba(255,255,255,.12),
-      rgba(255,255,255,.03) 38%,
-      rgba(0,0,0,.14) 100%
-    ),
-    url('../img/wood.jpg');
-  background-size: 100% 100%, cover;
-  background-position: center;
-  background-repeat: no-repeat;
-
-  filter: brightness(1.08) saturate(.96);
-
-  box-shadow:
-    0 3px 0 rgba(133,74,26,.85),
-    0 8px 14px rgba(0,0,0,.45);
-
-  transition:
-    transform .08s ease-out,
-    box-shadow .08s ease-out,
-    filter .12s ease-out;
-}
-
-
-#drill-ctrls .pbtn:hover{
-  filter: brightness(1.12) saturate(.98);
-  transform: translateY(-1px);
-  box-shadow:
-    0 4px 0 rgba(133,74,26,.9),
-    0 10px 16px rgba(0,0,0,.48);
-}
-
-#drill-ctrls .pbtn:active{
-  filter: brightness(.97) saturate(.96);
-  transform: translateY(2px);
-  box-shadow:
-    0 1px 0 rgba(120,60,20,.9),
-    0 4px 8px rgba(0,0,0,.55);
-}
-
-#drill-ctrls .pbtn:focus-visible{
-  outline: 2px solid rgba(255,255,255,.9);
-  outline-offset: 2px;
-}
-/* === Drills bottom bar alignment fix ===
-   Next stays dead-center, progress aligns to board-right */
-#drill-ctrls{
-  display: grid;
-  grid-template-columns: 1fr auto 1fr;
-  align-items: center;
-  gap: 0;
-
-  /* keep your existing sizing/spacing intent */
-  max-width: 720px;
-  width: 100%;
-  margin: 14px auto 0;
-  padding: 0 12px 18px;
-  box-sizing: border-box;
-}
-
-/* Center column */
-#drill-ctrls #dbtn-next{
-  grid-column: 2;
-  justify-self: center;
-  width: auto;
-}
-
-/* Right column */
-#drill-ctrls #drill-progress{
-  grid-column: 3;
-  justify-self: end;
-  text-align: right;
-  min-width: 60px;
-}
-
-/* Neutralize the "3 buttons per row" sizing for this bar */
-#drill-ctrls .pbtn,
-#drill-ctrls .pbtn-strong,
-#drill-ctrls .pbtn-alt{
-  flex: initial;
-  max-width: none;
-  min-width: 0;
-}
-
-</style>
-
-<style>
-  /* Fullscreen zoom overlay for drills (Practice-style zoom) */
-  #go-zoom-overlay-drill{
-    position:fixed;
-    inset:0;
-    z-index:99998;
-    display:none;
-    align-items:center;
-    justify-content:center;
-    background:transparent;
-    -webkit-tap-highlight-color:transparent;
-    touch-action:none;
+  <script>
+  if (!window.StoneSFX) {
+    window.StoneSFX = (() => {
+      let pool = [], i = 0;
+      function init(url, voices = 5){
+        pool = Array.from({ length: voices }, () => {
+          const a = new Audio(url); a.preload = 'auto'; a.volume = 0.35; return a;
+        });
+        const unlock = () => {
+          pool.forEach(a => { try{ a.play().then(()=>a.pause()).catch(()=>{}); a.currentTime=0; }catch(e){} });
+          window.removeEventListener('touchstart', unlock); window.removeEventListener('mousedown', unlock);
+        };
+        window.addEventListener('touchstart', unlock, { once:true });
+        window.addEventListener('mousedown', unlock, { once:true });
+      }
+      function play(){
+        if (!pool.length) return;
+        const a = pool[i++ % pool.length];
+        try { a.currentTime=0; a.playbackRate=0.97+Math.random()*0.06; a.play(); } catch(e){}
+      }
+      return { init, play };
+    })();
   }
-
-  #go-zoom-stage-drill{
-    width:100vw;
-    height:100vh;
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    touch-action:none;
-  }
-
-  #go-zoom-exit-drill{
-    position:fixed;
-    left:14px;
-    bottom:90px;
-    width:120px;
-    height:80px;
-    border-radius:9px;
-
-    background:rgba(148,163,184,.35);
-    border:1px solid rgba(148,163,184,.85);
-    box-shadow:0 6px 16px rgba(0,0,0,.55);
-
-    display:none;
-    cursor:pointer;
-    z-index:99999;
-    backdrop-filter:blur(2px);
-    -webkit-tap-highlight-color:transparent;
-  }
-
-  #go-zoom-exit-drill::before{
-    content:"";
-  }
-</style>
-<style>
-#go-zoom-top-drill{
-  position:fixed;
-  left:0; right:0; top:0;
-  padding:12px 12px 0;
-
-  display:none;               /* toggled by JS */
-  justify-content:center;
-  align-items:flex-start;
-
-  pointer-events:none;
-  z-index:99999;
-}
-#go-zoom-top-drill > *{
-  pointer-events:auto;
-}
-
-/* Bottom overlay container */
-#go-zoom-ui-drill{
-  position:fixed;
-  left:0; right:0; bottom:0;
-
-  /* Outer dock padding (same as Joseki dock) */
-  padding:0 12px 18px;
-
-  display:none;               /* toggled by JS */
-  flex-direction:column;
-  align-items:center;
-
-  pointer-events:none;
-  z-index:99999;
-}
-#go-zoom-ui-drill > *{
-  pointer-events:auto;
-}
-
-/* Constrain bars to the same “board-width” feel */
-#go-zoom-top-drill #drill-topbar{
-  max-width:720px;
-  width:100%;
-  margin:0 auto;
-  padding:0;
-}
-
-/* IMPORTANT: restore inner padding for the docked bottom bar
-   to match the Joseki “double padding” look */
-#go-zoom-ui-drill #drill-ctrls{
-  max-width:720px;
-  width:100%;
-  margin:0 auto;
-
-  /* Inner padding restored (matches Joseki zoom mode) */
-  padding:0 12px 18px;
-  box-sizing:border-box;
-}
-
-/* Fallback: if for any reason re-homing fails,
-   apply the same sizing rules when fullscreen is active */
-body.drill-zoom-mode #drill-topbar{
-  max-width:720px;
-  width:100%;
-  margin:0 auto;
-}
-body.drill-zoom-mode #drill-ctrls{
-  max-width:720px;
-  width:100%;
-  margin:0 auto;
-  padding:0 12px 18px;
-  box-sizing:border-box;
-}
-</style>
-
-<style>
-/* =========================
-   Drills notifications – match My Patterns notice/toast look
-   ========================= */
-
-.drill-notif{
-  position:fixed;
-  inset:0;
-  z-index:100000;
-  display:none;
-  align-items:center;
-  justify-content:center;
-  padding:0;
-  background:rgba(0,0,0,.55);
-}
-
-/* Card skin copied from My Patterns own-notice-card / own-toast-card */
-.drill-notif-card{
-  position:relative;
-  border-radius:10px;
-  border:1px solid #e2e8f0;
-  box-shadow:0 12px 28px rgba(15,23,42,.18);
-  padding:16px;
-  text-align:center;
-  font-family:system-ui, "Segoe UI", Arial, sans-serif;
-
-  color:#fff3cf;
-
-  background-image:
-    linear-gradient(
-      to bottom,
-      rgba(0,0,0,.10),
-      rgba(0,0,0,.25)
-    ),
-    url('../img/notification.jpg');
-  background-size:cover;
-  background-position:center;
-  background-repeat:no-repeat;
-
-  min-width:280px;
-  max-width:min(86vw, 460px);
-  max-height:calc(100vh - 32px);
-  overflow:auto;
-}
-
-/* Ensure we don’t get random inline color clashes */
-.drill-notif-card > *{
-  color:inherit !important;
-}
-
-.drill-notif-title{
-  font-weight:800;
-  font-size:18px;
-  line-height:1.35;
-  margin-bottom:8px;
-}
-
-.drill-notif-desc{
-  font-size:16px;
-  line-height:1.4;
-  margin-bottom:14px;
-  opacity:.96;
-}
-
-/* Done stats styling to fit the notif skin */
-.drill-stats{
-  display:flex;
-  gap:10px;
-  justify-content:center;
-  flex-wrap:wrap;
-  margin:6px 0 10px;
-}
-
-.drill-stat-box{
-  border:1px solid rgba(255,255,255,.25);
-  border-radius:10px;
-  padding:10px 14px;
-  min-width:140px;
-  background:rgba(0,0,0,.18);
-  box-shadow: inset 0 0 0 1px rgba(255,255,255,.06);
-}
-
-.drill-stat-label{
-  font-weight:800;
-  opacity:.85;
-  margin-bottom:2px;
-}
-
-.drill-stat-value{
-  font-weight:900;
-  font-size:22px;
-  line-height:1;
-}
-
-/* Wood-style buttons for notif actions (mirrors My Patterns .s-btn) */
-.drill-notif-btn{
-  position:relative;
-  display:inline-flex;
-  align-items:center;
-  justify-content:center;
-  gap:6px;
-
-  padding:8px 18px;
-  border-radius:10px;
-  border:1px solid rgba(255,255,255,.40);
-
-  font-size:16px;
-  font-weight:800;
-  line-height:1.1;
-  color:#fff3cf;
-  text-shadow:0 1px 0 rgba(120,60,20,.7);
-  cursor:pointer;
-
-  user-select:none;
-  -webkit-user-select:none;
-  -moz-user-select:none;
-  -ms-user-select:none;
-  -webkit-tap-highlight-color:transparent;
-
-  background-image:
-    linear-gradient(
-      to bottom,
-      rgba(255,255,255,.12),
-      rgba(255,255,255,.03) 38%,
-      rgba(0,0,0,.14) 100%
-    ),
-    url('../img/wood.jpg');
-  background-size:100% 100%, cover;
-  background-position:center;
-  background-repeat:no-repeat;
-
-  filter:brightness(1.08) saturate(.96);
-
-  box-shadow:
-    0 3px 0 rgba(133,74,26,.85),
-    0 8px 14px rgba(0,0,0,.45);
-
-  transition:
-    transform .08s ease-out,
-    box-shadow .08s ease-out,
-    filter .12s ease-out;
-}
-
-.drill-notif-btn:hover{
-  filter:brightness(1.12) saturate(.98);
-  transform:translateY(-1px);
-  box-shadow:
-    0 4px 0 rgba(133,74,26,.9),
-    0 10px 16px rgba(0,0,0,.48);
-}
-
-.drill-notif-btn:active{
-  filter:brightness(.97) saturate(.96);
-  transform:translateY(2px);
-  box-shadow:
-    0 1px 0 rgba(120,60,20,.9),
-    0 4px 8px rgba(0,0,0,.55);
-}
-
-.drill-notif-btn-lg{
-  padding:10px 22px;
-}
-
-/* Container for action rows */
-.drill-notif-actions{
-  margin-top:10px;
-  display:flex;
-  gap:10px;
-  justify-content:center;
-  flex-wrap:wrap;
-}
-</style>
-
+  if (!window._stoneSFXInit) { StoneSFX.init("../sound/click.mp3"); window._stoneSFXInit = true; }
+  
+  (function(){
+    if (!window.StoneSFX || window._soundBridgeReady) return;
+    window._soundBridgeReady = true;
+    if (typeof StoneSFX.play === 'function' && !('_enabled' in StoneSFX)){
+      StoneSFX._enabled = (window.GoPrefs ? !!window.GoPrefs.soundOn : true);
+      const _origPlay = StoneSFX.play.bind(StoneSFX);
+      StoneSFX.play = function(){ if (StoneSFX._enabled) _origPlay(); };
+    }
+  })();
+  </script>
 </head>
 <body>
 
-<!-- ================= DRILL BOARD (adds Blitz mode) ================= -->
-<div id="drill-root">
-  <div id="drill-inner">
-
- <!-- Top bar (Practice-style Back placement) -->
-<div id="drill-topbar">
-  <button id="dbtn-menu" class="s-back" type="button" aria-label="Back">← Back</button>
-</div>
-
-<div id="go-board-drill-wrap">
-  <div id="go-board-drill"
-       style="position:relative;width:100%;border-radius:6px;overflow:hidden;box-shadow:
-        0 18px 40px rgba(0,0,0,.32),
-        0 6px 16px rgba(0,0,0,.22);">
-
-    <!-- Blitz timer (created by JS if needed) -->
-  </div>
-
-  <!-- Bottom controls: keep Next + progress -->
-  <div id="drill-ctrls">
-    <button id="dbtn-next" class="pbtn pbtn-alt" type="button">Skip</button>
-    <div id="drill-progress" style="font-weight:800;opacity:.9;">1 / 1</div>
-  </div>
-</div>
-
-
-  </div>
-</div>
-
-<!-- Wrong Move (drill) – My Patterns style -->
-<div id="drill-wrong" class="drill-notif" role="alert" aria-live="polite">
-  <div class="drill-notif-card">
-    <div class="drill-notif-title">Wrong</div>
-  </div>
-</div>
-
-
-<!-- Drill Cleared (auto-dismiss) – My Patterns style -->
-<div id="drill-cleared" class="drill-notif" role="alert" aria-live="polite">
-  <div class="drill-notif-card">
-    <div class="drill-notif-title">Cleared</div>
-  </div>
-</div>
-
-
-<!-- All Done – My Patterns style -->
-<div id="drill-done" class="drill-notif" role="dialog" aria-modal="true">
-  <div class="drill-notif-card">
-    <div id="drill-done-title" class="drill-notif-title">All Drills Complete</div>
-
-    <div id="drill-stats" class="drill-stats">
-      <div class="drill-stat-box">
-        <div class="drill-stat-label">Solved</div>
-        <div id="drill-stat-solved" class="drill-stat-value">0</div>
-      </div>
-      <div class="drill-stat-box">
-        <div class="drill-stat-label">Failed</div>
-        <div id="drill-stat-failed" class="drill-stat-value">0</div>
-      </div>
-    </div>
-
-    <div id="drill-done-msg" class="drill-notif-desc">
-      Session finished. You can retry the set or go back to selection.
-    </div>
-
-    <div class="drill-notif-actions">
-      <button id="drill-done-back" class="drill-notif-btn drill-notif-btn-lg" type="button">
-        Back to selection
-      </button>
-      <button id="drill-done-retry" class="drill-notif-btn drill-notif-btn-lg" type="button">
-        Retry set
-      </button>
+<div id="core-root">
+  <div id="core-inner">
+    <div id="core-board-wrap">
+      <div id="core-board"></div>
     </div>
   </div>
 </div>
 
+<div id="zoom-exit-btn"></div>
 
-<!-- Run Cap overlay – My Patterns style -->
-<div id="drill-cap" class="drill-notif" role="dialog" aria-modal="true">
-  <div class="drill-notif-card">
-    <div class="drill-notif-title">Limit Reached</div>
-    <div class="drill-notif-desc">You’ve reached your current drills limit.</div>
-    <div class="drill-notif-actions">
-      <button id="drill-cap-ok" class="drill-notif-btn drill-notif-btn-lg" type="button">OK</button>
-    </div>
-  </div>
-</div>
-
-
-<!-- WGo (if not already loaded) -->
 <script>
-if (!window.WGo) {
-  var s = document.createElement('script');
-  s.src = "https://3d85c7a311526e02aeeeb19e952d0c09.cdn.bubble.io/f1754893285939x971907393576095400/wgo.min.js";
-  s.async = true;
-  document.head.appendChild(s);
-}
-</script>
+(function(){
+  var SIZE  = 19;
+  var mount = document.getElementById('core-board');
+  var wrap  = document.getElementById('core-board-wrap');
+  var exitBtn = document.getElementById('zoom-exit-btn');
+  var board = null;
 
-<!-- Sound bridge (respects Settings → Sound) -->
-<script>
-if (!window.StoneSFX) {
-  window.StoneSFX = (() => {
-    let pool = [], i = 0, unlocked = false;
-    function init(url, voices = 5, volume = 0.35){
-      pool = Array.from({ length: voices }, () => {
-        const a = new Audio(url); a.preload = 'auto'; a.volume = volume; return a;
-      });
-      const unlock = () => {
-        if (unlocked) return;
-        for (const a of pool) { try { a.play().then(()=>a.pause()).catch(()=>{}); a.currentTime = 0; } catch(e){} }
-        unlocked = true;
-        window.removeEventListener('touchstart', unlock);
-        window.removeEventListener('mousedown',  unlock);
-      };
-      window.addEventListener('touchstart', unlock, { once:true });
-      window.addEventListener('mousedown',  unlock, { once:true });
+  // Zoom Engine State
+  var scale = 1, minScale = 1, maxScale = 2.6;
+  var offsetX = 0, offsetY = 0;
+  var baseW = 0; 
+  var zoomLayer = null;
+  var isFullscreen = false;
+  var isZoomAnimating = false;
+  var animId = 0;
+  var returnAnchor = null; 
+
+  var isPanning = false, panStart = null, tapStart = null;
+  var TAP_SLOP2 = 64; 
+  var isFlinging = false, flingId = 0, flingVX = 0, flingVY = 0, flingLastTime = 0;
+  var panSamplePrev = null, panSampleCurr = null;
+
+  // Game State
+  var grid = Array.from({ length: SIZE }, () => Array(SIZE).fill(null));
+  var turn = 'B';
+  var lastMove = null;
+  var koPoint = null; // {x,y} where immediate recapture is forbidden (simple ko)
+
+  // Settings (Loaded from GoPrefs)
+  var zoomEnabled = (window.GoPrefs && typeof window.GoPrefs.josekiZoom !== 'undefined') ? !!window.GoPrefs.josekiZoom : true;
+  var highlightLastEnabled = (window.GoPrefs && typeof window.GoPrefs.highlightLast !== 'undefined') ? !!window.GoPrefs.highlightLast : true;
+  var disableAutoZoomOut = (window.GoPrefs && typeof window.GoPrefs.disableAutoZoomOut !== 'undefined') ? !!window.GoPrefs.disableAutoZoomOut : false;
+  
+  // Listen for Settings Changes
+  window.addEventListener('go:prefs-changed', function(e){
+    var d = e.detail || {};
+    if (!d || typeof d.key === 'undefined') return;
+
+    if (d.key === 'highlightLast') {
+      highlightLastEnabled = !!d.value;
+      try { redrawBoard(); } catch(_) {}
+    } else if (d.key === 'josekiZoom') {
+      zoomEnabled = !!d.value;
+      if (!zoomEnabled && (isFullscreen || scale > 1)) {
+         smoothZoomOutAndExit();
+      }
+    } else if (d.key === 'soundOn') {
+       if (window.StoneSFX) StoneSFX._enabled = !!d.value;
+    } else if (d.key === 'disableAutoZoomOut') {
+      disableAutoZoomOut = !!d.value;
     }
-    function play(){ if (!pool.length) return; const a = pool[i++ % pool.length]; try { a.currentTime=0; a.playbackRate=0.97+Math.random()*0.06; a.play(); } catch(e){} }
-    return { init, play };
+  });
+
+  // --- 1. SETUP DOM ---
+
+  function ensureZoomLayer(){
+    if (zoomLayer) return;
+    
+    zoomLayer = document.createElement('div');
+    zoomLayer.style.position = 'absolute';
+    zoomLayer.style.left = '0px';
+    zoomLayer.style.top = '0px';
+    zoomLayer.style.transformOrigin = '0 0';
+    zoomLayer.style.willChange = 'transform';
+    
+    while (mount.firstChild) zoomLayer.appendChild(mount.firstChild);
+    mount.appendChild(zoomLayer);
+    
+    zoomLayer.style.backgroundImage = "url('../img/wood.jpg')";
+    zoomLayer.style.backgroundSize = "cover";
+    zoomLayer.style.backgroundPosition = "center";
+    mount.style.background = "none"; 
+  }
+
+  /* Page background helper (wood) - from reference */
+  (function(){
+    if (!document.getElementById('site-bg-wood')){
+        var css = `
+        :root{ --wood-url: url('../img/wood.jpg'); }
+        html.bg-wood, body.bg-wood{
+            background-image: linear-gradient(rgba(0,0,0,.35), rgba(0,0,0,.45)), var(--wood-url);
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            background-attachment: fixed;
+            min-height:100%;
+        }
+        html.no-wood, body.no-wood{ background: none !important; }
+        `;
+        var st = document.createElement('style');
+        st.id = 'site-bg-wood';
+        st.textContent = css;
+        document.head.appendChild(st);
+    }
+    function addBG(){
+        document.documentElement.classList.remove('no-wood');
+        document.body.classList.remove('no-wood');
+        document.documentElement.classList.add('bg-wood');
+        document.body.classList.add('bg-wood');
+    }
+    function removeBG(){
+        document.documentElement.classList.remove('bg-wood');
+        document.body.classList.remove('bg-wood');
+        document.documentElement.classList.add('no-wood');
+        document.body.classList.add('no-wood');
+    }
+    window.PageBG = window.PageBG || { add: addBG, remove: removeBG };
   })();
-  StoneSFX.init("https://3d85c7a311526e02aeeeb19e952d0c09.cdn.bubble.io/f1754926303439x491369894441766600/klick.mp3");
-}
-(function bridgeSoundSetting(){
-  if (window._drillSoundInit) return;
-  window._drillSoundInit = true;
-  if (typeof StoneSFX.play === 'function' && !('_enabled' in StoneSFX)){
-    StoneSFX._enabled = (window.GoPrefs ? !!window.GoPrefs.soundOn : true);
-    const _orig = StoneSFX.play.bind(StoneSFX);
-    StoneSFX.play = function(){ if (StoneSFX._enabled) _orig(); };
-  }
-  window.JosekiSound = window.JosekiSound || {
-    isEnabled(){ return !!StoneSFX._enabled; },
-    setEnabled(v){ StoneSFX._enabled = !!v; }
-  };
-})();
 
-(function DrillBoardMount(){
-  const SGF_URL = "../sgf/library-1.sgf";  // same as drills.html
-  const MIN_MOVES = 10;
+  // --- 2. ZOOM ENGINE ---
 
-  /* ===== Plan helpers (match drills list) ===== */
-  var Tier = window.Tier || {
-    get: function(){
-      try {
-        return (localStorage.getItem('go_tier') || 'free').toLowerCase();
-      } catch(e){
-        return 'free';
-      }
-    }
-  };
-
-  function isPro(){
-    try{
-      if (window.GoLimits && typeof window.GoLimits.get === 'function'){
-        var lim = window.GoLimits.get();
-        if (lim && lim.drills){
-          if (lim.drills.triesPerDay === Number.POSITIVE_INFINITY) return true;
-          if (typeof lim.drills.plan === 'string' && lim.drills.plan.toLowerCase() === 'pro') return true;
-        }
-      }
-    }catch(e){}
-    var t = Tier && typeof Tier.get === 'function' ? Tier.get() : 'free';
-    return (t || 'free').toLowerCase() === 'pro';
-  }
-
- /* ===== Run cap (Start + Retry)
-     - Disabled: limits are handled per mode/day on drills.html
-  ================================= */
-  const RUN_LIMIT_FREE = Infinity;
-  // ---- Daily Drills limit: shared with drills.html (per mode) ----
-  const FREE_DAILY_LIMIT_COMPLETE = 2;
-  const FREE_DAILY_LIMIT_BLITZ    = 2;
-
-  function getDailyLimitForMode(mode){
-    if (isPro()) return Infinity;
-    return (mode === 'blitz') ? FREE_DAILY_LIMIT_BLITZ : FREE_DAILY_LIMIT_COMPLETE;
-  }
-
-  function readDailyDrillBucket(mode){
-    const m   = (mode === 'blitz') ? 'blitz' : 'complete';
-    const key = 'go:drills_attempts_' + m + '_today_v1';
-    try{
-      const raw   = localStorage.getItem(key);
-      const today = (new Date()).toISOString().slice(0,10); // UTC date YYYY-MM-DD
-      let obj     = raw ? JSON.parse(raw) : null;
-
-      // If nothing stored yet or from a previous day, start fresh
-      if (!obj || obj.day !== today || typeof obj.count !== 'number'){
-        obj = { day: today, count: 0 };
-      }
-      return { key, state: obj };
-    }catch(_){
-      // If localStorage is blocked or JSON is bad, fail open
-      return { key, state: null };
-    }
-  }
-
-  function getDrillsUsedToday(mode){
-    const bucket = readDailyDrillBucket(mode);
-    if (!bucket.state) return 0;
-    return bucket.state.count || 0;
-  }
-
-  function hasDrillAttemptsLeft(mode){
-    if (isPro()) return true;
-    const limit = getDailyLimitForMode(mode);
-    if (!Number.isFinite(limit)) return true;
-    const used  = getDrillsUsedToday(mode);
-    return used < limit;
-  }
-
-  function recordDrillAttempt(mode){
-    if (isPro()) return;
-    const limit = getDailyLimitForMode(mode);
-    if (!Number.isFinite(limit)) return;
-
-    const bucket = readDailyDrillBucket(mode);
-    if (!bucket.state) return;
-
-    bucket.state.count = (bucket.state.count || 0) + 1;
-    try{
-      localStorage.setItem(bucket.key, JSON.stringify(bucket.state));
-    }catch(_){}
-  }
-
-  // Board-side helpers: use current mode (Complete vs Blitz)
-  function currentModeForDaily(){
-    return blitzMode ? 'blitz' : 'complete';
-  }
-
-  function dailyAttemptsLeftForCurrentMode(){
-    const m     = currentModeForDaily();
-    const limit = getDailyLimitForMode(m);
-    if (!Number.isFinite(limit)) return Infinity;
-    const used  = getDrillsUsedToday(m);
-    return Math.max(0, limit - used);
-  }
-
-  function hasDailyAttemptsLeftForCurrentMode(){
-    return hasDrillAttemptsLeft(currentModeForDaily());
-  }
-
-  function recordDailyAttemptForCurrentMode(){
-    recordDrillAttempt(currentModeForDaily());
-  }
-
-  const RUNS_KEY = 'go:drill_runs_session_count';
-
-  function getRunLimit(){
-    // Pro → unlimited, Free → fixed cap
-    return isPro() ? Infinity : RUN_LIMIT_FREE;
-  }
-
-  function getRuns(){
-    try {
-      return parseInt(sessionStorage.getItem(RUNS_KEY) || '0', 10) || 0;
-    } catch(e){
-      return 0;
-    }
-  }
-
-  function setRuns(n){
-    try {
-      sessionStorage.setItem(RUNS_KEY, String(Math.max(0, n | 0)));
-    } catch(e){}
-  }
-
-  function canStart(){
-    const limit = getRunLimit();
-    if (!Number.isFinite(limit)) return true;    // Pro: always allowed
-    return getRuns() < limit;                    // Free: compare vs 2
-  }
-
-  function incRuns(){
-    const limit = getRunLimit();
-    if (!Number.isFinite(limit)) return;         // Pro: don't count runs
-    setRuns(getRuns() + 1);
-  }
-
-  function runsLeft(){
-    const limit = getRunLimit();
-    if (!Number.isFinite(limit)) return Infinity;
-    return Math.max(0, limit - getRuns());
-  }
-
-
-  // NEW overlay references
-  const capM   = document.getElementById('drill-cap');
-  const capOK  = document.getElementById('drill-cap-ok');
-  function showCapMsg(){
-    if (capM){
-      capM.style.display = 'flex';
-    } else {
-      alert('You’ve reached your current drills limit.');
-    }
-  }
-
-  if (capOK){
-    capOK.addEventListener('click', ()=> capM.style.display='none');
-    if (capM){
-      capM.addEventListener('click', (e)=>{ if (e.target === capM) capM.style.display='none'; });
-    }
-  }
-
-  // --- SGF utils ---
-  function rb(str,i){ let out='',k=i; while(k<str.length){ const ch=str[k++]; if(ch==='\\'){ if(k<str.length) out+=str[k++]; continue; } if(ch===']') break; out+=ch; } return {t:out,n:k}; }
-  function parseTree(str,i){
-    const seq=[]; let node=null; if(str[i]!=='(') return {seq:[],n:i}; i++;
-    while(i<str.length){
-      const ch=str[i];
-      if(ch===';'){ node={}; seq.push(node); i++; }
-      else if(/[A-Za-z]/.test(ch)){
-        let key=''; while(/[A-Za-z]/.test(str[i]||'')) key+=str[i++]; const vals=[];
-        while(str[i]==='['){ const r=rb(str,i+1); vals.push(r.t); i=r.n; }
-        if(!node){ node={}; seq.push(node); } node[key]=vals.length>1?vals:vals[0];
-      } else if(ch==='('){ const child=parseTree(str,i); i=child.n; if(seq.length){ const p=seq[seq.length-1]; (p.variations||(p.variations=[])).push(child.seq); } }
-      else if(ch===')'){ i++; break; } else i++;
-    }
-    for(let k=0;k<seq.length-1;k++) seq[k].next=seq[k+1];
-    return {seq,n:i};
-  }
-  function parseAllTrees(str){
-    const trees=[]; let i=str.indexOf('(');
-    if (str.charCodeAt && str.charCodeAt(0)===0xFEFF) str = str.slice(1);
-    while(i>=0 && i<str.length){
-      const r = parseTree(str,i);
-      if (r.seq && r.seq.length) trees.push(r.seq);
-      const nxt = str.indexOf('(', r.n);
-      if (nxt === -1) break;
-      i = nxt;
-    }
-    return trees;
-  }
-  function parseSZ(sz){ if(!sz) return 19; if(typeof sz==='string'){ const n=parseInt(sz.split(':')[0],10); return (n>=2&&n<=52)?n:19; } return 19; }
-  function xy(s,S){ if(!s||s.length<2) return null; const x=s.charCodeAt(0)-97,y=s.charCodeAt(1)-97; if(x<0||y<0||x>=S||y>=S) return null; return {x,y}; }
-  function nodeMove(n,S){ if(!n) return null; if(n.B){ const p=xy(n.B,S); if(p) return {x:p.x,y:p.y,color:'B'}; } if(n.W){ const p=xy(n.W,S); if(p) return {x:p.x,y:p.y,color:'W'}; } return null; }
-  function listCoords(prop,S){ const arr=Array.isArray(prop)?prop:(prop?[prop]:[]); const out=[]; for(const v of arr){ const p=xy(v,S); if(p) out.push(p); } return out; }
-  function linkify(seq,parent){ for(let i=0;i<seq.length;i++){ const n=seq[i]; n.prev=(i===0?parent:seq[i-1]); n.next=(i<seq.length-1?seq[i+1]:null); if(n.variations) for(const v of n.variations) if(v&&v.length) linkify(v,n); } }
-  function enumerateLines(seq,S){
-    const lines=[]; let start=seq&&seq[0]; while(start && !nodeMove(start,S) && !start.variations) start=start.next;
-    function dfs(node,acc){ if(!node){ lines.push(acc.slice()); return; }
-      acc.push(node);
-      if(node.variations && node.variations.length){
-        for(const v of node.variations){
-          let f=v&&v[0]; while(f && !nodeMove(f,S) && !f.variations) f=f.next;
-          if(f) dfs(f,acc.slice());
-        }
-      }
-      if(node.next){ let nx=node.next; while(nx && !nodeMove(nx,S) && !nx.variations) nx=nx.next;
-        if(nx) dfs(nx,acc); else lines.push(acc.slice()); }
-      else lines.push(acc.slice());
-    }
-    if(start) dfs(start,[]); 
-    return lines.map(nodes=>nodes.map(n=>nodeMove(n,S)).filter(Boolean));
-  }
-  function lineKey(line){
-    const size = line.size || 19;
-    const seq = (line.moves||[]).map(m => (m.color||'B')[0]+':'+m.x+','+m.y).join('|');
-    return `${size}|${seq}`;
-  }
-
-  // --- transforms (8; for Blitz we restrict to 4 rotations = corners) ---
-  function t_identity(p){ return {x:p.x,y:p.y}; }
-  function t_swap(p){ return {x:p.y, y:p.x}; }
-  function t_rot90(p,S){  return {x: S-1 - p.y, y: p.x}; }
-  function t_rot180(p,S){ return {x: S-1 - p.x, y: S-1 - p.y}; }
-  function t_rot270(p,S){ return {x: p.y, y: S-1 - p.x}; }
-  function compose(a,b,S){ return function(p){ return a(b(p,S),S); }; }
-  function ORIENT_FUNCS(S){
-    return [
-      p=>t_identity(p),
-      p=>t_swap(p),
-      p=>t_rot90(p,S),
-      p=>compose(t_swap,t_rot90,S)(p),
-      p=>t_rot180(p,S),
-      p=>compose(t_swap,t_rot180,S)(p),
-      p=>t_rot270(p,S),
-      p=>compose(t_swap,t_rot270,S)(p)
-    ];
-  }
-  const ROT_IDX_ONLY = [0,2,4,6]; // pure rotations (corners)
-
-  // --- UI elements ---
-  const wrap   = document.getElementById('go-board-drill-wrap');
-  const mount  = document.getElementById('go-board-drill');
-  const btnMenu= document.getElementById('dbtn-menu');
-  const btnNext = document.getElementById('dbtn-next');
-  const progEl  = document.getElementById('drill-progress');
-
-  const wrongM   = document.getElementById('drill-wrong');
-  const clearedM = document.getElementById('drill-cleared');
-  const doneM    = document.getElementById('drill-done');
-  const doneTitle= document.getElementById('drill-done-title');
-  const doneBack = document.getElementById('drill-done-back');
-  const doneRetry= document.getElementById('drill-done-retry');
-  const statSolvedEl = document.getElementById('drill-stat-solved');
-  const statFailedEl = document.getElementById('drill-stat-failed');
-  const doneMsgEl    = document.getElementById('drill-done-msg');
-
-  // --- board state ---
-  let SIZE = 19, board=null, grid=null;
-  // Map grid indices -> CSS coordinates (used by zoom)
   function canvasCssScale(){
-    const c = mount ? mount.querySelector('canvas') : null;
+    var c = mount.querySelector('canvas');
     if (!c) return 1;
-    const cssW = c.clientWidth || c.getBoundingClientRect().width || 0;
-    const intW = c.width || 0;
+    var cssW = c.clientWidth || c.getBoundingClientRect().width || 0;
+    var intW = c.width || 0;
     if (!cssW || !intW) return 1;
     return cssW / intW;
   }
 
-  function getXcss(i){
-    if (!board) return 0;
-    return board.getX(i) * canvasCssScale();
+  function getXcss(i){ return board.getX(i) * canvasCssScale(); }
+  function getYcss(j){ return board.getY(j) * canvasCssScale(); }
+
+  function viewportSize(){
+    return { vw: mount.clientWidth, vh: mount.clientHeight };
   }
 
-  function getYcss(j){
-    if (!board) return 0;
-    return board.getY(j) * canvasCssScale();
+  function clampPan(){
+    if (isZoomAnimating) return;
+    const {vw, vh} = viewportSize();
+    const bw = Math.round(baseW * scale);
+    const bleedX = Math.ceil(vw * 0.5); 
+    const bleedY = Math.ceil(vh * 0.5);
+    const minOX = -bleedX;
+    const maxOX = Math.max(0, bw - vw) + bleedX;
+    const minOY = -bleedY;
+    const maxOY = Math.max(0, bw - vh) + bleedY;
+    
+    offsetX = Math.max(minOX, Math.min(offsetX, maxOX));
+    offsetY = Math.max(minOY, Math.min(offsetY, maxOY));
   }
-function getGridSpacing(){
-    var sX = Math.abs(getXcss(1) - getXcss(0));
-    var sY = Math.abs(getYcss(1) - getYcss(0));
-    return { x: sX, y: sY };
-  }
-
-  // session control
-  let solvedCount = 0;
-  let failedCount = 0;
-  let locked = false;
-  let wrongTimer = null;
-  let clearedTimer = null;
-
-  // slots / planning
-  let PER = 3;
-  let slots = [];                 // [{ key, base }]
-  let lineToSlotIdxs = {};        // key -> [slotIdx,...]
-  let runPlan = {};               // key -> Map(slotIdx -> {orientIdx, swap, startIndex})
-  let index  = 0;                 // current slot
-  let remain = [];                // remaining transformed moves
-  let currentTransformed = null;
-
-  // BLITZ flags + timer
-  let blitzMode = false;
-  let timerEl = null;
-  let timerMs = 0;
-  let timerId = null;
-  let blitzCornerPlannedMoves = 0;
-  let timeUp = false;
-
-function ensureTimerEl(){
-  if (timerEl || !blitzMode) return;
-
-  timerEl = document.createElement('div');
-  timerEl.id = 'blitz-timer';
-  timerEl.className = 'blitz-chip';
-  timerEl.textContent = '0.0s';
-
-
-  const topbar = document.getElementById('drill-topbar');
-
-  if (topbar){
-    topbar.appendChild(timerEl);
-  } else {
-    // fallback (shouldn't happen, but keeps it robust)
-    mount.appendChild(timerEl);
-  }
-}
-
-  function fmtMs(ms){
-    if (ms < 0) ms = 0;
-    const s = ms/1000;
-    const m = Math.floor(s/60);
-    const r = s - m*60;
-    if (m>0) return `${m}:${r.toFixed(1).padStart(4,'0')}`;
-    return `${r.toFixed(1)}s`;
-  }
-  function startTimer(){
-    if (!blitzMode) return;
-    ensureTimerEl();
-    stopTimer();
-    timeUp = false;
-    timerId = setInterval(()=>{
-      timerMs -= 100;
-      if (timerEl) timerEl.textContent = fmtMs(timerMs);
-      if (timerMs <= 0){
-        stopTimer();
-        timeUp = true;
-        showDone('Time’s up!');
-      }
-    }, 100);
-  }
-  function stopTimer(){ if (timerId){ clearInterval(timerId); timerId=null; } }
-
-  // board helpers
-  function initBoard(){
-    if (!window.WGo) return setTimeout(initBoard, 40);
-    if (board) return; // safety
-
-    board = new WGo.Board(mount, { size: SIZE });
-
-    // wood bg inside mount – also serves as the zoom "layer"
-    (function ensureDrillWoodLayer(){
-      if (mount.__woodLayerReady) return;
-      const layer = document.createElement('div');
-      layer.id = 'go-drill-wood';
-layer.style.position = 'absolute';
-layer.style.left = '0';
-layer.style.top  = '0';
-layer.style.width  = '100%';
-layer.style.height = '100%';
-      layer.style.backgroundImage = "url('https://3d85c7a311526e02aeeeb19e952d0c09.cdn.bubble.io/f1755870506985x437178801728222500/wood.jpg')";
-      layer.style.backgroundSize = 'cover';
-      layer.style.backgroundPosition = 'center';
-layer.style.backgroundRepeat = 'no-repeat';
-
-/* match core zoom layer behavior */
-layer.style.transformOrigin = '0 0';
-layer.style.willChange = 'transform';
-
-mount.appendChild(layer);
-
-
-      function moveChildrenIntoLayer(){
-        const kids = Array.from(mount.childNodes).filter(n => n !== layer);
-        for (const n of kids) layer.appendChild(n);
-      }
-      moveChildrenIntoLayer();
-
-      const mo = new MutationObserver(moveChildrenIntoLayer);
-      mo.observe(mount, { childList: true });
-
-      mount.__woodLayerReady = true;
-      mount.__woodLayer = layer;
-      mount.__woodObserver = mo;
-    })();
-
-    // Prepare container for zoom transformations
-    mount.style.position = 'relative';
-    mount.style.overflow = 'hidden';
-
-    // This is what gets translated+scaled (never fall back to the mount itself)
-    zoomLayer = mount.__woodLayer;
-
-
-    // Initial sizing
-    fitBoard();
-
-    // Click handler – respect zoom touch handler's suppression flag
-    board.addEventListener('click', function(x, y){
-      if (suppressNextBoardClick){
-        suppressNextBoardClick = false;
-        return;
-      }
-      onBoardClick(x, y);
-    });
-  }
-
-
-  function resetGrid(){ grid = Array.from({length:SIZE}, ()=>Array(SIZE).fill(null)); }
-  function addStone(x,y,color){ grid[y][x]=color; }
-
-  function inside(x,y){ return x>=0 && y>=0 && x<SIZE && y<SIZE; }
-  function neigh4(x,y){ return [{x:x+1,y:y},{x:x-1,y:y},{x:x,y:y+1},{x:x,y:y-1}].filter(p=>inside(p.x,p.y)); }
-  function groupAndLiberties(x,y){
-    const color = grid[y][x]; if (!color) return { stones:[], libs:0 };
-    const seen = new Set(), libset = new Set(), stones=[];
-    const key=(a,b)=>a+','+b; const stack=[{x,y}]; seen.add(key(x,y));
-    while(stack.length){
-      const p = stack.pop(); stones.push(p);
-      for (const n of neigh4(p.x,p.y)){
-        const v = grid[n.y][n.x];
-        if (v === null) libset.add(key(n.x,n.y));
-        else if (v === color){
-          const k = key(n.x,n.y); if (!seen.has(k)){ seen.add(k); stack.push(n); }
-        }
-      }
-    }
-    return { stones, libs: libset.size };
-  }
-  function removeStones(stones){ for (const s of stones){ grid[s.y][s.x] = null; } }
-  function resolveCapturesAfterPlacing(x,y,color){
-    const opp = (color==='B'?'W':'B'), seenOpp = new Set();
-    for (const n of neigh4(x,y)){
-      if (grid[n.y][n.x] !== opp) continue;
-      const k = n.x+','+n.y; if (seenOpp.has(k)) continue;
-      const g = groupAndLiberties(n.x,n.y);
-      g.stones.forEach(s=>seenOpp.add(s.x+','+s.y));
-      if (g.libs === 0) removeStones(g.stones);
-    }
-    if (grid[y][x] === color){
-      const gSelf = groupAndLiberties(x,y);
-      if (gSelf.libs === 0) removeStones(gSelf.stones);
-    }
-  }
-  function playMove(x,y,color, silent=false){
-    addStone(x,y,color);
-    resolveCapturesAfterPlacing(x,y,color);
-    if (!silent && window.StoneSFX) StoneSFX.play();
-    redraw();
-  }
-
-  function redraw(){
-    if (!board) return;
-    board.removeAllObjects();
-    for (let y=0;y<SIZE;y++) for (let x=0;x<SIZE;x++){
-      const v=grid[y][x];
-      if (v==='B') board.addObject({x,y,c:WGo.B});
-      else if (v==='W') board.addObject({x,y,c:WGo.W});
-    }
-    if (blitzMode) drawBlitzMarkers();
-  }
-
-  function isCornerHoshi(pt,S){
-    const a = 3, b = S-4;
-    return ( (pt.x===a || pt.x===b) && (pt.y===a || pt.y===b) );
-  }
-  function corner33BelowOfHoshi(h,S){
-    const dx = (h.x===3) ? -1 : +1;
-    const dy = (h.y===3) ? -1 : +1;
-    return { x: h.x + dx, y: h.y + dy };
-  }
-  function drawBlitzMarkers(){
-    if (!currentTransformed || !Array.isArray(currentTransformed.moves) || currentTransformed.moves.length < 1) return;
-    const m1 = currentTransformed.moves[0];
-    board.addObject({ x:m1.x, y:m1.y, type:'LB', text:'A' });
-
-    if (currentTransformed.moves.length >= 2 && isCornerHoshi(m1, SIZE)){
-      const m2 = currentTransformed.moves[1];
-      board.addObject({ x:m2.x, y:m2.y, type:'LB', text:'a' });
-
-      if (currentTransformed.moves.length >= 3){
-        const below = corner33BelowOfHoshi(m1, SIZE);
-        if (m2.x === below.x && m2.y === below.y){
-          const m3 = currentTransformed.moves[2];
-          board.addObject({ x:m3.x, y:m3.y, type:'LB', text:'A' });
-        }
-      }
-    }
-  }
-
-  function shuffle(a){ for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } return a; }
-  function range(a,b){ const out=[]; for(let i=a;i<=b;i++) out.push(i); return out; }
-
-  function mixSlotsFairly(slotList){
-    const buckets = new Map();
-    for (const s of slotList){
-      if (!buckets.has(s.key)) buckets.set(s.key, []);
-      buckets.get(s.key).push(s);
-    }
-    for (const arr of buckets.values()) shuffle(arr);
-    const keys = Array.from(buckets.keys());
-    let lastKey = null;
-    const out = [];
-    function pickKey(){
-      const candidates = keys.filter(k => (buckets.get(k)||[]).length && k !== lastKey);
-      const pool = candidates.length ? candidates : keys.filter(k => (buckets.get(k)||[]).length);
-      if (!pool.length) return null;
-      return pool[Math.floor(Math.random()*pool.length)];
-    }
-    while (out.length < slotList.length){
-      const k = pickKey();
-      if (k == null) break;
-      out.push(buckets.get(k).pop());
-      lastKey = k;
-    }
-    return out;
-  }
-
-  function makeTransformed(line, orientIdx, swap){
-    const S = line.size || 19, ORS = ORIENT_FUNCS(S), o = ORS[orientIdx % ORS.length];
-    const tf = p => { const t=o({x:p.x,y:p.y}, S); return {x:t.x,y:t.y}; };
-    const AB = (line.rootAB||[]).map(tf), AW = (line.rootAW||[]).map(tf);
-    const mv = (line.moves||[]).map(m=>{ const t=tf(m); const c = swap ? (m.color==='B'?'W':'B') : m.color; return { x:t.x, y:t.y, color:c }; });
-    return { size:S, rootAB: swap ? AW : AB, rootAW: swap ? AB : AW, moves: mv };
-  }
-
-  function buildRunPlanForLine(key, line, slotIdxs){
-    const L = line.moves.length, k = slotIdxs.length;
-    if (blitzMode){
-      const orientIdxs = shuffle(ROT_IDX_ONLY.slice()).slice(0, k || 1);
-      let swaps = Array(k).fill(false);
-      let nSwap = Math.round(k * 0.5);
-      for (let i=0;i<nSwap;i++) swaps[i]=true;
-      swaps = shuffle(swaps);
-      const plan = new Map(), shuffledSlots = shuffle(slotIdxs.slice());
-      for (let i=0;i<k;i++){
-        plan.set(shuffledSlots[i], { orientIdx: orientIdxs[i % orientIdxs.length], startIndex: 0, swap: swaps[i] });
-      }
-      return plan;
-    }
-
-    const startsPool = (function allowedStartRange(L){ const min = Math.max(4,0); const max = Math.max(min, L-2); return range(min,max); })(L);
-    const orientIdxs = shuffle(range(0,7)).slice(0, slotIdxs.length || 1);
-    const chosenStarts = shuffle(startsPool.slice());
-    let swaps = Array(slotIdxs.length).fill(false);
-    let nSwap = Math.round(slotIdxs.length * 0.5);
-    for (let i=0;i<nSwap;i++) swaps[i]=true;
-    swaps = shuffle(swaps);
-
-    const plan = new Map(), shuffledSlots = shuffle(slotIdxs.slice());
-    for (let i=0;i<slotIdxs.length;i++){
-      plan.set(shuffledSlots[i], {
-        orientIdx: orientIdxs[i % orientIdxs.length],
-        startIndex: chosenStarts[i % chosenStarts.length],
-        swap: swaps[i]
-      });
-    }
-    return plan;
-  }
-  function ensureRunPlanFor(key,line){
-    if (!runPlan[key]){
-      const idxs = lineToSlotIdxs[key] || [];
-      runPlan[key] = buildRunPlanForLine(key, line, idxs);
-    }
-  }
-  function newRunPlan(){
-    runPlan = {};
-    const seen = new Set();
-    for (const s of slots){
-      if (seen.has(s.key)) continue;
-      seen.add(s.key);
-      ensureRunPlanFor(s.key, s.base);
-    }
-  }
-
-  function setProgress(){
-    if (progEl) progEl.textContent = (slots.length ? (index+1) : 0) + ' / ' + (slots.length || 0);
-  }
-
-  function resetStats(){
-    solvedCount = 0;
-    failedCount = 0;
-    if (statSolvedEl) statSolvedEl.textContent = '0';
-    if (statFailedEl) statFailedEl.textContent = '0';
-  }
-
-  function clearTimers(){
-    if (wrongTimer){ clearTimeout(wrongTimer); wrongTimer=null; }
-    if (clearedTimer){ clearTimeout(clearedTimer); clearedTimer=null; }
-  }
-
-  let blitzCornerState = null;
-  // ===== Practice-style Zoom & Pan for Drills =====
-
-  // ===== Shared preferences (Fix: Load from storage so zoom setting is respected) =====
-  var STORAGE_KEY = 'go_prefs';
-  var GoPrefs = (window.GoPrefs = window.GoPrefs || {});
-  try {
-    var saved = localStorage.getItem(STORAGE_KEY);
-    if (saved) Object.assign(GoPrefs, JSON.parse(saved) || {});
-  } catch (e) {}
-
-  // Defaults
-  if (typeof GoPrefs.josekiZoom === 'undefined') GoPrefs.josekiZoom = true;
-  if (typeof GoPrefs.soundOn === 'undefined') GoPrefs.soundOn = true;
-  if (typeof GoPrefs.highlightLast === 'undefined') GoPrefs.highlightLast = true;
-  if (typeof GoPrefs.disableAutoZoomOut === 'undefined') GoPrefs.disableAutoZoomOut = false;
-
-  // Now set the local variable based on the loaded prefs
-  let zoomEnabled = !!GoPrefs.josekiZoom;
-
-  // Zoom / pan state
-  let scale = 1;
-  const minScale = 1;
-  const maxScale = 2.6;
-  let baseW = 0;
-  let offsetX = 0;
-  let offsetY = 0;
-
-  let isFullscreen = false;
-  let zoomLayer = null;
-
-  let overlay = null;
-  let stage = null;
-  let zoomExitBtn = null;
-  let returnAnchor = null;
-  let prevOverflow = "";
-  // ===== NEW: Practice-style UI re-homing for fullscreen =====
-  let zoomTopUI = null;
-  let zoomBottomUI = null;
-
-  const zoomUIStore = {
-    topbar: { parent:null, next:null },
-    ctrls:  { parent:null, next:null }
-  };
-
-  function ensureZoomUIContainers(){
-    if (!zoomTopUI){
-      zoomTopUI = document.getElementById('go-zoom-top-drill');
-      if (!zoomTopUI){
-        zoomTopUI = document.createElement('div');
-        zoomTopUI.id = 'go-zoom-top-drill';
-        document.body.appendChild(zoomTopUI);
-      }
-    }
-    if (!zoomBottomUI){
-      zoomBottomUI = document.getElementById('go-zoom-ui-drill');
-      if (!zoomBottomUI){
-        zoomBottomUI = document.createElement('div');
-        zoomBottomUI.id = 'go-zoom-ui-drill';
-        document.body.appendChild(zoomBottomUI);
-      }
-    }
-  }
-
-  function stashAndMove(el, slot, container){
-    if (!el || !container) return;
-    if (!zoomUIStore[slot].parent){
-      zoomUIStore[slot].parent = el.parentNode;
-      zoomUIStore[slot].next   = el.nextSibling;
-    }
-    container.appendChild(el);
-  }
-
-  function restoreStashed(el, slot){
-    if (!el) return;
-    const store = zoomUIStore[slot];
-    const p = store.parent;
-    const n = store.next;
-    if (p){
-      if (n && n.parentNode === p) p.insertBefore(el, n);
-      else p.appendChild(el);
-    }
-    store.parent = null;
-    store.next   = null;
-  }
-
-  function moveZoomUIIn(){
-    ensureZoomUIContainers();
-
-    // Ensure timer exists before moving topbar if we're in blitz
-    if (blitzMode) ensureTimerEl();
-
-    const tb = document.getElementById('drill-topbar');
-    const bc = document.getElementById('drill-ctrls');
-
-    stashAndMove(tb, 'topbar', zoomTopUI);
-    stashAndMove(bc, 'ctrls',  zoomBottomUI);
-
-    if (zoomTopUI)    zoomTopUI.style.display = 'flex';
-    if (zoomBottomUI) zoomBottomUI.style.display = 'flex';
-  }
-
-  function restoreZoomUIOut(){
-    const tb = document.getElementById('drill-topbar');
-    const bc = document.getElementById('drill-ctrls');
-
-    restoreStashed(tb, 'topbar');
-    restoreStashed(bc, 'ctrls');
-
-    if (zoomTopUI)    zoomTopUI.style.display = 'none';
-    if (zoomBottomUI) zoomBottomUI.style.display = 'none';
-  }
-
-  // Kinetic pan / fling
-  let flingId = 0;
-  let isFlinging = false;
-  let flingVX = 0;
-  let flingVY = 0;
-  let flingLastTime = 0;
-
-  // Pointer tracking
-  let isPanning = false;
-  let panStart = null;
-  let activePointerId = null;
-  let panSamplePrev = null;
-  let panSampleCurr = null;
-  let tapStart = null;
-  let suppressNextBoardClick = false;
-  const TAP_SLOP2 = 64; // squared px (~8px movement)
-
-  function cancelFling(){
-    isFlinging = false;
-    if (flingId){
-      cancelAnimationFrame(flingId);
-      flingId = 0;
-    }
-  }
-
-function viewportSize(){
-  if (isFullscreen){
-    const vw = window.innerWidth  || document.documentElement.clientWidth  || 800;
-    const vh = window.innerHeight || document.documentElement.clientHeight || 800;
-    return { vw, vh };
-  }
-
-  const rect = mount.getBoundingClientRect();
-  const wrapRect = wrap ? wrap.getBoundingClientRect() : rect;
-  const wrapW =
-    (wrapRect && wrapRect.width) ||
-    (wrap && wrap.clientWidth) ||
-    rect.width ||
-    400;
-
-  // board area is square
-  return { vw: wrapW, vh: wrapW };
-}
-
-
-function clampPan(){
-  if (!board) return;
-
-  const { vw, vh } = viewportSize();
-  const bw = Math.round(baseW * scale);
-  const bleedX = Math.ceil(vw * 0.5);
-  const bleedY = Math.ceil(vh * 0.5);
-
-  const minOX = -bleedX;
-  const maxOX = Math.max(0, bw - vw) + bleedX;
-  const minOY = -bleedY;
-  const maxOY = Math.max(0, bw - vh) + bleedY;
-
-  if (offsetX < minOX) offsetX = minOX;
-  else if (offsetX > maxOX) offsetX = maxOX;
-
-  if (offsetY < minOY) offsetY = minOY;
-  else if (offsetY > maxOY) offsetY = maxOY;
-}
 
   function applyPanAndSize(redrawAfter){
-    if (!board || !mount) return;
-
-    const { vw, vh } = viewportSize();
-    let targetW;
-
-    if (isFullscreen){
-      targetW = Math.floor(Math.min(vw, vh));
-      if (targetW % 2) targetW--;
-      baseW = targetW;
-      mount.style.width  = '100vw';
-      mount.style.height = '100vh';
-    } else {
-  targetW = Math.floor(vw);
-  if (targetW % 2) targetW--;
-  baseW = targetW;
-
-  /* core-style: mount is an explicit square */
-  mount.style.width  = targetW + 'px';
-  mount.style.height = targetW + 'px';
-}
-
-
-    if (targetW <= 0) return;
-
-    if (board._lastW !== targetW){
+    const targetW = baseW;
+    
+    if (board && board._lastW !== targetW) {
       board.setWidth(targetW);
-      if (zoomLayer){
-        zoomLayer.style.width  = targetW + 'px';
+      if (zoomLayer) {
+        zoomLayer.style.width = targetW + 'px';
         zoomLayer.style.height = targetW + 'px';
       }
       board._lastW = targetW;
+      if (!redrawAfter) redrawAfter = true;
     }
 
     clampPan();
 
-    if (zoomLayer){
-      zoomLayer.style.transform =
+    if (zoomLayer) {
+      zoomLayer.style.transform = 
         'translate3d(' + (-offsetX) + 'px,' + (-offsetY) + 'px,0) scale(' + scale + ')';
     }
+    
+    if (redrawAfter) redrawBoard();
+  }
 
-    if (redrawAfter) redraw();
+  function animateTo(targetScale, pxWorld, pyWorld, sxTarget, syTarget, onDone){
+    targetScale = Math.max(minScale, Math.min(maxScale, targetScale));
+    cancelFling();
+    
+    const s0 = scale;
+    const ox0 = offsetX;
+    const oy0 = offsetY;
+    
+    const t0 = performance.now();
+    const dur = 300; 
+    
+    cancelAnimationFrame(animId);
+    isZoomAnimating = true;
+    
+    const targetOffsetX = (pxWorld * targetScale) - sxTarget;
+    const targetOffsetY = (pyWorld * targetScale) - syTarget;
+
+    (function step(now){
+      let t = (now - t0) / dur;
+      if (t > 1) t = 1;
+      const e = 1 - Math.pow(1 - t, 3); 
+      
+      scale = s0 + (targetScale - s0) * e;
+      offsetX = ox0 + (targetOffsetX - ox0) * e;
+      offsetY = oy0 + (targetOffsetY - oy0) * e;
+      
+      applyPanAndSize(false);
+      
+      if (t < 1){
+        animId = requestAnimationFrame(step);
+      } else {
+        isZoomAnimating = false;
+        applyPanAndSize(true);
+        if (typeof onDone === 'function') onDone();
+      }
+    })(t0);
+  }
+
+  function enterFullscreenAtGrid(i, j, tapClientX, tapClientY){
+    if (isFullscreen) return;
+    cancelFling();
+
+    if (window.PageBG && typeof PageBG.add === 'function') PageBG.add();
+
+    returnAnchor = document.createElement('div');
+    returnAnchor.style.width = mount.clientWidth + 'px';
+    returnAnchor.style.height = mount.clientHeight + 'px';
+    mount.parentNode.insertBefore(returnAnchor, mount);
+
+    document.body.appendChild(mount);
+    mount.classList.add('is-fullscreen');
+    isFullscreen = true;
+    exitBtn.style.display = 'flex';
+
+    mount.style.width = '100vw';
+    mount.style.height = '100vh';
+
+    scale = 1; offsetX = 0; offsetY = 0;
+    
+    const vw = window.innerWidth;
+    const vh = window.innerHeight;
+    baseW = Math.floor(Math.min(vw, vh));
+    if (baseW % 2) baseW--;
+    
+    requestAnimationFrame(function(){
+      applyPanAndSize(true);
+      
+      const initialFactor = 2.4; 
+      const px_curr = getXcss(i); 
+      const py_curr = getYcss(j);
+      
+      const rect = mount.getBoundingClientRect();
+      let sx = rect.width / 2;
+      let sy = rect.height / 2;
+      
+      if (typeof tapClientX === 'number' && typeof tapClientY === 'number'){
+        sx = tapClientX - rect.left;
+        sy = tapClientY - rect.top;
+      }
+      
+      offsetX = px_curr * 1.0 - sx;
+      offsetY = py_curr * 1.0 - sy;
+      applyPanAndSize(false);
+
+      animateTo(initialFactor, px_curr, py_curr, sx, sy);
+    });
+  }
+
+  function exitFullscreen(){
+    cancelFling();
+    cancelAnimationFrame(animId);
+    isZoomAnimating = false;
+
+    mount.classList.remove('is-fullscreen');
+    exitBtn.style.display = 'none';
+    isFullscreen = false;
+    
+    if (window.PageBG && typeof PageBG.remove === 'function') PageBG.remove();
+
+    if (returnAnchor && returnAnchor.parentNode){
+      returnAnchor.parentNode.insertBefore(mount, returnAnchor);
+      returnAnchor.parentNode.removeChild(returnAnchor);
+      returnAnchor = null;
+    }
+
+    mount.style.width = '';
+    mount.style.height = '';
+    
+    fitBoard(); 
+    resetViewLocal();
   }
 
   function resetViewLocal(){
-    cancelFling();
-    scale = 1;
-    offsetX = 0;
-    offsetY = 0;
+    scale = 1; offsetX = 0; offsetY = 0;
     applyPanAndSize(true);
   }
 
-function ensureOverlay(){
-  // We only need a stable, fixed exit button (core-style).
-  zoomExitBtn = document.getElementById('go-zoom-exit-drill');
+  function smoothZoomOutAndExit(){
+    if (!zoomEnabled) return;
 
-  if (!zoomExitBtn){
-    zoomExitBtn = document.createElement('div');
-    zoomExitBtn.id = 'go-zoom-exit-drill';
-    zoomExitBtn.setAttribute('aria-label', 'Zoom out');
-    document.body.appendChild(zoomExitBtn);
-  }
+    cancelFling();
+    cancelAnimationFrame(animId);
+    isZoomAnimating = false;
 
-  if (!zoomExitBtn._bound){
-    zoomExitBtn._bound = true;
-    zoomExitBtn.addEventListener('click', function(e){
-      e.stopPropagation();
-      e.preventDefault();
+    scale   = 1;
+    offsetX = 0;
+    offsetY = 0;
+
+    applyPanAndSize(true); 
+
+    if (isFullscreen){
       exitFullscreen();
+    }
+  }
+  
+  window.PracticeZoom = {
+      isEnabled(){ return zoomEnabled; },
+      setEnabled(v){ zoomEnabled = !!v; if (!zoomEnabled) { if (isFullscreen) exitFullscreen(); else resetViewLocal(); } },
+      resetView: function(){ if (isFullscreen) exitFullscreen(); else resetViewLocal(); },
+      isFullscreen: function(){ return isFullscreen; }
+  };
+
+ function bindClicks(){
+    // Helper: Calculate the visual distance between grid lines
+    function getGridSpacing(){
+        // Get visual coordinates of line 0 and line 1 to determine spacing
+        var sX = Math.abs(getXcss(1) - getXcss(0));
+        var sY = Math.abs(getYcss(1) - getYcss(0));
+        return { x: sX, y: sY };
+    }
+
+    mount.addEventListener('pointerdown', function(e){
+      if (!zoomEnabled) return;
+      if (e.pointerType !== 'touch' && e.button !== 0) return;
+      cancelFling();
+      
+      const r = mount.getBoundingClientRect();
+      const sx = e.clientX - r.left;
+      const sy = e.clientY - r.top;
+      
+      const boardX = (sx + offsetX) / scale;
+      const boardY = (sy + offsetY) / scale;
+      
+      // 1. Find closest point
+      let bestI = -1, bestJ = -1, bestDx = 1e9, bestDy = 1e9;
+      for (let i = 0; i < SIZE; i++){
+        const dx = Math.abs(getXcss(i) - boardX);
+        if (dx < bestDx){ bestDx = dx; bestI = i; }
+      }
+      for (let j = 0; j < SIZE; j++){
+        const dy = Math.abs(getYcss(j) - boardY);
+        if (dy < bestDy){ bestDy = dy; bestJ = j; }
+      }
+
+      // 2. NEW: Threshold Check
+      // If the click is further than 50% of a cell size away from the line,
+      // it means we clicked in the gutter/border.
+      const spacing = getGridSpacing();
+      const limitX = spacing.x * 0.5; 
+      const limitY = spacing.y * 0.5;
+
+      // Initialize panStart immediately so dragging works even on the border
+      panStart = { x: e.clientX, y: e.clientY, ox: offsetX, oy: offsetY };
+      panSamplePrev = panSampleCurr = null;
+      try { mount.setPointerCapture(e.pointerId); } catch(_){}
+
+      // 3. If outside valid grid area, do NOT set tapStart.
+      // This prevents the "pointerup" from triggering Zoom or Stone Placement.
+      if (bestDx > limitX || bestDy > limitY) {
+          tapStart = null; 
+          return;
+      }
+
+      tapStart = { x: e.clientX, y: e.clientY, ox: offsetX, oy: offsetY, gridI: bestI, gridJ: bestJ };
+    }, {passive:false});
+
+    mount.addEventListener('pointermove', function(e){
+      if (!zoomEnabled) return;
+      if (!panStart) return;
+      if (scale <= 1.01 && !isFullscreen) return;
+
+      const dx = e.clientX - panStart.x;
+      const dy = e.clientY - panStart.y;
+      
+      if (!isPanning && (dx*dx + dy*dy > TAP_SLOP2)) isPanning = true;
+      
+      if (isPanning) {
+        offsetX = panStart.ox - dx;
+        offsetY = panStart.oy - dy;
+        applyPanAndSize(false);
+        e.preventDefault();
+        
+        const now = performance.now();
+        panSamplePrev = panSampleCurr;
+        panSampleCurr = { ox: offsetX, oy: offsetY, t: now };
+      }
+    }, {passive:false});
+
+    mount.addEventListener('pointerup', function(e){
+      // CASE A: Zoom Disabled (Non-zooming mode)
+      if (!zoomEnabled) {
+         const r = mount.getBoundingClientRect();
+         const sx = e.clientX - r.left;
+         const sy = e.clientY - r.top;
+         const bx = sx; const by = sy;
+         
+         let bestI = -1, bestJ = -1, bestDx = 1e9, bestDy = 1e9;
+         for (let i=0; i<SIZE; i++){
+            const dx = Math.abs(getXcss(i) - bx);
+            if (dx<bestDx){ bestDx=dx; bestI=i; }
+         }
+         for (let j=0; j<SIZE; j++){
+            const dy = Math.abs(getYcss(j) - by);
+            if (dy<bestDy){ bestDy=dy; bestJ=j; }
+         }
+         
+         // Threshold Check for non-zoom mode
+         const spacing = getGridSpacing();
+         if (bestDx > spacing.x * 0.5 || bestDy > spacing.y * 0.5) {
+             return; // Clicked border, do nothing
+         }
+         
+         e.preventDefault();
+         playAt(bestI, bestJ);
+         return;
+      }
+
+      // CASE B: Zoom Enabled
+      // If tapStart is null (because we filtered it in pointerdown), exit.
+      if (!tapStart) {
+          if (panStart) {
+             // Clean up capture if we were just panning from border
+             try { mount.releasePointerCapture(e.pointerId); } catch(_){}
+             panStart = null;
+          }
+          return;
+      }
+
+      try { mount.releasePointerCapture(e.pointerId); } catch(_){}
+      
+      const dist2 = (e.clientX - tapStart.x)**2 + (e.clientY - tapStart.y)**2;
+      const { gridI, gridJ } = tapStart;
+      const tapX = tapStart.x;
+      const tapY = tapStart.y;
+      
+      tapStart = null; panStart = null;
+
+      if (isPanning) {
+        isPanning = false;
+        if (panSamplePrev && panSampleCurr) {
+          const dt = panSampleCurr.t - panSamplePrev.t;
+          if (dt > 0 && dt < 120) {
+            startFling((panSampleCurr.ox - panSamplePrev.ox)/dt, (panSampleCurr.oy - panSamplePrev.oy)/dt);
+          }
+        }
+        return;
+      }
+
+      if (dist2 <= TAP_SLOP2) {
+        e.preventDefault();
+        if (scale <= 1.05 && !isFullscreen) {
+          enterFullscreenAtGrid(gridI, gridJ, tapX, tapY);
+        } else {
+          playAt(gridI, gridJ);
+        }
+      }
+    }, {passive:false});
+    
+    // WGo Default Fallback
+    board.addEventListener('click', function(x, y){
+      if (zoomEnabled && (isFullscreen || scale > 1)) return;
+      // Note: WGo usually handles borders internally, but our custom
+      // pointer events usually intercept before this fires.
+      playAt(x, y);
     });
   }
-}
 
-
-function animateTo(targetScale, pxBoard, pyBoard, sxTarget, syTarget){
-  targetScale = Math.max(minScale, Math.min(maxScale, targetScale));
-  cancelFling();
-
-  const s0  = scale;
-  const ox0 = offsetX;
-  const oy0 = offsetY;
-  const t0  = performance.now();
-  const dur = 260;
-
-  // match core: keep chosen board point under target screen point
-  const targetOX = pxBoard * targetScale - sxTarget;
-  const targetOY = pyBoard * targetScale - syTarget;
-
-  function step(now){
-    let t = (now - t0) / dur;
-    if (t > 1) t = 1;
-    const ease = 1 - Math.pow(1 - t, 3);
-
-    scale   = s0  + (targetScale - s0) * ease;
-    offsetX = ox0 + (targetOX - ox0) * ease;
-    offsetY = oy0 + (targetOY - oy0) * ease;
-
-    applyPanAndSize(false);
-
-    if (t < 1){
-      requestAnimationFrame(step);
-    } else {
-      applyPanAndSize(true);
-    }
-  }
-
-  requestAnimationFrame(step);
-}
-
-function centerZoomAtGrid(i, j, factor, tapClientX, tapClientY){
-  const targetScale = Math.max(minScale, Math.min(maxScale, scale * factor));
-
-  // Board-space coordinates of the grid point (independent of zoom)
-  const pxBoard = getXcss(i);
-  const pyBoard = getYcss(j);
-
-  const rect = mount.getBoundingClientRect();
-  let sxTarget = rect.width  / 2;
-  let syTarget = rect.height / 2;
-
-  // If we know the tap position, keep that spot under the finger
-  if (typeof tapClientX === 'number' && typeof tapClientY === 'number'){
-    sxTarget = tapClientX - rect.left;
-    syTarget = tapClientY - rect.top;
-  }
-
-  animateTo(targetScale, pxBoard, pyBoard, sxTarget, syTarget);
-}
-
-
-function enterFullscreenAtGrid(i, j, tapClientX, tapClientY){
-  if (isFullscreen) return;
-
-  // Ensure we never transform the mount itself
-  if (!zoomLayer) zoomLayer = mount.__woodLayer;
-  if (!zoomLayer) return; // don't attempt fullscreen until the layer exists
-
-
-  ensureOverlay();
-
-  // Lock scroll (both html + body for mobile safari consistency)
-  prevOverflow = document.documentElement.style.overflow || "";
-  const prevBodyOverflow = document.body.style.overflow || "";
-  document.documentElement.style.overflow = 'hidden';
-  document.body.style.overflow = 'hidden';
-  mount.__prevBodyOverflow = prevBodyOverflow;
-
-  // Anchor to restore position
-  returnAnchor = document.createElement('div');
-  returnAnchor.style.display = 'none';
-  mount.parentNode.insertBefore(returnAnchor, mount);
-
-  // Core-style: put the board directly under body
-  document.body.appendChild(mount);
-
-  isFullscreen = true;
-  mount.classList.add('is-fullscreen');
-  document.body.classList.add('drill-zoom-mode');
-
-  if (zoomExitBtn) zoomExitBtn.style.display = 'block';
-
-  // Reset baseline sizing/state
-  resetViewLocal();
-  moveZoomUIIn();
-
-  requestAnimationFrame(function(){
-    const initialFactor = 2.0;
-
-    const px_curr = getXcss(i);
-    const py_curr = getYcss(j);
-
-    const rect = mount.getBoundingClientRect();
-    let sx = rect.width  / 2;
-    let sy = rect.height / 2;
-
-    if (typeof tapClientX === 'number' && typeof tapClientY === 'number'){
-      sx = tapClientX - rect.left;
-      sy = tapClientY - rect.top;
-    }
-
-    // Pre-align at scale=1
-    scale = 1;
-    offsetX = px_curr * 1.0 - sx;
-    offsetY = py_curr * 1.0 - sy;
-
-    applyPanAndSize(false);
-
-    // Animate to zoom
-    animateTo(initialFactor, px_curr, py_curr, sx, sy);
-  });
-}
-
-
-function exitFullscreen(){
-  if (!isFullscreen) return;
-
-  cancelFling();
-
-  mount.classList.remove('is-fullscreen');
-  restoreZoomUIOut();
-  document.body.classList.remove('drill-zoom-mode');
-
-  isFullscreen = false;
-
-  if (zoomExitBtn) zoomExitBtn.style.display = 'none';
-
-  // Restore DOM position
-  if (returnAnchor && returnAnchor.parentNode){
-    returnAnchor.parentNode.insertBefore(mount, returnAnchor);
-    returnAnchor.parentNode.removeChild(returnAnchor);
-    returnAnchor = null;
-  }
-
-  // Restore scroll
-  document.documentElement.style.overflow = prevOverflow;
-  document.body.style.overflow = mount.__prevBodyOverflow || "";
-  mount.__prevBodyOverflow = "";
-
-  // Remove fullscreen inline sizing first
-  mount.style.width = '';
-  mount.style.height = '';
-
-  scale = 1;
-  offsetX = 0;
-  offsetY = 0;
-
-  applyPanAndSize(true);
-}
-
-  function beginPan(e){
-    isPanning = false;
-    panStart = { x: e.clientX, y: e.clientY, ox: offsetX, oy: offsetY };
-    activePointerId = e.pointerId;
-    panSamplePrev = null;
-    panSampleCurr = null;
-    try { mount.setPointerCapture(e.pointerId); } catch(_){}
-  }
-
-  function updatePan(e){
-    if (!isFullscreen || scale <= 1 || !panStart) return;
-
-    const dx = e.clientX - panStart.x;
-    const dy = e.clientY - panStart.y;
-    const dist2 = dx*dx + dy*dy;
-
-    if (!isPanning && dist2 > TAP_SLOP2){
-      isPanning = true;
-      suppressNextBoardClick = true;
-    }
-    if (!isPanning) return;
-
-    offsetX = panStart.ox - dx;
-    offsetY = panStart.oy - dy;
-
-    applyPanAndSize(false);
-
-    const now = performance.now();
-    panSamplePrev = panSampleCurr;
-    panSampleCurr = { ox: offsetX, oy: offsetY, t: now };
-
-    e.preventDefault();
-  }
-
-  function endPan(e){
-    const wasPanning = isPanning;
-
-    if (activePointerId != null){
-      try { mount.releasePointerCapture(activePointerId); } catch(_){}
-    }
-    activePointerId = null;
-    panStart = null;
-    isPanning = false;
-
-    if (!wasPanning || !isFullscreen || scale <= 1) return;
-    if (!panSamplePrev || !panSampleCurr) return;
-
-    let dt = panSampleCurr.t - panSamplePrev.t;
-    if (dt <= 0 || dt > 120) return;
-
-    const vx = (panSampleCurr.ox - panSamplePrev.ox) / dt;
-    const vy = (panSampleCurr.oy - panSamplePrev.oy) / dt;
-
-    startFling(vx, vy);
-  }
-
-  function startFling(vx, vy){
-    if (!isFullscreen || scale <= 1) return;
-
-    const MAX_SPEED = 0.50;
-    let speed = Math.hypot(vx, vy);
+function startFling(vx, vy){
+    if (scale <= 1) return;
+    cancelFling();
+    
+    var speed = Math.sqrt(vx*vx + vy*vy);
+    
+    // Reference logic: Cap max speed
+    var MAX_SPEED = 0.50; 
     if (speed > MAX_SPEED){
-      const s = MAX_SPEED / speed;
+      var s = MAX_SPEED / speed;
       vx *= s;
       vy *= s;
       speed = MAX_SPEED;
     }
+    
+    // Reference logic: Ignore tiny velocities
     if (speed < 0.04) return;
 
-    cancelFling();
     isFlinging = true;
-    flingVX = vx;
-    flingVY = vy;
+    
+    // Reference logic: No initial * 0.5 dampening here
+    flingVX = vx; 
+    flingVY = vy; 
+    
     flingLastTime = performance.now();
-
-    function step(now){
+    
+    (function step(now){
       if (!isFlinging) return;
-
-      let dt = now - flingLastTime;
+      var dt = now - flingLastTime;
       if (dt <= 0){
         flingId = requestAnimationFrame(step);
         return;
       }
       if (dt > 50) dt = 50;
       flingLastTime = now;
-
+      
       offsetX += flingVX * dt;
       offsetY += flingVY * dt;
-
-      const friction = 0.0010;
-      let speed = Math.hypot(flingVX, flingVY);
-      const decel = friction * dt;
-
-      if (speed <= 0.01 || decel >= speed){
+      
+      // Reference logic: Linear friction
+      var friction = 0.0010; // px/ms²
+      var currentSpeed = Math.sqrt(flingVX*flingVX + flingVY*flingVY);
+      var decel = friction * dt;
+      
+      if (currentSpeed <= 0.01 || decel >= currentSpeed){
         cancelFling();
         applyPanAndSize(true);
         return;
       }
-
-      const newSpeed = speed - decel;
-      const s = newSpeed / speed;
-      flingVX *= s;
-      flingVY *= s;
-
+      
+      var newSpeed = currentSpeed - decel;
+      var scaleFactor = newSpeed / currentSpeed;
+      
+      flingVX *= scaleFactor;
+      flingVY *= scaleFactor;
+      
       applyPanAndSize(false);
       flingId = requestAnimationFrame(step);
-    }
-
-    flingId = requestAnimationFrame(step);
-  }
-
-  function getBoardBounds(){
-    const firstX = getXcss(0);
-    const lastX  = getXcss(SIZE - 1);
-    const firstY = getYcss(0);
-    const lastY  = getYcss(SIZE - 1);
-
-const spacingX = SIZE > 1 ? Math.abs(getXcss(1) - firstX) : 0;
-const spacingY = SIZE > 1 ? Math.abs(getYcss(1) - firstY) : 0;
-
-    const halfX = (spacingX || spacingY || 16) * 0.5;
-    const halfY = (spacingY || spacingX || 16) * 0.5;
-
-    return {
-      minX: firstX - halfX,
-      maxX: lastX  + halfX,
-      minY: firstY - halfY,
-      maxY: lastY  + halfY
-    };
-  }
-
-  // Tap/drag handling on the drills board mount (touch only)
-  mount.addEventListener('pointerdown', function(e){
-    if (!zoomEnabled) return;
-    if (e.pointerType && e.pointerType !== 'touch') return;
-
-    // Avoid the "sometimes window" bug by requiring the real zoom layer
-    if (!mount.__woodLayerReady || !mount.__woodLayer) return;
-
-    cancelFling();
-    e.preventDefault();
-
-
-const rect = mount.getBoundingClientRect();
-const sx = e.clientX - rect.left;
-const sy = e.clientY - rect.top;
-
-// match core math (offset is treated in screen-space)
-const boardX = (sx + offsetX) / scale;
-const boardY = (sy + offsetY) / scale;
-
-
-
-    const bounds = getBoardBounds();
-
-    let gridI = null, gridJ = null;
-    if (boardX >= bounds.minX && boardX <= bounds.maxX &&
-        boardY >= bounds.minY && boardY <= bounds.maxY){
-      let bestI = 0, bestDx = Infinity;
-      for (let i = 0; i < SIZE; i++){
-        const dxI = Math.abs(getXcss(i) - boardX);
-        if (dxI < bestDx){ bestDx = dxI; bestI = i; }
-      }
-      let bestJ = 0, bestDy = Infinity;
-      for (let j = 0; j < SIZE; j++){
-        const dyJ = Math.abs(getYcss(j) - boardY);
-        if (dyJ < bestDy){ bestDy = dyJ; bestJ = j; }
-      }
-      gridI = bestI;
-      gridJ = bestJ;
-    }
-
-    tapStart = {
-      x: e.clientX,
-      y: e.clientY,
-      t: performance.now(),
-      gridI,
-      gridJ
-    };
-
-    beginPan(e);
-  }, { passive:false });
-
-// Use capture so we intercept before WGo's own click handler
-  mount.addEventListener('pointerup', function(e){
-    // --- CASE A: Zoom Disabled (Match Core Board behavior) ---
-    if (!zoomEnabled) {
-      if (e.pointerType && e.pointerType !== 'touch') return; // Let mouse use WGo default
-
-      const r = mount.getBoundingClientRect();
-      const bx = e.clientX - r.left;
-      const by = e.clientY - r.top;
-
-      let bestI = -1, bestJ = -1, bestDx = 1e9, bestDy = 1e9;
-      for (let i = 0; i < SIZE; i++){
-        const dx = Math.abs(getXcss(i) - bx);
-        if (dx < bestDx){ bestDx = dx; bestI = i; }
-      }
-      for (let j = 0; j < SIZE; j++){
-        const dy = Math.abs(getYcss(j) - by);
-        if (dy < bestDy){ bestDy = dy; bestJ = j; }
-      }
-
-      // Threshold Check (Ignore clicks in the gutter/border)
-      const spacing = getGridSpacing();
-      if (bestDx > spacing.x * 0.5 || bestDy > spacing.y * 0.5) {
-        return; 
-      }
-
-      e.preventDefault();
-      // Use the Drills board move handler
-      onBoardClick(bestI, bestJ);
-      return;
-    }
-
-    // --- CASE B: Zoom Enabled ---
-    if (!tapStart){
-      endPan(e);
-      return;
-    }
-    if (e.pointerType && e.pointerType !== 'touch'){
-      endPan(e);
-      tapStart = null;
-      return;
-    }
-
-    const dx = e.clientX - tapStart.x;
-    const dy = e.clientY - tapStart.y;
-    const dist2 = dx*dx + dy*dy;
-
-    const gi = tapStart.gridI;
-    const gj = tapStart.gridJ;
-    const tapClientX = tapStart.x;
-    const tapClientY = tapStart.y;
-
-    tapStart = null;
-    const wasPanning = isPanning;
-    endPan(e);
-
-    if (wasPanning) return;
-
-    if (dist2 <= TAP_SLOP2){
-const baseView = (!isFullscreen && scale <= 1.05);
-
-
-      if (baseView){
-        // Tap from base view – zoom in around tap
-        let ti = gi;
-        let tj = gj;
-
-        // If tap was in gutter, recalculate best grid point based on click coords
-        if (ti == null || tj == null || ti < 0 || tj < 0 || ti >= SIZE || tj >= SIZE){
-          const rect = mount.getBoundingClientRect();
-          const sx = tapClientX - rect.left;
-          const sy = tapClientY - rect.top;
-
-          let bestI = 0, bestDx = Infinity;
-          for (let i = 0; i < SIZE; i++){
-            const dxI = Math.abs(getXcss(i) - sx);
-            if (dxI < bestDx){ bestDx = dxI; bestI = i; }
-          }
-          let bestJ = 0, bestDy = Infinity;
-          for (let j = 0; j < SIZE; j++){
-            const dyJ = Math.abs(getYcss(j) - sy);
-            if (dyJ < bestDy){ bestDy = dyJ; bestJ = j; }
-          }
-          ti = bestI;
-          tj = bestJ;
-        }
-
-        e.preventDefault();
-        e.stopPropagation();
-        if (e.stopImmediatePropagation) e.stopImmediatePropagation();
-
-        suppressNextBoardClick = true;
-        enterFullscreenAtGrid(ti, tj, tapClientX, tapClientY);
-        return;
-      }
-
-      // Already zoomed – treat tap as move if on the grid
-      if (gi == null || gj == null || gi < 0 || gj < 0 || gi >= SIZE || gj >= SIZE){
-        return;
-      }
-
-      e.preventDefault();
-      e.stopPropagation();
-      if (e.stopImmediatePropagation) e.stopImmediatePropagation();
-
-      suppressNextBoardClick = true;
-      onBoardClick(gi, gj);
-
-      // Auto-zoom out check (Match Core Board behavior)
-      if (GoPrefs && !GoPrefs.disableAutoZoomOut && scale > 1) {
-         setTimeout(function(){
-            if(isFullscreen) exitFullscreen();
-            else resetViewLocal();
-         }, 10);
-      }
-    }
-  }, { passive:false, capture:true });
-
-  mount.addEventListener('pointermove', function(e){
-    if (!zoomEnabled) return;
-    if (e.pointerType && e.pointerType !== 'touch') return;
-    updatePan(e);
-  }, { passive:false });
-
-  mount.addEventListener('pointercancel', function(e){
-    if (e.pointerType && e.pointerType !== 'touch') return;
-    endPan(e);
-  }, { passive:true });
-
-  // Zoom-aware sizing on resize
-  function fitBoard(){
-    applyPanAndSize(true);
-  }
-  window.addEventListener('resize', function(){
-    setTimeout(fitBoard, 10);
-  });
-
-  // Optional: let Settings toggle zoom
-  window.DrillZoom = {
-    isEnabled(){ return zoomEnabled; },
-    setEnabled(v){
-      zoomEnabled = !!v;
-      if (!zoomEnabled){
-        if (isFullscreen) exitFullscreen();
-        else resetViewLocal();
-      }
-    },
-    resetView(){
-      if (isFullscreen) exitFullscreen();
-      else resetViewLocal();
-    },
-    isFullscreen(){
-      return isFullscreen;
-    }
-  };
-
-  // React to go:prefs-changed if fired by Settings
-  window.addEventListener('go:prefs-changed', function(e){
-    const d = e.detail || {};
-    if (!d || typeof d.key === 'undefined') return;
-    if (d.key === 'josekiZoom'){
-      zoomEnabled = !!d.value;
-      if (!zoomEnabled){
-        if (isFullscreen) exitFullscreen();
-        else resetViewLocal();
-      }
-    }
-  });
-
-  function prepareCorner(tline, startIndex){
-    resetGrid();
-    (tline.rootAB||[]).forEach(p=>addStone(p.x,p.y,'B'));
-    (tline.rootAW||[]).forEach(p=>addStone(p.x,p.y,'W'));
-    for (let s=0;s<startIndex;s++){ const m = tline.moves[s]; playMove(m.x,m.y,m.color, true); }
-    remain = tline.moves.slice(startIndex).map(m=>({x:m.x,y:m.y,color:m.color}));
-    redraw();
-  }
-
-function startDrill(i, opts){
-  opts = opts || {};
-  const fromSkip = !!opts.fromSkip;
-
-  index = i;
-  if (index >= slots.length){ showDone(); return; }
-
-  const slot = slots[index], base = slot.base, key  = slot.key;
-
-  SIZE = base.size || 19;
-  if (!board) initBoard();
-  clearTimers();
-
-  ensureRunPlanFor(key, base);
-  const variant = runPlan[key].get(index);
-  const tline = makeTransformed(base, variant.orientIdx, variant.swap);
-  currentTransformed = tline;
-
-  prepareCorner(tline, variant.startIndex);
-
-  blitzCornerPlannedMoves = remain.length;
-
-  if (blitzMode){
-    ensureTimerEl();
-
-    // IMPORTANT:
-    // Only add the per-corner time budget if we did NOT skip into this corner.
-    // This prevents "Skip spamming" from growing the timer.
-    if (!fromSkip){
-      timerMs += blitzCornerPlannedMoves * 1500;
-    }
-
-    if (!timerId) startTimer();
-    if (timerEl) timerEl.textContent = fmtMs(timerMs);
-
-    blitzCornerState = {
-      tline,
-      startIndex: variant.startIndex,
-      plannedN: blitzCornerPlannedMoves
-    };
-  }
-
-  setProgress();
-  locked = false;
+    })(performance.now());
 }
 
-
-  function restartSameCornerBlitz(){
-    if (!blitzMode || !blitzCornerState) return;
-    prepareCorner(blitzCornerState.tline, blitzCornerState.startIndex);
-    locked = false;
+  function cancelFling(){
+    isFlinging = false;
+    if (flingId) { cancelAnimationFrame(flingId); flingId = 0; }
   }
 
-  function onBoardClick(x,y){
-    if (locked || timeUp) return;
-    if (x<0 || y<0 || x>=SIZE) return;
+  // --- 3. GAME LOGIC (with simple KO) ---
+
+  function getGroupStones(x, y){
+    var color = grid[y][x];
+    if (!color) return [];
+    var stack = [[x,y]], seen = {}, stones = [];
+    while(stack.length){
+      var p = stack.pop();
+      var k = p[0]+','+p[1];
+      if(seen[k]) continue; 
+      seen[k]=true; 
+      stones.push({x:p[0], y:p[1]});
+      [[0,1],[0,-1],[1,0],[-1,0]].forEach(d=>{
+        var nx=p[0]+d[0], ny=p[1]+d[1];
+        if(nx>=0 && nx<SIZE && ny>=0 && ny<SIZE && grid[ny][nx]===color && !seen[nx+','+ny]){
+          stack.push([nx,ny]);
+        }
+      });
+    }
+    return stones;
+  }
+
+  function playAt(x, y){
+    if (x<0 || y<0 || x>=SIZE || y>=SIZE) return;
     if (grid[y][x] !== null) return;
-    if (!remain.length) return;
 
-    const next = remain[0];
-    if (next.x === x && next.y === y){
-      playMove(x,y,next.color, false);
-      remain.shift();
+    // KO check: forbid immediate recapture on ko point
+    if (koPoint && koPoint.x === x && koPoint.y === y) return;
+    
+    var me = turn;
+    var opp = (me === 'B') ? 'W' : 'B';
 
-      if (!remain.length){
-        solvedCount++;
-        if (blitzMode){
-          timerMs += blitzCornerPlannedMoves * 500;
-          if (timerEl) timerEl.textContent = fmtMs(timerMs);
-        }
-        if (index >= (slots.length - 1)) {
-          showClearedThenDone();
-        } else {
-          showClearedAuto();
-        }
-      }
-    } else {
-      failedCount++;
-      if (blitzMode){
-        showWrongThenRestart();
-      } else {
-        showWrongAuto();
-      }
-    }
-  }
-
-  function showWrongThenRestart(){
-    clearTimers();
-    wrongM.style.display='flex';
-    locked = true;
-    wrongTimer = setTimeout(() => {
-      wrongM.style.display='none';
-      restartSameCornerBlitz();
-    }, 800);
-  }
-  function showWrongAuto(){
-    clearTimers();
-    wrongM.style.display='flex';
-    locked = true;
-    wrongTimer = setTimeout(() => {
-      wrongM.style.display='none';
-      locked = false;
-      if (index >= (slots.length - 1)) showDone(); else startDrill(index+1);
-    }, 1000);
-  }
-
-  function showClearedAuto(){
-    clearTimers();
-    clearedM.style.display='flex';
-    locked = true;
-    clearedTimer = setTimeout(() => {
-      clearedM.style.display='none';
-      locked = false;
-      startDrill(index+1);
-    }, 850);
-  }
-  function showClearedThenDone(){
-    clearTimers();
-    clearedM.style.display='flex';
-    locked = true;
-    clearedTimer = setTimeout(() => {
-      clearedM.style.display='none';
-      showDone();
-    }, 800);
-  }
-
-    function showDone(customTitle){
-    clearTimers();
-
-    if (statSolvedEl) statSolvedEl.textContent = String(solvedCount);
-    if (statFailedEl) statFailedEl.textContent = String(failedCount);
-    if (doneTitle)    doneTitle.textContent   = customTitle || 'All Drills Complete';
-
-    const left = dailyAttemptsLeftForCurrentMode();
-
-    if (left <= 0){
-      if (doneMsgEl) doneMsgEl.textContent = 'You reached your drills limit.';
-      doneRetry.disabled = true;
-      doneRetry.style.opacity = '.6';
-      doneRetry.style.cursor = 'not-allowed';
-    } else {
-      if (doneMsgEl) {
-        doneMsgEl.textContent = customTitle
-          ? 'Session ended.'
-          : 'Session finished. You can retry the set or go back to selection.';
-      }
-      doneRetry.disabled = false;
-      doneRetry.style.opacity = '1';
-      doneRetry.style.cursor = 'pointer';
-    }
-
-    doneM.style.display = 'flex';
-    if (blitzMode) stopTimer();
-  }
-
-  doneBack.addEventListener('click', function(){
-    doneM.style.display='none';
-    try{ window.location.href = '../drills/drills.html'; }catch(e){}
-  });
-
-  function reshuffleSlots(){
-    if (!slots.length) return;
-    slots = mixSlotsFairly(slots.slice());
-    lineToSlotIdxs = {};
-    for (let i=0;i<slots.length;i++){
-      const key = slots[i].key;
-      if (!lineToSlotIdxs[key]) lineToSlotIdxs[key] = [];
-      lineToSlotIdxs[key].push(i);
-    }
-  }
-
-  doneRetry.addEventListener('click', function(){
-    // Use the shared per-day counter (same as drills.html)
-    if (!hasDailyAttemptsLeftForCurrentMode()){
-      showCapMsg();
-      if (doneMsgEl) doneMsgEl.textContent = 'You reached your drills limit.';
-      doneRetry.disabled = true;
-      doneRetry.style.opacity = '.6';
-      doneRetry.style.cursor = 'not-allowed';
-      return;
-    }
-
-    // Consume one daily attempt for this mode (Complete / Blitz)
-    recordDailyAttemptForCurrentMode();
-
-    doneM.style.display = 'none';
-    resetStats();
-    reshuffleSlots();
-    newRunPlan();
-    blitzCornerState = null;
-    timeUp = false;
-
-    if (blitzMode){
-      timerMs = 0;
-      ensureTimerEl();
-      if (timerEl) timerEl.textContent = fmtMs(timerMs);
-      startTimer();
-    } else {
-      if (timerEl) timerEl.style.display = 'none';
-      stopTimer();
-    }
-
-    if (slots.length){
-      startDrill(0);
-    }
-  });
-
-btnNext.addEventListener('click', function(){
-  if (!slots.length) return;
-
-  // Skip should not grant Blitz time for the next corner.
-  startDrill(index + 1, { fromSkip: true });
-});
-
-
-  btnMenu.addEventListener('click',  function(){
-    try{ window.location.href = '../drills/drills.html'; }catch(e){}
-  });
-
-  const OWN_STORE_KEY = 'go:ownpatterns';
-  const FAV_KEY       = 'go_favorites';
-
-  function loadOwnPatterns(){ try { return JSON.parse(localStorage.getItem(OWN_STORE_KEY) || '[]'); } catch(_){ return []; } }
-  function readFavs(){ try { return JSON.parse(localStorage.getItem(FAV_KEY) || '{}') || {}; } catch(_){ return {}; } }
-
-  function normalizeLineLike(obj){
-    return {
-      size: obj.size || 19,
-      rootAB: Array.isArray(obj.rootAB)?obj.rootAB:[],
-      rootAW: Array.isArray(obj.rootAW)?obj.rootAW:[],
-      moves:  (obj.moves||[]).map(m => ({ x:m.x, y:m.y, color:(m.color==='W'?'W':'B') }))
-    };
-  }
-
-  function fetchLibraryLines(){
-    return fetch(SGF_URL, { cache:'no-cache' }).then(r=>r.text()).then(txt=>{
-      const trees = parseAllTrees(txt);
-      const lines=[];
-      for (const seq of trees){
-        linkify(seq,null);
-        const size = parseSZ(seq[0]?.SZ);
-        const rootAB = listCoords(seq[0]?.AB, size);
-        const rootAW = listCoords(seq[0]?.AW, size);
-        const paths  = enumerateLines(seq,size);
-        for (const moves of paths){
-          if ((moves?.length||0) >= MIN_MOVES){
-            lines.push({ size, rootAB, rootAW, moves });
-          }
+    // Tentatively place
+    grid[y][x] = me;
+    
+    // Capture adjacent opponent groups if they have no liberties
+    var captured = [];
+    var dirs = [[0,1],[0,-1],[1,0],[-1,0]];
+    dirs.forEach(d => {
+      var nx=x+d[0], ny=y+d[1];
+      if(nx>=0 && nx<SIZE && ny>=0 && ny<SIZE && grid[ny][nx]===opp){
+        if (checkCapture(nx, ny)) {
+          var removed = removeGroup(nx, ny);
+          if (removed && removed.length) captured = captured.concat(removed);
         }
       }
-      return lines;
     });
-  }
-  // Helper: get selections either from GoDrills (inline/Bubble)
-  // or from sessionStorage (drills.html → drills-board.html bridge)
-  function getDrillSelections(){
-    // 1) If GoDrills exists (same-page integration), use it
-    if (window.GoDrills && typeof window.GoDrills.getSelections === 'function') {
-      try {
-        return window.GoDrills.getSelections();
-      } catch (e) {}
+    
+    // Suicide check
+    if (countLiberties(x,y, me) === 0) { 
+      // revert placement
+      grid[y][x] = null; 
+      // restore is complex; but in this simplified engine we assume suicide won't be used
+      // in real play. Still, to be safe, undo captures too by re-adding them:
+      // (only possible because we know their color)
+      captured.forEach(p => { grid[p.y][p.x] = opp; });
+      return; 
     }
 
-    // 2) Otherwise, use the bridge from the list page
-    try {
-      if (typeof sessionStorage === 'undefined') return null;
-      var raw = sessionStorage.getItem('go:drills_next_selection');
-      if (!raw) return null;
-      var obj = JSON.parse(raw);
-      if (!obj || typeof obj !== 'object') return null;
-      return obj;
-    } catch (e) {
-      return null;
-    }
-  }
-
-  const DrillBoard = {
-    load: function(linesOrNull, opts){
-      PER = Math.max(1, parseInt((opts && opts.perJoseki) || 3, 10) || 3);
-
-      // Read selections via helper (GoDrills on same page OR sessionStorage bridge)
-      const sel = getDrillSelections();
-      const selMode = (sel && sel.mode === 'blitz') ? 'blitz' : 'complete';
-      blitzMode = (selMode === 'blitz');
-
-      function buildSlots(baseLines){
-        const raw = [];
-        for (const base of baseLines){
-          const key = lineKey(base);
-          for (let k=0;k<PER;k++){
-            raw.push({ key, base });
-          }
-        }
-        slots = mixSlotsFairly(raw);
-        lineToSlotIdxs = {};
-        for (let i=0;i<slots.length;i++){
-          const key = slots[i].key;
-          if (!lineToSlotIdxs[key]) lineToSlotIdxs[key] = [];
-          lineToSlotIdxs[key].push(i);
-        }
-      }
-
-      function go(lines){
-        const usable = (lines||[]).filter(l => Array.isArray(l.moves) && l.moves.length >= MIN_MOVES).map(normalizeLineLike);
-        if (!usable.length){
-          alert('No eligible drills (need patterns with 10+ moves).');
-          return;
-        }
-        buildSlots(usable);
-        newRunPlan();
-
-        resetStats();
-        index=0;
-        blitzCornerState = null;
-        timeUp = false;
-
-        if (blitzMode){
-          timerMs = 0;
-          ensureTimerEl();
-          timerEl.style.display = 'block';
-          timerEl.textContent = fmtMs(timerMs);
-          startTimer();
-        } else {
-          if (timerEl) timerEl.style.display = 'none';
-          stopTimer();
-        }
-
-        startDrill(0);
-        try{ (wrap).scrollIntoView({behavior:'smooth',block:'start'});}catch(_){}
-      }
-
-      if (Array.isArray(linesOrNull)){
-        go(linesOrNull);
-        return;
-      }
-
-      // If we have a selection (from GoDrills or from sessionStorage),
-      // use ONLY those lines instead of the full library.
-      if (sel && (
-          (sel.library && sel.library.length) ||
-          (sel.favorites && sel.favorites.length) ||
-          (sel.own && sel.own.length)
-        )){
-
-        const favMap   = readFavs();
-        const favLines = Object.values(favMap).map(normalizeLineLike);
-        const favPick  = favLines.filter(l => (sel.favorites || []).includes(lineKey(l)));
-
-        const ownAll   = loadOwnPatterns();
-        const ownPick  = ownAll
-          .filter(p => (sel.own || []).includes(p.id))
-          .map(normalizeLineLike);
-
-        if ((sel.library || []).length){
-          fetchLibraryLines().then(allLib => {
-            const libPick = allLib.filter(l => (sel.library || []).includes(lineKey(l)));
-            go([ ...libPick, ...favPick, ...ownPick ]);
-          }).catch(() => {
-            go([ ...favPick, ...ownPick ]);
-          });
-        } else {
-          go([ ...favPick, ...ownPick ]);
-        }
-        return;
-      }
-
-      // Fallback: no selection info → load full library (old behavior)
-      fetchLibraryLines().then(go).catch(() => alert('Could not load drills.'));
-
-    },
-
-    exit: function(){
-      stopTimer();
-    }
-  };
-  window.DrillBoard = DrillBoard;
-
-  if (mount && !board) initBoard();
-
-  function hookStart(){
-    const s = document.getElementById('drills-start');
-    if (!s) return setTimeout(hookStart, 150);
-    if (s.__dbHooked) return;
-    s.__dbHooked = true;
-
-    function ensureDrillWins(){
-      try{
-        const gj = document.getElementById('group-joseki');
-        if (gj) gj.setAttribute('data-hidden','1');
-      }catch(_){}
-    }
-
-    function startNow(e){
-      if (s.disabled || s.getAttribute('aria-hidden') === 'true' || s.style.display === 'none') return;
-
-      if (!canStart()){
-        if (e){ e.preventDefault(); e.stopImmediatePropagation(); e.stopPropagation(); }
-        showCapMsg();
-        return;
-      }
-      incRuns();
-
-      if (e){
-        e.preventDefault();
-        e.stopImmediatePropagation();
-        e.stopPropagation();
-      }
-
-      if (window.GoDrills && typeof GoDrills.close === 'function'){
-        GoDrills.close();
+    // Determine KO point (simple ko)
+    // Condition: exactly one stone captured AND the capturing group is size 1
+    // AND that single stone now has exactly one liberty.
+    if (captured.length === 1) {
+      var myGroup = getGroupStones(x, y);
+      if (myGroup.length === 1 && countLiberties(x, y, me) === 1) {
+        koPoint = { x: captured[0].x, y: captured[0].y };
       } else {
-        const over = document.getElementById('drills-overlay');
-        if (over) over.style.display = 'none';
+        koPoint = null;
+      }
+    } else {
+      koPoint = null;
+    }
+
+    turn = opp;
+    lastMove = {x:x, y:y};
+    
+    try{ if(window.StoneSFX) StoneSFX.play(); }catch(e){}
+    
+    if (!disableAutoZoomOut && scale > 1) {
+       setTimeout(smoothZoomOutAndExit, 10); 
+    }
+    
+    redrawBoard();
+  }
+
+  function checkCapture(x, y){
+    var color = grid[y][x];
+    var stack = [[x,y]], seen = {};
+    while(stack.length){
+      var p = stack.pop();
+      var k = p[0]+','+p[1];
+      if(seen[k]) continue; 
+      seen[k]=true;
+
+      var hasLib = false;
+      [[0,1],[0,-1],[1,0],[-1,0]].forEach(d=>{
+        var nx=p[0]+d[0], ny=p[1]+d[1];
+        if(nx>=0 && nx<SIZE && ny>=0 && ny<SIZE){
+          var v = grid[ny][nx];
+          if(v===null) hasLib=true;
+          else if(v===color && !seen[nx+','+ny]) stack.push([nx,ny]);
+        }
+      });
+      if(hasLib) return false;
+    }
+    return true;
+  }
+
+  // Remove a connected group and return list of removed stones
+  function removeGroup(x, y){
+    var color = grid[y][x];
+    var stack = [[x,y]], seen = {}, removed = [];
+    while(stack.length){
+      var p = stack.pop();
+      var k = p[0]+','+p[1];
+      if(seen[k]) continue; 
+      seen[k]=true;
+
+      if (grid[p[1]][p[0]] === color){
+        grid[p[1]][p[0]] = null;
+        removed.push({x:p[0], y:p[1]});
       }
 
-      setTimeout(()=>{ DrillBoard.load(null, { perJoseki: 3 }); }, 30);
-      setTimeout(ensureDrillWins, 120);
-      setTimeout(ensureDrillWins, 350);
+      [[0,1],[0,-1],[1,0],[-1,0]].forEach(d=>{
+        var nx=p[0]+d[0], ny=p[1]+d[1];
+        if(nx>=0 && nx<SIZE && ny>=0 && ny<SIZE && grid[ny][nx]===color && !seen[nx+','+ny]){
+          stack.push([nx,ny]);
+        }
+      });
     }
-
-    s.addEventListener('click',     startNow, true);
-    s.addEventListener('pointerup', startNow, true);
-    s.addEventListener('touchend',  startNow, { capture:true, passive:false });
-
-    document.addEventListener('click', function docCap(e){
-      const t = e.target && e.target.closest ? e.target.closest('#drills-start') : null;
-      if (!t) return;
-      startNow(e);
-    }, true);
+    return removed;
   }
-  hookStart();
 
-  // Auto-start when used as standalone page (no drills overlay present)
-  function autoStartStandalone(){
-    const over = document.getElementById('drills-overlay');
-    const startBtn = document.getElementById('drills-start');
-    const isStandalone = !over && !startBtn;
-    if (!isStandalone) return;
-
-    if (!canStart()){
-      showCapMsg();
-      return;
+  function countLiberties(x,y,c){
+    var stack=[[x,y]], seen={}, libs=0;
+    while(stack.length){
+      var p=stack.pop(), k=p[0]+','+p[1];
+      if(seen[k]) continue; 
+      seen[k]=true;
+      [[0,1],[0,-1],[1,0],[-1,0]].forEach(d=>{
+        var nx=p[0]+d[0], ny=p[1]+d[1];
+        if(nx>=0&&nx<SIZE&&ny>=0&&ny<SIZE){
+          var v=grid[ny][nx];
+          if(v===null) libs++;
+          else if(v===c && !seen[nx+','+ny]) stack.push([nx,ny]);
+        }
+      });
     }
-    incRuns();
-    DrillBoard.load(null, { perJoseki: 3 });
+    return libs;
   }
 
-  if (document.readyState === 'loading'){
-    document.addEventListener('DOMContentLoaded', autoStartStandalone);
-  } else {
-    autoStartStandalone();
+  function redrawBoard(){
+    if (!board) return;
+    board.removeAllObjects();
+    for(var y=0; y<SIZE; y++){
+      for(var x=0; x<SIZE; x++){
+        var v = grid[y][x];
+        if(v==='B') board.addObject({x:x, y:y, c:WGo.B});
+        if(v==='W') board.addObject({x:x, y:y, c:WGo.W});
+      }
+    }
+    if (lastMove && highlightLastEnabled) board.addObject({x:lastMove.x, y:lastMove.y, type:'CR'});
   }
+
+  function createBoard(){
+    if (board || !window.WGo) return;
+    board = new WGo.Board(mount, { size: SIZE, background: '' });
+    ensureZoomLayer();
+    fitBoard();
+    redrawBoard();
+    bindClicks();
+    
+    exitBtn.addEventListener('click', function(e){
+      e.stopPropagation();
+      smoothZoomOutAndExit();
+    });
+
+    window.addEventListener('resize', fitBoard);
+    window.addEventListener('orientationchange', () => setTimeout(fitBoard, 150));
+  }
+
+  function fitBoard(){
+    if (isFullscreen) return; 
+    var w = wrap.getBoundingClientRect().width;
+    w = Math.floor(w); if(w%2) w--;
+    baseW = w;
+    mount.style.width = w+'px';
+    mount.style.height = w+'px';
+    applyPanAndSize(true);
+  }
+
+  function initWhenReady(){
+    var tries = 0;
+    (function wait(){
+      if (window.WGo) createBoard();
+      else if (tries++ < 120) setTimeout(wait, 50);
+    })();
+  }
+
+  window.addEventListener('load', initWhenReady);
 })();
 </script>
-
 </body>
 </html>
-
-
-
-
-
