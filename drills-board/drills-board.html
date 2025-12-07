@@ -962,11 +962,8 @@ function ensureTimerEl(){
       layer.style.position = 'absolute';
       layer.style.left = '0';
       layer.style.top  = '0';
-
-      // Avoid right/bottom constraints because we later set explicit width/height
-      layer.style.width  = '100%';
-      layer.style.height = '100%';
-
+      layer.style.right = '0';
+      layer.style.bottom = '0';
       layer.style.backgroundImage = "url('https://3d85c7a311526e02aeeeb19e952d0c09.cdn.bubble.io/f1755870506985x437178801728222500/wood.jpg')";
       layer.style.backgroundSize = 'cover';
       layer.style.backgroundPosition = 'center';
@@ -1376,7 +1373,7 @@ function clampPan(){
 }
 
   function applyPanAndSize(redrawAfter){
-    if (!mount) return;
+    if (!board || !mount) return;
 
     const { vw, vh } = viewportSize();
     let targetW;
@@ -1388,38 +1385,14 @@ function clampPan(){
       mount.style.width  = '100vw';
       mount.style.height = '100vh';
     } else {
-      targetW = Math.floor(vw);
-      if (targetW % 2) targetW--;
-      baseW = targetW;
+  targetW = Math.floor(vw);
+  if (targetW % 2) targetW--;
+  baseW = targetW;
 
-      mount.style.width  = targetW + 'px';
-      mount.style.height = targetW + 'px';
-    }
-
-    if (targetW <= 0) return;
-
-    // Only call WGo APIs if the board exists
-    if (board && board._lastW !== targetW){
-      board.setWidth(targetW);
-      board._lastW = targetW;
-    }
-
-    // Keep zoomLayer sized even during early init or transitions
-    if (zoomLayer){
-      zoomLayer.style.width  = targetW + 'px';
-      zoomLayer.style.height = targetW + 'px';
-    }
-
-    clampPan();
-
-    if (zoomLayer){
-      zoomLayer.style.transform =
-        'translate3d(' + (-offsetX) + 'px,' + (-offsetY) + 'px,0) scale(' + scale + ')';
-    }
-
-    if (redrawAfter && board) redraw();
-  }
-
+  /* core-style: mount is an explicit square */
+  mount.style.width  = targetW + 'px';
+  mount.style.height = targetW + 'px';
+}
 
 
     if (targetW <= 0) return;
@@ -1535,10 +1508,7 @@ function centerZoomAtGrid(i, j, factor, tapClientX, tapClientY){
 
 function enterFullscreenAtGrid(i, j, tapClientX, tapClientY){
   if (isFullscreen) return;
-
-  if (!board) initBoard(); // ensure WGo boot is underway
   if (!zoomLayer) zoomLayer = mount.__woodLayer || mount;
-
 
   ensureOverlay();
   prevOverflow = document.documentElement.style.overflow || "";
