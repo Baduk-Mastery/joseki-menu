@@ -621,9 +621,14 @@ function getGridSpacing(){
       layer.style.backgroundImage = "url('https://3d85c7a311526e02aeeeb19e952d0c09.cdn.bubble.io/f1755870506985x437178801728222500/wood.jpg')";
       layer.style.backgroundSize = 'cover';
       layer.style.backgroundPosition = 'center';
-      layer.style.backgroundRepeat = 'no-repeat';
-      layer.style.willChange = 'left, top, width, height';
-      mount.appendChild(layer);
+layer.style.backgroundRepeat = 'no-repeat';
+
+/* match core zoom layer behavior */
+layer.style.transformOrigin = '0 0';
+layer.style.willChange = 'transform';
+
+mount.appendChild(layer);
+
 
       function moveChildrenIntoLayer(){
         const kids = Array.from(mount.childNodes).filter(n => n !== layer);
@@ -905,18 +910,25 @@ function getGridSpacing(){
     }
   }
 
-  function viewportSize(){
-    if (isFullscreen){
-      const vw = window.innerWidth  || document.documentElement.clientWidth  || 800;
-      const vh = window.innerHeight || document.documentElement.clientHeight || 800;
-      return { vw, vh };
-    }
-    const rect = mount.getBoundingClientRect();
-    const wrapW = wrap.getBoundingClientRect().width || wrap.clientWidth || rect.width || 400;
-    const vw = rect.width || wrapW;
-    const vh = rect.width || wrapW; // board is square
+function viewportSize(){
+  if (isFullscreen){
+    const vw = window.innerWidth  || document.documentElement.clientWidth  || 800;
+    const vh = window.innerHeight || document.documentElement.clientHeight || 800;
     return { vw, vh };
   }
+
+  const rect = mount.getBoundingClientRect();
+  const wrapRect = wrap ? wrap.getBoundingClientRect() : rect;
+  const wrapW =
+    (wrapRect && wrapRect.width) ||
+    (wrap && wrap.clientWidth) ||
+    rect.width ||
+    400;
+
+  // board area is square
+  return { vw: wrapW, vh: wrapW };
+}
+
 
   function clampPan(){
     if (!board || scale <= 1){
@@ -1021,22 +1033,23 @@ function animateTo(targetScale, pxBoard, pyBoard, sxTarget, syTarget){
   cancelFling();
 
   const s0  = scale;
+  const ox0 = offsetX;
+  const oy0 = offsetY;
   const t0  = performance.now();
   const dur = 260;
+
+  // match core: keep chosen board point under target screen point
+  const targetOX = pxBoard * targetScale - sxTarget;
+  const targetOY = pyBoard * targetScale - syTarget;
 
   function step(now){
     let t = (now - t0) / dur;
     if (t > 1) t = 1;
     const ease = 1 - Math.pow(1 - t, 3);
-    const s = s0 + (targetScale - s0) * ease;
 
-    // New zoom level
-    scale = s;
-
-    // Keep the chosen board point at sxTarget / syTarget
-    // screen = (board - offset) * scale  =>  offset = board - screen/scale
-    offsetX = pxBoard - (sxTarget / s);
-    offsetY = pyBoard - (syTarget / s);
+    scale   = s0  + (targetScale - s0) * ease;
+    offsetX = ox0 + (targetOX - ox0) * ease;
+    offsetY = oy0 + (targetOY - oy0) * ease;
 
     applyPanAndSize(false);
 
@@ -1113,11 +1126,18 @@ function centerZoomAtGrid(i, j, factor, tapClientX, tapClientY){
       returnAnchor = null;
     }
 
-    document.documentElement.style.overflow = prevOverflow;
-    scale = 1;
-    offsetX = 0;
-    offsetY = 0;
-    applyPanAndSize(true);
+document.documentElement.style.overflow = prevOverflow;
+
+// important: remove fullscreen inline sizing first
+mount.style.width = '';
+mount.style.height = '';
+
+scale = 1;
+offsetX = 0;
+offsetY = 0;
+
+applyPanAndSize(true);
+
   }
 
   function beginPan(e){
@@ -1263,9 +1283,10 @@ const rect = mount.getBoundingClientRect();
 const sx = e.clientX - rect.left;
 const sy = e.clientY - rect.top;
 
-// screen → board: s = scale * (p - offset)  =>  p = s/scale + offset
-const boardX = sx / scale + offsetX;
-const boardY = sy / scale + offsetY;
+// match core math (offset is treated in screen-space)
+const boardX = (sx + offsetX) / scale;
+const boardY = (sy + offsetY) / scale;
+
 
 
     const bounds = getBoardBounds();
