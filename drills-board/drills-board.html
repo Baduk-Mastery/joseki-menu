@@ -2,612 +2,703 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <title>Joseki Master – Drills Board</title>
+  <title>Joseki Master – Drills</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-
   <style>
- html, body{
-  margin:0;
-  padding:0;
-  height:100%;
-  min-height:100%;
-  font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
-  background-color:#1b1208;
-  overscroll-behavior:none;
-}
-/* Core-style fullscreen centering + wood background for Drills */
-#drill-root{
-  --wood:url('../img/wood.jpg');
-  position:absolute;
-  inset:0;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  padding:16px 0 22px;
-  box-sizing:border-box;
+  html, body{
+    margin:0;
+    padding:0;
+    min-height:100%;
+    font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
 
-  background-color:#1b1208;
-  background-image:
-    linear-gradient(rgba(0,0,0,.35), rgba(0,0,0,.45)),
-    var(--wood);
-  background-size:cover;
-  background-position:center;
-  background-repeat:no-repeat;
-}
+    /* Use the same wood background as the rest of the app */
+    background-image:
+      linear-gradient(rgba(0,0,0,.35), rgba(0,0,0,.45)),
+      url('../img/wood.jpg');
+    background-size:cover;
+    background-position:center;
+    background-repeat:no-repeat;
 
-/* Match Practice wrapper behavior */
-#drill-inner{
-  width:100%;
-  max-width:720px;
-  margin:0 auto;
-  box-sizing:border-box;
-}
-
-/* Keep wrapper simple so it doesn't double-cap width */
-#go-board-drill-wrap{
-  width:100%;
-  margin:0 auto;
-  box-sizing:border-box;
-}
-
-/* Same mobile padding logic as Practice */
-@media (max-width: 480px){
-  #drill-inner{
-    padding:8px 12px 0;
-  }
-}
-
-
-    /* we don’t hide the wrapper via data-hidden now, so it’s always visible */
-    #go-board-drill canvas{ display:block; margin:0 auto; }
-
-    .prac-ctrls{
-      max-width:720px; margin:10px auto 0;
-      padding:8px 12px; display:flex; gap:10px; justify-content:center; flex-wrap:wrap;
-    }
-    .pbtn{
-      padding:12px 16px; border-radius:12px; border:1px solid #cbd5e1;
-      background:#fff; font-weight:800; font-size:15px; color:#0f172a;
-      cursor:pointer; box-shadow:0 2px 8px rgba(15,23,42,.06);
-    }
-    .pbtn:active{ transform:translateY(1px); }
-    .pbtn-strong{ background:#111827; color:#fff; border-color:#111827; }
-    .pbtn-alt{ background:#e7f0ff; color:#0b4aa2; border-color:#a7c1ff; }
-
-#blitz-timer{
-  margin-left:auto;
-  display:inline-flex;
-  align-items:center;
-  justify-content:center;
-
-  /* keep the size you wanted */
-  padding:6px 12px;
-  border-radius:8px;
-
-  /* lock width so 10.0s -> 9.9s doesn't shrink */
-  min-width:7ch;
-
-  white-space:nowrap;
-  text-align:center;
-
-  /* chip styling (not a wood button) */
-  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-  font-weight:900;
-  font-size:14px;
-  line-height:1.1;
-  letter-spacing:0.5px;
-
-  color:#fff3cf;
-  text-shadow:0 1px 0 rgba(0,0,0,.35);
-
-  background:
-    linear-gradient(
-      to bottom,
-      rgba(255,255,255,.10),
-      rgba(0,0,0,.18)
-    ),
-    rgba(0,0,0,.28);
-
-  border:1px solid rgba(255,255,255,.35);
-
-  box-shadow:
-    inset 0 1px 0 rgba(255,255,255,.12),
-    0 4px 10px rgba(0,0,0,.35);
-
-  cursor:default;
-  user-select:none;
-  -webkit-user-select:none;
-  -webkit-tap-highlight-color:transparent;
-}
-
-/* class kept for clarity/future tweaks */
-.blitz-chip{ }
-
-
-  </style>
-<style>
-/* =========================
-   Practice-style Back + Controls for Drills
-   ========================= */
-
-#drill-topbar{
-  max-width:720px;
-  width:100%;
-  margin:16px auto 10px;
-  padding:0;
-  box-sizing:border-box;
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  gap:10px;
-}
-
-
-
-/* Wood-style Back button – copied from Practice */
-.s-back{
-  position:relative;
-  display:inline-flex;
-  align-items:center;
-  justify-content:center;
-  gap:6px;
-
-  padding:6px 12px;
-  border-radius:8px;
-  border:1px solid rgba(255,255,255,.40);
-
-  font-size:14px;
-  font-weight:800;
-  line-height:1.1;
-  color:#fff3cf;
-  text-shadow:0 1px 0 rgba(120,60,20,.7);
-  cursor:pointer;
-
-  user-select:none;
-  -webkit-user-select:none;
-  -moz-user-select:none;
-  -ms-user-select:none;
-  -webkit-tap-highlight-color:transparent;
-
-  background-image:
-    linear-gradient(
-      to bottom,
-      rgba(255,255,255,.12),
-      rgba(255,255,255,.03) 38%,
-      rgba(0,0,0,.14) 100%
-    ),
-    url('../img/wood.jpg');
-  background-size:100% 100%, cover;
-  background-position:center;
-  background-repeat:no-repeat;
-
-  filter:brightness(1.08) saturate(.96);
-
-  box-shadow:
-    0 3px 0 rgba(133,74,26,.85),
-    0 8px 14px rgba(0,0,0,.45);
-
-  transition:
-    transform .08s ease-out,
-    box-shadow .08s ease-out,
-    filter .12s ease-out;
-}
-
-.s-back:hover{
-  filter:brightness(1.12) saturate(.98);
-  transform:translateY(-1px);
-  box-shadow:
-    0 4px 0 rgba(133,74,26,.9),
-    0 10px 16px rgba(0,0,0,.48);
-}
-
-.s-back:active{
-  filter:brightness(.97) saturate(.96);
-  transform:translateY(2px);
-  box-shadow:
-    0 1px 0 rgba(120,60,20,.9),
-    0 4px 8px rgba(0,0,0,.55);
-}
-
-/* Drill controls container – match Practice spacing */
-#drill-ctrls{
-  max-width: 720px;
-  width: 100%;
-  box-sizing: border-box;
-  margin: 14px auto 0;
-  padding: 0 12px 18px;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  gap: 12px;
-  flex-wrap: wrap;
-}
-
-#drill-ctrls .pbtn,
-#drill-ctrls .pbtn-strong,
-#drill-ctrls .pbtn-alt{
-  position: relative;
-  min-width: 90px;
-  padding: 8px 24px;
-
-  /* Approx. same width as if there were 3 buttons on the line */
-  flex: 0 1 calc((100% - 24px) / 3);
-  max-width: 240px;
-
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-sizing: border-box;
-
-  text-align: center;
-
-  border-radius: 10px;
-  border: 1px solid rgba(255,255,255,.40);
-
-  font-size: 16px;
-  font-weight: 800;
-  line-height: 1.1;
-  color: #fff3cf;
-  text-shadow: 0 1px 0 rgba(120,60,20,.7);
-  cursor: pointer;
-
-  user-select: none;
-  -webkit-user-select: none;
-  -moz-user-select: none;
-  -ms-user-select: none;
-  -webkit-tap-highlight-color: transparent;
-
-  background-image:
-    linear-gradient(
-      to bottom,
-      rgba(255,255,255,.12),
-      rgba(255,255,255,.03) 38%,
-      rgba(0,0,0,.14) 100%
-    ),
-    url('../img/wood.jpg');
-  background-size: 100% 100%, cover;
-  background-position: center;
-  background-repeat: no-repeat;
-
-  filter: brightness(1.08) saturate(.96);
-
-  box-shadow:
-    0 3px 0 rgba(133,74,26,.85),
-    0 8px 14px rgba(0,0,0,.45);
-
-  transition:
-    transform .08s ease-out,
-    box-shadow .08s ease-out,
-    filter .12s ease-out;
-}
-
-
-#drill-ctrls .pbtn:hover{
-  filter: brightness(1.12) saturate(.98);
-  transform: translateY(-1px);
-  box-shadow:
-    0 4px 0 rgba(133,74,26,.9),
-    0 10px 16px rgba(0,0,0,.48);
-}
-
-#drill-ctrls .pbtn:active{
-  filter: brightness(.97) saturate(.96);
-  transform: translateY(2px);
-  box-shadow:
-    0 1px 0 rgba(120,60,20,.9),
-    0 4px 8px rgba(0,0,0,.55);
-}
-
-#drill-ctrls .pbtn:focus-visible{
-  outline: 2px solid rgba(255,255,255,.9);
-  outline-offset: 2px;
-}
-/* === Drills bottom bar alignment fix ===
-   Next stays dead-center, progress aligns to board-right */
-#drill-ctrls{
-  display: grid;
-  grid-template-columns: 1fr auto 1fr;
-  align-items: center;
-  gap: 0;
-
-  /* keep your existing sizing/spacing intent */
-  max-width: 720px;
-  width: 100%;
-  margin: 14px auto 0;
-  padding: 0 12px 18px;
-  box-sizing: border-box;
-}
-
-/* Center column */
-#drill-ctrls #dbtn-next{
-  grid-column: 2;
-  justify-self: center;
-  width: auto;
-}
-
-/* Right column */
-#drill-ctrls #drill-progress{
-  grid-column: 3;
-  justify-self: end;
-  text-align: right;
-  min-width: 60px;
-}
-
-/* Neutralize the "3 buttons per row" sizing for this bar */
-#drill-ctrls .pbtn,
-#drill-ctrls .pbtn-strong,
-#drill-ctrls .pbtn-alt{
-  flex: initial;
-  max-width: none;
-  min-width: 0;
-}
-
-</style>
-
-<style>
-  /* Fullscreen zoom overlay for drills (Practice-style zoom) */
-  #go-zoom-overlay-drill{
-    position:fixed;
-    inset:0;
-    z-index:99998;
-    display:none;
-    align-items:center;
-    justify-content:center;
-    background:transparent;
-    -webkit-tap-highlight-color:transparent;
-    touch-action:none;
-  }
-
-  #go-zoom-stage-drill{
-    width:100vw;
-    height:100vh;
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    touch-action:none;
-  }
-
-  #go-zoom-exit-drill{
-    position:fixed;
-    left:14px;
-    bottom:90px;
-    width:120px;
-    height:80px;
-    border-radius:9px;
-
-    background:rgba(148,163,184,.35);
-    border:1px solid rgba(148,163,184,.85);
-    box-shadow:0 6px 16px rgba(0,0,0,.55);
-
-    display:none;
-    cursor:pointer;
-    z-index:99999;
-    backdrop-filter:blur(2px);
-    -webkit-tap-highlight-color:transparent;
-  }
-
-  #go-zoom-exit-drill::before{
-    content:"";
+    /* No black fullscreen background */
+    overscroll-behavior:none;
   }
 </style>
 
 </head>
 <body>
 
-<!-- ================= DRILL BOARD (adds Blitz mode) ================= -->
-<div id="drill-root">
-  <div id="drill-inner">
+<noscript>
+  <p>
+    JavaScript is required to use Drills.
+    <a href="../joseki-menu/index.html">Back to menu</a>
+  </p>
+</noscript>
 
- <!-- Top bar (Practice-style Back placement) -->
-<div id="drill-topbar">
-  <button id="dbtn-menu" class="s-back" type="button" aria-label="Back">← Back</button>
-</div>
-
-<div id="go-board-drill-wrap">
-  <div id="go-board-drill"
-       style="position:relative;width:100%;border-radius:6px;overflow:hidden;box-shadow:
-        0 18px 40px rgba(0,0,0,.32),
-        0 6px 16px rgba(0,0,0,.22);">
-
-    <!-- Blitz timer (created by JS if needed) -->
-  </div>
-
-  <!-- Bottom controls: keep Next + progress -->
-  <div id="drill-ctrls" class="prac-ctrls">
-    <button id="dbtn-next" class="pbtn pbtn-alt" type="button">Next</button>
-    <div id="drill-progress" style="font-weight:800;opacity:.9;">1 / 1</div>
-  </div>
-</div>
-
-
-  </div>
-</div>
-
-<!-- Wrong Move (drill) -->
-<div id="drill-wrong" style="display:none;position:fixed;inset:0;z-index:99999;align-items:center;justify-content:center;">
-  <div style="position:absolute;inset:0;background:rgba(0,0,0,.55);"></div>
-  <div style="position:relative;z-index:1;background:#fff;border:1px solid #e2e8f0;border-radius:10px;box-shadow:0 12px 28px rgba(15,23,42,.18);width:min(86vw,420px);padding:16px;text-align:center;font-family:system-ui,Segoe UI,Arial,sans-serif;color:#0f172a;">
-    <div style="font-weight:800;font-size:18px;margin-bottom:2px;">Wrong</div>
-  </div>
-</div>
-
-<!-- Drill Cleared (auto-dismiss) -->
-<div id="drill-cleared" style="display:none;position:fixed;inset:0;z-index:99999;align-items:center;justify-content:center;">
-  <div style="position:absolute;inset:0;background:rgba(0,0,0,.55);"></div>
-  <div style="position:relative;z-index:1;background:#fff;border:1px solid #e2e8f0;border-radius:10px;box-shadow:0 12px 28px rgba(15,23,42,.18);width:min(86vw,420px);padding:16px;text-align:center;font-family:system-ui,Segoe UI,Arial,sans-serif;color:#0f172a;">
-    <div style="font-weight:800;font-size:18px;margin-bottom:2px;">Cleared</div>
-  </div>
-</div>
-
-<!-- All Done -->
-<div id="drill-done" style="display:none;position:fixed;inset:0;z-index:99999;align-items:center;justify-content:center;">
-  <div style="position:absolute;inset:0;background:rgba(0,0,0,.55);"></div>
-  <div style="position:relative;z-index:1;background:#fff;border:1px solid #e2e8f0;border-radius:10px;box-shadow:0 12px 28px rgba(15,23,42,.18);width:min(86vw,460px);padding:16px;text-align:center;font-family:system-ui,Segoe UI,Arial,sans-serif;color:#0f172a;">
-    <div id="drill-done-title" style="font-weight:800;font-size:18px;margin-bottom:8px;">All Drills Complete</div>
-
-    <!-- Stats block -->
-    <div id="drill-stats" style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin:6px 0 10px;">
-      <div style="border:1px solid #e2e8f0;border-radius:10px;padding:10px 14px;min-width:140px;">
-        <div style="font-weight:800;opacity:.8;margin-bottom:2px;">Solved</div>
-        <div id="drill-stat-solved" style="font-weight:900;font-size:22px;line-height:1;">0</div>
-      </div>
-      <div style="border:1px solid #e2e8f0;border-radius:10px;padding:10px 14px;min-width:140px;">
-        <div style="font-weight:800;opacity:.8;margin-bottom:2px;">Failed</div>
-        <div id="drill-stat-failed" style="font-weight:900;font-size:22px;line-height:1;">0</div>
-      </div>
-    </div>
-
-    <!-- Message BELOW the stats -->
-    <div id="drill-done-msg" style="color:#334155;margin-bottom:14px;">Session finished. You can retry the set or go back to selection.</div>
-
-    <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap;">
-      <button id="drill-done-back"  style="padding:8px 14px;border-radius:8px;border:1px solid #cbd5e1;background:#e7f0ff;color:#0b4aa2;font-weight:700;cursor:pointer;">Back to selection</button>
-      <button id="drill-done-retry" style="padding:8px 14px;border-radius:8px;border:1px solid #cbd5e1;background:#f1f5f9;color:#0f172a;font-weight:700;cursor:pointer;">Retry set</button>
-    </div>
-  </div>
-</div>
-
-<!-- Run Cap overlay -->
-<div id="drill-cap" style="display:none;position:fixed;inset:0;z-index:100000;align-items:center;justify-content:center;">
-  <div style="position:absolute;inset:0;background:rgba(0,0,0,.55);"></div>
-  <div style="position:relative;z-index:1;background:#fff;border:1px solid #e2e8f0;border-radius:10px;box-shadow:0 12px 28px rgba(15,23,42,.18);width:min(86vw,460px);padding:16px;text-align:center;font-family:system-ui,Segoe UI,Arial,sans-serif;color:#0f172a;">
-    <div style="font-weight:800;font-size:18px;margin-bottom:8px;">Limit Reached</div>
-    <div style="color:#334155;margin-bottom:14px;">You’ve reached your current drills limit.</div>
-    <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap;">
-      <button id="drill-cap-ok" style="padding:8px 14px;border-radius:8px;border:1px solid #cbd5e1;background:#f1f5f9;color:#0f172a;font-weight:700;cursor:pointer;">OK</button>
-    </div>
-  </div>
-</div>
-
-<!-- WGo (if not already loaded) -->
+<!-- Simple global menu bridge for back navigation -->
 <script>
-if (!window.WGo) {
-  var s = document.createElement('script');
-  s.src = "https://3d85c7a311526e02aeeeb19e952d0c09.cdn.bubble.io/f1754893285939x971907393576095400/wgo.min.js";
-  s.async = true;
-  document.head.appendChild(s);
-}
+  window.GoMenu = window.GoMenu || {
+    open: function(){
+      // From /drills/drills.html go back to main menu
+      window.location.href = "../joseki-menu/index.html";
+    },
+    close: function(){
+      // No-op on this page
+    }
+  };
 </script>
 
-<!-- Sound bridge (respects Settings → Sound) -->
-<script>
-if (!window.StoneSFX) {
-  window.StoneSFX = (() => {
-    let pool = [], i = 0, unlocked = false;
-    function init(url, voices = 5, volume = 0.35){
-      pool = Array.from({ length: voices }, () => {
-        const a = new Audio(url); a.preload = 'auto'; a.volume = volume; return a;
-      });
-      const unlock = () => {
-        if (unlocked) return;
-        for (const a of pool) { try { a.play().then(()=>a.pause()).catch(()=>{}); a.currentTime = 0; } catch(e){} }
-        unlocked = true;
-        window.removeEventListener('touchstart', unlock);
-        window.removeEventListener('mousedown',  unlock);
-      };
-      window.addEventListener('touchstart', unlock, { once:true });
-      window.addEventListener('mousedown',  unlock, { once:true });
-    }
-    function play(){ if (!pool.length) return; const a = pool[i++ % pool.length]; try { a.currentTime=0; a.playbackRate=0.97+Math.random()*0.06; a.play(); } catch(e){} }
-    return { init, play };
-  })();
-  StoneSFX.init("https://3d85c7a311526e02aeeeb19e952d0c09.cdn.bubble.io/f1754926303439x491369894441766600/klick.mp3");
-}
-(function bridgeSoundSetting(){
-  if (window._drillSoundInit) return;
-  window._drillSoundInit = true;
-  if (typeof StoneSFX.play === 'function' && !('_enabled' in StoneSFX)){
-    StoneSFX._enabled = (window.GoPrefs ? !!window.GoPrefs.soundOn : true);
-    const _orig = StoneSFX.play.bind(StoneSFX);
-    StoneSFX.play = function(){ if (StoneSFX._enabled) _orig(); };
+<!-- ============== DRILLS ROOT ============== -->
+<div id="drills-root">
+  <!-- Drills overlay -->
+  <div id="drills-overlay" aria-modal="true" role="dialog" style="display:none">
+    <div class="s-inner">
+      <div class="s-header">
+        <button id="drills-back" class="s-back" type="button" aria-label="Back">← Back</button>
+        <h1 class="s-title">Drills</h1>
+      </div>
+
+      <!-- Mode chooser (first layer) -->
+      <div id="drills-mode-view" style="display:none">
+        <div class="s-card info" style="margin-top:6px">
+          <div class="info-title">Choose a mode</div>
+          <div class="info-desc">Pick how you want to practice.</div>
+        </div>
+        <div class="drill-grid" id="drills-mode-grid">
+          <button class="s-card drill-card" data-mode="complete" type="button" aria-label="Complete mode">
+            <div class="drill-meta">
+              <div class="drill-title">Complete</div>
+              <div class="drill-cta"><span class="s-btn">Choose</span></div>
+            </div>
+          </button>
+
+          <button class="s-card drill-card" data-mode="blitz" type="button" aria-label="Blitz mode">
+            <div class="drill-meta">
+              <div class="drill-title">Blitz</div>
+              <div class="drill-cta"><span class="s-btn">Choose</span></div>
+            </div>
+          </button>
+        </div>
+      </div>
+
+      <!-- Short description card (compact) -->
+      <div class="s-card info" id="drills-intro">
+        <div class="info-title">How Complete drills work</div>
+        <div class="info-desc">
+          Complete drills drop you into a random point of each selected joseki/pattern (10+ moves only). Three drills per joseki, with random corner and color. Your task: finish the sequence correctly.
+        </div>
+      </div>
+
+      <!-- Options (first screen for COMPLETE/BLITZ) -->
+      <div class="drill-grid" id="drills-options">
+        <button class="s-card drill-card" data-type="library" type="button" aria-label="Drills from Library Josekis">
+          <div class="drill-meta">
+            <div class="drill-title">From Library Josekis</div>
+            <div class="drill-cta"><span class="s-btn">Choose</span></div>
+          </div>
+        </button>
+
+        <button class="s-card drill-card" data-type="favorites" type="button" aria-label="Drills from Favorites">
+          <div class="drill-meta">
+            <div class="drill-title">From Favorites</div>
+            <div class="drill-cta"><span class="s-btn">Choose</span></div>
+          </div>
+        </button>
+
+        <button class="s-card drill-card" data-type="own" type="button" aria-label="Drills from My Patterns">
+          <div class="drill-meta">
+            <div class="drill-title">From My Patterns</div>
+            <div class="drill-cta"><span class="s-btn">Choose</span></div>
+          </div>
+        </button>
+      </div>
+
+      <!-- LIBRARY (Categories + Variations) -->
+      <div id="drills-lib-view" style="display:none">
+        <div class="s-card info" id="drill-lib-info" style="margin-top:6px">
+          <div class="info-title">Select a category</div>
+          <div class="info-desc">Grouped by the first two moves. Tap a category to pick josekis (10+ moves).</div>
+        </div>
+        <div class="drill-list-grid" id="drill-lib-grid"></div>
+        <div class="drill-actions">
+          <button class="s-btn floating-clear" id="drill-lib-clear"  type="button">Clear</button>
+          <div class="drill-count" id="drill-lib-count" aria-live="polite">0 selected</div>
+        </div>
+      </div>
+
+      <!-- FAVORITES SELECTION -->
+      <div id="drills-fav-view" style="display:none">
+        <div class="s-card info" style="margin-top:6px">
+          <div class="info-title">Select favorite josekis</div>
+          <div class="info-desc">Tap cards to toggle ✓. Shows your starred josekis (10+ moves).</div>
+        </div>
+        <div class="drill-list-grid" id="drill-fav-grid"></div>
+        <div class="drill-actions">
+          <button class="s-btn floating-clear" id="drill-fav-clear"  type="button">Clear</button>
+          <div class="drill-count" id="drill-fav-count" aria-live="polite">0 selected</div>
+        </div>
+      </div>
+
+      <!-- MY PATTERNS SELECTION -->
+      <div id="drills-own-view" style="display:none">
+        <div class="s-card info" style="margin-top:6px">
+          <div class="info-title">Select your patterns</div>
+          <div class="info-desc">Tap cards to toggle ✓. Only patterns with 10+ moves are listed.</div>
+        </div>
+        <div class="drill-list-grid" id="drill-own-grid"></div>
+        <div class="drill-actions">
+          <button class="s-btn floating-clear" id="drill-own-clear"  type="button">Clear</button>
+          <div class="drill-count" id="drill-own-count" aria-live="polite">0 selected</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Centered notice (OK-only) -->
+  <div id="drills-notice" role="alert" aria-live="polite" style="display:none">
+    <div class="s-inner">
+      <div class="s-card drills-notice-card">
+        <div class="info-title" id="drills-notice-title">Heads up</div>
+        <div class="info-desc" id="drills-notice-text">You can add a maximum of 10 patterns.</div>
+        <div class="actions" style="margin-top:12px;">
+          <button id="drills-notice-ok" class="s-btn s-btn-lg" type="button" aria-label="Close">OK</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+  /* Scope to this element */
+  #drills-root{
+    /* Use your local wood texture (same as other pages) */
+    --wood:url('../img/wood.jpg');
+    --maxw:720px;
+    color:#e6f3ff;
   }
-  window.JosekiSound = window.JosekiSound || {
-    isEnabled(){ return !!StoneSFX._enabled; },
-    setEnabled(v){ StoneSFX._enabled = !!v; }
-  };
-})();
 
-(function DrillBoardMount(){
-  const SGF_URL = "../sgf/library-1.sgf";  // same as drills.html
-  const MIN_MOVES = 10;
+  /* Overlay shell */
+#drills-root #drills-overlay{
+  position:fixed;
+  inset:0;
+  z-index:100000;
+  display:none;
 
-  /* ===== Plan helpers (match drills list) ===== */
-  var Tier = window.Tier || {
-    get: function(){
-      try {
-        return (localStorage.getItem('go_tier') || 'free').toLowerCase();
-      } catch(e){
-        return 'free';
-      }
+  /* Overlay itself does NOT scroll */
+  overflow:hidden;
+
+  display:flex;
+  align-items:stretch;
+  justify-content:center;
+
+  /* Wood margin only at the bottom (matches Practice list fix) */
+  padding:0 0 12px 0;
+  box-sizing:border-box;
+
+  background-image:
+    linear-gradient(rgba(0,0,0,.35), rgba(0,0,0,.45)),
+    var(--wood);
+  background-size:cover;
+  background-position:center;
+
+  /* keep scroll bounce inside overlay, but no white/black background peeking through */
+  overscroll-behavior:contain;
+}
+
+
+#drills-root .s-inner{
+  width:min(92vw,var(--maxw));
+  height:100%;
+  max-height:100%;
+  margin:0 auto;
+
+  padding:16px 24px 22px;
+  text-align:left;
+  position:relative;
+  box-sizing:border-box;
+
+  /* This is the only scrollable area */
+  overflow:auto;
+  -webkit-overflow-scrolling:touch;
+}
+
+  #drills-root .s-header{
+    display:grid; grid-template-columns:auto 1fr; align-items:center; column-gap:14px; margin:6px 0 10px;
+  }
+  #drills-root .s-title{
+    margin:0; font-size:24px; line-height:1.15; font-weight:800; text-shadow:0 1px 2px rgba(0,0,0,.35);
+  }
+
+  /* Cards: same blue look as Practice .s-card */
+  #drills-root .s-card{
+    background: rgba(37,99,235,.22);
+    color:#e6f3ff;
+    border:2px solid rgba(37,99,235,.75);
+    border-radius:12px;
+    box-shadow:0 8px 20px rgba(2,6,23,.45), inset 0 0 0 1px rgba(255,255,255,.08);
+    padding:12px;
+    box-sizing:border-box;
+    overflow:hidden;
+  }
+
+  #drills-root .info-title{ font-weight:900; font-size:16px; margin-bottom:4px; }
+  #drills-root .info-desc{ font-size:13px; line-height:1.5; opacity:.96; }
+
+  /* Wood-style buttons – match Practice list (.s-back / .s-btn) */
+  #drills-root .s-back,
+  #drills-root .s-btn{
+    position:relative;
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    gap:6px;
+
+    padding:8px 18px;
+    border-radius:10px;
+    border:1px solid rgba(255,255,255,.40);
+
+    font-size:16px;
+    font-weight:800;
+    line-height:1.1;
+    color:#fff3cf;
+    text-shadow:0 1px 0 rgba(120,60,20,.7);
+    cursor:pointer;
+
+    user-select:none;
+    -webkit-user-select:none;
+    -moz-user-select:none;
+    -ms-user-select:none;
+    -webkit-tap-highlight-color:transparent;
+
+    background-image:
+      linear-gradient(
+        to bottom,
+        rgba(255,255,255,.12),
+        rgba(255,255,255,.03) 38%,
+        rgba(0,0,0,.14) 100%
+      ),
+      var(--wood);
+    background-size:100% 100%, cover;
+    background-position:center;
+    background-repeat:no-repeat;
+
+    filter:brightness(1.08) saturate(.96);
+
+    box-shadow:
+      0 3px 0 rgba(133,74,26,.85),
+      0 8px 14px rgba(0,0,0,.45);
+
+    transition:
+      transform .08s ease-out,
+      box-shadow .08s ease-out,
+      filter .12s ease-out;
+  }
+
+  #drills-root .s-back:hover,
+  #drills-root .s-btn:hover{
+    filter:brightness(1.12) saturate(.98);
+    transform:translateY(-1px);
+    box-shadow:
+      0 4px 0 rgba(133,74,26,.9),
+      0 10px 16px rgba(0,0,0,.48);
+  }
+
+  #drills-root .s-back:active,
+  #drills-root .s-btn:active{
+    filter:brightness(.97) saturate(.96);
+    transform:translateY(2px);
+    box-shadow:
+      0 1px 0 rgba(120,60,20,.9),
+      0 4px 8px rgba(0,0,0,.55);
+  }
+
+  /* Larger variant (Start / OK buttons) */
+  #drills-root .s-btn.s-btn-lg{
+    padding:10px 22px;
+    font-size:16px;
+  }
+
+  /* Slimmer header back button like Practice list */
+  #drills-root .s-header .s-back{
+    padding:6px 12px;
+    font-size:14px;
+    border-radius:8px;
+  }
+
+
+  /* Options grid */
+  #drills-root .drill-grid{ display:grid; grid-template-columns:1fr; gap:12px; margin-top:14px; }
+  @media (min-width: 720px){ #drills-root .drill-grid{ grid-template-columns:1fr 1fr; } }
+
+  /* Option card layout */
+  #drills-root .drill-card{
+    display:flex; align-items:center; gap:12px; width:100%; text-align:left; padding:10px; cursor:pointer;
+    transition:transform .06s, background .15s; user-select:none; -webkit-user-select:none;
+  }
+  #drills-root .drill-card:active{ transform:translateY(1px); }
+  #drills-root .drill-meta{ flex:1; min-width:0; }
+  #drills-root .drill-title{ font-weight:800; font-size:18px; line-height:1.3; }
+  /* Remove per-card descriptions across Drills UI */
+  #drills-root .drill-desc, #drills-root .joseki-desc{ display:none !important; }
+  #drills-root .drill-cta{ margin-top:10px; display:flex; flex-wrap:wrap; gap:8px; }
+  /* Make 'Choose' buttons fill and center like Practice 'Open' buttons */
+  #drills-root #drills-mode-view .drill-cta .s-btn,
+  #drills-root #drills-options .drill-cta .s-btn{
+    flex:1 1 auto;
+    justify-content:center;
+  }
+
+
+  /* Lists (Library, Favorites, Own) */
+  #drills-root .drill-list-grid{
+    display:grid; grid-template-columns:1fr; gap:12px; margin-top:12px;
+  }
+  @media (min-width: 720px){ #drills-root .drill-list-grid{ grid-template-columns:1fr 1fr; } }
+
+  #drills-root .joseki-card{
+    position:relative; display:flex; align-items:center; gap:12px; width:100%;
+    text-align:left; padding:10px; cursor:pointer;
+    transition:transform .06s, background .15s; user-select:none; -webkit-user-select:none;
+  }
+  #drills-root .joseki-card:active{ transform:translateY(1px); }
+
+  /* Thumbnail (matches Practice) */
+  #drills-root .drill-thumb{
+    width:132px; height:132px; border-radius:10px; overflow:hidden; flex:none;
+    position: relative;
+    background-image:
+      linear-gradient(rgba(0,0,0,.04), rgba(0,0,0,.06)),
+      var(--wood);
+    background-size:cover; background-position:center;
+    border:2px solid rgba(37,99,235,.65);
+    box-shadow: inset 0 0 0 1px rgba(255,255,255,.06);
+  }
+  #drills-root .drill-thumb canvas.prac-canvas{
+    position:absolute; inset:0; width:100%; height:100%;
+    display:block; pointer-events:none;
+  }
+
+  #drills-root .joseki-meta{
+    flex:1; min-width:0; display:flex; flex-direction:column;
+  }
+  #drills-root .joseki-title{ font-weight:800; font-size:18px; line-height:1.3; }
+
+  /* Tickbox */
+  #drills-root .tickbox{
+    position:absolute; top:10px; right:10px; width:24px; height:24px; border-radius:8px;
+    display:flex; align-items:center; justify-content:center;
+    border:2px solid rgba(37,99,235,.75); background: rgba(37,99,235,.18);
+    font-weight:900; font-size:16px; line-height:1;
+    box-shadow: inset 0 0 0 1px rgba(255,255,255,.08); user-select:none;
+  }
+  #drills-root .tickbox::after{ content:""; }
+  #drills-root .tickbox[aria-checked="true"]{ background: rgba(37,99,235,.35); border-color:#60a5fa; }
+  #drills-root .tickbox[aria-checked="true"]::after{ content:"✓"; }
+
+  /* Footer actions */
+  #drills-root .drill-actions{
+    display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin-top:12px; justify-content:flex-start; padding:8px 0;
+  }
+  #drills-root .drill-count{ margin-left:auto; opacity:.95; font-size:13px; }
+
+  /* Floating Clear button */
+  #drills-root .floating-clear{
+    position:fixed;
+    left:calc(env(safe-area-inset-left, 0px) + 12px);
+    bottom:calc(env(safe-area-inset-bottom, 0px) + 28px);
+    z-index:100003;
+  }
+  @media (max-width:480px){
+    #drills-root .floating-clear{
+      left:calc(env(safe-area-inset-left, 0px) + 8px);
+      bottom:calc(env(safe-area-inset-bottom, 0px) + 20px);
     }
+  }
+
+  /* Floating Start button (bottom center) */
+  #drills-root .floating-start{
+    position:fixed;
+    left:50%;
+    bottom:calc(env(safe-area-inset-bottom, 0px) + 28px);
+    transform:translate(-50%, 0);
+    z-index:100010;
+    display:none;
+    white-space:nowrap;
+    pointer-events:auto;
+    touch-action:manipulation;
+  }
+  #drills-root .floating-start:active{ transform:translate(-50%, 0); }
+  @media (max-width:480px){
+    #drills-root .floating-start{
+      bottom:calc(env(safe-area-inset-bottom, 0px) + 20px);
+    }
+  }
+
+  /* Centered notice */
+  #drills-root #drills-notice{
+    position:fixed; left:50%; top:50%; transform:translate(-50%,-50%);
+    z-index:100001; display:none; padding:0; background:transparent;
+    pointer-events:none;
+  }
+  #drills-root #drills-notice .s-inner{ width:auto; padding:0; margin:0; display:block; }
+  #drills-root #drills-notice .drills-notice-card{
+    pointer-events:auto;
+    background:none;
+    background-image:
+      linear-gradient(rgba(0,0,0,.35), rgba(0,0,0,.45)),
+      var(--wood);
+    background-size:cover; background-position:center;
+    border:2px solid rgba(37,99,235,.75);
+    border-radius:12px;
+    box-shadow:0 8px 20px rgba(2,6,23,.45), inset 0 0 0 1px rgba(255,255,255,.08);
+    min-width:280px; max-width:min(92vw, 420px);
+    max-height:calc(100vh - 32px); overflow:auto;
+    text-shadow:0 1px 2px rgba(0,0,0,.35);
+    padding:10px 12px;
+  }
+  #drills-root #drills-notice .actions{
+    margin-top:10px; display:flex; gap:10px; justify-content:center; flex-wrap:wrap;
+  }
+
+  /* Lock interactions while notice open */
+  #drills-root.notice-open #drills-overlay .s-inner{ pointer-events:none; }
+
+  @media (max-width:480px){
+    #drills-root .s-inner{ padding:16px 12px 22px; }
+  }
+
+  /* Mode cards: push the button to the right */
+  #drills-root #drills-mode-view .drill-meta{
+    display:flex; align-items:center; gap:12px;
+  }
+  #drills-root #drills-mode-view .drill-cta{
+    margin-top:0; margin-left:auto;
+  }
+</style>
+
+<script>
+/* Drills overlay with Blitz mode (single select) added.
+   - Blitz uses its own saved selections and hard cap = 1 (ignores plans).
+   - UI & flows mirror Complete.
+   - Start button does NOT launch in Blitz (shows notice). */
+(function(){
+  var root   = document.getElementById('drills-root');
+  if (!root) return;
+
+  var overlay   = root.querySelector('#drills-overlay');
+  var backBtn   = root.querySelector('#drills-back');
+  var titleEl   = root.querySelector('.s-title');
+  var introCard = root.querySelector('#drills-intro');
+
+  /* Mode view elements */
+  var modeView  = root.querySelector('#drills-mode-view');
+  var modeGrid  = root.querySelector('#drills-mode-grid');
+
+  var options   = root.querySelector('#drills-options');
+
+  /* Library view elements */
+  var libView   = root.querySelector('#drills-lib-view');
+  var libInfo   = libView.querySelector('#drill-lib-info');
+  var libInfoTitle = libInfo.querySelector('.info-title');
+  var libInfoDesc  = libInfo.querySelector('.info-desc');
+
+  var libCatsGrid = libView.querySelector('#drill-lib-grid');
+  var libVarsGrid = document.createElement('div');
+  libVarsGrid.id = 'drill-lib-vars';
+  libVarsGrid.className = 'drill-list-grid';
+  libVarsGrid.style.display = 'none';
+  libView.insertBefore(libVarsGrid, libView.querySelector('.drill-actions'));
+
+  var libClear  = root.querySelector('#drill-lib-clear');
+  var libCount  = root.querySelector('#drill-lib-count');
+
+  /* Favorites view elements */
+  var favView   = root.querySelector('#drills-fav-view');
+  var favGrid   = root.querySelector('#drill-fav-grid');
+  var favClear  = root.querySelector('#drill-fav-clear');
+  var favCount  = root.querySelector('#drill-fav-count');
+
+  /* Own patterns view elements */
+  var ownView   = root.querySelector('#drills-own-view');
+  var ownGrid   = root.querySelector('#drill-own-grid');
+  var ownClear  = root.querySelector('#drill-own-clear');
+  var ownCount  = root.querySelector('#drill-own-count');
+
+  /* Start Drill floating button */
+  var startBtn = document.createElement('button');
+  startBtn.id = 'drills-start';
+  startBtn.type = 'button';
+  startBtn.className = 's-btn s-btn-lg floating-start';
+  startBtn.textContent = 'Start Drill';
+  startBtn.setAttribute('aria-label','Start Drill');
+  startBtn.style.display = 'none';
+  root.appendChild(startBtn);
+
+
+  // Start button now always calls startDrillNow(), which handles both
+  // Bubble-style inline DrillBoard and the new drills-board.html page.
+  startBtn.addEventListener('click', function(e){
+    e.stopPropagation();
+    e.preventDefault();
+    startDrillNow();
+  });
+
+  /* Notice (centered) */
+  var notice     = root.querySelector('#drills-notice');
+  var noticeText = root.querySelector('#drills-notice-text');
+  var noticeOk   = root.querySelector('#drills-notice-ok');
+  function showNotice(msg, title){
+    if (noticeText) noticeText.textContent = msg || ('You can add a maximum of ' + MAX_TOTAL + ' patterns.');
+    var t = root.querySelector('#drills-notice-title');
+    if (t) t.textContent = title || 'Heads up';
+    notice.style.display = 'block';
+    root.classList.add('notice-open');
+    setTimeout(function(){ try { noticeOk && noticeOk.focus(); } catch(_){} }, 30);
+  }
+  function hideNotice(){ notice.style.display='none'; root.classList.remove('notice-open'); }
+  noticeOk && noticeOk.addEventListener('click', hideNotice);
+  window.addEventListener('keydown', function(e){ if (e.key==='Escape' && root.classList.contains('notice-open')) hideNotice(); });
+
+  /* State */
+  var state = {
+    mode:'complete', // 'complete' | 'blitz'
+    view:'mode',
+    builtLib:false, linesLib:[], libCats:[], currentCatKey:null, selectedLib:new Set(),
+    builtFav:false, linesFav:[], selectedFav:new Set(),
+    builtOwn:false, linesOwn:[], selectedOwnIds:new Set(),
+    keyToOwnIds:new Map(),
+    ownIdToKey:new Map()
   };
 
+  /* Persist selections (keys depend on mode) */
+  var LIB_SEL_KEY, FAV_SEL_KEY, OWN_SEL_KEY;
+
+  function setMode(newMode){
+    state.mode = (newMode === 'blitz') ? 'blitz' : 'complete';
+
+    if (state.mode === 'blitz'){
+      LIB_SEL_KEY = 'drills_blitz_lib_selection';
+      FAV_SEL_KEY = 'drills_blitz_fav_selection';
+      OWN_SEL_KEY = 'drills_blitz_own_selection_ids';
+      MAX_TOTAL = 1; // single select, plans ignored
+      var t = introCard.querySelector('.info-title');
+      var d = introCard.querySelector('.info-desc');
+      if (t) t.textContent = 'How Blitz drills work';
+      if (d) d.textContent = 'Pick exactly one joseki/pattern (10+ moves). Quick-fire training. (Start coming soon.)';
+      startBtn.textContent = 'Start Blitz';
+    } else {
+      LIB_SEL_KEY = 'drills_lib_selection';
+      FAV_SEL_KEY = 'drills_fav_selection';
+      OWN_SEL_KEY = 'drills_own_selection_ids';
+      setLimitFromPlan();
+      var t2 = introCard.querySelector('.info-title');
+      var d2 = introCard.querySelector('.info-desc');
+      if (t2) t2.textContent = 'How Complete drills work';
+      if (d2) d2.textContent = 'Complete drills drop you into a random point of each selected joseki/pattern (10+ moves only). Three drills per joseki, with random corner and color. Your task: finish the sequence correctly.';
+      startBtn.textContent = 'Start Drill';
+    }
+    reloadAllSelections();
+    updateLibCount(); updateFavCount(); updateOwnCount(); updateStartButton();
+    if (noticeText) noticeText.textContent = 'You can add a maximum of ' + MAX_TOTAL + ' patterns.';
+  }
+
+  function loadSelection(key){ try { return new Set(JSON.parse(localStorage.getItem(key) || '[]')); } catch(_){ return new Set(); } }
+  function saveSelection(key, set){ try { localStorage.setItem(key, JSON.stringify(Array.from(set))); } catch(_){ } }
+  function reloadAllSelections(){
+    state.selectedLib    = loadSelection(LIB_SEL_KEY);
+    state.selectedFav    = loadSelection(FAV_SEL_KEY);
+    state.selectedOwnIds = loadSelection(OWN_SEL_KEY);
+  }
+
+  /* Plan limits */
+  var Tier = window.Tier || {
+    get: function(){ try { return (localStorage.getItem('go_tier') || 'free').toLowerCase(); } catch(_) { return 'free'; } }
+  };
   function isPro(){
     try{
       if (window.GoLimits && typeof window.GoLimits.get === 'function'){
         var lim = window.GoLimits.get();
-        if (lim && lim.drills){
-          if (lim.drills.triesPerDay === Number.POSITIVE_INFINITY) return true;
-          if (typeof lim.drills.plan === 'string' && lim.drills.plan.toLowerCase() === 'pro') return true;
-        }
+        if (lim && lim.drills && lim.drills.triesPerDay === Number.POSITIVE_INFINITY) return true;
       }
-    }catch(e){}
-    var t = Tier && typeof Tier.get === 'function' ? Tier.get() : 'free';
-    return (t || 'free').toLowerCase() === 'pro';
+    }catch(_){}
+    return (Tier.get() || 'free').toLowerCase() === 'pro';
   }
 
- /* ===== Run cap (Start + Retry)
-     - Disabled: limits are handled per mode/day on drills.html
-  ================================= */
-  const RUN_LIMIT_FREE = Infinity;
-  // ---- Daily Drills limit: shared with drills.html (per mode) ----
-  const FREE_DAILY_LIMIT_COMPLETE = 2;
-  const FREE_DAILY_LIMIT_BLITZ    = 2;
+  var MAX_TOTAL = 10;
+  function setLimitFromPlan(){
+    if (state.mode === 'blitz'){
+      MAX_TOTAL = 1;
+    } else {
+      try{
+        if (window.GoLimits && typeof window.GoLimits.get === 'function'){
+          var lim = window.GoLimits.get();
+          if (lim && lim.drills && typeof lim.drills.maxSelections === 'number'){
+            MAX_TOTAL = lim.drills.maxSelections;
+          } else {
+            MAX_TOTAL = isPro() ? 10 : 2;
+          }
+        } else {
+          MAX_TOTAL = isPro() ? 10 : 2;
+        }
+      }catch(_){
+        MAX_TOTAL = isPro() ? 10 : 2;
+      }
+    }
+    updateLibCount(); updateFavCount(); updateOwnCount(); updateStartButton();
+    if (noticeText) noticeText.textContent = 'You can add a maximum of ' + MAX_TOTAL + ' patterns.';
+  }
+  setLimitFromPlan();
+    // ---- Daily Drills limit: per mode (Complete / Blitz) ----
+  // Free: 2 runs per day per mode. Pro: unlimited.
+  var FREE_DAILY_LIMIT_COMPLETE = 2;
+  var FREE_DAILY_LIMIT_BLITZ    = 2;
 
   function getDailyLimitForMode(mode){
     if (isPro()) return Infinity;
     return (mode === 'blitz') ? FREE_DAILY_LIMIT_BLITZ : FREE_DAILY_LIMIT_COMPLETE;
   }
 
+  // Per-mode buckets:
+  //   go:drills_attempts_complete_today_v1
+  //   go:drills_attempts_blitz_today_v1
   function readDailyDrillBucket(mode){
-    const m   = (mode === 'blitz') ? 'blitz' : 'complete';
-    const key = 'go:drills_attempts_' + m + '_today_v1';
+    var m   = (mode === 'blitz') ? 'blitz' : 'complete';
+    var key = 'go:drills_attempts_' + m + '_today_v1';
     try{
-      const raw   = localStorage.getItem(key);
-      const today = (new Date()).toISOString().slice(0,10); // UTC date YYYY-MM-DD
-      let obj     = raw ? JSON.parse(raw) : null;
+      var raw   = localStorage.getItem(key);
+      var today = (new Date()).toISOString().slice(0,10); // date only (UTC)
+      var obj   = raw ? JSON.parse(raw) : null;
 
       // If nothing stored yet or from a previous day, start fresh
       if (!obj || obj.day !== today || typeof obj.count !== 'number'){
         obj = { day: today, count: 0 };
       }
-      return { key, state: obj };
+      return { key: key, state: obj };
     }catch(_){
       // If localStorage is blocked or JSON is bad, fail open
-      return { key, state: null };
+      return { key: key, state: null };
     }
   }
 
   function getDrillsUsedToday(mode){
-    const bucket = readDailyDrillBucket(mode);
+    var bucket = readDailyDrillBucket(mode);
     if (!bucket.state) return 0;
     return bucket.state.count || 0;
   }
 
   function hasDrillAttemptsLeft(mode){
     if (isPro()) return true;
-    const limit = getDailyLimitForMode(mode);
-    if (!Number.isFinite(limit)) return true;
-    const used  = getDrillsUsedToday(mode);
+    var limit = getDailyLimitForMode(mode);
+    if (!isFinite(limit)) return true;
+    var used  = getDrillsUsedToday(mode);
     return used < limit;
   }
 
   function recordDrillAttempt(mode){
     if (isPro()) return;
-    const limit = getDailyLimitForMode(mode);
-    if (!Number.isFinite(limit)) return;
+    var limit = getDailyLimitForMode(mode);
+    if (!isFinite(limit)) return;
 
-    const bucket = readDailyDrillBucket(mode);
+    var bucket = readDailyDrillBucket(mode);
     if (!bucket.state) return;
 
     bucket.state.count = (bucket.state.count || 0) + 1;
@@ -616,86 +707,189 @@ if (!window.StoneSFX) {
     }catch(_){}
   }
 
-  // Board-side helpers: use current mode (Complete vs Blitz)
-  function currentModeForDaily(){
-    return blitzMode ? 'blitz' : 'complete';
+
+  /* Overlay API */
+  var overlayOpen = false;
+
+  function showMode(){
+    state.view='mode';
+    titleEl.textContent='Drills';
+    modeView.style.display='block';
+    introCard.style.display='none';
+    options.style.display='none';
+    libView.style.display='none';
+    favView.style.display='none';
+    ownView.style.display='none';
+    startBtn.style.display = 'none';
+    startBtn.setAttribute('aria-hidden','true');
+    startBtn.disabled = true;
+    updateStartButton();
   }
 
-  function dailyAttemptsLeftForCurrentMode(){
-    const m     = currentModeForDaily();
-    const limit = getDailyLimitForMode(m);
-    if (!Number.isFinite(limit)) return Infinity;
-    const used  = getDrillsUsedToday(m);
-    return Math.max(0, limit - used);
+  function open(){
+    if (!overlay) return;
+    setLimitFromPlan();
+    reloadAllSelections();
+    overlay.style.display='flex';
+    overlayOpen = true;
+    showMode();
+    if (noticeText) noticeText.textContent = 'You can add a maximum of ' + MAX_TOTAL + ' patterns.';
   }
-
-  function hasDailyAttemptsLeftForCurrentMode(){
-    return hasDrillAttemptsLeft(currentModeForDaily());
+  function close(){
+    if (!overlay) return;
+    overlay.style.display='none';
+    overlayOpen = false;
+    startBtn.style.display='none';
+    startBtn.setAttribute('aria-hidden','true');
+    startBtn.disabled = true;
+    try { window.dispatchEvent(new Event('resize')); } catch(_){}
   }
-
-  function recordDailyAttemptForCurrentMode(){
-    recordDrillAttempt(currentModeForDaily());
-  }
-
-  const RUNS_KEY = 'go:drill_runs_session_count';
-
-  function getRunLimit(){
-    // Pro → unlimited, Free → fixed cap
-    return isPro() ? Infinity : RUN_LIMIT_FREE;
-  }
-
-  function getRuns(){
-    try {
-      return parseInt(sessionStorage.getItem(RUNS_KEY) || '0', 10) || 0;
-    } catch(e){
-      return 0;
+  window.GoDrills = {
+    open, close, __ready:true,
+    getLibrarySelection(){ return Array.from(state.selectedLib); },
+    getFavoriteSelection(){ return Array.from(state.selectedFav); },
+    getOwnSelection(){ return Array.from(state.selectedOwnIds); },
+    getSelections(){
+      return {
+        library:Array.from(state.selectedLib),
+        favorites:Array.from(state.selectedFav),
+        own:Array.from(state.selectedOwnIds),
+        mode: state.mode
+      };
     }
+  };
+
+  /* Navigation helpers */
+  function showOptions(whichMode){
+    setMode(whichMode || 'complete');
+    state.view='options';
+    titleEl.textContent='Drills';
+    modeView.style.display='none';
+    introCard.style.display='';
+    options.style.display='grid';
+    libView.style.display='none';
+    favView.style.display='none';
+    ownView.style.display='none';
+    updateStartButton();
+  }
+  function showLib(){
+    reloadAllSelections();
+    state.view='libCats';
+    titleEl.textContent='Choose a Category';
+    modeView.style.display='none';
+    introCard.style.display='none';
+    options.style.display='none';
+    favView.style.display='none';
+    ownView.style.display='none';
+    libView.style.display='block';
+
+    libInfoTitle.textContent = 'Select a category';
+    libInfoDesc.textContent  = 'Grouped by the first two moves. Tap a category to pick josekis (10+ moves).';
+
+    if (!state.builtLib){ buildLibraryList(); }
+    else { renderLibCategories(); }
+    updateLibCount();
+  }
+  function showLibCategory(catKey){
+    state.view='libVars';
+    state.currentCatKey = catKey;
+    titleEl.textContent='Select Josekis';
+
+    libInfoTitle.textContent = 'Select josekis in this category';
+    libInfoDesc.textContent  = 'Tap cards to toggle ✓. Only josekis with 10+ moves are listed.';
+
+    libCatsGrid.style.display='none';
+    libVarsGrid.style.display='grid';
+    renderLibVariations(catKey);
   }
 
-  function setRuns(n){
-    try {
-      sessionStorage.setItem(RUNS_KEY, String(Math.max(0, n | 0)));
-    } catch(e){}
+  function showFav(){
+    reloadAllSelections();
+    state.view='fav';
+    titleEl.textContent='Select Favorites';
+    modeView.style.display='none';
+    introCard.style.display='none';
+    options.style.display='none';
+    libView.style.display='none';
+    ownView.style.display='none';
+    favView.style.display='block';
+
+    buildFavoritesList();
+  }
+  function showOwn(){
+    reloadAllSelections();
+    state.view='own';
+    titleEl.textContent='Select My Patterns';
+    modeView.style.display='none';
+    introCard.style.display='none';
+    options.style.display='none';
+    libView.style.display='none';
+    favView.style.display='none';
+    ownView.style.display='block';
+
+    buildOwnList();
   }
 
-  function canStart(){
-    const limit = getRunLimit();
-    if (!Number.isFinite(limit)) return true;    // Pro: always allowed
-    return getRuns() < limit;                    // Free: compare vs 2
+  /* Optional menu button hook (not used on this page, but kept for compatibility) */
+  var menuBtn = document.getElementById('menu-drills');
+  if (menuBtn){
+    menuBtn.addEventListener('click', function(){
+      if (window.GoMenu && typeof window.GoMenu.close === 'function') window.GoMenu.close();
+      open();
+    });
   }
 
-  function incRuns(){
-    const limit = getRunLimit();
-    if (!Number.isFinite(limit)) return;         // Pro: don't count runs
-    setRuns(getRuns() + 1);
-  }
-
-  function runsLeft(){
-    const limit = getRunLimit();
-    if (!Number.isFinite(limit)) return Infinity;
-    return Math.max(0, limit - getRuns());
-  }
-
-
-  // NEW overlay references
-  const capM   = document.getElementById('drill-cap');
-  const capOK  = document.getElementById('drill-cap-ok');
-  function showCapMsg(){
-    if (capM){
-      capM.style.display = 'flex';
-    } else {
-      alert('You’ve reached your current drills limit.');
+  /* Back button behavior */
+  backBtn && backBtn.addEventListener('click', function(){
+    if (state.view === 'libVars'){
+      state.currentCatKey = null;
+      titleEl.textContent='Choose a Category';
+      libInfoTitle.textContent = 'Select a category';
+      libInfoDesc.textContent  = 'Grouped by the first two moves. Tap a category to pick josekis (10+ moves).';
+      libVarsGrid.style.display='none';
+      libCatsGrid.style.display='grid';
+      state.view='libCats';
+      return;
     }
-  }
-
-  if (capOK){
-    capOK.addEventListener('click', ()=> capM.style.display='none');
-    if (capM){
-      capM.addEventListener('click', (e)=>{ if (e.target === capM) capM.style.display='none'; });
+    if (state.view === 'libCats' || state.view === 'fav' || state.view === 'own'){
+      showOptions(state.mode); return;
     }
-  }
+    if (state.view === 'options'){
+      showMode(); return;
+    }
+    if (state.view === 'mode'){
+      close();
+      if (window.GoMenu && typeof window.GoMenu.open === 'function') window.GoMenu.open();
+      return;
+    }
+    close();
+    if (window.GoMenu && typeof window.GoMenu.open === 'function') window.GoMenu.open();
+  });
 
-  // --- SGF utils ---
+  /* Mode click -> routes */
+  modeGrid && modeGrid.addEventListener('click', function(e){
+    var card = e.target.closest('.drill-card');
+    if (!card) return;
+    var mode = card.getAttribute('data-mode');
+    if (mode === 'complete'){ showOptions('complete'); }
+    else if (mode === 'blitz'){ showOptions('blitz'); }
+  });
+
+  /* Options click -> routes */
+  options.addEventListener('click', function(e){
+    var card = e.target.closest('.drill-card');
+    if (!card) return;
+    var type = card.getAttribute('data-type');
+    if (type === 'library'){ showLib(); }
+    else if (type === 'favorites'){ showFav(); }
+    else if (type === 'own'){ showOwn(); }
+  });
+
+  /* SGF + thumbnails + keys */
+  /* Update this path to your drills SGF file if needed */
+  var SGF_URL = "../sgf/library-1.sgf";
+  var MIN_MOVES = 10;
+
   function rb(str,i){ let out='',k=i; while(k<str.length){ const ch=str[k++]; if(ch==='\\'){ if(k<str.length) out+=str[k++]; continue; } if(ch===']') break; out+=ch; } return {t:out,n:k}; }
   function parseTree(str,i){
     const seq=[]; let node=null; if(str[i]!=='(') return {seq:[],n:i}; i++;
@@ -752,1497 +946,735 @@ if (!window.StoneSFX) {
     return `${size}|${seq}`;
   }
 
-  // --- transforms (8; for Blitz we restrict to 4 rotations = corners) ---
-  function t_identity(p){ return {x:p.x,y:p.y}; }
-  function t_swap(p){ return {x:p.y, y:p.x}; }
-  function t_rot90(p,S){  return {x: S-1 - p.y, y: p.x}; }
-  function t_rot180(p,S){ return {x: S-1 - p.x, y: S-1 - p.y}; }
-  function t_rot270(p,S){ return {x: p.y, y: S-1 - p.x}; }
-  function compose(a,b,S){ return function(p){ return a(b(p,S),S); }; }
-  function ORIENT_FUNCS(S){
-    return [
-      p=>t_identity(p),
-      p=>t_swap(p),
-      p=>t_rot90(p,S),
-      p=>compose(t_swap,t_rot90,S)(p),
-      p=>t_rot180(p,S),
-      p=>compose(t_swap,t_rot180,S)(p),
-      p=>t_rot270(p,S),
-      p=>compose(t_swap,t_rot270,S)(p)
-    ];
+  /* Canvas thumbnails */
+  function hoshiPoints(size){
+    if (size === 19) return [3,9,15];
+    if (size === 13) return [3,6,9];
+    if (size === 9)  return [2,4,6];
+    const mid = Math.floor((size-1)/2);
+    const off = size >= 15 ? 3 : Math.max(2, Math.round(size/6));
+    return [off, mid, size-1-off];
   }
-  const ROT_IDX_ONLY = [0,2,4,6]; // pure rotations (corners)
-
-  // --- UI elements ---
-  const wrap   = document.getElementById('go-board-drill-wrap');
-  const mount  = document.getElementById('go-board-drill');
-  const btnMenu= document.getElementById('dbtn-menu');
-  const btnNext = document.getElementById('dbtn-next');
-  const progEl  = document.getElementById('drill-progress');
-
-  const wrongM   = document.getElementById('drill-wrong');
-  const clearedM = document.getElementById('drill-cleared');
-  const doneM    = document.getElementById('drill-done');
-  const doneTitle= document.getElementById('drill-done-title');
-  const doneBack = document.getElementById('drill-done-back');
-  const doneRetry= document.getElementById('drill-done-retry');
-  const statSolvedEl = document.getElementById('drill-stat-solved');
-  const statFailedEl = document.getElementById('drill-stat-failed');
-  const doneMsgEl    = document.getElementById('drill-done-msg');
-
-  // --- board state ---
-  let SIZE = 19, board=null, grid=null;
-  // Map grid indices -> CSS coordinates (used by zoom)
-  function canvasCssScale(){
-    const c = mount ? mount.querySelector('canvas') : null;
-    if (!c) return 1;
-    const cssW = c.clientWidth || c.getBoundingClientRect().width || 0;
-    const intW = c.width || 0;
-    if (!cssW || !intW) return 1;
-    return cssW / intW;
+  function ensureCanvas(el){
+    var cv = el.querySelector('canvas.prac-canvas');
+    if (!cv){
+      cv = document.createElement('canvas');
+      cv.className = 'prac-canvas';
+      el.appendChild(cv);
+    }
+    return cv;
   }
-
-  function getXcss(i){
-    if (!board) return 0;
-    return board.getX(i) * canvasCssScale();
+  function drawStone(ctx, cx, cy, r, color){
+    var isBlack = (color === 'B');
+    ctx.save();
+    ctx.shadowColor = 'transparent';
+    ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI*2); ctx.clip();
+    var hx = cx - r*0.28, hy = cy - r*0.28;
+    var body = ctx.createRadialGradient(hx, hy, r*0.12, cx, cy, r);
+    if (isBlack){ body.addColorStop(0.00, '#686868'); body.addColorStop(0.65, '#141414'); body.addColorStop(1.00, '#000'); }
+    else { body.addColorStop(0.00, '#fff'); body.addColorStop(0.70, '#f2f2f2'); body.addColorStop(1.00, '#e4e4e4'); }
+    ctx.fillStyle = body; ctx.fillRect(cx-r, cy-r, 2*r, 2*r);
+    var edge = Math.max(0.6, r*0.08);
+    var rim = ctx.createRadialGradient(cx, cy, r-edge, cx, cy, r);
+    if (isBlack){ rim.addColorStop(0,'rgba(255,255,255,0)'); rim.addColorStop(1,'rgba(255,255,255,0.12)'); }
+    else { rim.addColorStop(0,'rgba(0,0,0,0)'); rim.addColorStop(1,'rgba(0,0,0,0.18)'); }
+    ctx.fillStyle = rim; ctx.fillRect(cx-r, cy-r, 2*r, 2*r);
+    var spec = ctx.createRadialGradient(hx, hy, 0, hx, hy, r*0.55);
+    if (isBlack){ spec.addColorStop(0,'rgba(255,255,255,0.10)'); spec.addColorStop(1,'rgba(255,255,255,0)'); }
+    else { spec.addColorStop(0,'rgba(255,255,255,0.22)'); spec.addColorStop(1,'rgba(255,255,255,0)'); }
+    ctx.fillStyle = spec; ctx.fillRect(cx-r, cy-r, 2*r, 2*r);
+    ctx.restore();
   }
-
-  function getYcss(j){
-    if (!board) return 0;
-    return board.getY(j) * canvasCssScale();
-  }
-function getGridSpacing(){
-    var sX = Math.abs(getXcss(1) - getXcss(0));
-    var sY = Math.abs(getYcss(1) - getYcss(0));
-    return { x: sX, y: sY };
-  }
-
-  // session control
-  let solvedCount = 0;
-  let failedCount = 0;
-  let locked = false;
-  let wrongTimer = null;
-  let clearedTimer = null;
-
-  // slots / planning
-  let PER = 3;
-  let slots = [];                 // [{ key, base }]
-  let lineToSlotIdxs = {};        // key -> [slotIdx,...]
-  let runPlan = {};               // key -> Map(slotIdx -> {orientIdx, swap, startIndex})
-  let index  = 0;                 // current slot
-  let remain = [];                // remaining transformed moves
-  let currentTransformed = null;
-
-  // BLITZ flags + timer
-  let blitzMode = false;
-  let timerEl = null;
-  let timerMs = 0;
-  let timerId = null;
-  let blitzCornerPlannedMoves = 0;
-  let timeUp = false;
-
-function ensureTimerEl(){
-  if (timerEl || !blitzMode) return;
-
-  timerEl = document.createElement('div');
-  timerEl.id = 'blitz-timer';
-  timerEl.className = 'blitz-chip';
-  timerEl.textContent = '0.0s';
-
-
-  const topbar = document.getElementById('drill-topbar');
-
-  if (topbar){
-    topbar.appendChild(timerEl);
-  } else {
-    // fallback (shouldn't happen, but keeps it robust)
-    mount.appendChild(timerEl);
-  }
-}
-
-  function fmtMs(ms){
-    if (ms < 0) ms = 0;
-    const s = ms/1000;
-    const m = Math.floor(s/60);
-    const r = s - m*60;
-    if (m>0) return `${m}:${r.toFixed(1).padStart(4,'0')}`;
-    return `${r.toFixed(1)}s`;
-  }
-  function startTimer(){
-    if (!blitzMode) return;
-    ensureTimerEl();
-    stopTimer();
-    timeUp = false;
-    timerId = setInterval(()=>{
-      timerMs -= 100;
-      if (timerEl) timerEl.textContent = fmtMs(timerMs);
-      if (timerMs <= 0){
-        stopTimer();
-        timeUp = true;
-        showDone('Time’s up!');
-      }
-    }, 100);
-  }
-  function stopTimer(){ if (timerId){ clearInterval(timerId); timerId=null; } }
-
-  // board helpers
-  function initBoard(){
-    if (!window.WGo) return setTimeout(initBoard, 40);
-    if (board) return; // safety
-
-    board = new WGo.Board(mount, { size: SIZE });
-
-    // wood bg inside mount – also serves as the zoom "layer"
-    (function ensureDrillWoodLayer(){
-      if (mount.__woodLayerReady) return;
-      const layer = document.createElement('div');
-      layer.id = 'go-drill-wood';
-      layer.style.position = 'absolute';
-      layer.style.left = '0';
-      layer.style.top  = '0';
-      layer.style.right = '0';
-      layer.style.bottom = '0';
-      layer.style.backgroundImage = "url('https://3d85c7a311526e02aeeeb19e952d0c09.cdn.bubble.io/f1755870506985x437178801728222500/wood.jpg')";
-      layer.style.backgroundSize = 'cover';
-      layer.style.backgroundPosition = 'center';
-layer.style.backgroundRepeat = 'no-repeat';
-
-/* match core zoom layer behavior */
-layer.style.transformOrigin = '0 0';
-layer.style.willChange = 'transform';
-
-mount.appendChild(layer);
-
-
-      function moveChildrenIntoLayer(){
-        const kids = Array.from(mount.childNodes).filter(n => n !== layer);
-        for (const n of kids) layer.appendChild(n);
-      }
-      moveChildrenIntoLayer();
-
-      const mo = new MutationObserver(moveChildrenIntoLayer);
-      mo.observe(mount, { childList: true });
-
-      mount.__woodLayerReady = true;
-      mount.__woodLayer = layer;
-      mount.__woodObserver = mo;
-    })();
-
-    // Prepare container for zoom transformations
-    mount.style.position = 'relative';
-    mount.style.overflow = 'hidden';
-
-    // This is what gets translated+scaled
-    zoomLayer = mount.__woodLayer || mount;
-
-    // Initial sizing
-    fitBoard();
-
-    // Click handler – respect zoom touch handler's suppression flag
-    board.addEventListener('click', function(x, y){
-      if (suppressNextBoardClick){
-        suppressNextBoardClick = false;
-        return;
-      }
-      onBoardClick(x, y);
-    });
-  }
-
-
-  function resetGrid(){ grid = Array.from({length:SIZE}, ()=>Array(SIZE).fill(null)); }
-  function addStone(x,y,color){ grid[y][x]=color; }
-
-  function inside(x,y){ return x>=0 && y>=0 && x<SIZE && y<SIZE; }
-  function neigh4(x,y){ return [{x:x+1,y:y},{x:x-1,y:y},{x:x,y:y+1},{x:x,y:y-1}].filter(p=>inside(p.x,p.y)); }
-  function groupAndLiberties(x,y){
-    const color = grid[y][x]; if (!color) return { stones:[], libs:0 };
-    const seen = new Set(), libset = new Set(), stones=[];
-    const key=(a,b)=>a+','+b; const stack=[{x,y}]; seen.add(key(x,y));
-    while(stack.length){
-      const p = stack.pop(); stones.push(p);
-      for (const n of neigh4(p.x,p.y)){
-        const v = grid[n.y][n.x];
-        if (v === null) libset.add(key(n.x,n.y));
-        else if (v === color){
-          const k = key(n.x,n.y); if (!seen.has(k)){ seen.add(k); stack.push(n); }
+  function simulatePosition(size, rootAB, rootAW, moves){
+    var N = size || 19, E=0, B=1, W=2;
+    var board = Array.from({length:N}, ()=>Array(N).fill(E));
+    function inB(x,y){ return x>=0&&y>=0&&x<N&&y<N; }
+    function at(x,y){ return board[y][x]; }
+    function set(x,y,v){ board[y][x]=v; }
+    function neigh(x,y){ return [[x+1,y],[x-1,y],[x,y+1],[x,y-1]].filter(p=>inB(p[0],p[1])); }
+    (Array.isArray(rootAB)?rootAB:[]).forEach(p=>{ if(inB(p.x,p.y)) set(p.x,p.y,B); });
+    (Array.isArray(rootAW)?rootAW:[]).forEach(p=>{ if(inB(p.x,p.y)) set(p.x,p.y,W); });
+    function groupAndLibs(x,y){
+      var c=at(x,y); if(c===E) return null;
+      var q=[[x,y]], seen=new Set([x+'_'+y]), group=[[x,y]], libs=0;
+      while(q.length){
+        var t=q.pop(), cx=t[0], cy=t[1];
+        for (const n of neigh(cx,cy)){
+          var nx=n[0], ny=n[1], v=at(nx,ny);
+          if (v===E){ libs++; continue; }
+          if (v===c){
+            var k=nx+'_'+ny; if(!seen.has(k)){ seen.add(k); q.push([nx,ny]); group.push([nx,ny]); }
+          }
         }
       }
+      return {group, libs};
     }
-    return { stones, libs: libset.size };
-  }
-  function removeStones(stones){ for (const s of stones){ grid[s.y][s.x] = null; } }
-  function resolveCapturesAfterPlacing(x,y,color){
-    const opp = (color==='B'?'W':'B'), seenOpp = new Set();
-    for (const n of neigh4(x,y)){
-      if (grid[n.y][n.x] !== opp) continue;
-      const k = n.x+','+n.y; if (seenOpp.has(k)) continue;
-      const g = groupAndLiberties(n.x,n.y);
-      g.stones.forEach(s=>seenOpp.add(s.x+','+s.y));
-      if (g.libs === 0) removeStones(g.stones);
+    function removeGroup(g){ for (const p of g) set(p[0],p[1],E); }
+    function play(m){
+      if(!m) return; var x=m.x,y=m.y; if(!inB(x,y)||at(x,y)!==E) return;
+      var c=m.color==='W'?W:B, o=c===B?W:B; set(x,y,c);
+      var oppN=[]; for (const n of neigh(x,y)) if(at(n[0],n[1])===o) oppN.push(n);
+      var captured=0;
+      for (const n of oppN){ var info=groupAndLibs(n[0],n[1]); if(info && info.libs===0){ removeGroup(info.group); captured+=info.group.length; } }
+      var mine=groupAndLibs(x,y); if(mine && mine.libs===0 && captured===0) removeGroup(mine.group);
     }
-    if (grid[y][x] === color){
-      const gSelf = groupAndLiberties(x,y);
-      if (gSelf.libs === 0) removeStones(gSelf.stones);
-    }
-  }
-  function playMove(x,y,color, silent=false){
-    addStone(x,y,color);
-    resolveCapturesAfterPlacing(x,y,color);
-    if (!silent && window.StoneSFX) StoneSFX.play();
-    redraw();
-  }
-
-  function redraw(){
-    if (!board) return;
-    board.removeAllObjects();
-    for (let y=0;y<SIZE;y++) for (let x=0;x<SIZE;x++){
-      const v=grid[y][x];
-      if (v==='B') board.addObject({x,y,c:WGo.B});
-      else if (v==='W') board.addObject({x,y,c:WGo.W});
-    }
-    if (blitzMode) drawBlitzMarkers();
-  }
-
-  function isCornerHoshi(pt,S){
-    const a = 3, b = S-4;
-    return ( (pt.x===a || pt.x===b) && (pt.y===a || pt.y===b) );
-  }
-  function corner33BelowOfHoshi(h,S){
-    const dx = (h.x===3) ? -1 : +1;
-    const dy = (h.y===3) ? -1 : +1;
-    return { x: h.x + dx, y: h.y + dy };
-  }
-  function drawBlitzMarkers(){
-    if (!currentTransformed || !Array.isArray(currentTransformed.moves) || currentTransformed.moves.length < 1) return;
-    const m1 = currentTransformed.moves[0];
-    board.addObject({ x:m1.x, y:m1.y, type:'LB', text:'A' });
-
-    if (currentTransformed.moves.length >= 2 && isCornerHoshi(m1, SIZE)){
-      const m2 = currentTransformed.moves[1];
-      board.addObject({ x:m2.x, y:m2.y, type:'LB', text:'a' });
-
-      if (currentTransformed.moves.length >= 3){
-        const below = corner33BelowOfHoshi(m1, SIZE);
-        if (m2.x === below.x && m2.y === below.y){
-          const m3 = currentTransformed.moves[2];
-          board.addObject({ x:m3.x, y:m3.y, type:'LB', text:'A' });
-        }
-      }
-    }
-  }
-
-  function shuffle(a){ for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } return a; }
-  function range(a,b){ const out=[]; for(let i=a;i<=b;i++) out.push(i); return out; }
-
-  function mixSlotsFairly(slotList){
-    const buckets = new Map();
-    for (const s of slotList){
-      if (!buckets.has(s.key)) buckets.set(s.key, []);
-      buckets.get(s.key).push(s);
-    }
-    for (const arr of buckets.values()) shuffle(arr);
-    const keys = Array.from(buckets.keys());
-    let lastKey = null;
-    const out = [];
-    function pickKey(){
-      const candidates = keys.filter(k => (buckets.get(k)||[]).length && k !== lastKey);
-      const pool = candidates.length ? candidates : keys.filter(k => (buckets.get(k)||[]).length);
-      if (!pool.length) return null;
-      return pool[Math.floor(Math.random()*pool.length)];
-    }
-    while (out.length < slotList.length){
-      const k = pickKey();
-      if (k == null) break;
-      out.push(buckets.get(k).pop());
-      lastKey = k;
+    (Array.isArray(moves)?moves:[]).forEach(play);
+    var out=[]; for (var yy=0; yy<N; yy++) for (var xx=0; xx<N; xx++){
+      var v=board[yy][xx]; if(v===B) out.push({x:xx,y:yy,color:'B'}); else if(v===W) out.push({x:xx,y:yy,color:'W'});
     }
     return out;
   }
+  function drawBoardThumb(el, size, stones, opts){
+    var crop = !!(opts && opts.crop);
+    var w = Math.max(64, Math.floor(el.clientWidth || 132));
+    var h = w, dpr = Math.max(1, window.devicePixelRatio || 1);
+    var cv = ensureCanvas(el);
+    if (cv.width !== w*dpr || cv.height !== h*dpr){
+      cv.width = Math.floor(w*dpr); cv.height = Math.floor(h*dpr);
+      cv.style.width = w+'px'; cv.style.height = h+'px';
+    }
+    var ctx = cv.getContext('2d');
+    ctx.setTransform(dpr,0,0,dpr,0,0);
+    ctx.clearRect(0,0,w,h);
 
-  function makeTransformed(line, orientIdx, swap){
-    const S = line.size || 19, ORS = ORIENT_FUNCS(S), o = ORS[orientIdx % ORS.length];
-    const tf = p => { const t=o({x:p.x,y:p.y}, S); return {x:t.x,y:t.y}; };
-    const AB = (line.rootAB||[]).map(tf), AW = (line.rootAW||[]).map(tf);
-    const mv = (line.moves||[]).map(m=>{ const t=tf(m); const c = swap ? (m.color==='B'?'W':'B') : m.color; return { x:t.x, y:t.y, color:c }; });
-    return { size:S, rootAB: swap ? AW : AB, rootAW: swap ? AB : AW, moves: mv };
-  }
+    var pad = Math.round(w*0.10);
+    var inner = w - pad*2;
+    var step  = inner / (size - 1);
+    var getX  = i => pad + i*step;
+    var getY  = j => pad + j*step;
 
-  function buildRunPlanForLine(key, line, slotIdxs){
-    const L = line.moves.length, k = slotIdxs.length;
-    if (blitzMode){
-      const orientIdxs = shuffle(ROT_IDX_ONLY.slice()).slice(0, k || 1);
-      let swaps = Array(k).fill(false);
-      let nSwap = Math.round(k * 0.5);
-      for (let i=0;i<nSwap;i++) swaps[i]=true;
-      swaps = shuffle(swaps);
-      const plan = new Map(), shuffledSlots = shuffle(slotIdxs.slice());
-      for (let i=0;i<k;i++){
-        plan.set(shuffledSlots[i], { orientIdx: orientIdxs[i % orientIdxs.length], startIndex: 0, swap: swaps[i] });
+    var minX=0,minY=0,maxX=size-1,maxY=size-1;
+    if (crop && stones && stones.length){
+      minX=maxX=stones[0].x; minY=maxY=stones[0].y;
+      for (const s of stones){ if(s.x<minX)minX=s.x; if(s.x>maxX)maxX=s.x; if(s.y<minY)minY=s.y; if(s.y>maxY)maxY=s.y; }
+      var MARGIN=1;
+      minX=Math.max(0,minX-MARGIN); minY=Math.max(0,minY-MARGIN);
+      maxX=Math.min(size-1,maxX+MARGIN); maxY=Math.min(size-1,maxY+MARGIN);
+      var EDGE_NEAR=6;
+      var pinLeft=(minX<=EDGE_NEAR), pinTop=(minY<=EDGE_NEAR), pinRight=(maxX>=size-1-EDGE_NEAR), pinBottom=(maxY>=size-1-EDGE_NEAR);
+      if(pinLeft)minX=0; if(pinTop)minY=0; if(pinRight)maxX=size-1; if(pinBottom)maxY=size-1;
+      var wG=(maxX-minX+1), hG=(maxY-minY+1), target=Math.max(wG,hG);
+      if (hG<target){
+        var need=target-hG;
+        if (pinTop && !pinBottom) maxY=Math.min(size-1,maxY+need);
+        else if (pinBottom && !pinTop) minY=Math.max(0,minY-need);
+        else { var up=Math.ceil(need/2), dn=Math.floor(need/2); minY=Math.max(0,minY-up); maxY=Math.min(size-1,maxY+dn); }
       }
-      return plan;
+      if (wG<target){
+        var need2=target-wG;
+        if (pinLeft && !pinRight) maxX=Math.min(size-1,maxX+need2);
+        else if (pinRight && !pinLeft) minX=Math.max(0,minX-need2);
+        else { var lf=Math.ceil(need2/2), rt=Math.floor(need2/2); minX=Math.max(0,minX-lf); maxX=Math.min(size-1,maxX+rt); }
+      }
     }
 
-    const startsPool = (function allowedStartRange(L){ const min = Math.max(4,0); const max = Math.max(min, L-2); return range(min,max); })(L);
-    const orientIdxs = shuffle(range(0,7)).slice(0, slotIdxs.length || 1);
-    const chosenStarts = shuffle(startsPool.slice());
-    let swaps = Array(slotIdxs.length).fill(false);
-    let nSwap = Math.round(slotIdxs.length * 0.5);
-    for (let i=0;i<nSwap;i++) swaps[i]=true;
-    swaps = shuffle(swaps);
+    var leftPx  = getX(minX) - step/2;
+    var rightPx = getX(maxX) + step/2;
+    var topPx   = getY(minY) - step/2;
+    var botPx   = getY(maxY) + step/2;
+    var cropSide= Math.max(rightPx-leftPx, botPx-topPx);
+    var scale   = w / cropSide;
 
-    const plan = new Map(), shuffledSlots = shuffle(slotIdxs.slice());
-    for (let i=0;i<slotIdxs.length;i++){
-      plan.set(shuffledSlots[i], {
-        orientIdx: orientIdxs[i % orientIdxs.length],
-        startIndex: chosenStarts[i % chosenStarts.length],
-        swap: swaps[i]
-      });
+    ctx.save();
+    ctx.scale(scale, scale);
+    ctx.translate(-leftPx, -topPx);
+
+    ctx.strokeStyle = 'rgba(0,0,0,.9)';
+    var desiredPx = Math.max(1, Math.floor(w * 0.006));
+    ctx.lineWidth = desiredPx / scale;
+
+    for (var i=0;i<size;i++){
+      var y = getY(i);
+      ctx.beginPath(); ctx.moveTo(getX(0), y); ctx.lineTo(getX(size-1), y); ctx.stroke();
+      var x = getX(i);
+      ctx.beginPath(); ctx.moveTo(x, getY(0)); ctx.lineTo(x, getY(size-1)); ctx.stroke();
     }
-    return plan;
-  }
-  function ensureRunPlanFor(key,line){
-    if (!runPlan[key]){
-      const idxs = lineToSlotIdxs[key] || [];
-      runPlan[key] = buildRunPlanForLine(key, line, idxs);
+
+    ctx.fillStyle = '#000';
+    var hs = hoshiPoints(size);
+    var hr = Math.max(1, step*0.02);
+    for (const ix of hs){
+      for (const iy of hs){
+        var cx = getX(ix), cy = getY(iy);
+        ctx.beginPath(); ctx.arc(cx, cy, hr, 0, Math.PI*2); ctx.fill();
+      }
     }
-  }
-  function newRunPlan(){
-    runPlan = {};
-    const seen = new Set();
-    for (const s of slots){
-      if (seen.has(s.key)) continue;
-      seen.add(s.key);
-      ensureRunPlanFor(s.key, s.base);
+
+    var r = step * 0.46;
+    for (const s of (stones||[])){
+      drawStone(ctx, getX(s.x), getY(s.y), r, (s.color==='W'?'W':'B'));
     }
+    ctx.restore();
+  }
+  function renderTwoMoveThumb(el, size, firstTwo){
+    var stones=[];
+    if (firstTwo[0]) stones.push({x:firstTwo[0].x, y:firstTwo[0].y, color:firstTwo[0].color||'B'});
+    if (firstTwo[1]) stones.push({x:firstTwo[1].x, y:firstTwo[1].y, color:firstTwo[1].color||'W'});
+    drawBoardThumb(el, size||19, stones, { crop:true });
+  }
+  function renderVariationThumb(el, line){
+    var size = line.size || 19;
+    var stones = simulatePosition(size, line.rootAB, line.rootAW, line.moves);
+    drawBoardThumb(el, size, stones, { crop:true });
   }
 
-  function setProgress(){
-    if (progEl) progEl.textContent = (slots.length ? (index+1) : 0) + ' / ' + (slots.length || 0);
+  /* LIMIT logic */
+  function totalSelectedCount(){
+    var uniqueKeys = new Set([...state.selectedLib, ...state.selectedFav]);
+    return uniqueKeys.size + state.selectedOwnIds.size;
   }
 
-  function resetStats(){
-    solvedCount = 0;
-    failedCount = 0;
-    if (statSolvedEl) statSolvedEl.textContent = '0';
-    if (statFailedEl) statFailedEl.textContent = '0';
+  /* Tick helpers */
+  function escAttr(v){ return String(v).replace(/"/g,'\\"'); }
+  function isOnLineKey(key){ return state.selectedLib.has(key) || state.selectedFav.has(key); }
+  function setTickForLineKey(key){
+    var on = isOnLineKey(key) ? 'true' : 'false';
+    root.querySelectorAll('.joseki-card[data-key="'+escAttr(key)+'"] .tickbox').forEach(function(t){ t.setAttribute('aria-checked', on); });
+  }
+  function setTickForOwnId(id){
+    var on = state.selectedOwnIds.has(id) ? 'true' : 'false';
+    root.querySelectorAll('.joseki-card[data-own-id="'+escAttr(id)+'"] .tickbox').forEach(function(t){ t.setAttribute('aria-checked', on); });
   }
 
-  function clearTimers(){
-    if (wrongTimer){ clearTimeout(wrongTimer); wrongTimer=null; }
-    if (clearedTimer){ clearTimeout(clearedTimer); clearedTimer=null; }
-  }
-
-  let blitzCornerState = null;
-  // ===== Practice-style Zoom & Pan for Drills =====
-
-  // ===== Shared preferences (Fix: Load from storage so zoom setting is respected) =====
-  var STORAGE_KEY = 'go_prefs';
-  var GoPrefs = (window.GoPrefs = window.GoPrefs || {});
-  try {
-    var saved = localStorage.getItem(STORAGE_KEY);
-    if (saved) Object.assign(GoPrefs, JSON.parse(saved) || {});
-  } catch (e) {}
-
-  // Defaults
-  if (typeof GoPrefs.josekiZoom === 'undefined') GoPrefs.josekiZoom = true;
-  if (typeof GoPrefs.soundOn === 'undefined') GoPrefs.soundOn = true;
-  if (typeof GoPrefs.highlightLast === 'undefined') GoPrefs.highlightLast = true;
-  if (typeof GoPrefs.disableAutoZoomOut === 'undefined') GoPrefs.disableAutoZoomOut = false;
-
-  // Now set the local variable based on the loaded prefs
-  let zoomEnabled = !!GoPrefs.josekiZoom;
-
-  // Zoom / pan state
-  let scale = 1;
-  const minScale = 1;
-  const maxScale = 2.6;
-  let baseW = 0;
-  let offsetX = 0;
-  let offsetY = 0;
-
-  let isFullscreen = false;
-  let zoomLayer = null;
-
-  let overlay = null;
-  let stage = null;
-  let zoomExitBtn = null;
-  let returnAnchor = null;
-  let prevOverflow = "";
-
-  // Kinetic pan / fling
-  let flingId = 0;
-  let isFlinging = false;
-  let flingVX = 0;
-  let flingVY = 0;
-  let flingLastTime = 0;
-
-  // Pointer tracking
-  let isPanning = false;
-  let panStart = null;
-  let activePointerId = null;
-  let panSamplePrev = null;
-  let panSampleCurr = null;
-  let tapStart = null;
-  let suppressNextBoardClick = false;
-  const TAP_SLOP2 = 64; // squared px (~8px movement)
-
-  function cancelFling(){
-    isFlinging = false;
-    if (flingId){
-      cancelAnimationFrame(flingId);
-      flingId = 0;
+  /* Select/Deselect */
+  function maybeAutoReplaceIfBlitz(){
+    if (state.mode !== 'blitz') return false;
+    if (totalSelectedCount() >= 1){
+      clearAllSelections();
+      return true;
     }
+    return false;
   }
 
-function viewportSize(){
-  if (isFullscreen){
-    const vw = window.innerWidth  || document.documentElement.clientWidth  || 800;
-    const vh = window.innerHeight || document.documentElement.clientHeight || 800;
-    return { vw, vh };
+  function deselectLineKeyGlobal(key){
+    state.selectedLib.delete(key);
+    state.selectedFav.delete(key);
+    saveSelection(LIB_SEL_KEY, state.selectedLib);
+    saveSelection(FAV_SEL_KEY, state.selectedFav);
+    setTickForLineKey(key);
+    updateLibCount(); updateFavCount(); updateOwnCount();
   }
-
-  const rect = mount.getBoundingClientRect();
-  const wrapRect = wrap ? wrap.getBoundingClientRect() : rect;
-  const wrapW =
-    (wrapRect && wrapRect.width) ||
-    (wrap && wrap.clientWidth) ||
-    rect.width ||
-    400;
-
-  // board area is square
-  return { vw: wrapW, vh: wrapW };
-}
-
-
-function clampPan(){
-  if (!board) return;
-
-  const { vw, vh } = viewportSize();
-  const bw = Math.round(baseW * scale);
-  const bleedX = Math.ceil(vw * 0.5);
-  const bleedY = Math.ceil(vh * 0.5);
-
-  const minOX = -bleedX;
-  const maxOX = Math.max(0, bw - vw) + bleedX;
-  const minOY = -bleedY;
-  const maxOY = Math.max(0, bw - vh) + bleedY;
-
-  if (offsetX < minOX) offsetX = minOX;
-  else if (offsetX > maxOX) offsetX = maxOX;
-
-  if (offsetY < minOY) offsetY = minOY;
-  else if (offsetY > maxOY) offsetY = maxOY;
-}
-
-  function applyPanAndSize(redrawAfter){
-    if (!board || !mount) return;
-
-    const { vw, vh } = viewportSize();
-    let targetW;
-
-    if (isFullscreen){
-      targetW = Math.floor(Math.min(vw, vh));
-      if (targetW % 2) targetW--;
-      baseW = targetW;
-      mount.style.width  = '100vw';
-      mount.style.height = '100vh';
+  function selectLineKeyIn(source, key){
+    if (state.mode === 'blitz') { maybeAutoReplaceIfBlitz(); }
+    if (state.selectedLib.has(key) || state.selectedFav.has(key) || totalSelectedCount() < MAX_TOTAL){
+      if (source === 'lib'){ state.selectedLib.add(key); saveSelection(LIB_SEL_KEY, state.selectedLib); }
+      if (source === 'fav'){ state.selectedFav.add(key); saveSelection(FAV_SEL_KEY, state.selectedFav); }
+      setTickForLineKey(key);
+      updateLibCount(); updateFavCount(); updateOwnCount();
     } else {
-  targetW = Math.floor(vw);
-  if (targetW % 2) targetW--;
-  baseW = targetW;
-
-  /* core-style: mount is an explicit square */
-  mount.style.width  = targetW + 'px';
-  mount.style.height = targetW + 'px';
-}
-
-
-    if (targetW <= 0) return;
-
-    if (board._lastW !== targetW){
-      board.setWidth(targetW);
-      if (zoomLayer){
-        zoomLayer.style.width  = targetW + 'px';
-        zoomLayer.style.height = targetW + 'px';
-      }
-      board._lastW = targetW;
-    }
-
-    clampPan();
-
-    if (zoomLayer){
-      zoomLayer.style.transform =
-        'translate3d(' + (-offsetX) + 'px,' + (-offsetY) + 'px,0) scale(' + scale + ')';
-    }
-
-    if (redrawAfter) redraw();
-  }
-
-  function resetViewLocal(){
-    cancelFling();
-    scale = 1;
-    offsetX = 0;
-    offsetY = 0;
-    applyPanAndSize(true);
-  }
-
-  function ensureOverlay(){
-    if (overlay) return;
-
-    overlay = document.getElementById('go-zoom-overlay-drill');
-    if (!overlay){
-      overlay = document.createElement('div');
-      overlay.id = 'go-zoom-overlay-drill';
-      overlay.innerHTML =
-        '<div id="go-zoom-stage-drill"></div>' +
-        '<div id="go-zoom-exit-drill" aria-label="Zoom out"></div>';
-      document.body.appendChild(overlay);
-    }
-
-    stage       = overlay.querySelector('#go-zoom-stage-drill');
-    zoomExitBtn = overlay.querySelector('#go-zoom-exit-drill');
-
-    if (zoomExitBtn && !zoomExitBtn._bound){
-      zoomExitBtn._bound = true;
-      zoomExitBtn.addEventListener('click', function(e){
-        e.stopPropagation();
-        e.preventDefault();
-        exitFullscreen();
-      });
+      showNotice('You can add a maximum of ' + MAX_TOTAL + ' patterns.', 'Limit reached');
     }
   }
-
-function animateTo(targetScale, pxBoard, pyBoard, sxTarget, syTarget){
-  targetScale = Math.max(minScale, Math.min(maxScale, targetScale));
-  cancelFling();
-
-  const s0  = scale;
-  const ox0 = offsetX;
-  const oy0 = offsetY;
-  const t0  = performance.now();
-  const dur = 260;
-
-  // match core: keep chosen board point under target screen point
-  const targetOX = pxBoard * targetScale - sxTarget;
-  const targetOY = pyBoard * targetScale - syTarget;
-
-  function step(now){
-    let t = (now - t0) / dur;
-    if (t > 1) t = 1;
-    const ease = 1 - Math.pow(1 - t, 3);
-
-    scale   = s0  + (targetScale - s0) * ease;
-    offsetX = ox0 + (targetOX - ox0) * ease;
-    offsetY = oy0 + (targetOY - oy0) * ease;
-
-    applyPanAndSize(false);
-
-    if (t < 1){
-      requestAnimationFrame(step);
+  function deselectOwnId(id){
+    state.selectedOwnIds.delete(id);
+    saveSelection(OWN_SEL_KEY, state.selectedOwnIds);
+    setTickForOwnId(id);
+    updateLibCount(); updateFavCount(); updateOwnCount();
+  }
+  function selectOwnId(id){
+    if (state.mode === 'blitz') { maybeAutoReplaceIfBlitz(); }
+    if (state.selectedOwnIds.has(id) || totalSelectedCount() < MAX_TOTAL){
+      state.selectedOwnIds.add(id);
+      saveSelection(OWN_SEL_KEY, state.selectedOwnIds);
+      setTickForOwnId(id);
+      updateLibCount(); updateFavCount(); updateOwnCount();
     } else {
-      applyPanAndSize(true);
+      showNotice('You can add a maximum of ' + MAX_TOTAL + ' patterns.', 'Limit reached');
     }
   }
 
-  requestAnimationFrame(step);
-}
-
-function centerZoomAtGrid(i, j, factor, tapClientX, tapClientY){
-  const targetScale = Math.max(minScale, Math.min(maxScale, scale * factor));
-
-  // Board-space coordinates of the grid point (independent of zoom)
-  const pxBoard = getXcss(i);
-  const pyBoard = getYcss(j);
-
-  const rect = mount.getBoundingClientRect();
-  let sxTarget = rect.width  / 2;
-  let syTarget = rect.height / 2;
-
-  // If we know the tap position, keep that spot under the finger
-  if (typeof tapClientX === 'number' && typeof tapClientY === 'number'){
-    sxTarget = tapClientX - rect.left;
-    syTarget = tapClientY - rect.top;
-  }
-
-  animateTo(targetScale, pxBoard, pyBoard, sxTarget, syTarget);
-}
-
-
-function enterFullscreenAtGrid(i, j, tapClientX, tapClientY){
-  if (isFullscreen) return;
-  if (!zoomLayer) zoomLayer = mount.__woodLayer || mount;
-
-  ensureOverlay();
-  prevOverflow = document.documentElement.style.overflow || "";
-  document.documentElement.style.overflow = 'hidden';
-
-  returnAnchor = document.createElement('div');
-  returnAnchor.style.display = 'none';
-  mount.parentNode.insertBefore(returnAnchor, mount);
-
-  stage.appendChild(mount);
-
-  overlay.style.display = 'flex';
-  if (zoomExitBtn) zoomExitBtn.style.display = 'block';
-  isFullscreen = true;
-
-  // Reset baseline sizing/state
-  resetViewLocal();
-
-  requestAnimationFrame(function(){
-    // Match core-style "pre-pan then zoom"
-    const initialFactor = 2.0;
-
-    const px_curr = getXcss(i);
-    const py_curr = getYcss(j);
-
-    const rect = mount.getBoundingClientRect();
-    let sx = rect.width  / 2;
-    let sy = rect.height / 2;
-
-    if (typeof tapClientX === 'number' && typeof tapClientY === 'number'){
-      sx = tapClientX - rect.left;
-      sy = tapClientY - rect.top;
-    }
-
-    // Pre-align the tapped grid point at scale = 1
-    scale = 1;
-    offsetX = px_curr * 1.0 - sx;
-    offsetY = py_curr * 1.0 - sy;
-
-    applyPanAndSize(false);
-
-    // Now animate purely to the target scale
-    animateTo(initialFactor, px_curr, py_curr, sx, sy);
-  });
-}
-
-
-  function exitFullscreen(){
-    if (!isFullscreen) return;
-    cancelFling();
-
-    isFullscreen = false;
-
-    if (overlay) overlay.style.display = 'none';
-    if (zoomExitBtn) zoomExitBtn.style.display = 'none';
-
-    if (returnAnchor && returnAnchor.parentNode){
-      returnAnchor.parentNode.insertBefore(mount, returnAnchor);
-      returnAnchor.parentNode.removeChild(returnAnchor);
-      returnAnchor = null;
-    }
-
-document.documentElement.style.overflow = prevOverflow;
-
-// important: remove fullscreen inline sizing first
-mount.style.width = '';
-mount.style.height = '';
-
-scale = 1;
-offsetX = 0;
-offsetY = 0;
-
-applyPanAndSize(true);
-
-  }
-
-  function beginPan(e){
-    isPanning = false;
-    panStart = { x: e.clientX, y: e.clientY, ox: offsetX, oy: offsetY };
-    activePointerId = e.pointerId;
-    panSamplePrev = null;
-    panSampleCurr = null;
-    try { mount.setPointerCapture(e.pointerId); } catch(_){}
-  }
-
-  function updatePan(e){
-    if (!isFullscreen || scale <= 1 || !panStart) return;
-
-    const dx = e.clientX - panStart.x;
-    const dy = e.clientY - panStart.y;
-    const dist2 = dx*dx + dy*dy;
-
-    if (!isPanning && dist2 > TAP_SLOP2){
-      isPanning = true;
-      suppressNextBoardClick = true;
-    }
-    if (!isPanning) return;
-
-    offsetX = panStart.ox - dx;
-    offsetY = panStart.oy - dy;
-
-    applyPanAndSize(false);
-
-    const now = performance.now();
-    panSamplePrev = panSampleCurr;
-    panSampleCurr = { ox: offsetX, oy: offsetY, t: now };
-
-    e.preventDefault();
-  }
-
-  function endPan(e){
-    const wasPanning = isPanning;
-
-    if (activePointerId != null){
-      try { mount.releasePointerCapture(activePointerId); } catch(_){}
-    }
-    activePointerId = null;
-    panStart = null;
-    isPanning = false;
-
-    if (!wasPanning || !isFullscreen || scale <= 1) return;
-    if (!panSamplePrev || !panSampleCurr) return;
-
-    let dt = panSampleCurr.t - panSamplePrev.t;
-    if (dt <= 0 || dt > 120) return;
-
-    const vx = (panSampleCurr.ox - panSamplePrev.ox) / dt;
-    const vy = (panSampleCurr.oy - panSamplePrev.oy) / dt;
-
-    startFling(vx, vy);
-  }
-
-  function startFling(vx, vy){
-    if (!isFullscreen || scale <= 1) return;
-
-    const MAX_SPEED = 0.50;
-    let speed = Math.hypot(vx, vy);
-    if (speed > MAX_SPEED){
-      const s = MAX_SPEED / speed;
-      vx *= s;
-      vy *= s;
-      speed = MAX_SPEED;
-    }
-    if (speed < 0.04) return;
-
-    cancelFling();
-    isFlinging = true;
-    flingVX = vx;
-    flingVY = vy;
-    flingLastTime = performance.now();
-
-    function step(now){
-      if (!isFlinging) return;
-
-      let dt = now - flingLastTime;
-      if (dt <= 0){
-        flingId = requestAnimationFrame(step);
-        return;
-      }
-      if (dt > 50) dt = 50;
-      flingLastTime = now;
-
-      offsetX += flingVX * dt;
-      offsetY += flingVY * dt;
-
-      const friction = 0.0010;
-      let speed = Math.hypot(flingVX, flingVY);
-      const decel = friction * dt;
-
-      if (speed <= 0.01 || decel >= speed){
-        cancelFling();
-        applyPanAndSize(true);
-        return;
-      }
-
-      const newSpeed = speed - decel;
-      const s = newSpeed / speed;
-      flingVX *= s;
-      flingVY *= s;
-
-      applyPanAndSize(false);
-      flingId = requestAnimationFrame(step);
-    }
-
-    flingId = requestAnimationFrame(step);
-  }
-
-  function getBoardBounds(){
-    const firstX = getXcss(0);
-    const lastX  = getXcss(SIZE - 1);
-    const firstY = getYcss(0);
-    const lastY  = getYcss(SIZE - 1);
-
-const spacingX = SIZE > 1 ? Math.abs(getXcss(1) - firstX) : 0;
-const spacingY = SIZE > 1 ? Math.abs(getYcss(1) - firstY) : 0;
-
-    const halfX = (spacingX || spacingY || 16) * 0.5;
-    const halfY = (spacingY || spacingX || 16) * 0.5;
-
-    return {
-      minX: firstX - halfX,
-      maxX: lastX  + halfX,
-      minY: firstY - halfY,
-      maxY: lastY  + halfY
-    };
-  }
-
-  // Tap/drag handling on the drills board mount (touch only)
-  mount.addEventListener('pointerdown', function(e){
-    if (!zoomEnabled) return;
-    if (e.pointerType && e.pointerType !== 'touch') return;
-
-    cancelFling();
-    e.preventDefault();
-
-const rect = mount.getBoundingClientRect();
-const sx = e.clientX - rect.left;
-const sy = e.clientY - rect.top;
-
-// match core math (offset is treated in screen-space)
-const boardX = (sx + offsetX) / scale;
-const boardY = (sy + offsetY) / scale;
-
-
-
-    const bounds = getBoardBounds();
-
-    let gridI = null, gridJ = null;
-    if (boardX >= bounds.minX && boardX <= bounds.maxX &&
-        boardY >= bounds.minY && boardY <= bounds.maxY){
-      let bestI = 0, bestDx = Infinity;
-      for (let i = 0; i < SIZE; i++){
-        const dxI = Math.abs(getXcss(i) - boardX);
-        if (dxI < bestDx){ bestDx = dxI; bestI = i; }
-      }
-      let bestJ = 0, bestDy = Infinity;
-      for (let j = 0; j < SIZE; j++){
-        const dyJ = Math.abs(getYcss(j) - boardY);
-        if (dyJ < bestDy){ bestDy = dyJ; bestJ = j; }
-      }
-      gridI = bestI;
-      gridJ = bestJ;
-    }
-
-    tapStart = {
-      x: e.clientX,
-      y: e.clientY,
-      t: performance.now(),
-      gridI,
-      gridJ
-    };
-
-    beginPan(e);
-  }, { passive:false });
-
-// Use capture so we intercept before WGo's own click handler
-  mount.addEventListener('pointerup', function(e){
-    // --- CASE A: Zoom Disabled (Match Core Board behavior) ---
-    if (!zoomEnabled) {
-      if (e.pointerType && e.pointerType !== 'touch') return; // Let mouse use WGo default
-
-      const r = mount.getBoundingClientRect();
-      const bx = e.clientX - r.left;
-      const by = e.clientY - r.top;
-
-      let bestI = -1, bestJ = -1, bestDx = 1e9, bestDy = 1e9;
-      for (let i = 0; i < SIZE; i++){
-        const dx = Math.abs(getXcss(i) - bx);
-        if (dx < bestDx){ bestDx = dx; bestI = i; }
-      }
-      for (let j = 0; j < SIZE; j++){
-        const dy = Math.abs(getYcss(j) - by);
-        if (dy < bestDy){ bestDy = dy; bestJ = j; }
-      }
-
-      // Threshold Check (Ignore clicks in the gutter/border)
-      const spacing = getGridSpacing();
-      if (bestDx > spacing.x * 0.5 || bestDy > spacing.y * 0.5) {
-        return; 
-      }
-
-      e.preventDefault();
-      // Use the Drills board move handler
-      onBoardClick(bestI, bestJ);
-      return;
-    }
-
-    // --- CASE B: Zoom Enabled ---
-    if (!tapStart){
-      endPan(e);
-      return;
-    }
-    if (e.pointerType && e.pointerType !== 'touch'){
-      endPan(e);
-      tapStart = null;
-      return;
-    }
-
-    const dx = e.clientX - tapStart.x;
-    const dy = e.clientY - tapStart.y;
-    const dist2 = dx*dx + dy*dy;
-
-    const gi = tapStart.gridI;
-    const gj = tapStart.gridJ;
-    const tapClientX = tapStart.x;
-    const tapClientY = tapStart.y;
-
-    tapStart = null;
-    const wasPanning = isPanning;
-    endPan(e);
-
-    if (wasPanning) return;
-
-    if (dist2 <= TAP_SLOP2){
-      const baseView = (!isFullscreen && scale === 1);
-
-      if (baseView){
-        // Tap from base view – zoom in around tap
-        let ti = gi;
-        let tj = gj;
-
-        // If tap was in gutter, recalculate best grid point based on click coords
-        if (ti == null || tj == null || ti < 0 || tj < 0 || ti >= SIZE || tj >= SIZE){
-          const rect = mount.getBoundingClientRect();
-          const sx = tapClientX - rect.left;
-          const sy = tapClientY - rect.top;
-
-          let bestI = 0, bestDx = Infinity;
-          for (let i = 0; i < SIZE; i++){
-            const dxI = Math.abs(getXcss(i) - sx);
-            if (dxI < bestDx){ bestDx = dxI; bestI = i; }
-          }
-          let bestJ = 0, bestDy = Infinity;
-          for (let j = 0; j < SIZE; j++){
-            const dyJ = Math.abs(getYcss(j) - sy);
-            if (dyJ < bestDy){ bestDy = dyJ; bestJ = j; }
-          }
-          ti = bestI;
-          tj = bestJ;
-        }
-
-        e.preventDefault();
-        e.stopPropagation();
-        if (e.stopImmediatePropagation) e.stopImmediatePropagation();
-
-        suppressNextBoardClick = true;
-        enterFullscreenAtGrid(ti, tj, tapClientX, tapClientY);
-        return;
-      }
-
-      // Already zoomed – treat tap as move if on the grid
-      if (gi == null || gj == null || gi < 0 || gj < 0 || gi >= SIZE || gj >= SIZE){
-        return;
-      }
-
-      e.preventDefault();
-      e.stopPropagation();
-      if (e.stopImmediatePropagation) e.stopImmediatePropagation();
-
-      suppressNextBoardClick = true;
-      onBoardClick(gi, gj);
-
-      // Auto-zoom out check (Match Core Board behavior)
-      if (GoPrefs && !GoPrefs.disableAutoZoomOut && scale > 1) {
-         setTimeout(function(){
-            if(isFullscreen) exitFullscreen();
-            else resetViewLocal();
-         }, 10);
-      }
-    }
-  }, { passive:false, capture:true });
-
-  mount.addEventListener('pointermove', function(e){
-    if (!zoomEnabled) return;
-    if (e.pointerType && e.pointerType !== 'touch') return;
-    updatePan(e);
-  }, { passive:false });
-
-  mount.addEventListener('pointercancel', function(e){
-    if (e.pointerType && e.pointerType !== 'touch') return;
-    endPan(e);
-  }, { passive:true });
-
-  // Zoom-aware sizing on resize
-  function fitBoard(){
-    applyPanAndSize(true);
-  }
-  window.addEventListener('resize', function(){
-    setTimeout(fitBoard, 10);
-  });
-
-  // Optional: let Settings toggle zoom
-  window.DrillZoom = {
-    isEnabled(){ return zoomEnabled; },
-    setEnabled(v){
-      zoomEnabled = !!v;
-      if (!zoomEnabled){
-        if (isFullscreen) exitFullscreen();
-        else resetViewLocal();
-      }
-    },
-    resetView(){
-      if (isFullscreen) exitFullscreen();
-      else resetViewLocal();
-    },
-    isFullscreen(){
-      return isFullscreen;
-    }
-  };
-
-  // React to go:prefs-changed if fired by Settings
-  window.addEventListener('go:prefs-changed', function(e){
-    const d = e.detail || {};
-    if (!d || typeof d.key === 'undefined') return;
-    if (d.key === 'josekiZoom'){
-      zoomEnabled = !!d.value;
-      if (!zoomEnabled){
-        if (isFullscreen) exitFullscreen();
-        else resetViewLocal();
-      }
-    }
-  });
-
-  function prepareCorner(tline, startIndex){
-    resetGrid();
-    (tline.rootAB||[]).forEach(p=>addStone(p.x,p.y,'B'));
-    (tline.rootAW||[]).forEach(p=>addStone(p.x,p.y,'W'));
-    for (let s=0;s<startIndex;s++){ const m = tline.moves[s]; playMove(m.x,m.y,m.color, true); }
-    remain = tline.moves.slice(startIndex).map(m=>({x:m.x,y:m.y,color:m.color}));
-    redraw();
-  }
-
-  function startDrill(i){
-    index = i;
-    if (index >= slots.length){ showDone(); return; }
-    const slot = slots[index], base = slot.base, key  = slot.key;
-
-    SIZE = base.size || 19;
-    if (!board) initBoard();
-    clearTimers();
-
-    ensureRunPlanFor(key, base);
-    const variant = runPlan[key].get(index);
-    const tline = makeTransformed(base, variant.orientIdx, variant.swap);
-    currentTransformed = tline;
-
-    prepareCorner(tline, variant.startIndex);
-
-    blitzCornerPlannedMoves = remain.length;
-    if (blitzMode){
-      ensureTimerEl();
-      timerMs += blitzCornerPlannedMoves * 1500;
-      if (!timerId) startTimer();
-      if (timerEl) timerEl.textContent = fmtMs(timerMs);
-      blitzCornerState = {
-        tline,
-        startIndex: variant.startIndex,
-        plannedN: blitzCornerPlannedMoves
-      };
-    }
-
-    setProgress();
-    locked = false;
-  }
-
-  function restartSameCornerBlitz(){
-    if (!blitzMode || !blitzCornerState) return;
-    prepareCorner(blitzCornerState.tline, blitzCornerState.startIndex);
-    locked = false;
-  }
-
-  function onBoardClick(x,y){
-    if (locked || timeUp) return;
-    if (x<0 || y<0 || x>=SIZE) return;
-    if (grid[y][x] !== null) return;
-    if (!remain.length) return;
-
-    const next = remain[0];
-    if (next.x === x && next.y === y){
-      playMove(x,y,next.color, false);
-      remain.shift();
-
-      if (!remain.length){
-        solvedCount++;
-        if (blitzMode){
-          timerMs += blitzCornerPlannedMoves * 500;
-          if (timerEl) timerEl.textContent = fmtMs(timerMs);
-        }
-        if (index >= (slots.length - 1)) {
-          showClearedThenDone();
-        } else {
-          showClearedAuto();
-        }
-      }
-    } else {
-      failedCount++;
-      if (blitzMode){
-        showWrongThenRestart();
-      } else {
-        showWrongAuto();
-      }
-    }
-  }
-
-  function showWrongThenRestart(){
-    clearTimers();
-    wrongM.style.display='flex';
-    locked = true;
-    wrongTimer = setTimeout(() => {
-      wrongM.style.display='none';
-      restartSameCornerBlitz();
-    }, 800);
-  }
-  function showWrongAuto(){
-    clearTimers();
-    wrongM.style.display='flex';
-    locked = true;
-    wrongTimer = setTimeout(() => {
-      wrongM.style.display='none';
-      locked = false;
-      if (index >= (slots.length - 1)) showDone(); else startDrill(index+1);
-    }, 1000);
-  }
-
-  function showClearedAuto(){
-    clearTimers();
-    clearedM.style.display='flex';
-    locked = true;
-    clearedTimer = setTimeout(() => {
-      clearedM.style.display='none';
-      locked = false;
-      startDrill(index+1);
-    }, 850);
-  }
-  function showClearedThenDone(){
-    clearTimers();
-    clearedM.style.display='flex';
-    locked = true;
-    clearedTimer = setTimeout(() => {
-      clearedM.style.display='none';
-      showDone();
-    }, 800);
-  }
-
-    function showDone(customTitle){
-    clearTimers();
-
-    if (statSolvedEl) statSolvedEl.textContent = String(solvedCount);
-    if (statFailedEl) statFailedEl.textContent = String(failedCount);
-    if (doneTitle)    doneTitle.textContent   = customTitle || 'All Drills Complete';
-
-    const left = dailyAttemptsLeftForCurrentMode();
-
-    if (left <= 0){
-      if (doneMsgEl) doneMsgEl.textContent = 'You reached your drills limit.';
-      doneRetry.disabled = true;
-      doneRetry.style.opacity = '.6';
-      doneRetry.style.cursor = 'not-allowed';
-    } else {
-      if (doneMsgEl) {
-        doneMsgEl.textContent = customTitle
-          ? 'Session ended.'
-          : 'Session finished. You can retry the set or go back to selection.';
-      }
-      doneRetry.disabled = false;
-      doneRetry.style.opacity = '1';
-      doneRetry.style.cursor = 'pointer';
-    }
-
-    doneM.style.display = 'flex';
-    if (blitzMode) stopTimer();
-  }
-
-  doneBack.addEventListener('click', function(){
-    doneM.style.display='none';
-    try{ window.location.href = '../drills/drills.html'; }catch(e){}
-  });
-
-  function reshuffleSlots(){
-    if (!slots.length) return;
-    slots = mixSlotsFairly(slots.slice());
-    lineToSlotIdxs = {};
-    for (let i=0;i<slots.length;i++){
-      const key = slots[i].key;
-      if (!lineToSlotIdxs[key]) lineToSlotIdxs[key] = [];
-      lineToSlotIdxs[key].push(i);
-    }
-  }
-
-  doneRetry.addEventListener('click', function(){
-    // Use the shared per-day counter (same as drills.html)
-    if (!hasDailyAttemptsLeftForCurrentMode()){
-      showCapMsg();
-      if (doneMsgEl) doneMsgEl.textContent = 'You reached your drills limit.';
-      doneRetry.disabled = true;
-      doneRetry.style.opacity = '.6';
-      doneRetry.style.cursor = 'not-allowed';
-      return;
-    }
-
-    // Consume one daily attempt for this mode (Complete / Blitz)
-    recordDailyAttemptForCurrentMode();
-
-    doneM.style.display = 'none';
-    resetStats();
-    reshuffleSlots();
-    newRunPlan();
-    blitzCornerState = null;
-    timeUp = false;
-
-    if (blitzMode){
-      timerMs = 0;
-      ensureTimerEl();
-      if (timerEl) timerEl.textContent = fmtMs(timerMs);
-      startTimer();
-    } else {
-      if (timerEl) timerEl.style.display = 'none';
-      stopTimer();
-    }
-
-    if (slots.length){
-      startDrill(0);
-    }
-  });
-
-  btnNext.addEventListener('click',  function(){
-    if (!slots.length) return;
-    startDrill(index+1);
-  });
-
-  btnMenu.addEventListener('click',  function(){
-    try{ window.location.href = '../drills/drills.html'; }catch(e){}
-  });
-
+  /* Cross-section OWN lookup helpers */
   const OWN_STORE_KEY = 'go:ownpatterns';
-  const FAV_KEY       = 'go_favorites';
-
   function loadOwnPatterns(){ try { return JSON.parse(localStorage.getItem(OWN_STORE_KEY) || '[]'); } catch(_){ return []; } }
-  function readFavs(){ try { return JSON.parse(localStorage.getItem(FAV_KEY) || '{}') || {}; } catch(_){ return {}; } }
-
-  function normalizeLineLike(obj){
-    return {
-      size: obj.size || 19,
-      rootAB: Array.isArray(obj.rootAB)?obj.rootAB:[],
-      rootAW: Array.isArray(obj.rootAW)?obj.rootAW:[],
-      moves:  (obj.moves||[]).map(m => ({ x:m.x, y:m.y, color:(m.color==='W'?'W':'B') }))
-    };
-  }
-
-  function fetchLibraryLines(){
-    return fetch(SGF_URL, { cache:'no-cache' }).then(r=>r.text()).then(txt=>{
-      const trees = parseAllTrees(txt);
-      const lines=[];
-      for (const seq of trees){
-        linkify(seq,null);
-        const size = parseSZ(seq[0]?.SZ);
-        const rootAB = listCoords(seq[0]?.AB, size);
-        const rootAW = listCoords(seq[0]?.AW, size);
-        const paths  = enumerateLines(seq,size);
-        for (const moves of paths){
-          if ((moves?.length||0) >= MIN_MOVES){
-            lines.push({ size, rootAB, rootAW, moves });
-          }
-        }
-      }
-      return lines;
+  function refreshOwnLookupFromLines(){
+    state.keyToOwnIds = new Map();
+    state.ownIdToKey = new Map();
+    (state.linesOwn||[]).forEach(function(line){
+      var id = line.__id; if (!id) return;
+      var key = lineKey(line);
+      state.ownIdToKey.set(id, key);
+      if (!state.keyToOwnIds.has(key)) state.keyToOwnIds.set(key, new Set());
+      state.keyToOwnIds.get(key).add(id);
     });
   }
-  // Helper: get selections either from GoDrills (inline/Bubble)
-  // or from sessionStorage (drills.html → drills-board.html bridge)
-  function getDrillSelections(){
-    // 1) If GoDrills exists (same-page integration), use it
-    if (window.GoDrills && typeof window.GoDrills.getSelections === 'function') {
-      try {
-        return window.GoDrills.getSelections();
-      } catch (e) {}
-    }
-
-    // 2) Otherwise, use the bridge from the list page
+  function rebuildOwnLookupIfNeeded(){
+    if (state.keyToOwnIds && state.keyToOwnIds.size) return;
+    state.keyToOwnIds = new Map();
+    state.ownIdToKey  = new Map();
     try {
-      if (typeof sessionStorage === 'undefined') return null;
-      var raw = sessionStorage.getItem('go:drills_next_selection');
-      if (!raw) return null;
-      var obj = JSON.parse(raw);
-      if (!obj || typeof obj !== 'object') return null;
-      return obj;
-    } catch (e) {
-      return null;
-    }
+      const items = loadOwnPatterns().filter(p => Array.isArray(p?.moves) && p.moves.length >= MIN_MOVES);
+      items.forEach(function(p){
+        if (!p.id) return;
+        const key = lineKey({ size: p.size || 19, moves: (p.moves||[]).map(m=>({x:m.x,y:m.y,color:m.color})) });
+        state.ownIdToKey.set(p.id, key);
+        if (!state.keyToOwnIds.has(key)) state.keyToOwnIds.set(key, new Set());
+        state.keyToOwnIds.get(key).add(p.id);
+      });
+    } catch(_){}
   }
 
-  const DrillBoard = {
-    load: function(linesOrNull, opts){
-      PER = Math.max(1, parseInt((opts && opts.perJoseki) || 3, 10) || 3);
+  /* Clear helpers */
+  function clearAllSelections(){
+    state.selectedLib.clear();
+    state.selectedFav.clear();
+    state.selectedOwnIds.clear();
+    saveSelection(LIB_SEL_KEY, state.selectedLib);
+    saveSelection(FAV_SEL_KEY, state.selectedFav);
+    saveSelection(OWN_SEL_KEY, state.selectedOwnIds);
+    root.querySelectorAll('.joseki-card .tickbox[aria-checked="true"]').forEach(function(t){ t.setAttribute('aria-checked','false'); });
+    updateLibCount(); updateFavCount(); updateOwnCount();
+  }
+  function clearKeysAcrossAll(keysIterable){
+    var keys = Array.from(keysIterable || []); if (!keys.length) return;
+    rebuildOwnLookupIfNeeded();
+    var changedOwn = false;
+    keys.forEach(function(k){
+      state.selectedLib.delete(k);
+      state.selectedFav.delete(k);
+      setTickForLineKey(k);
+      var idsSet = state.keyToOwnIds.get(k);
+      if (idsSet){
+        idsSet.forEach(function(id){
+          if (state.selectedOwnIds.delete(id)){
+            changedOwn = true;
+            setTickForOwnId(id);
+          }
+        });
+      }
+    });
+    saveSelection(LIB_SEL_KEY, state.selectedLib);
+    saveSelection(FAV_SEL_KEY, state.selectedFav);
+    if (changedOwn) saveSelection(OWN_SEL_KEY, state.selectedOwnIds);
+    updateLibCount(); updateFavCount(); updateOwnCount();
+  }
 
-      // Read selections via helper (GoDrills on same page OR sessionStorage bridge)
-      const sel = getDrillSelections();
-      const selMode = (sel && sel.mode === 'blitz') ? 'blitz' : 'complete';
-      blitzMode = (selMode === 'blitz');
+  /* Library build and render */
+  function updateStartButton(){
+    var n = totalSelectedCount();
+    var shouldShow = overlayOpen && state.view !== 'mode' && n > 0 && n <= MAX_TOTAL;
+    startBtn.style.display = shouldShow ? 'inline-block' : 'none';
+    startBtn.setAttribute('aria-hidden', shouldShow ? 'false' : 'true');
+    startBtn.disabled = !shouldShow;
+  }
+  function updateLibCount(){
+    const n = totalSelectedCount();
+    if (libCount) libCount.textContent = n + ' / ' + MAX_TOTAL + ' selected';
+    updateStartButton();
+  }
 
-      function buildSlots(baseLines){
-        const raw = [];
-        for (const base of baseLines){
-          const key = lineKey(base);
-          for (let k=0;k<PER;k++){
-            raw.push({ key, base });
+  function buildLibraryList(){
+    state.selectedLib = loadSelection(LIB_SEL_KEY);
+    libCatsGrid.innerHTML=''; libVarsGrid.innerHTML='';
+    libVarsGrid.style.display='none'; libCatsGrid.style.display='grid';
+
+    const loading=document.createElement('div');
+    loading.className='s-card';
+    loading.style.padding='12px';
+    loading.innerHTML='<div class="info-title">Loading…</div><div class="info-desc">Reading joseki (10+ moves)…</div>';
+    libCatsGrid.appendChild(loading);
+
+    fetch(SGF_URL, { cache:'no-cache' })
+      .then(r=>r.text())
+      .then(txt=>{
+        const trees=parseAllTrees(txt);
+        const lines=[];
+        for (const seq of trees){
+          linkify(seq,null);
+          const size=parseSZ(seq[0]?.SZ);
+          const rootAB=listCoords(seq[0]?.AB, size);
+          const rootAW=listCoords(seq[0]?.AW, size);
+          const paths=enumerateLines(seq,size);
+          for (const moves of paths){
+            if ((moves?.length||0) >= MIN_MOVES){
+              lines.push({ size, rootAB, rootAW, moves });
+            }
           }
         }
-        slots = mixSlotsFairly(raw);
-        lineToSlotIdxs = {};
-        for (let i=0;i<slots.length;i++){
-          const key = slots[i].key;
-          if (!lineToSlotIdxs[key]) lineToSlotIdxs[key] = [];
-          lineToSlotIdxs[key].push(i);
+        state.linesLib = lines;
+
+        const catMap = new Map();
+        for (let i=0;i<lines.length;i++){
+          const mv = lines[i].moves; if (mv.length < 2) continue;
+          const s = lines[i].size || 19, m1 = mv[0], m2 = mv[1];
+          const key = `${s}|${m1.color}:${m1.x},${m1.y}|${m2.color}:${m2.x},${m2.y}`;
+          if (!catMap.has(key)) catMap.set(key, { key, size:s, firstTwo:[m1,m2], lineIdx:[] });
+          catMap.get(key).lineIdx.push(i);
         }
-      }
+        state.libCats = Array.from(catMap.values());
 
-      function go(lines){
-        const usable = (lines||[]).filter(l => Array.isArray(l.moves) && l.moves.length >= MIN_MOVES).map(normalizeLineLike);
-        if (!usable.length){
-          alert('No eligible drills (need patterns with 10+ moves).');
-          return;
-        }
-        buildSlots(usable);
-        newRunPlan();
+        renderLibCategories();
+        state.builtLib = true;
+      })
+      .catch(err=>{
+        libCatsGrid.innerHTML='';
+        const errEl=document.createElement('div');
+        errEl.className='s-card';
+        errEl.innerHTML='<div class="info-title">Could not load SGF</div><div class="info-desc">'+(err?.message||'Unknown error')+'</div>';
+        libCatsGrid.appendChild(errEl);
+      });
+  }
 
-        resetStats();
-        index=0;
-        blitzCornerState = null;
-        timeUp = false;
+  function renderLibCategories(){
+    libCatsGrid.innerHTML='';
+    libVarsGrid.style.display='none';
+    libCatsGrid.style.display='grid';
 
-        if (blitzMode){
-          timerMs = 0;
-          ensureTimerEl();
-          timerEl.style.display = 'block';
-          timerEl.textContent = fmtMs(timerMs);
-          startTimer();
-        } else {
-          if (timerEl) timerEl.style.display = 'none';
-          stopTimer();
-        }
-
-        startDrill(0);
-        try{ (wrap).scrollIntoView({behavior:'smooth',block:'start'});}catch(_){}
-      }
-
-      if (Array.isArray(linesOrNull)){
-        go(linesOrNull);
-        return;
-      }
-
-      // If we have a selection (from GoDrills or from sessionStorage),
-      // use ONLY those lines instead of the full library.
-      if (sel && (
-          (sel.library && sel.library.length) ||
-          (sel.favorites && sel.favorites.length) ||
-          (sel.own && sel.own.length)
-        )){
-
-        const favMap   = readFavs();
-        const favLines = Object.values(favMap).map(normalizeLineLike);
-        const favPick  = favLines.filter(l => (sel.favorites || []).includes(lineKey(l)));
-
-        const ownAll   = loadOwnPatterns();
-        const ownPick  = ownAll
-          .filter(p => (sel.own || []).includes(p.id))
-          .map(normalizeLineLike);
-
-        if ((sel.library || []).length){
-          fetchLibraryLines().then(allLib => {
-            const libPick = allLib.filter(l => (sel.library || []).includes(lineKey(l)));
-            go([ ...libPick, ...favPick, ...ownPick ]);
-          }).catch(() => {
-            go([ ...favPick, ...ownPick ]);
-          });
-        } else {
-          go([ ...favPick, ...ownPick ]);
-        }
-        return;
-      }
-
-      // Fallback: no selection info → load full library (old behavior)
-      fetchLibraryLines().then(go).catch(() => alert('Could not load drills.'));
-
-    },
-
-    exit: function(){
-      stopTimer();
-    }
-  };
-  window.DrillBoard = DrillBoard;
-
-  if (mount && !board) initBoard();
-
-  function hookStart(){
-    const s = document.getElementById('drills-start');
-    if (!s) return setTimeout(hookStart, 150);
-    if (s.__dbHooked) return;
-    s.__dbHooked = true;
-
-    function ensureDrillWins(){
-      try{
-        const gj = document.getElementById('group-joseki');
-        if (gj) gj.setAttribute('data-hidden','1');
-      }catch(_){}
+    if (!state.libCats.length){
+      const empty=document.createElement('div');
+      empty.className='s-card';
+      empty.innerHTML='<div class="info-title">No categories found</div><div class="info-desc">None with ≥ 10 moves.</div>';
+      libCatsGrid.appendChild(empty); return;
     }
 
-    function startNow(e){
-      if (s.disabled || s.getAttribute('aria-hidden') === 'true' || s.style.display === 'none') return;
+    state.libCats.forEach(cat=>{
+      const card=document.createElement('button'); card.type='button'; card.className='s-card joseki-card'; card.dataset.key=cat.key;
+      const thumb=document.createElement('div'); thumb.className='drill-thumb';
+      const meta=document.createElement('div'); meta.className='joseki-meta';
+      const title=document.createElement('div'); title.className='joseki-title';
 
-      if (!canStart()){
-        if (e){ e.preventDefault(); e.stopImmediatePropagation(); e.stopPropagation(); }
-        showCapMsg();
-        return;
+      const count = cat.lineIdx.length;
+      title.textContent = `${count} variation${count!==1?'s':''} (≥ ${MIN_MOVES} moves)`;
+
+      meta.appendChild(title);
+      card.appendChild(thumb); card.appendChild(meta);
+      libCatsGrid.appendChild(card);
+
+      renderTwoMoveThumb(thumb, cat.size||19, cat.firstTwo);
+      card.addEventListener('click', function(){ showLibCategory(cat.key); });
+    });
+  }
+
+  function renderLibVariations(catKey){
+    libVarsGrid.innerHTML='';
+    const cat = state.libCats.find(c=>c.key===catKey);
+    if (!cat){ renderLibCategories(); return; }
+
+    if (!cat.lineIdx.length){
+      const empty=document.createElement('div');
+      empty.className='s-card';
+      empty.innerHTML='<div class="info-title">No josekis in this category</div><div class="info-desc">Try another category.</div>';
+      libVarsGrid.appendChild(empty); return;
+    }
+
+    cat.lineIdx.forEach((idx,i)=>{
+      const line = state.linesLib[idx];
+      const key  = lineKey(line);
+
+      const card=document.createElement('button'); card.type='button';
+      card.className='s-card joseki-card'; card.dataset.key=key;
+
+      const thumb=document.createElement('div'); thumb.className='drill-thumb';
+      const meta=document.createElement('div'); meta.className='joseki-meta';
+      const title=document.createElement('div'); title.className='joseki-title';
+      const tick=document.createElement('span'); tick.className='tickbox'; tick.setAttribute('role','checkbox'); tick.setAttribute('tabindex','0');
+
+      title.textContent = `Variation ${i+1} (${line.moves.length} moves)`;
+      tick.setAttribute('aria-checked', isOnLineKey(key) ? 'true' : 'false');
+
+      meta.appendChild(title);
+      card.appendChild(thumb); card.appendChild(meta); card.appendChild(tick);
+      libVarsGrid.appendChild(card);
+
+      renderVariationThumb(thumb, line);
+
+      function toggle(){
+        const on = tick.getAttribute('aria-checked') === 'true';
+        if (on){ deselectLineKeyGlobal(key); }
+        else   { selectLineKeyIn('lib', key); }
       }
-      incRuns();
+      card.addEventListener('click', toggle);
+      tick.addEventListener('click', function(e){ e.stopPropagation(); toggle(); });
+      tick.addEventListener('keydown', function(e){ if (e.key===' '||e.key==='Enter'){ e.preventDefault(); e.stopPropagation(); toggle(); }});
+    });
+  }
 
-      if (e){
-        e.preventDefault();
-        e.stopImmediatePropagation();
-        e.stopPropagation();
+  /* Clear LIBRARY */
+  libClear && libClear.addEventListener('click', clearAllSelections);
+
+  /* Favorites */
+  const FAV_KEY = 'go_favorites';
+  function readFavs(){
+    try { return JSON.parse(localStorage.getItem(FAV_KEY) || '{}') || {}; } catch(_){ return {}; }
+  }
+  function updateFavCount(){
+    const n = totalSelectedCount();
+    if (favCount) favCount.textContent = n + ' / ' + MAX_TOTAL + ' selected';
+    updateStartButton();
+  }
+
+  function buildFavoritesList(){
+    state.selectedFav = loadSelection(FAV_SEL_KEY);
+    favGrid.innerHTML='';
+    const map = readFavs();
+    const list = Object.values(map).filter(line => Array.isArray(line?.moves) && line.moves.length >= MIN_MOVES);
+
+    if (!list.length){
+      const empty=document.createElement('div');
+      empty.className='s-card';
+      empty.innerHTML='<div class="info-title">No favorites yet</div><div class="info-desc">Star josekis in Practice to see them here (10+ moves).</div>';
+      favGrid.appendChild(empty);
+      state.linesFav = []; state.builtFav = true; updateFavCount(); return;
+    }
+
+    state.linesFav = list.map(l => ({
+      size: l.size || 19,
+      rootAB: Array.isArray(l.rootAB)?l.rootAB:[],
+      rootAW: Array.isArray(l.rootAW)?l.rootAW:[],
+      moves:  (l.moves||[]).map(m => ({x:m.x,y:m.y,color:m.color}))
+    }));
+
+    renderFavGrid(); state.builtFav = true;
+  }
+
+  function renderFavGrid(){
+    favGrid.innerHTML='';
+    if (!state.linesFav.length){
+      const empty=document.createElement('div');
+      empty.className='s-card';
+      empty.innerHTML='<div class="info-title">No favorites available</div><div class="info-desc">None meet the 10+ move rule.</div>';
+      favGrid.appendChild(empty); updateFavCount(); return;
+    }
+
+    state.linesFav.forEach((line, i)=>{
+      const key = lineKey(line);
+      const card=document.createElement('button'); card.type='button';
+      card.className='s-card joseki-card'; card.dataset.key=key;
+
+      const thumb=document.createElement('div'); thumb.className='drill-thumb';
+      const meta=document.createElement('div'); meta.className='joseki-meta';
+      const title=document.createElement('div'); title.className='joseki-title';
+      const tick=document.createElement('span'); tick.className='tickbox'; tick.setAttribute('role','checkbox'); tick.setAttribute('tabindex','0');
+
+      title.textContent = `Favorite ${i+1} (${line.moves.length} moves)`;
+      tick.setAttribute('aria-checked', isOnLineKey(key) ? 'true' : 'false');
+
+      meta.appendChild(title);
+      card.appendChild(thumb); card.appendChild(meta); card.appendChild(tick);
+      favGrid.appendChild(card);
+
+      renderVariationThumb(thumb, line);
+
+      function toggle(){
+        const on = tick.getAttribute('aria-checked') === 'true';
+        if (on){ deselectLineKeyGlobal(key); }
+        else   { selectLineKeyIn('fav', key); }
       }
+      card.addEventListener('click', toggle);
+      tick.addEventListener('click', function(e){ e.stopPropagation(); toggle(); });
+      tick.addEventListener('keydown', function(e){ if (e.key===' '||e.key==='Enter'){ e.preventDefault(); e.stopPropagation(); toggle(); }});
+    });
+    updateFavCount();
+  }
 
-      if (window.GoDrills && typeof GoDrills.close === 'function'){
+  /* Clear FAVORITES */
+  favClear && favClear.addEventListener('click', clearAllSelections);
+
+  /* My Patterns (OWN) */
+  function updateOwnCount(){
+    const n = totalSelectedCount();
+    if (ownCount) ownCount.textContent = n + ' / ' + MAX_TOTAL + ' selected';
+    updateStartButton();
+  }
+
+  function buildOwnList(){
+    state.selectedOwnIds = loadSelection(OWN_SEL_KEY);
+    ownGrid.innerHTML='';
+
+    const items = loadOwnPatterns().filter(p => Array.isArray(p?.moves) && p.moves.length >= MIN_MOVES);
+
+    if (!items.length){
+      const empty=document.createElement('div');
+      empty.className='s-card';
+      empty.innerHTML='<div class="info-title">No eligible patterns</div><div class="info-desc">Add patterns in “My Patterns” with at least 10 moves to use them here.</div>';
+      ownGrid.appendChild(empty);
+      state.linesOwn = []; state.builtOwn = true; updateOwnCount(); return;
+    }
+
+    state.linesOwn = items.map(p => ({
+      __id: p.id || ('own-'+Math.random().toString(36).slice(2)),
+      title: p.title || 'My Pattern',
+      size: p.size || 19,
+      rootAB: Array.isArray(p.rootAB) ? p.rootAB : [],
+      rootAW: Array.isArray(p.rootAW) ? p.rootAW : [],
+      moves: (p.moves||[]).map(m => ({ x:m.x, y:m.y, color:m.color }))
+    }));
+
+    refreshOwnLookupFromLines();
+    renderOwnGrid(); state.builtOwn = true;
+  }
+
+  function renderOwnGrid(){
+    ownGrid.innerHTML='';
+    if (!state.linesOwn.length){
+      const empty=document.createElement('div');
+      empty.className='s-card';
+      empty.innerHTML='<div class="info-title">No patterns available</div><div class="info-desc">None meet the 10+ move rule.</div>';
+      ownGrid.appendChild(empty); updateOwnCount(); return;
+    }
+
+    state.linesOwn.forEach((line, i)=>{
+      const id   = line.__id;
+      const key  = lineKey(line);
+
+      const card=document.createElement('button'); card.type='button';
+      card.className='s-card joseki-card'; card.dataset.ownId=id; card.dataset.key=key;
+
+      const thumb=document.createElement('div'); thumb.className='drill-thumb';
+      const meta=document.createElement('div'); meta.className='joseki-meta';
+      const title=document.createElement('div'); title.className='joseki-title';
+      const tick=document.createElement('span'); tick.className='tickbox'; tick.setAttribute('role','checkbox'); tick.setAttribute('tabindex','0');
+
+      title.textContent = `Pattern ${i+1}: ${line.moves.length} Moves`;
+      tick.setAttribute('aria-checked', state.selectedOwnIds.has(id) ? 'true' : 'false');
+
+      meta.appendChild(title);
+      card.appendChild(thumb); card.appendChild(meta); card.appendChild(tick);
+      ownGrid.appendChild(card);
+
+      renderVariationThumb(thumb, line);
+
+      function toggle(){
+        const on = tick.getAttribute('aria-checked') === 'true';
+        if (on){ deselectOwnId(id); }
+        else   { selectOwnId(id); }
+      }
+      card.addEventListener('click', toggle);
+      tick.addEventListener('click', function(e){ e.stopPropagation(); toggle(); });
+      tick.addEventListener('keydown', function(e){ if (e.key===' '||e.key==='Enter'){ e.preventDefault(); e.stopPropagation(); toggle(); }});
+    });
+    updateOwnCount();
+  }
+
+  /* Clear OWN */
+  ownClear && ownClear.addEventListener('click', clearAllSelections);
+
+  /* Live-refresh if localStorage changes */
+  window.addEventListener('storage', function(e){
+    if (e.key === 'go:ownpatterns' && state.view === 'own') buildOwnList();
+    if (e.key === 'go_favorites'  && state.view === 'fav') buildFavoritesList();
+  });
+
+  /* Start Drills:
+     - If DrillBoard is present on this page (Bubble-style), use it.
+     - Otherwise, redirect to the dedicated drills-board.html page (Vercel).
+     - Always store the current selections in sessionStorage so the board
+       page can load ONLY what was selected.
+  */
+  function startDrillNow(){
+    var mode = state.mode || 'complete';
+
+    // 0) Check daily limit per mode (2 Complete + 2 Blitz on free)
+    if (!hasDrillAttemptsLeft(mode)){
+      var perDay = getDailyLimitForMode(mode);
+      var label  = (mode === 'blitz') ? 'Blitz drills' : 'Complete drills';
+      var msg    = "You've reached today's free limit for " + label + ".";
+      if (isFinite(perDay)){
+        msg += " You can start up to " + perDay + " " + label.toLowerCase() + " per day on the free plan.";
+      }
+      msg += " Come back tomorrow or upgrade to Pro for unlimited drills.";
+      showNotice(msg, 'Daily limit reached');
+      return; // do NOT go to the board
+    }
+
+    // 0b) Record this run locally (per mode)
+    recordDrillAttempt(mode);
+
+    // 1) Capture current selections (mode + library + favorites + own IDs)
+    try {
+      if (window.GoDrills && typeof window.GoDrills.getSelections === 'function') {
+        var sel = window.GoDrills.getSelections();
+        // sel looks like: { library: [...], favorites: [...], own: [...], mode: 'complete'|'blitz' }
+        if (sel && typeof sessionStorage !== 'undefined') {
+          sessionStorage.setItem('go:drills_next_selection', JSON.stringify(sel));
+        }
+      }
+    } catch (_) {}
+
+    // 2) Close the overlay if open
+    try {
+      if (window.GoDrills && typeof window.GoDrills.close === 'function') {
         GoDrills.close();
-      } else {
-        const over = document.getElementById('drills-overlay');
-        if (over) over.style.display = 'none';
       }
+    } catch (_) {}
 
-      setTimeout(()=>{ DrillBoard.load(null, { perJoseki: 3 }); }, 30);
-      setTimeout(ensureDrillWins, 120);
-      setTimeout(ensureDrillWins, 350);
-    }
+    // 3) Bubble-style inline DrillBoard (original behavior)
+    try {
+      var cap = document.getElementById('drill-cap');
+      if (cap) cap.style.display = 'none';
+      if (window.DrillBoard && typeof window.DrillBoard.load === 'function') {
+        DrillBoard.load(null, { perJoseki: 3 });
+        return;
+      }
+    } catch (_) {}
 
-    s.addEventListener('click',     startNow, true);
-    s.addEventListener('pointerup', startNow, true);
-    s.addEventListener('touchend',  startNow, { capture:true, passive:false });
-
-    document.addEventListener('click', function docCap(e){
-      const t = e.target && e.target.closest ? e.target.closest('#drills-start') : null;
-      if (!t) return;
-      startNow(e);
-    }, true);
-  }
-  hookStart();
-
-  // Auto-start when used as standalone page (no drills overlay present)
-  function autoStartStandalone(){
-    const over = document.getElementById('drills-overlay');
-    const startBtn = document.getElementById('drills-start');
-    const isStandalone = !over && !startBtn;
-    if (!isStandalone) return;
-
-    if (!canStart()){
-      showCapMsg();
-      return;
-    }
-    incRuns();
-    DrillBoard.load(null, { perJoseki: 3 });
+    // 4) Static/Vercel: go to dedicated board page
+    try {
+      window.location.href = '../drills-board/drills-board.html';
+    } catch (_) {}
   }
 
-  if (document.readyState === 'loading'){
-    document.addEventListener('DOMContentLoaded', autoStartStandalone);
-  } else {
-    autoStartStandalone();
+
+  function captureProStart(e){
+    if (!isPro()) return;
+    if (state.mode !== 'complete') return;
+    if (!e) return;
+    e.preventDefault(); e.stopImmediatePropagation(); e.stopPropagation();
+    startDrillNow();
   }
+  function captureProRetry(e){
+    if (!isPro()) return;
+    if (state.mode !== 'complete') return;
+    var btn = e && e.target && e.target.closest ? e.target.closest('#drill-done-retry') : null;
+    if (!btn) return;
+    e.preventDefault(); e.stopImmediatePropagation(); e.stopPropagation();
+    try{ var done = document.getElementById('drill-done'); if (done) done.style.display='none'; }catch(_){}
+    startDrillNow();
+  }
+
+  document.addEventListener('click', function(e){
+    var start = e.target && e.target.closest ? e.target.closest('#drills-start') : null;
+    if (start) captureProStart(e);
+  }, true);
+  document.addEventListener('pointerup', function(e){
+    var start = e.target && e.target.closest ? e.target.closest('#drills-start') : null;
+    if (start) captureProStart(e);
+  }, true);
+  document.addEventListener('touchend', function(e){
+    var start = e.target && e.target.closest ? e.target.closest('#drills-start') : null;
+    if (start) captureProStart(e);
+  }, { capture:true, passive:false });
+
+  document.addEventListener('click', captureProRetry, true);
+  document.addEventListener('pointerup', captureProRetry, true);
+  document.addEventListener('touchend', captureProRetry, { capture:true, passive:false });
+
+  function autoHideCapIfPro(){
+    if (!isPro()) return;
+    var cap = document.getElementById('drill-cap');
+    if (cap && cap.style.display !== 'none') cap.style.display='none';
+  }
+  setInterval(autoHideCapIfPro, 800);
+
+  /* Default to Complete */
+  setMode('complete');
 })();
+</script>
+
+<!-- Auto-open drills when page loads -->
+<script>
+  window.addEventListener('load', function(){
+    if (window.GoDrills && typeof window.GoDrills.open === 'function'){
+      window.GoDrills.open();
+    }
+  });
 </script>
 
 </body>
 </html>
+
+
+
+
 
 
 
