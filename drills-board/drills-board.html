@@ -28,9 +28,6 @@
   margin: 0 !important;
   z-index: 99998 !important;
 }
-body.drill-zoom-mode #go-board-drill{
-  position: fixed !important;
-}
 
 
 #go-board-drill{
@@ -1194,8 +1191,9 @@ mount.appendChild(layer);
     mount.style.position = 'relative';
     mount.style.overflow = 'hidden';
 
-    // This is what gets translated+scaled
-    zoomLayer = mount.__woodLayer || mount;
+    // This is what gets translated+scaled (never fall back to the mount itself)
+    zoomLayer = mount.__woodLayer;
+
 
     // Initial sizing
     fitBoard();
@@ -1704,7 +1702,11 @@ function centerZoomAtGrid(i, j, factor, tapClientX, tapClientY){
 
 function enterFullscreenAtGrid(i, j, tapClientX, tapClientY){
   if (isFullscreen) return;
-  if (!zoomLayer) zoomLayer = mount.__woodLayer || mount;
+
+  // Ensure we never transform the mount itself
+  if (!zoomLayer) zoomLayer = mount.__woodLayer;
+  if (!zoomLayer) return; // don't attempt fullscreen until the layer exists
+
 
   ensureOverlay();
 
@@ -1933,8 +1935,12 @@ const spacingY = SIZE > 1 ? Math.abs(getYcss(1) - firstY) : 0;
     if (!zoomEnabled) return;
     if (e.pointerType && e.pointerType !== 'touch') return;
 
+    // Avoid the "sometimes window" bug by requiring the real zoom layer
+    if (!mount.__woodLayerReady || !mount.__woodLayer) return;
+
     cancelFling();
     e.preventDefault();
+
 
 const rect = mount.getBoundingClientRect();
 const sx = e.clientX - rect.left;
