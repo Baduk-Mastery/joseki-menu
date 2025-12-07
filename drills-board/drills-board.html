@@ -382,12 +382,6 @@
   }
 </style>
 <style>
-/* =========================
-   Drills: overlay UI while zoomed
-   Match Practice zoom positioning
-   ========================= */
-
-/* Top overlay container (centers the bar block like Practice) */
 #go-zoom-top-drill{
   position:fixed;
   left:0; right:0; top:0;
@@ -404,10 +398,12 @@
   pointer-events:auto;
 }
 
-/* Bottom overlay container (centers the controls block like Practice) */
+/* Bottom overlay container */
 #go-zoom-ui-drill{
   position:fixed;
   left:0; right:0; bottom:0;
+
+  /* Outer dock padding (same as Joseki dock) */
   padding:0 12px 18px;
 
   display:none;               /* toggled by JS */
@@ -421,7 +417,7 @@
   pointer-events:auto;
 }
 
-/* Keep bars aligned to the same “board-width” feel as Practice */
+/* Constrain bars to the same “board-width” feel */
 #go-zoom-top-drill #drill-topbar{
   max-width:720px;
   width:100%;
@@ -429,13 +425,32 @@
   padding:0;
 }
 
+/* IMPORTANT: restore inner padding for the docked bottom bar
+   to match the Joseki “double padding” look */
 #go-zoom-ui-drill #drill-ctrls{
   max-width:720px;
   width:100%;
   margin:0 auto;
-  padding:0;
+
+  /* Inner padding restored (matches Joseki zoom mode) */
+  padding:0 12px 18px;
+  box-sizing:border-box;
 }
 
+/* Fallback: if for any reason re-homing fails,
+   apply the same sizing rules when fullscreen is active */
+body.drill-zoom-mode #drill-topbar{
+  max-width:720px;
+  width:100%;
+  margin:0 auto;
+}
+body.drill-zoom-mode #drill-ctrls{
+  max-width:720px;
+  width:100%;
+  margin:0 auto;
+  padding:0 12px 18px;
+  box-sizing:border-box;
+}
 </style>
 
 </head>
@@ -1508,6 +1523,7 @@ function enterFullscreenAtGrid(i, j, tapClientX, tapClientY){
   overlay.style.display = 'flex';
   if (zoomExitBtn) zoomExitBtn.style.display = 'block';
   isFullscreen = true;
+  document.body.classList.add('drill-zoom-mode');
 
   // Reset baseline sizing/state
   resetViewLocal();
@@ -1548,6 +1564,7 @@ function enterFullscreenAtGrid(i, j, tapClientX, tapClientY){
 
     // NEW: restore bars back into normal layout
     restoreZoomUIOut();
+  document.body.classList.remove('drill-zoom-mode');
 
     isFullscreen = false;
 
