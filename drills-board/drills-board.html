@@ -355,18 +355,27 @@
 </style>
 
 <style>
-  /* Fullscreen zoom overlay for drills (Practice-style zoom) */
-  #go-zoom-overlay-drill{
-    position:fixed;
-    inset:0;
-    z-index:99998;
-    display:none;
-    align-items:center;
-    justify-content:center;
-    background:transparent;
-    -webkit-tap-highlight-color:transparent;
-    touch-action:none;
-  }
+/* Fullscreen zoom overlay for drills (Practice-style zoom) */
+#go-zoom-overlay-drill{
+  position:fixed;
+  inset:0;
+  z-index:99998;
+  display:none;
+  align-items:center;
+  justify-content:center;
+  background:transparent;
+  -webkit-tap-highlight-color:transparent;
+  touch-action:none;
+
+  /* NEW safety: cannot intercept taps unless we are in zoom-mode */
+  pointer-events:none;
+}
+
+/* NEW: enable overlay hit-testing only in zoom mode */
+body.drill-zoom-mode #go-zoom-overlay-drill{
+  pointer-events:auto;
+}
+
 
   #go-zoom-stage-drill{
     width:100vw;
@@ -377,24 +386,33 @@
     touch-action:none;
   }
 
-  #go-zoom-exit-drill{
-    position:fixed;
-    left:14px;
-    bottom:90px;
-    width:120px;
-    height:80px;
-    border-radius:9px;
+#go-zoom-exit-drill{
+  position:fixed;
+  left:14px;
+  bottom:90px;
+  width:120px;
+  height:80px;
+  border-radius:9px;
 
-    background:rgba(148,163,184,.35);
-    border:1px solid rgba(148,163,184,.85);
-    box-shadow:0 6px 16px rgba(0,0,0,.55);
+  background:rgba(148,163,184,.35);
+  border:1px solid rgba(148,163,184,.85);
+  box-shadow:0 6px 16px rgba(0,0,0,.55);
 
-    display:none;
-    cursor:pointer;
-    z-index:99999;
-    backdrop-filter:blur(2px);
-    -webkit-tap-highlight-color:transparent;
-  }
+  display:none;
+  cursor:pointer;
+  z-index:99999;
+  backdrop-filter:blur(2px);
+  -webkit-tap-highlight-color:transparent;
+
+  /* NEW safety: default to non-interactive */
+  pointer-events:none;
+}
+
+/* NEW: only interactive while in zoom mode */
+body.drill-zoom-mode #go-zoom-exit-drill{
+  pointer-events:auto;
+}
+
 
   #go-zoom-exit-drill::before{
     content:"";
