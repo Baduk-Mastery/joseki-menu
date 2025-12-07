@@ -43,18 +43,10 @@
   box-sizing:border-box;
 }
 
-/* Same mobile padding logic as Practice — applied to the real board wrapper */
+/* Same mobile padding logic as Practice */
 @media (max-width: 480px){
-  #go-board-drill-wrap{ padding:8px 12px 0; }
+  #drill-inner{ padding:8px 12px 0; }
 }
-/* Make Drills wrapper match Practice wrapper behavior */
-#go-board-drill-wrap{
-  width:100%;
-  max-width:720px;
-  margin:0 auto;
-  box-sizing:border-box;
-}
-
 
 
     /* we don’t hide the wrapper via data-hidden now, so it’s always visible */
@@ -125,23 +117,22 @@
 
   </style>
 <style>
-/* === Drills top bar — match Practice bar width + behavior === */
+/* =========================
+   Practice-style Back + Controls for Drills
+   ========================= */
+
 #drill-topbar{
+  max-width:720px;
   width:100%;
-  margin:16px 0 10px;
+  margin:16px auto 10px;
   padding:0;
   box-sizing:border-box;
-
   display:flex;
   align-items:center;
   justify-content:space-between;
-  gap:8px;
+  gap:10px;
 }
 
-/* Timer naturally sits on the right in flex */
-#drill-topbar #blitz-timer{
-  margin-left:auto;
-}
 
 
 /* Wood-style Back button – copied from Practice */
@@ -2397,6 +2388,8 @@ const boardY = (sy + offsetY) / scale;
 
 </body>
 </html>
+
+
 
 
 
