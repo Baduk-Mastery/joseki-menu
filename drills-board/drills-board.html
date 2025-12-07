@@ -49,9 +49,18 @@
   box-sizing:border-box;
 }
 
-    @media (max-width: 480px){
-      #go-board-drill-wrap { padding:8px 12px 0; }
-    }
+@media (max-width: 480px){
+  /* put the breathing room on the outer container, not the sizing wrapper */
+  #drill-inner{
+    padding: 8px 12px 0;
+    box-sizing: border-box;
+  }
+
+  /* keep the board sizing wrapper clean */
+  #go-board-drill-wrap{
+    padding: 0;
+  }
+}
 
     /* we don’t hide the wrapper via data-hidden now, so it’s always visible */
     #go-board-drill canvas{ display:block; margin:0 auto; }
@@ -966,12 +975,15 @@ function viewportSize(){
       mount.style.width  = '100vw';
       mount.style.height = '100vh';
     } else {
-      targetW = Math.floor(vw);
-      if (targetW % 2) targetW--;
-      baseW = targetW;
-      mount.style.width  = '';
-      mount.style.height = targetW + 'px';
-    }
+  targetW = Math.floor(vw);
+  if (targetW % 2) targetW--;
+  baseW = targetW;
+
+  /* core-style: mount is an explicit square */
+  mount.style.width  = targetW + 'px';
+  mount.style.height = targetW + 'px';
+}
+
 
     if (targetW <= 0) return;
 
