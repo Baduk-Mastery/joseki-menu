@@ -482,7 +482,6 @@ body.drill-zoom-mode #drill-ctrls{
   box-sizing:border-box;
 }
 </style>
-</style>
 
 <style>
 /* =========================
@@ -1675,6 +1674,22 @@ function enforceFullscreenStyles(){
   stage = null;
 }
 
+function enforceFullscreenStyles(){
+  if (!mount) return;
+
+  // Last-resort inline override to guarantee true fullscreen
+  mount.style.position = 'fixed';
+  mount.style.left = '0';
+  mount.style.top = '0';
+  mount.style.right = '0';
+  mount.style.bottom = '0';
+  mount.style.width = '100vw';
+  mount.style.height = '100vh';
+  mount.style.margin = '0';
+  mount.style.borderRadius = '0';
+  mount.style.boxShadow = 'none';
+  mount.style.zIndex = '99998';
+}
 
 function animateTo(targetScale, pxBoard, pyBoard, sxTarget, syTarget){
   targetScale = Math.max(minScale, Math.min(maxScale, targetScale));
