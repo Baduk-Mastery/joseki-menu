@@ -127,10 +127,9 @@
   </style>
 <style>
 /* =========================
-   Practice-style Back + Controls for Drills (clean + non-conflicting)
+   Practice-style Back + Controls for Drills
    ========================= */
 
-/* Top bar */
 #drill-topbar{
   max-width:720px;
   width:100%;
@@ -139,11 +138,14 @@
   box-sizing:border-box;
   display:flex;
   align-items:center;
-  gap:8px;
+  justify-content:space-between;
+  gap:10px;
 }
 
-/* Keep Back on the left, timer pushed to the right by its own margin-left:auto */
-#drill-topbar .s-back{
+
+
+/* Wood-style Back button – copied from Practice */
+.s-back{
   position:relative;
   display:inline-flex;
   align-items:center;
@@ -191,7 +193,7 @@
     filter .12s ease-out;
 }
 
-#drill-topbar .s-back:hover{
+.s-back:hover{
   filter:brightness(1.12) saturate(.98);
   transform:translateY(-1px);
   box-shadow:
@@ -199,7 +201,7 @@
     0 10px 16px rgba(0,0,0,.48);
 }
 
-#drill-topbar .s-back:active{
+.s-back:active{
   filter:brightness(.97) saturate(.96);
   transform:translateY(2px);
   box-shadow:
@@ -207,40 +209,20 @@
     0 4px 8px rgba(0,0,0,.55);
 }
 
-/* Bottom bar layout:
-   empty left spacer | Next centered | progress aligned to board-right */
+/* Drill controls container – match Practice spacing */
 #drill-ctrls{
-  max-width:720px;
-  width:100%;
-  margin:14px auto 0;
-  padding:0 12px 18px;
-  box-sizing:border-box;
-
-  display:grid;
-  grid-template-columns: 1fr auto 1fr;
-  align-items:center;
-  gap:0;
+  max-width: 720px;
+  width: 100%;
+  box-sizing: border-box;
+  margin: 14px auto 0;
+  padding: 0 12px 18px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
 }
 
-#drill-ctrls #dbtn-next{
-  grid-column:2;
-  justify-self:center;
-  width:auto;
-}
-
-#drill-ctrls #drill-progress{
-  grid-column:3;
-  justify-self:end;
-  text-align:right;
-
-  font-weight:800;
-  opacity:.9;
-  color:#fff3cf;
-  text-shadow:0 1px 0 rgba(0,0,0,.35);
-  min-width:60px;
-}
-
-/* Wood-style controls matching Practice (scoped to Drills bottom bar only) */
 #drill-ctrls .pbtn,
 #drill-ctrls .pbtn-strong,
 #drill-ctrls .pbtn-alt{
@@ -248,10 +230,15 @@
   min-width: 90px;
   padding: 8px 24px;
 
+  /* Approx. same width as if there were 3 buttons on the line */
+  flex: 0 1 calc((100% - 24px) / 3);
+  max-width: 240px;
+
   display: flex;
   align-items: center;
   justify-content: center;
   box-sizing: border-box;
+
   text-align: center;
 
   border-radius: 10px;
@@ -294,6 +281,7 @@
     filter .12s ease-out;
 }
 
+
 #drill-ctrls .pbtn:hover{
   filter: brightness(1.12) saturate(.98);
   transform: translateY(-1px);
@@ -314,6 +302,46 @@
   outline: 2px solid rgba(255,255,255,.9);
   outline-offset: 2px;
 }
+/* === Drills bottom bar alignment fix ===
+   Next stays dead-center, progress aligns to board-right */
+#drill-ctrls{
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 0;
+
+  /* keep your existing sizing/spacing intent */
+  max-width: 720px;
+  width: 100%;
+  margin: 14px auto 0;
+  padding: 0 12px 18px;
+  box-sizing: border-box;
+}
+
+/* Center column */
+#drill-ctrls #dbtn-next{
+  grid-column: 2;
+  justify-self: center;
+  width: auto;
+}
+
+/* Right column */
+#drill-ctrls #drill-progress{
+  grid-column: 3;
+  justify-self: end;
+  text-align: right;
+  min-width: 60px;
+}
+
+/* Neutralize the "3 buttons per row" sizing for this bar */
+#drill-ctrls .pbtn,
+#drill-ctrls .pbtn-strong,
+#drill-ctrls .pbtn-alt{
+  flex: initial;
+  max-width: none;
+  min-width: 0;
+}
+
 </style>
 
 <style>
@@ -385,7 +413,7 @@
   </div>
 
   <!-- Bottom controls: keep Next + progress -->
-  <div id="drill-ctrls">
+  <div id="drill-ctrls" class="prac-ctrls">
     <button id="dbtn-next" class="pbtn pbtn-alt" type="button">Next</button>
     <div id="drill-progress" style="font-weight:800;opacity:.9;">1 / 1</div>
   </div>
