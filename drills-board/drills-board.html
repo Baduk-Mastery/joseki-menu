@@ -455,10 +455,6 @@
   var SGF_URL = "../sgf/library-1.sgf";
   var MIN_MOVES = 10;
 
-  // Small visual preview so you can verify selection is respected.
-  // Increase or set to 0 if you want an empty-start preview.
-  var PREVIEW_MOVES = 8;
-
   var selectedLines = [];
   var selIndex = 0;
 
@@ -493,6 +489,103 @@
       return c + ':' + m.x + ',' + m.y;
     }).join('|');
     return size + '|' + seq;
+  }
+  // --- Original-style orientation + color-swap helpers ---
+  function t_identity(p){ return { x:p.x, y:p.y }; }
+  function t_swap(p){ return { x:p.y, y:p.x }; }
+  function t_rot90(p,S){  return { x: S-1 - p.y, y: p.x }; }
+  function t_rot180(p,S){ return { x: S-1 - p.x, y: S-1 - p.y }; }
+  function t_rot270(p,S){ return { x: p.y, y: S-1 - p.x }; }
+
+  function compose(a,b,S){
+    return function(p){
+      return a(b(p,S),S);
+    };
+  }
+
+  function ORIENT_FUNCS(S){
+    return [
+      function(p){ return t_identity(p); },
+      function(p){ return t_swap(p); },
+      function(p){ return t_rot90(p,S); },
+      function(p){ return compose(t_swap, t_rot90, S)(p); },
+      function(p){ return t_rot180(p,S); },
+      function(p){ return compose(t_swap, t_rot180, S)(p); },
+      function(p){ return t_rot270(p,S); },
+      function(p){ return compose(t_swap, t_rot270, S)(p); }
+    ];
+  }
+
+  // Pure rotations only (corner-safe set used by old Blitz)
+  var ROT_IDX_ONLY = [0,2,4,6];
+
+  function makeTransformed(line, orientIdx, swap){
+    var S = line.size || 19;
+    var ORS = ORIENT_FUNCS(S);
+    var o = ORS[orientIdx % ORS.length];
+
+    function tf(p){
+      var t = o({ x:p.x, y:p.y }, S);
+      return { x:t.x, y:t.y };
+    }
+
+    var AB = (line.rootAB || []).map(tf);
+    var AW = (line.rootAW || []).map(tf);
+
+    var mv = (line.moves || []).map(function(m){
+      var t = tf(m);
+      var c = (m.color === 'W') ? 'W' : 'B';
+      if (swap) c = (c === 'B') ? 'W' : 'B';
+      return { x:t.x, y:t.y, color:c };
+    });
+
+    return {
+      size: S,
+      rootAB: swap ? AW : AB,
+      rootAW: swap ? AB : AW,
+      moves: mv
+    };
+  }
+
+  // Cache per-line variants so Skip -> back -> Skip doesn't reshuffle rules each time
+  var lineVariants = [];
+
+  function randInt(min, max){
+    if (max < min) return min;
+    return min + Math.floor(Math.random() * (max - min + 1));
+  }
+
+  function buildVariantForLine(line){
+    var L = (line && line.moves) ? line.moves.length : 0;
+
+    if (blitzMode){
+      var rot = ROT_IDX_ONLY[Math.floor(Math.random() * ROT_IDX_ONLY.length)];
+      return {
+        orientIdx: rot,
+        swap: Math.random() < 0.5,
+        startIndex: 0
+      };
+    }
+
+    // Complete mode: 8 orientations + mid-line starts (old behavior)
+    var orientIdx = Math.floor(Math.random() * 8);
+    var minStart = 4;
+    var maxStart = Math.max(minStart, L - 2);
+
+    var startIndex = (L >= 2) ? randInt(minStart, maxStart) : 0;
+
+    return {
+      orientIdx: orientIdx,
+      swap: Math.random() < 0.5,
+      startIndex: startIndex
+    };
+  }
+
+  function getVariantForIndex(i){
+    if (lineVariants[i]) return lineVariants[i];
+    var v = buildVariantForLine(selectedLines[i]);
+    lineVariants[i] = v;
+    return v;
   }
 
   // --- SGF utils (ported from old drills board) ---
@@ -731,13 +824,24 @@
     return Promise.resolve(favPick.concat(ownPick));
   }
 
-  function applyLinePreview(line){
+  function applyLinePreview(line, variant){
     resetGame();
     if(!line) { redrawBoard(); return; }
 
-    // Root setup stones
-    var ab = line.rootAB || [];
-    var aw = line.rootAW || [];
+    variant = variant || buildVariantForLine(line);
+
+    // Apply original-style transforms
+    var tline = makeTransformed(line, variant.orientIdx, variant.swap);
+
+    // Safety: this core-based board is hardwired for 19.
+    // If you ever feed non-19 lines here, we will still place what fits the grid.
+    var moves = tline.moves || [];
+    var startN = Math.max(0, Math.min(variant.startIndex || 0, moves.length));
+
+    // Root setup stones (already swapped/oriented in tline)
+    var ab = tline.rootAB || [];
+    var aw = tline.rootAW || [];
+
     for(var i=0; i<ab.length; i++){
       var p = ab[i];
       if(p && p.x>=0 && p.x<SIZE && p.y>=0 && p.y<SIZE){
@@ -751,10 +855,8 @@
       }
     }
 
-    // Preview N moves from the original line (no transforms)
-    var moves = line.moves || [];
-    var n = Math.min(PREVIEW_MOVES, moves.length);
-    for(var k=0; k<n; k++){
+    // Pre-place moves up to startIndex to define the starting position
+    for(var k=0; k<startN; k++){
       var m = moves[k];
       if(m && m.x>=0 && m.x<SIZE && m.y>=0 && m.y<SIZE){
         grid[m.y][m.x] = (m.color === 'W') ? 'W' : 'B';
@@ -762,8 +864,8 @@
       }
     }
 
-    if(n){
-      var lastC = moves[n-1].color;
+    if(startN){
+      var lastC = moves[startN - 1].color;
       turn = (lastC === 'B') ? 'W' : 'B';
     } else {
       turn = 'B';
@@ -772,7 +874,6 @@
     koPoint = null;
     redrawBoard();
   }
-
   function loadSelectedLine(i){
     if(!selectedLines.length){
       if (progEl) progEl.textContent = '1 / 1';
@@ -783,7 +884,9 @@
     if(selIndex < 0) selIndex = 0;
     if(selIndex >= selectedLines.length) selIndex = 0;
 
-    applyLinePreview(selectedLines[selIndex]);
+    var v = getVariantForIndex(selIndex);
+    applyLinePreview(selectedLines[selIndex], v);
+
 
     if (progEl){
       progEl.textContent = (selIndex + 1) + ' / ' + selectedLines.length;
@@ -793,6 +896,7 @@
   function initSelections(){
     buildSelectedLines().then(function(lines){
       selectedLines = (lines || []).map(normalizeLineLike);
+      lineVariants = [];
 
       if(!selectedLines.length){
         if (progEl) progEl.textContent = '1 / 1';
