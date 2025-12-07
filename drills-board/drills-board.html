@@ -391,52 +391,60 @@
   }
 </style>
 <style>
-  /* =========================
-     Drills: overlay UI while zoomed (Practice-style)
-     ========================= */
+/* =========================
+   Drills: overlay UI while zoomed
+   Match Practice zoom positioning
+   ========================= */
 
-  /* Top overlay container (Back left, Timer right) */
-  #go-zoom-top-drill{
-    position:fixed;
-    top:0; left:0; right:0;
-    padding:12px 12px 0;
-    display:none;                 /* toggled by JS */
-    pointer-events:none;
-    z-index:99999;
-  }
-  #go-zoom-top-drill > *{
-    pointer-events:auto;
-  }
+/* Top overlay container (centers the bar block like Practice) */
+#go-zoom-top-drill{
+  position:fixed;
+  left:0; right:0; top:0;
+  padding:12px 12px 0;
 
-  /* Bottom overlay container (Next bottom-center) */
-  #go-zoom-ui-drill{
-    position:fixed;
-    left:0; right:0; bottom:0;
-    padding:0 12px 18px;
-    display:none;                 /* toggled by JS */
-    pointer-events:none;
-    z-index:99999;
-  }
-  #go-zoom-ui-drill > *{
-    pointer-events:auto;
-  }
+  display:none;               /* toggled by JS */
+  justify-content:center;
+  align-items:flex-start;
 
-  /* When the top bar is inside fullscreen container,
-     let it span the screen edges */
-  #go-zoom-top-drill #drill-topbar{
-    max-width:none;
-    width:100%;
-    margin:0;
-    padding:0;
-  }
+  pointer-events:none;
+  z-index:99999;
+}
+#go-zoom-top-drill > *{
+  pointer-events:auto;
+}
 
-  /* Same for bottom controls bar */
-  #go-zoom-ui-drill #drill-ctrls{
-    max-width:none;
-    width:100%;
-    margin:0;
-    padding:0;
-  }
+/* Bottom overlay container (centers the controls block like Practice) */
+#go-zoom-ui-drill{
+  position:fixed;
+  left:0; right:0; bottom:0;
+  padding:0 12px 18px;
+
+  display:none;               /* toggled by JS */
+  flex-direction:column;
+  align-items:center;
+
+  pointer-events:none;
+  z-index:99999;
+}
+#go-zoom-ui-drill > *{
+  pointer-events:auto;
+}
+
+/* Keep bars aligned to the same “board-width” feel as Practice */
+#go-zoom-top-drill #drill-topbar{
+  max-width:720px;
+  width:100%;
+  margin:0 auto;
+  padding:0;
+}
+
+#go-zoom-ui-drill #drill-ctrls{
+  max-width:720px;
+  width:100%;
+  margin:0 auto;
+  padding:0;
+}
+
 </style>
 
 </head>
