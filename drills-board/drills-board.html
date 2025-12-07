@@ -1373,9 +1373,9 @@ mount.appendChild(layer);
   }
 
   let blitzCornerState = null;
-// ===== Practice-style Zoom & Pan for Drills (FIXED) =====
+  // ===== Practice-style Zoom & Pan for Drills =====
 
-  // Shared preferences
+  // ===== Shared preferences (Fix: Load from storage so zoom setting is respected) =====
   var STORAGE_KEY = 'go_prefs';
   var GoPrefs = (window.GoPrefs = window.GoPrefs || {});
   try {
@@ -1389,13 +1389,14 @@ mount.appendChild(layer);
   if (typeof GoPrefs.highlightLast === 'undefined') GoPrefs.highlightLast = true;
   if (typeof GoPrefs.disableAutoZoomOut === 'undefined') GoPrefs.disableAutoZoomOut = false;
 
+  // Now set the local variable based on the loaded prefs
   let zoomEnabled = !!GoPrefs.josekiZoom;
 
   // Zoom / pan state
   let scale = 1;
   const minScale = 1;
   const maxScale = 2.6;
-  let baseW = 0; // The fundamental board pixel size (at scale=1)
+  let baseW = 0;
   let offsetX = 0;
   let offsetY = 0;
 
@@ -1407,8 +1408,7 @@ mount.appendChild(layer);
   let zoomExitBtn = null;
   let returnAnchor = null;
   let prevOverflow = "";
-  
-  // UI re-homing
+  // ===== NEW: Practice-style UI re-homing for fullscreen =====
   let zoomTopUI = null;
   let zoomBottomUI = null;
 
@@ -1416,41 +1416,6 @@ mount.appendChild(layer);
     topbar: { parent:null, next:null },
     ctrls:  { parent:null, next:null }
   };
-
-  // Kinetic pan state
-  let flingId = 0;
-  let isFlinging = false;
-  let flingVX = 0;
-  let flingVY = 0;
-  let flingLastTime = 0;
-
-  // Pointer tracking
-  let isPanning = false;
-  let panStart = null;
-  let activePointerId = null;
-  let panSamplePrev = null;
-  let panSampleCurr = null;
-  let tapStart = null;
-  let suppressNextBoardClick = false;
-  const TAP_SLOP2 = 64; 
-
-  function ensureZoomLayer(){
-    if (zoomLayer) return;
-    mount.style.position = 'relative';
-    mount.style.overflow = 'hidden';
-    
-    // Create specific zoom container if not present
-    zoomLayer = document.createElement('div');
-    zoomLayer.style.position = 'absolute';
-    zoomLayer.style.left = '0px';
-    zoomLayer.style.top = '0px';
-    zoomLayer.style.transformOrigin = '0 0';
-    zoomLayer.style.willChange = 'transform';
-    
-    // Move existing children (canvas, wood bg) into zoomLayer
-    while (mount.firstChild) zoomLayer.appendChild(mount.firstChild);
-    mount.appendChild(zoomLayer);
-  }
 
   function ensureZoomUIContainers(){
     if (!zoomTopUI){
@@ -1495,11 +1460,16 @@ mount.appendChild(layer);
 
   function moveZoomUIIn(){
     ensureZoomUIContainers();
+
+    // Ensure timer exists before moving topbar if we're in blitz
     if (blitzMode) ensureTimerEl();
+
     const tb = document.getElementById('drill-topbar');
     const bc = document.getElementById('drill-ctrls');
+
     stashAndMove(tb, 'topbar', zoomTopUI);
     stashAndMove(bc, 'ctrls',  zoomBottomUI);
+
     if (zoomTopUI)    zoomTopUI.style.display = 'flex';
     if (zoomBottomUI) zoomBottomUI.style.display = 'flex';
   }
@@ -1507,73 +1477,103 @@ mount.appendChild(layer);
   function restoreZoomUIOut(){
     const tb = document.getElementById('drill-topbar');
     const bc = document.getElementById('drill-ctrls');
+
     restoreStashed(tb, 'topbar');
     restoreStashed(bc, 'ctrls');
+
     if (zoomTopUI)    zoomTopUI.style.display = 'none';
     if (zoomBottomUI) zoomBottomUI.style.display = 'none';
   }
 
-  function ensureOverlay(){
-    if (overlay) return;
-    overlay = document.getElementById('go-zoom-overlay-drill');
-    if (!overlay){
-      overlay = document.createElement('div');
-      overlay.id = 'go-zoom-overlay-drill';
-      overlay.innerHTML =
-        '<div id="go-zoom-stage-drill"></div>' +
-        '<div id="go-zoom-exit-drill" aria-label="Zoom out"></div>';
-      document.body.appendChild(overlay);
-    }
-    stage = overlay.querySelector('#go-zoom-stage-drill');
-    zoomExitBtn = overlay.querySelector('#go-zoom-exit-drill');
-    if (zoomExitBtn && !zoomExitBtn._bound){
-      zoomExitBtn._bound = true;
-      zoomExitBtn.addEventListener('click', function(e){
-        e.stopPropagation();
-        e.preventDefault();
-        exitFullscreen();
-      });
+  // Kinetic pan / fling
+  let flingId = 0;
+  let isFlinging = false;
+  let flingVX = 0;
+  let flingVY = 0;
+  let flingLastTime = 0;
+
+  // Pointer tracking
+  let isPanning = false;
+  let panStart = null;
+  let activePointerId = null;
+  let panSamplePrev = null;
+  let panSampleCurr = null;
+  let tapStart = null;
+  let suppressNextBoardClick = false;
+  const TAP_SLOP2 = 64; // squared px (~8px movement)
+
+  function cancelFling(){
+    isFlinging = false;
+    if (flingId){
+      cancelAnimationFrame(flingId);
+      flingId = 0;
     }
   }
 
-  function viewportSize(){
-    if (isFullscreen){
-      return {
-        vw: window.innerWidth || document.documentElement.clientWidth || 800,
-        vh: window.innerHeight || document.documentElement.clientHeight || 800
-      };
-    }
-    // In normal mode, rely on baseW (set by fitBoard)
-    return {
-      vw: mount.clientWidth || baseW || 1,
-      vh: mount.clientHeight || baseW || 1
-    };
+function viewportSize(){
+  if (isFullscreen){
+    const vw = window.innerWidth  || document.documentElement.clientWidth  || 800;
+    const vh = window.innerHeight || document.documentElement.clientHeight || 800;
+    return { vw, vh };
   }
 
-  function clampPan(){
-    const {vw, vh} = viewportSize();
-    const bw = Math.round(baseW * scale);
-    const minOX = -Math.ceil(vw * 0.5);
-    const maxOX = Math.max(0, bw - vw) + Math.ceil(vw * 0.5);
-    const minOY = -Math.ceil(vh * 0.5);
-    const maxOY = Math.max(0, bw - vh) + Math.ceil(vh * 0.5);
-    
-    // Tighter clamping for clean edges
-    const hardMaxX = Math.max(0, bw - vw);
-    const hardMaxY = Math.max(0, bw - vh);
+  const rect = mount.getBoundingClientRect();
+  const wrapRect = wrap ? wrap.getBoundingClientRect() : rect;
+  const wrapW =
+    (wrapRect && wrapRect.width) ||
+    (wrap && wrap.clientWidth) ||
+    rect.width ||
+    400;
 
-    if (offsetX < 0) offsetX = 0;
-    else if (offsetX > hardMaxX) offsetX = hardMaxX;
+  // board area is square
+  return { vw: wrapW, vh: wrapW };
+}
 
-    if (offsetY < 0) offsetY = 0;
-    else if (offsetY > hardMaxY) offsetY = hardMaxY;
-  }
+
+function clampPan(){
+  if (!board) return;
+
+  const { vw, vh } = viewportSize();
+  const bw = Math.round(baseW * scale);
+  const bleedX = Math.ceil(vw * 0.5);
+  const bleedY = Math.ceil(vh * 0.5);
+
+  const minOX = -bleedX;
+  const maxOX = Math.max(0, bw - vw) + bleedX;
+  const minOY = -bleedY;
+  const maxOY = Math.max(0, bw - vh) + bleedY;
+
+  if (offsetX < minOX) offsetX = minOX;
+  else if (offsetX > maxOX) offsetX = maxOX;
+
+  if (offsetY < minOY) offsetY = minOY;
+  else if (offsetY > maxOY) offsetY = maxOY;
+}
 
   function applyPanAndSize(redrawAfter){
     if (!board || !mount) return;
-    
-    const {vw, vh} = viewportSize();
-    const targetW = Math.max(2, Math.round(baseW * scale));
+
+    const { vw, vh } = viewportSize();
+    let targetW;
+
+    if (isFullscreen){
+      targetW = Math.floor(Math.min(vw, vh));
+      if (targetW % 2) targetW--;
+      baseW = targetW;
+      mount.style.width  = '100vw';
+      mount.style.height = '100vh';
+    } else {
+  targetW = Math.floor(vw);
+  if (targetW % 2) targetW--;
+  baseW = targetW;
+
+  /* core-style: mount is an explicit square */
+  mount.style.width  = targetW + 'px';
+  mount.style.height = targetW + 'px';
+}
+
+
+    if (targetW <= 0) return;
 
     if (board._lastW !== targetW){
       board.setWidth(targetW);
@@ -1582,21 +1582,13 @@ mount.appendChild(layer);
         zoomLayer.style.height = targetW + 'px';
       }
       board._lastW = targetW;
-      if (!redrawAfter) redrawAfter = true;
     }
 
     clampPan();
 
     if (zoomLayer){
-      zoomLayer.style.transform = 'translate3d(' + (-offsetX) + 'px,' + (-offsetY) + 'px,0)';
-    }
-
-    if (isFullscreen){
-      mount.style.width  = '100vw';
-      mount.style.height = '100vh';
-    } else {
-      mount.style.width  = '';
-      mount.style.height = baseW + 'px';
+      zoomLayer.style.transform =
+        'translate3d(' + (-offsetX) + 'px,' + (-offsetY) + 'px,0) scale(' + scale + ')';
     }
 
     if (redrawAfter) redraw();
@@ -1610,192 +1602,172 @@ mount.appendChild(layer);
     applyPanAndSize(true);
   }
 
-  // --- Animation ---
-  let animId = 0;
-  function animateTo(targetScale, pxWorld, pyWorld, sxTarget, syTarget){
-    targetScale = Math.max(minScale, Math.min(maxScale, targetScale));
-    cancelFling();
-    
-    const s0 = scale;
-    const t0 = performance.now();
-    const dur = 260;
-    
-    // Calculate target offset to keep point under finger
-    const targetOffsetX = pxWorld * targetScale - sxTarget;
-    const targetOffsetY = pyWorld * targetScale - syTarget;
-    const ox0 = offsetX;
-    const oy0 = offsetY;
+  function ensureOverlay(){
+    if (overlay) return;
 
-    cancelAnimationFrame(animId);
-
-    function step(now){
-      let t = (now - t0) / dur;
-      if (t > 1) t = 1;
-      const ease = 1 - Math.pow(1 - t, 3);
-      
-      scale   = s0 + (targetScale - s0) * ease;
-      offsetX = ox0 + (targetOffsetX - ox0) * ease;
-      offsetY = oy0 + (targetOffsetY - oy0) * ease;
-      
-      applyPanAndSize(false);
-      
-      if (t < 1) animId = requestAnimationFrame(step);
-      else applyPanAndSize(true);
+    overlay = document.getElementById('go-zoom-overlay-drill');
+    if (!overlay){
+      overlay = document.createElement('div');
+      overlay.id = 'go-zoom-overlay-drill';
+      overlay.innerHTML =
+        '<div id="go-zoom-stage-drill"></div>' +
+        '<div id="go-zoom-exit-drill" aria-label="Zoom out"></div>';
+      document.body.appendChild(overlay);
     }
-    animId = requestAnimationFrame(step);
+
+    stage       = overlay.querySelector('#go-zoom-stage-drill');
+    zoomExitBtn = overlay.querySelector('#go-zoom-exit-drill');
+
+    if (zoomExitBtn && !zoomExitBtn._bound){
+      zoomExitBtn._bound = true;
+      zoomExitBtn.addEventListener('click', function(e){
+        e.stopPropagation();
+        e.preventDefault();
+        exitFullscreen();
+      });
+    }
   }
 
-  function centerZoomAtGrid(i, j, factor, tapClientX, tapClientY){
-    const targetScale = Math.max(minScale, Math.min(maxScale, scale * factor));
-    
-    // Current CSS coordinates of the intersection
-    const pxCurr = getXcss(i);
-    const pyCurr = getYcss(j);
-    
-    // Convert to world coordinates (unscaled)
-    const pxWorld = pxCurr / scale;
-    const pyWorld = pyCurr / scale;
-    
+function animateTo(targetScale, pxBoard, pyBoard, sxTarget, syTarget){
+  targetScale = Math.max(minScale, Math.min(maxScale, targetScale));
+  cancelFling();
+
+  const s0  = scale;
+  const ox0 = offsetX;
+  const oy0 = offsetY;
+  const t0  = performance.now();
+  const dur = 260;
+
+  // match core: keep chosen board point under target screen point
+  const targetOX = pxBoard * targetScale - sxTarget;
+  const targetOY = pyBoard * targetScale - syTarget;
+
+  function step(now){
+    let t = (now - t0) / dur;
+    if (t > 1) t = 1;
+    const ease = 1 - Math.pow(1 - t, 3);
+
+    scale   = s0  + (targetScale - s0) * ease;
+    offsetX = ox0 + (targetOX - ox0) * ease;
+    offsetY = oy0 + (targetOY - oy0) * ease;
+
+    applyPanAndSize(false);
+
+    if (t < 1){
+      requestAnimationFrame(step);
+    } else {
+      applyPanAndSize(true);
+    }
+  }
+
+  requestAnimationFrame(step);
+}
+
+function centerZoomAtGrid(i, j, factor, tapClientX, tapClientY){
+  const targetScale = Math.max(minScale, Math.min(maxScale, scale * factor));
+
+  // Board-space coordinates of the grid point (independent of zoom)
+  const pxBoard = getXcss(i);
+  const pyBoard = getYcss(j);
+
+  const rect = mount.getBoundingClientRect();
+  let sxTarget = rect.width  / 2;
+  let syTarget = rect.height / 2;
+
+  // If we know the tap position, keep that spot under the finger
+  if (typeof tapClientX === 'number' && typeof tapClientY === 'number'){
+    sxTarget = tapClientX - rect.left;
+    syTarget = tapClientY - rect.top;
+  }
+
+  animateTo(targetScale, pxBoard, pyBoard, sxTarget, syTarget);
+}
+
+
+function enterFullscreenAtGrid(i, j, tapClientX, tapClientY){
+  if (isFullscreen) return;
+  if (!zoomLayer) zoomLayer = mount.__woodLayer || mount;
+
+  ensureOverlay();
+  prevOverflow = document.documentElement.style.overflow || "";
+  document.documentElement.style.overflow = 'hidden';
+
+  returnAnchor = document.createElement('div');
+  returnAnchor.style.display = 'none';
+  mount.parentNode.insertBefore(returnAnchor, mount);
+
+  stage.appendChild(mount);
+
+  overlay.style.display = 'flex';
+  if (zoomExitBtn) zoomExitBtn.style.display = 'block';
+  isFullscreen = true;
+  document.body.classList.add('drill-zoom-mode');
+
+  // Reset baseline sizing/state
+  resetViewLocal();
+  moveZoomUIIn();
+
+  requestAnimationFrame(function(){
+    // Match core-style "pre-pan then zoom"
+    const initialFactor = 2.0;
+
+    const px_curr = getXcss(i);
+    const py_curr = getYcss(j);
+
     const rect = mount.getBoundingClientRect();
-    let sx = rect.width / 2;
+    let sx = rect.width  / 2;
     let sy = rect.height / 2;
-    
+
     if (typeof tapClientX === 'number' && typeof tapClientY === 'number'){
       sx = tapClientX - rect.left;
       sy = tapClientY - rect.top;
     }
-    
-    animateTo(targetScale, pxWorld, pyWorld, sx, sy);
-  }
 
-  function fitBoard(){
-    if (isFullscreen){
-      const vw = window.innerWidth || document.documentElement.clientWidth || 800;
-      const vh = window.innerHeight || document.documentElement.clientHeight || 800;
-      baseW = Math.floor(Math.min(vw, vh));
-      if (baseW % 2) baseW--;
-    } else {
-      // Normal mode: measure wrapper
-      const w = mount.getBoundingClientRect().width || (wrap ? wrap.clientWidth : 0) || 400;
-      baseW = Math.floor(w);
-      if (baseW % 2) baseW--;
-    }
-    applyPanAndSize(true);
-  }
+    // Pre-align the tapped grid point at scale = 1
+    scale = 1;
+    offsetX = px_curr * 1.0 - sx;
+    offsetY = py_curr * 1.0 - sy;
 
-  function enterFullscreenAtGrid(i, j, tapClientX, tapClientY){
-    if (isFullscreen) return;
-    ensureZoomLayer();
-    ensureOverlay();
-    
-    prevOverflow = document.documentElement.style.overflow || "";
-    document.documentElement.style.overflow = 'hidden';
-    
-    returnAnchor = document.createElement('div');
-    returnAnchor.style.display = 'none';
-    mount.parentNode.insertBefore(returnAnchor, mount);
-    
-    stage.appendChild(mount);
-    overlay.style.display = 'flex';
-    if (zoomExitBtn) zoomExitBtn.style.display = 'block';
-    
-    isFullscreen = true;
-    document.body.classList.add('drill-zoom-mode');
-    
-    // 1. Force fullscreen calc
-    fitBoard();
-    
-    // 2. Reset view to 1.0
-    resetViewLocal();
-    moveZoomUIIn();
-    
-    // 3. Animate in
-    requestAnimationFrame(function(){
-      const {vw, vh} = viewportSize();
-      const needToCover = Math.max(vw, vh) / baseW;
-      const initialFactor = Math.max(1.8, needToCover + 0.02);
-      centerZoomAtGrid(i, j, initialFactor, tapClientX, tapClientY);
-    });
-  }
+    applyPanAndSize(false);
+
+    // Now animate purely to the target scale
+    animateTo(initialFactor, px_curr, py_curr, sx, sy);
+  });
+}
+
 
   function exitFullscreen(){
     if (!isFullscreen) return;
     cancelFling();
-    cancelAnimationFrame(animId);
-    
+
+    // NEW: restore bars back into normal layout
     restoreZoomUIOut();
-    document.body.classList.remove('drill-zoom-mode');
-    
+  document.body.classList.remove('drill-zoom-mode');
+
     isFullscreen = false;
+
     if (overlay) overlay.style.display = 'none';
-    
+
+    if (zoomExitBtn) zoomExitBtn.style.display = 'none';
+
     if (returnAnchor && returnAnchor.parentNode){
       returnAnchor.parentNode.insertBefore(mount, returnAnchor);
       returnAnchor.parentNode.removeChild(returnAnchor);
       returnAnchor = null;
     }
-    
-    document.documentElement.style.overflow = prevOverflow;
-    
-    // Reset inline styles forced by fullscreen
-    mount.style.width = '';
-    mount.style.height = '';
-    
-    fitBoard();
-    resetViewLocal();
-  }
 
-  function cancelFling(){
-    isFlinging = false;
-    if (flingId){ cancelAnimationFrame(flingId); flingId = 0; }
-  }
+document.documentElement.style.overflow = prevOverflow;
 
-  function startFling(vx, vy){
-    if (!isFullscreen || scale <= 1) return;
-    cancelFling();
-    
-    // Speed cap
-    const MAX_SPEED = 0.50; 
-    let speed = Math.hypot(vx, vy);
-    if (speed > MAX_SPEED){
-      const s = MAX_SPEED / speed;
-      vx *= s; vy *= s;
-    }
-    if (speed < 0.04) return;
-    
-    isFlinging = true;
-    flingVX = vx; flingVY = vy;
-    flingLastTime = performance.now();
-    
-    function step(now){
-      if (!isFlinging) return;
-      let dt = now - flingLastTime;
-      if (dt <= 0) { flingId = requestAnimationFrame(step); return; }
-      if (dt > 50) dt = 50;
-      flingLastTime = now;
-      
-      offsetX += flingVX * dt;
-      offsetY += flingVY * dt;
-      
-      const friction = 0.0010;
-      const currentSpeed = Math.hypot(flingVX, flingVY);
-      const decel = friction * dt;
-      
-      if (currentSpeed <= 0.01 || decel >= currentSpeed){
-        cancelFling();
-        applyPanAndSize(true);
-        return;
-      }
-      
-      const newSpeed = currentSpeed - decel;
-      const factor = newSpeed / currentSpeed;
-      flingVX *= factor;
-      flingVY *= factor;
-      
-      applyPanAndSize(false);
-      flingId = requestAnimationFrame(step);
-    }
-    flingId = requestAnimationFrame(step);
+// important: remove fullscreen inline sizing first
+mount.style.width = '';
+mount.style.height = '';
+
+scale = 1;
+offsetX = 0;
+offsetY = 0;
+
+applyPanAndSize(true);
+
   }
 
   function beginPan(e){
@@ -1809,134 +1781,309 @@ mount.appendChild(layer);
 
   function updatePan(e){
     if (!isFullscreen || scale <= 1 || !panStart) return;
+
     const dx = e.clientX - panStart.x;
     const dy = e.clientY - panStart.y;
     const dist2 = dx*dx + dy*dy;
-    
+
     if (!isPanning && dist2 > TAP_SLOP2){
       isPanning = true;
       suppressNextBoardClick = true;
     }
     if (!isPanning) return;
-    
+
     offsetX = panStart.ox - dx;
     offsetY = panStart.oy - dy;
-    
+
     applyPanAndSize(false);
-    
+
     const now = performance.now();
     panSamplePrev = panSampleCurr;
     panSampleCurr = { ox: offsetX, oy: offsetY, t: now };
+
     e.preventDefault();
   }
 
   function endPan(e){
+    const wasPanning = isPanning;
+
     if (activePointerId != null){
-       try { mount.releasePointerCapture(activePointerId); } catch(_){}
+      try { mount.releasePointerCapture(activePointerId); } catch(_){}
     }
     activePointerId = null;
     panStart = null;
-    const wasPanning = isPanning;
     isPanning = false;
-    
-    if (wasPanning && isFullscreen && scale > 1 && panSamplePrev && panSampleCurr){
-      const dt = panSampleCurr.t - panSamplePrev.t;
-      if (dt > 0 && dt < 120){
-        startFling((panSampleCurr.ox - panSamplePrev.ox)/dt, (panSampleCurr.oy - panSamplePrev.oy)/dt);
-      }
-    }
+
+    if (!wasPanning || !isFullscreen || scale <= 1) return;
+    if (!panSamplePrev || !panSampleCurr) return;
+
+    let dt = panSampleCurr.t - panSamplePrev.t;
+    if (dt <= 0 || dt > 120) return;
+
+    const vx = (panSampleCurr.ox - panSamplePrev.ox) / dt;
+    const vy = (panSampleCurr.oy - panSamplePrev.oy) / dt;
+
+    startFling(vx, vy);
   }
 
-  // --- Handlers ---
+  function startFling(vx, vy){
+    if (!isFullscreen || scale <= 1) return;
+
+    const MAX_SPEED = 0.50;
+    let speed = Math.hypot(vx, vy);
+    if (speed > MAX_SPEED){
+      const s = MAX_SPEED / speed;
+      vx *= s;
+      vy *= s;
+      speed = MAX_SPEED;
+    }
+    if (speed < 0.04) return;
+
+    cancelFling();
+    isFlinging = true;
+    flingVX = vx;
+    flingVY = vy;
+    flingLastTime = performance.now();
+
+    function step(now){
+      if (!isFlinging) return;
+
+      let dt = now - flingLastTime;
+      if (dt <= 0){
+        flingId = requestAnimationFrame(step);
+        return;
+      }
+      if (dt > 50) dt = 50;
+      flingLastTime = now;
+
+      offsetX += flingVX * dt;
+      offsetY += flingVY * dt;
+
+      const friction = 0.0010;
+      let speed = Math.hypot(flingVX, flingVY);
+      const decel = friction * dt;
+
+      if (speed <= 0.01 || decel >= speed){
+        cancelFling();
+        applyPanAndSize(true);
+        return;
+      }
+
+      const newSpeed = speed - decel;
+      const s = newSpeed / speed;
+      flingVX *= s;
+      flingVY *= s;
+
+      applyPanAndSize(false);
+      flingId = requestAnimationFrame(step);
+    }
+
+    flingId = requestAnimationFrame(step);
+  }
+
+  function getBoardBounds(){
+    const firstX = getXcss(0);
+    const lastX  = getXcss(SIZE - 1);
+    const firstY = getYcss(0);
+    const lastY  = getYcss(SIZE - 1);
+
+const spacingX = SIZE > 1 ? Math.abs(getXcss(1) - firstX) : 0;
+const spacingY = SIZE > 1 ? Math.abs(getYcss(1) - firstY) : 0;
+
+    const halfX = (spacingX || spacingY || 16) * 0.5;
+    const halfY = (spacingY || spacingX || 16) * 0.5;
+
+    return {
+      minX: firstX - halfX,
+      maxX: lastX  + halfX,
+      minY: firstY - halfY,
+      maxY: lastY  + halfY
+    };
+  }
+
+  // Tap/drag handling on the drills board mount (touch only)
   mount.addEventListener('pointerdown', function(e){
     if (!zoomEnabled) return;
     if (e.pointerType && e.pointerType !== 'touch') return;
+
     cancelFling();
-    
-    // Check if click is inside grid bounds to determine if we should prep a tap
-    const r = mount.getBoundingClientRect();
-    const sx = e.clientX - r.left;
-    const sy = e.clientY - r.top;
-    
-    // Inverse project to find grid point
-    const pxWorld = (sx + offsetX) / scale;
-    const pyWorld = (sy + offsetY) / scale;
-    
-    let bestI = -1, bestJ = -1, bestDist = Infinity;
-    // Simple closest-point search in logical pixels
-    // Note: getXcss returns logic pixel coord at scale 1
-    // But since board._lastW is set, getXcss should match CSS pixels
-    for(let i=0; i<SIZE; i++){
-       const dx = Math.abs(getXcss(i) - pxWorld);
-       if(dx < bestDist){ bestDist=dx; bestI=i; }
+    e.preventDefault();
+
+const rect = mount.getBoundingClientRect();
+const sx = e.clientX - rect.left;
+const sy = e.clientY - rect.top;
+
+// match core math (offset is treated in screen-space)
+const boardX = (sx + offsetX) / scale;
+const boardY = (sy + offsetY) / scale;
+
+
+
+    const bounds = getBoardBounds();
+
+    let gridI = null, gridJ = null;
+    if (boardX >= bounds.minX && boardX <= bounds.maxX &&
+        boardY >= bounds.minY && boardY <= bounds.maxY){
+      let bestI = 0, bestDx = Infinity;
+      for (let i = 0; i < SIZE; i++){
+        const dxI = Math.abs(getXcss(i) - boardX);
+        if (dxI < bestDx){ bestDx = dxI; bestI = i; }
+      }
+      let bestJ = 0, bestDy = Infinity;
+      for (let j = 0; j < SIZE; j++){
+        const dyJ = Math.abs(getYcss(j) - boardY);
+        if (dyJ < bestDy){ bestDy = dyJ; bestJ = j; }
+      }
+      gridI = bestI;
+      gridJ = bestJ;
     }
-    // We only need one dimension for spacing check really, but let's do both
-    let bestDistY = Infinity;
-    for(let j=0; j<SIZE; j++){
-       const dy = Math.abs(getYcss(j) - pyWorld);
-       if(dy < bestDistY){ bestDistY=dy; bestJ=j; }
-    }
-    
+
     tapStart = {
-      x: e.clientX, y: e.clientY, t: performance.now(),
-      gridI: bestI, gridJ: bestJ
+      x: e.clientX,
+      y: e.clientY,
+      t: performance.now(),
+      gridI,
+      gridJ
     };
+
     beginPan(e);
-  }, {passive:false});
+  }, { passive:false });
+
+// Use capture so we intercept before WGo's own click handler
+  mount.addEventListener('pointerup', function(e){
+    // --- CASE A: Zoom Disabled (Match Core Board behavior) ---
+    if (!zoomEnabled) {
+      if (e.pointerType && e.pointerType !== 'touch') return; // Let mouse use WGo default
+
+      const r = mount.getBoundingClientRect();
+      const bx = e.clientX - r.left;
+      const by = e.clientY - r.top;
+
+      let bestI = -1, bestJ = -1, bestDx = 1e9, bestDy = 1e9;
+      for (let i = 0; i < SIZE; i++){
+        const dx = Math.abs(getXcss(i) - bx);
+        if (dx < bestDx){ bestDx = dx; bestI = i; }
+      }
+      for (let j = 0; j < SIZE; j++){
+        const dy = Math.abs(getYcss(j) - by);
+        if (dy < bestDy){ bestDy = dy; bestJ = j; }
+      }
+
+      // Threshold Check (Ignore clicks in the gutter/border)
+      const spacing = getGridSpacing();
+      if (bestDx > spacing.x * 0.5 || bestDy > spacing.y * 0.5) {
+        return; 
+      }
+
+      e.preventDefault();
+      // Use the Drills board move handler
+      onBoardClick(bestI, bestJ);
+      return;
+    }
+
+    // --- CASE B: Zoom Enabled ---
+    if (!tapStart){
+      endPan(e);
+      return;
+    }
+    if (e.pointerType && e.pointerType !== 'touch'){
+      endPan(e);
+      tapStart = null;
+      return;
+    }
+
+    const dx = e.clientX - tapStart.x;
+    const dy = e.clientY - tapStart.y;
+    const dist2 = dx*dx + dy*dy;
+
+    const gi = tapStart.gridI;
+    const gj = tapStart.gridJ;
+    const tapClientX = tapStart.x;
+    const tapClientY = tapStart.y;
+
+    tapStart = null;
+    const wasPanning = isPanning;
+    endPan(e);
+
+    if (wasPanning) return;
+
+    if (dist2 <= TAP_SLOP2){
+      const baseView = (!isFullscreen && scale === 1);
+
+      if (baseView){
+        // Tap from base view – zoom in around tap
+        let ti = gi;
+        let tj = gj;
+
+        // If tap was in gutter, recalculate best grid point based on click coords
+        if (ti == null || tj == null || ti < 0 || tj < 0 || ti >= SIZE || tj >= SIZE){
+          const rect = mount.getBoundingClientRect();
+          const sx = tapClientX - rect.left;
+          const sy = tapClientY - rect.top;
+
+          let bestI = 0, bestDx = Infinity;
+          for (let i = 0; i < SIZE; i++){
+            const dxI = Math.abs(getXcss(i) - sx);
+            if (dxI < bestDx){ bestDx = dxI; bestI = i; }
+          }
+          let bestJ = 0, bestDy = Infinity;
+          for (let j = 0; j < SIZE; j++){
+            const dyJ = Math.abs(getYcss(j) - sy);
+            if (dyJ < bestDy){ bestDy = dyJ; bestJ = j; }
+          }
+          ti = bestI;
+          tj = bestJ;
+        }
+
+        e.preventDefault();
+        e.stopPropagation();
+        if (e.stopImmediatePropagation) e.stopImmediatePropagation();
+
+        suppressNextBoardClick = true;
+        enterFullscreenAtGrid(ti, tj, tapClientX, tapClientY);
+        return;
+      }
+
+      // Already zoomed – treat tap as move if on the grid
+      if (gi == null || gj == null || gi < 0 || gj < 0 || gi >= SIZE || gj >= SIZE){
+        return;
+      }
+
+      e.preventDefault();
+      e.stopPropagation();
+      if (e.stopImmediatePropagation) e.stopImmediatePropagation();
+
+      suppressNextBoardClick = true;
+      onBoardClick(gi, gj);
+
+      // Auto-zoom out check (Match Core Board behavior)
+      if (GoPrefs && !GoPrefs.disableAutoZoomOut && scale > 1) {
+         setTimeout(function(){
+            if(isFullscreen) exitFullscreen();
+            else resetViewLocal();
+         }, 10);
+      }
+    }
+  }, { passive:false, capture:true });
 
   mount.addEventListener('pointermove', function(e){
     if (!zoomEnabled) return;
     if (e.pointerType && e.pointerType !== 'touch') return;
     updatePan(e);
-  }, {passive:false});
-
-  mount.addEventListener('pointerup', function(e){
-    if (!zoomEnabled) {
-      // Fallback for non-touch
-      if (e.pointerType && e.pointerType !== 'touch') return;
-      return;
-    }
-    if (!tapStart){ endPan(e); return; }
-    
-    const dx = e.clientX - tapStart.x;
-    const dy = e.clientY - tapStart.y;
-    const dist2 = dx*dx + dy*dy;
-    const {gridI, gridJ, x, y} = tapStart;
-    
-    endPan(e);
-    
-    if (dist2 <= TAP_SLOP2){
-      // Valid Tap
-      if (!isFullscreen && scale === 1){
-         // Zoom In
-         e.preventDefault();
-         suppressNextBoardClick = true;
-         enterFullscreenAtGrid(gridI, gridJ, x, y);
-      } else {
-         // Place Stone (or handle tap)
-         e.preventDefault();
-         suppressNextBoardClick = true;
-         onBoardClick(gridI, gridJ);
-         if (!GoPrefs.disableAutoZoomOut && scale > 1){
-           setTimeout(function(){
-              if (isFullscreen) exitFullscreen();
-              else resetViewLocal();
-           }, 10);
-         }
-      }
-    }
-  }, {passive:false, capture:true});
+  }, { passive:false });
 
   mount.addEventListener('pointercancel', function(e){
+    if (e.pointerType && e.pointerType !== 'touch') return;
     endPan(e);
-  }, {passive:true});
+  }, { passive:true });
 
+  // Zoom-aware sizing on resize
+  function fitBoard(){
+    applyPanAndSize(true);
+  }
   window.addEventListener('resize', function(){
     setTimeout(fitBoard, 10);
   });
-  
-  // Initial fit
-  fitBoard();
 
   // Optional: let Settings toggle zoom
   window.DrillZoom = {
@@ -2436,4 +2583,6 @@ btnNext.addEventListener('click', function(){
 
 </body>
 </html>
+
+
 
