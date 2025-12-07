@@ -16,15 +16,11 @@
   overscroll-behavior:none;
 }
 /* Core-style fullscreen centering + wood background for Drills */
+/* Fullscreen wood background (no flex-centering) */
 #drill-root{
   --wood:url('../img/wood.jpg');
-  position:absolute;
+  position:fixed;
   inset:0;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  padding:16px 0 22px;
-  box-sizing:border-box;
 
   background-color:#1b1208;
   background-image:
@@ -35,26 +31,21 @@
   background-repeat:no-repeat;
 }
 
-/* Match Practice wrapper behavior */
+/* Practice-style centering of the whole drills block */
 #drill-inner{
+  position:absolute;
+  top:50%;
+  left:50%;
+  transform:translate(-50%, -50%);
+
   width:100%;
   max-width:720px;
-  margin:0 auto;
-  box-sizing:border-box;
-}
-
-/* Keep wrapper simple so it doesn't double-cap width */
-#go-board-drill-wrap{
-  width:100%;
-  margin:0 auto;
   box-sizing:border-box;
 }
 
 /* Same mobile padding logic as Practice */
 @media (max-width: 480px){
-  #drill-inner{
-    padding:8px 12px 0;
-  }
+  #drill-inner{ padding:8px 12px 0; }
 }
 
 
@@ -469,7 +460,7 @@
   </div>
 
   <!-- Bottom controls: keep Next + progress -->
-  <div id="drill-ctrls" class="prac-ctrls">
+  <div id="drill-ctrls">
     <button id="dbtn-next" class="pbtn pbtn-alt" type="button">Next</button>
     <div id="drill-progress" style="font-weight:800;opacity:.9;">1 / 1</div>
   </div>
