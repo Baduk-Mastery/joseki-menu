@@ -200,70 +200,37 @@
     0 4px 8px rgba(0,0,0,.55);
 }
 
-/* =========================
-   Practice-style Back + Controls for Drills (clean)
-   ========================= */
-
-#drill-topbar{
-  max-width:720px;
-  width:100%;
-  margin:16px auto 10px;
-  padding:0;
-  box-sizing:border-box;
-
-  display:flex;
-  align-items:center;
-  justify-content:flex-start; /* more robust than space-between */
-  gap:10px;
-}
-
-/* Wood-style Back button – keep your existing .s-back as-is */
-
-
-/* === Drills bottom bar (single-source-of-truth) ===
-   Next stays dead-center, progress aligns to board-right */
+/* Drill controls container – match Practice spacing */
 #drill-ctrls{
-  max-width:720px;
-  width:100%;
-  margin:14px auto 0;
-  padding:0 12px 18px;
-  box-sizing:border-box;
-
-  display:grid;
-  grid-template-columns: 1fr auto 1fr;
-  align-items:center;
+  max-width: 720px;
+  width: 100%;
+  box-sizing: border-box;
+  margin: 14px auto 0;
+  padding: 0 12px 18px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
 }
 
-/* Center column */
-#drill-ctrls #dbtn-next{
-  grid-column: 2;
-  justify-self: center;
-  width: auto;
-}
-
-/* Right column */
-#drill-ctrls #drill-progress{
-  grid-column: 3;
-  justify-self: end;
-  text-align: right;
-  min-width: 60px;
-
-  font-weight:800;
-  opacity:.9;
-}
-
-/* Wood-style button for the bottom bar only */
 #drill-ctrls .pbtn,
 #drill-ctrls .pbtn-strong,
 #drill-ctrls .pbtn-alt{
   position: relative;
-
+  min-width: 90px;
   padding: 8px 24px;
-  min-width: 110px;
 
-  display: inline-flex;
+  /* Approx. same width as if there were 3 buttons on the line */
+  flex: 0 1 calc((100% - 24px) / 3);
+  max-width: 240px;
+
+  display: flex;
   align-items: center;
   justify-content: center;
+  box-sizing: border-box;
+
+  text-align: center;
 
   border-radius: 10px;
   border: 1px solid rgba(255,255,255,.40);
@@ -273,10 +240,12 @@
   line-height: 1.1;
   color: #fff3cf;
   text-shadow: 0 1px 0 rgba(120,60,20,.7);
-
   cursor: pointer;
+
   user-select: none;
   -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
   -webkit-tap-highlight-color: transparent;
 
   background-image:
@@ -303,6 +272,7 @@
     filter .12s ease-out;
 }
 
+
 #drill-ctrls .pbtn:hover{
   filter: brightness(1.12) saturate(.98);
   transform: translateY(-1px);
@@ -323,16 +293,44 @@
   outline: 2px solid rgba(255,255,255,.9);
   outline-offset: 2px;
 }
+/* === Drills bottom bar alignment fix ===
+   Next stays dead-center, progress aligns to board-right */
+#drill-ctrls{
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 0;
 
-/* Small screens: just tighten spacing */
-@media (max-width: 480px){
-  #drill-ctrls{
-    padding: 0 10px 16px;
-  }
-  #drill-ctrls .pbtn{
-    min-width: 96px;
-    font-size: 15px;
-  }
+  /* keep your existing sizing/spacing intent */
+  max-width: 720px;
+  width: 100%;
+  margin: 14px auto 0;
+  padding: 0 12px 18px;
+  box-sizing: border-box;
+}
+
+/* Center column */
+#drill-ctrls #dbtn-next{
+  grid-column: 2;
+  justify-self: center;
+  width: auto;
+}
+
+/* Right column */
+#drill-ctrls #drill-progress{
+  grid-column: 3;
+  justify-self: end;
+  text-align: right;
+  min-width: 60px;
+}
+
+/* Neutralize the "3 buttons per row" sizing for this bar */
+#drill-ctrls .pbtn,
+#drill-ctrls .pbtn-strong,
+#drill-ctrls .pbtn-alt{
+  flex: initial;
+  max-width: none;
+  min-width: 0;
 }
 
 </style>
@@ -961,12 +959,11 @@ function ensureTimerEl(){
       if (mount.__woodLayerReady) return;
       const layer = document.createElement('div');
       layer.id = 'go-drill-wood';
-layer.style.position = 'absolute';
-layer.style.left = '0';
-layer.style.top  = '0';
-layer.style.width  = '100%';
-layer.style.height = '100%';
-
+      layer.style.position = 'absolute';
+      layer.style.left = '0';
+      layer.style.top  = '0';
+      layer.style.right = '0';
+      layer.style.bottom = '0';
       layer.style.backgroundImage = "url('https://3d85c7a311526e02aeeeb19e952d0c09.cdn.bubble.io/f1755870506985x437178801728222500/wood.jpg')";
       layer.style.backgroundSize = 'cover';
       layer.style.backgroundPosition = 'center';
@@ -1335,59 +1332,24 @@ mount.appendChild(layer);
     }
   }
 
-function applyPanAndSize(redrawAfter){
-  if (!board || !mount) return;
-
-  const { vw, vh } = viewportSize();
-  let targetW;
-
+function viewportSize(){
   if (isFullscreen){
-    const w = Math.floor(vw);
-    const h = Math.floor(vh);
-
-    // Avoid 100vw/100vh quirks; use explicit px
-    mount.style.width  = w + 'px';
-    mount.style.height = h + 'px';
-
-    targetW = Math.floor(Math.min(w, h));
-    if (targetW % 2) targetW--;
-    baseW = targetW;
-  } else {
-    targetW = Math.floor(vw);
-    if (targetW % 2) targetW--;
-    baseW = targetW;
-
-    mount.style.width  = targetW + 'px';
-    mount.style.height = targetW + 'px';
+    const vw = window.innerWidth  || document.documentElement.clientWidth  || 800;
+    const vh = window.innerHeight || document.documentElement.clientHeight || 800;
+    return { vw, vh };
   }
 
-  if (targetW <= 0) return;
+  const rect = mount.getBoundingClientRect();
+  const wrapRect = wrap ? wrap.getBoundingClientRect() : rect;
+  const wrapW =
+    (wrapRect && wrapRect.width) ||
+    (wrap && wrap.clientWidth) ||
+    rect.width ||
+    400;
 
-  // Force-refresh board size reliably
-  if (board._lastW !== targetW){
-    board.setWidth(targetW);
-    board._lastW = targetW;
-  } else {
-    // Re-assert anyway because we reparent mount during fullscreen
-    board.setWidth(targetW);
-  }
-
-  // Always re-assert zoomLayer size
-  if (zoomLayer){
-    zoomLayer.style.width  = targetW + 'px';
-    zoomLayer.style.height = targetW + 'px';
-  }
-
-  clampPan();
-
-  if (zoomLayer){
-    zoomLayer.style.transform =
-      'translate3d(' + (-offsetX) + 'px,' + (-offsetY) + 'px,0) scale(' + scale + ')';
-  }
-
-  if (redrawAfter) redraw();
+  // board area is square
+  return { vw: wrapW, vh: wrapW };
 }
-
 
 
 function clampPan(){
@@ -1561,9 +1523,6 @@ function enterFullscreenAtGrid(i, j, tapClientX, tapClientY){
   overlay.style.display = 'flex';
   if (zoomExitBtn) zoomExitBtn.style.display = 'block';
   isFullscreen = true;
-// Force a cold resize after reparenting
-if (board) board._lastW = 0;
-
   document.body.classList.add('drill-zoom-mode');
 
   // Reset baseline sizing/state
@@ -1628,7 +1587,6 @@ mount.style.height = '';
 scale = 1;
 offsetX = 0;
 offsetY = 0;
-if (board) board._lastW = 0;
 
 applyPanAndSize(true);
 
@@ -1948,15 +1906,6 @@ const boardY = (sy + offsetY) / scale;
   window.addEventListener('resize', function(){
     setTimeout(fitBoard, 10);
   });
-if (window.visualViewport){
-  window.visualViewport.addEventListener('resize', function(){
-    setTimeout(fitBoard, 10);
-  });
-  window.visualViewport.addEventListener('scroll', function(){
-    // Some mobile browsers change the visual viewport on scroll/address-bar changes
-    setTimeout(fitBoard, 10);
-  });
-}
 
   // Optional: let Settings toggle zoom
   window.DrillZoom = {
