@@ -1433,6 +1433,7 @@ mount.appendChild(layer);
   let offsetY = 0;
 
   let isFullscreen = false;
+let isZoomAnimating = false;
   let zoomLayer = null;
 
   let overlay = null;
@@ -1664,8 +1665,13 @@ if (zoomExitBtn) zoomExitBtn.style.pointerEvents = 'none';
   }
 
 function animateTo(targetScale, pxBoard, pyBoard, sxTarget, syTarget){
+  // Safety: Ignore if already moving
+  if (isZoomAnimating) return; 
+
   targetScale = Math.max(minScale, Math.min(maxScale, targetScale));
   cancelFling();
+
+  isZoomAnimating = true; // <--- LOCK INPUTS
 
   const s0  = scale;
   const ox0 = offsetX;
@@ -1688,10 +1694,11 @@ function animateTo(targetScale, pxBoard, pyBoard, sxTarget, syTarget){
 
     applyPanAndSize(false);
 
-    if (t < 1){
+if (t < 1){
       requestAnimationFrame(step);
     } else {
       applyPanAndSize(true);
+      isZoomAnimating = false; // <--- UNLOCK INPUTS
     }
   }
 
@@ -1789,10 +1796,13 @@ function enterFullscreenAtGrid(i, j, tapClientX, tapClientY){
 }
 
 
-  function exitFullscreen(){
+function exitFullscreen(){
     if (!isFullscreen) return;
+    
+    isZoomAnimating = false; // <--- FORCE RESET
+    
     cancelFling();
-mount.classList.remove('is-fullscreen');
+    mount.classList.remove('is-fullscreen');
     restoreZoomUIOut();
   document.body.classList.remove('drill-zoom-mode');
 // NEW safety: explicitly disable hit-testing outside zoom mode
@@ -2010,6 +2020,15 @@ const boardY = (sy + offsetY) / scale;
 
 // Use capture so we intercept before WGo's own click handler
   mount.addEventListener('pointerup', function(e){
+    
+    // NEW: Block all interaction if animation is running
+    if (isZoomAnimating) {
+      e.preventDefault();
+      e.stopPropagation();
+      if (tapStart) endPan(e); // cleanup drag state
+      return;
+    }
+
     // --- CASE A: Zoom Disabled (Match Core Board behavior) ---
     if (!zoomEnabled) {
       if (e.pointerType && e.pointerType !== 'touch') return; // Let mouse use WGo default
