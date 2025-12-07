@@ -1654,24 +1654,26 @@ function clampPan(){
 if (overlay) overlay.style.pointerEvents = 'none';
 if (zoomExitBtn) zoomExitBtn.style.pointerEvents = 'none';
 
-    if (zoomExitBtn && !zoomExitBtn._bound){
+if (zoomExitBtn && !zoomExitBtn._bound){
       zoomExitBtn._bound = true;
       zoomExitBtn.addEventListener('click', function(e){
         e.stopPropagation();
         e.preventDefault();
+        
+        // BLOCKER: Ignore clicks while zooming
+        if (isZoomAnimating) return; 
+
         exitFullscreen();
       });
     }
   }
 
 function animateTo(targetScale, pxBoard, pyBoard, sxTarget, syTarget){
-  // Safety: Ignore if already moving
-  if (isZoomAnimating) return; 
+  // Turn flag ON
+  isZoomAnimating = true;
 
   targetScale = Math.max(minScale, Math.min(maxScale, targetScale));
   cancelFling();
-
-  isZoomAnimating = true; // <--- LOCK INPUTS
 
   const s0  = scale;
   const ox0 = offsetX;
@@ -1698,7 +1700,8 @@ if (t < 1){
       requestAnimationFrame(step);
     } else {
       applyPanAndSize(true);
-      isZoomAnimating = false; // <--- UNLOCK INPUTS
+      // Turn flag OFF
+      isZoomAnimating = false;
     }
   }
 
@@ -1796,13 +1799,10 @@ function enterFullscreenAtGrid(i, j, tapClientX, tapClientY){
 }
 
 
-function exitFullscreen(){
+  function exitFullscreen(){
     if (!isFullscreen) return;
-    
-    isZoomAnimating = false; // <--- FORCE RESET
-    
     cancelFling();
-    mount.classList.remove('is-fullscreen');
+mount.classList.remove('is-fullscreen');
     restoreZoomUIOut();
   document.body.classList.remove('drill-zoom-mode');
 // NEW safety: explicitly disable hit-testing outside zoom mode
@@ -2020,15 +2020,6 @@ const boardY = (sy + offsetY) / scale;
 
 // Use capture so we intercept before WGo's own click handler
   mount.addEventListener('pointerup', function(e){
-    
-    // NEW: Block all interaction if animation is running
-    if (isZoomAnimating) {
-      e.preventDefault();
-      e.stopPropagation();
-      if (tapStart) endPan(e); // cleanup drag state
-      return;
-    }
-
     // --- CASE A: Zoom Disabled (Match Core Board behavior) ---
     if (!zoomEnabled) {
       if (e.pointerType && e.pointerType !== 'touch') return; // Let mouse use WGo default
