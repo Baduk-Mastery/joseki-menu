@@ -452,7 +452,6 @@ body.drill-zoom-mode #drill-ctrls{
   box-sizing:border-box;
 }
 </style>
-</style>
 
 <style>
 /* =========================
@@ -499,7 +498,6 @@ body.drill-zoom-mode #drill-ctrls{
   overflow:auto;
 }
 
-/* Ensure we don’t get random inline color clashes */
 .drill-notif-card > *{
   color:inherit !important;
 }
@@ -518,7 +516,6 @@ body.drill-zoom-mode #drill-ctrls{
   opacity:.96;
 }
 
-/* Done stats styling to fit the notif skin */
 .drill-stats{
   display:flex;
   gap:10px;
@@ -548,7 +545,6 @@ body.drill-zoom-mode #drill-ctrls{
   line-height:1;
 }
 
-/* Wood-style buttons for notif actions (mirrors My Patterns .s-btn) */
 .drill-notif-btn{
   position:relative;
   display:inline-flex;
@@ -617,7 +613,6 @@ body.drill-zoom-mode #drill-ctrls{
   padding:10px 22px;
 }
 
-/* Container for action rows */
 .drill-notif-actions{
   margin-top:10px;
   display:flex;
@@ -626,6 +621,8 @@ body.drill-zoom-mode #drill-ctrls{
   flex-wrap:wrap;
 }
 </style>
+
+<style>
 /* Hard guarantee for drills fullscreen zoom */
 #go-board-drill.drill-fullscreen{
   position: fixed !important;
@@ -641,9 +638,10 @@ body.drill-zoom-mode #drill-ctrls{
   border-radius: 0 !important;
   box-shadow: none !important;
 
-  /* below your top/bottom zoom UI (99999), above normal page */
   z-index: 99997;
+  touch-action: none;
 }
+</style>
 
 </head>
 <body>
