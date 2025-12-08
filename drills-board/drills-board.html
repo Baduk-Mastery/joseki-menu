@@ -581,6 +581,20 @@ body.drill-zoom-mode #drill-ctrls{
   margin-bottom:14px;
   opacity:.96;
 }
+/* Blitz start countdown text */
+.drill-countdown-text{
+  font-weight: 900;
+  font-size: 54px;
+  line-height: 1;
+  letter-spacing: 1px;
+  margin-top: 6px;
+  text-shadow: 0 2px 0 rgba(0,0,0,.35);
+}
+
+/* Slightly tighter card for countdown */
+#drill-countdown .drill-notif-card{
+  min-width: 240px;
+}
 
 /* Done stats styling to fit the notif skin */
 .drill-stats{
@@ -738,6 +752,13 @@ body.drill-zoom-mode #drill-ctrls{
   </div>
 </div>
 
+<!-- Blitz Start Countdown – My Patterns style -->
+<div id="drill-countdown" class="drill-notif" role="alert" aria-live="assertive">
+  <div class="drill-notif-card">
+    <div class="drill-notif-title">Blitz starting</div>
+    <div id="drill-countdown-text" class="drill-countdown-text">3</div>
+  </div>
+</div>
 
 <!-- All Done – My Patterns style -->
 <div id="drill-done" class="drill-notif" role="dialog" aria-modal="true">
@@ -1089,6 +1110,9 @@ if (!window.StoneSFX) {
   const wrongM   = document.getElementById('drill-wrong');
   const clearedM = document.getElementById('drill-cleared');
   const doneM    = document.getElementById('drill-done');
+  const countdownM    = document.getElementById('drill-countdown');
+  const countdownText = document.getElementById('drill-countdown-text');
+
   const doneTitle= document.getElementById('drill-done-title');
   const doneBack = document.getElementById('drill-done-back');
   const doneRetry= document.getElementById('drill-done-retry');
@@ -2434,16 +2458,21 @@ function startDrill(i, opts){
     if (blitzMode){
       timerMs = 0;
       ensureTimerEl();
-      if (timerEl) timerEl.textContent = fmtMs(timerMs);
-      startTimer();
+      if (timerEl){
+        timerEl.style.display = 'block';
+        timerEl.textContent = fmtMs(timerMs);
+      }
+      // No startTimer yet.
     } else {
       if (timerEl) timerEl.style.display = 'none';
       stopTimer();
     }
 
     if (slots.length){
-      startDrill(0);
+      if (blitzMode) runBlitzStartCountdown(() => startDrill(0));
+      else startDrill(0);
     }
+
   });
 
 btnNext.addEventListener('click', function(){
@@ -2555,18 +2584,22 @@ btnNext.addEventListener('click', function(){
         blitzCornerState = null;
         timeUp = false;
 
-        if (blitzMode){
+         if (blitzMode){
           timerMs = 0;
           ensureTimerEl();
           timerEl.style.display = 'block';
           timerEl.textContent = fmtMs(timerMs);
-          startTimer();
+          // Do NOT start timer here; startDrill will start it after countdown.
         } else {
           if (timerEl) timerEl.style.display = 'none';
           stopTimer();
         }
 
-        startDrill(0);
+        if (slots.length){
+          if (blitzMode) runBlitzStartCountdown(() => startDrill(0));
+          else startDrill(0);
+        }
+
         try{ (wrap).scrollIntoView({behavior:'smooth',block:'start'});}catch(_){}
       }
 
@@ -2630,6 +2663,42 @@ btnNext.addEventListener('click', function(){
         if (gj) gj.setAttribute('data-hidden','1');
       }catch(_){}
     }
+  function runBlitzStartCountdown(startFn){
+    // Only for blitz sessions
+    if (!blitzMode || !countdownM || !countdownText){
+      startFn();
+      return;
+    }
+
+    clearTimers();
+
+    // Block interaction while the overlay is up
+    locked = true;
+
+    const steps = ['3', '2', '1', 'Go!'];
+    let idx = 0;
+
+    countdownText.textContent = steps[0];
+    countdownM.style.display = 'flex';
+
+    function tick(){
+      countdownText.textContent = steps[idx];
+      idx++;
+
+      if (idx < steps.length){
+        setTimeout(tick, 550);
+      } else {
+        // brief “Go!” hold
+        setTimeout(() => {
+          countdownM.style.display = 'none';
+          // startDrill will set locked = false internally
+          startFn();
+        }, 450);
+      }
+    }
+
+    tick();
+  }
 
     function startNow(e){
       if (s.disabled || s.getAttribute('aria-hidden') === 'true' || s.style.display === 'none') return;
