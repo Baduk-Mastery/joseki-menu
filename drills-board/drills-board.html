@@ -1197,6 +1197,8 @@ function getGridSpacing(){
   let index  = 0;                 // current slot
   let remain = [];                // remaining transformed moves
   let currentTransformed = null;
+let currentStartIndex = 0;
+let blitzDirectionalIdx = null;
 
   // BLITZ flags + timer
   let blitzMode = false;
@@ -1460,20 +1462,40 @@ function findFirstDirectionalIndex(moves, S){
   return null;
 }
 
-// new blitz hint rule
 function drawBlitzMarkers(){
-  // Only in Blitz
   if (!blitzMode) return;
   if (!board) return;
-
-  // Only show a hint when we actually have a "next move"
+  if (!currentTransformed) return;
   if (!remain || !remain.length) return;
+
+  const moves = currentTransformed.moves || [];
+  const total = moves.length;
+  if (!total) return;
 
   const next = remain[0];
   if (!next) return;
   if (!inside(next.x, next.y)) return;
 
-  // Do not draw a label on an occupied point
+  const startIdx = currentStartIndex || 0;
+
+  // How many moves we have already played inside this drill sequence
+  const playedCount = Math.max(0, total - startIdx - remain.length);
+
+  // Absolute index of the next expected move in the full line
+  const nextAbsIdx = startIdx + playedCount;
+
+  const dirIdx =
+    (typeof blitzDirectionalIdx === 'number')
+      ? blitzDirectionalIdx
+      : null;
+
+  const shouldLabel =
+    (nextAbsIdx === 0) ||
+    (dirIdx != null && nextAbsIdx === dirIdx);
+
+  if (!shouldLabel) return;
+
+  // Only draw if the point is empty
   if (grid && grid[next.y] && grid[next.y][next.x] === null){
     board.addObject({ x: next.x, y: next.y, type: 'LB', text: 'A' });
   }
@@ -2383,7 +2405,13 @@ function startDrill(i, opts){
   const tline = makeTransformed(base, variant.orientIdx, variant.swap);
   currentTransformed = tline;
 
-  prepareCorner(tline, variant.startIndex);
+  currentStartIndex = variant.startIndex || 0;
+  blitzDirectionalIdx = blitzMode
+    ? findFirstDirectionalIndex(tline.moves, SIZE)
+    : null;
+
+  prepareCorner(tline, currentStartIndex);
+
 
   blitzCornerPlannedMoves = remain.length;
 
