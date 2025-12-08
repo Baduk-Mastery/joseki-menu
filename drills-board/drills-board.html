@@ -2334,13 +2334,6 @@ function startDrill(i, opts){
   if (blitzMode){
     ensureTimerEl();
 
-    // IMPORTANT:
-    // Only add the per-corner time budget if we did NOT skip into this corner.
-    // This prevents "Skip spamming" from growing the timer.
-    if (!fromSkip){
-      timerMs += blitzCornerPlannedMoves * 1500;
-    }
-
     if (!timerId) startTimer();
     if (timerEl) timerEl.textContent = fmtMs(timerMs);
 
