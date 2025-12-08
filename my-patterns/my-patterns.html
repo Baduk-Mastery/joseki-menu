@@ -257,55 +257,77 @@
     flex-wrap:wrap;
   }
 
-  /* Wood-style buttons – same look as Practice List / Practice Board */
-  #ownpatterns-root .s-back,
-  #ownpatterns-root .s-btn{
-    position:relative;
-    display:inline-flex;
-    align-items:center;
-    justify-content:center;
-    gap:6px;
+ /* Wood-style buttons – size + feel aligned with Practice Board .pbtn */
+#ownpatterns-root .s-back,
+#ownpatterns-root .s-btn{
+  position: relative;
 
-    padding:8px 18px;
-    border-radius:10px;
-    border:1px solid rgba(255,255,255,.40);
+  /* same baseline footprint as Practice */
+  min-width: 90px;
+  padding: 8px 24px;
 
-    font-size:16px;
-    font-weight:800;
-    line-height:1.1;
-    color:#fff3cf;
-    text-shadow:0 1px 0 rgba(120,60,20,.7);
-    cursor:pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  text-align: center;
 
-    user-select:none;
-    -webkit-user-select:none;
-    -moz-user-select:none;
-    -ms-user-select:none;
-    -webkit-tap-highlight-color:transparent;
+  border-radius: 10px;
+  border: 1px solid rgba(255,255,255,.40);
 
-    background-image:
-      linear-gradient(
-        to bottom,
-        rgba(255,255,255,.12),
-        rgba(255,255,255,.03) 38%,
-        rgba(0,0,0,.14) 100%
-      ),
-      var(--wood);
-    background-size:100% 100%, cover;
-    background-position:center;
-    background-repeat:no-repeat;
+  font-size: 16px;
+  font-weight: 800;
+  line-height: 1.1;
+  color: #fff3cf;
+  text-shadow: 0 1px 0 rgba(120,60,20,.7);
+  cursor: pointer;
 
-    filter:brightness(1.08) saturate(.96);
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-tap-highlight-color: transparent;
 
-    box-shadow:
-      0 3px 0 rgba(133,74,26,.85),
-      0 8px 14px rgba(0,0,0,.45);
+  background-image:
+    linear-gradient(
+      to bottom,
+      rgba(255,255,255,.12),
+      rgba(255,255,255,.03) 38%,
+      rgba(0,0,0,.14) 100%
+    ),
+    var(--wood);
+  background-size: 100% 100%, cover;
+  background-position: center;
+  background-repeat: no-repeat;
 
-    transition:
-      transform .08s ease-out,
-      box-shadow .08s ease-out,
-      filter .12s ease-out;
-  }
+  filter: brightness(1.08) saturate(.96);
+
+  box-shadow:
+    0 3px 0 rgba(133,74,26,.85),
+    0 8px 14px rgba(0,0,0,.45);
+
+  transition:
+    transform .08s ease-out,
+    box-shadow .08s ease-out,
+    filter .12s ease-out;
+}
+
+#ownpatterns-root .s-back:hover,
+#ownpatterns-root .s-btn:hover{
+  filter: brightness(1.12) saturate(.98);
+  transform: translateY(-1px);
+  box-shadow:
+    0 4px 0 rgba(133,74,26,.9),
+    0 10px 16px rgba(0,0,0,.48);
+}
+
+#ownpatterns-root .s-back:active,
+#ownpatterns-root .s-btn:active{
+  filter: brightness(.97) saturate(.96);
+  transform: translateY(2px);
+  box-shadow:
+    0 1px 0 rgba(120,60,20,.9),
+    0 4px 8px rgba(0,0,0,.55);
+}
+
 
   #ownpatterns-root .s-back:hover,
   #ownpatterns-root .s-btn:hover{
@@ -325,18 +347,19 @@
       0 4px 8px rgba(0,0,0,.55);
   }
 
-  /* Slimmer header back button (like Practice header) */
-  #ownpatterns-root .s-header .s-back{
-    padding:6px 12px;
-    font-size:14px;
-    border-radius:8px;
-  }
+/* Slimmer header back button (like Practice header) */
+#ownpatterns-root .s-header .s-back{
+  min-width: auto;   /* prevent the Practice-sized minimum here */
+  padding: 6px 12px;
+  font-size: 14px;
+  border-radius: 8px;
+}
+/* Larger primary buttons – keep same baseline as Practice */
+#ownpatterns-root .s-btn.s-btn-lg{
+  padding: 8px 24px;
+  font-size: 16px;
+}
 
-  /* Larger primary buttons (Add, OK, etc.) */
-  #ownpatterns-root .s-btn.s-btn-lg{
-    padding:10px 22px;
-    font-size:16px;
-  }
 
   /* Danger variant for Remove (red-tinted wood) */
   #ownpatterns-root .s-btn.s-btn-danger{
@@ -501,6 +524,15 @@
   gap:10px;
   justify-content:center;
   flex-wrap:wrap;
+}
+/* Practice-like equal-width control rows in the editor */
+#ownpatterns-root .own-editor-row{
+  width: 100%;
+}
+
+#ownpatterns-root .own-editor-row .s-btn{
+  flex: 1 1 0;       /* equal widths when multiple buttons share a row */
+  min-width: 90px;   /* same baseline as Practice */
 }
 
 
