@@ -1056,71 +1056,32 @@ function showRemoveToast(pattern, label){
   var SIZE=19, board=null, grid=null, moves=null, last=null, turn='B';
   /* ===================== Editor Zoom (ported from Core, trimmed) ===================== */
 
- function normalizeZoomMode(v){
-    // numeric modes
-    if (v === 0 || v === 1 || v === 2) return v;
+  // Uses GoPrefs.josekiZoom if it exists elsewhere; otherwise defaults on.
+  var zoomEnabled = (window.GoPrefs && typeof window.GoPrefs.josekiZoom !== 'undefined')
+    ? !!window.GoPrefs.josekiZoom
+    : true;
 
-    // string modes (optional convenience)
-    if (typeof v === 'string'){
-      var s = v.toLowerCase().trim();
-      if (s === '0' || s === 'off' || s === 'none' || s === 'no') return 0;
-      if (s === '1' || s === 'on' || s === 'auto') return 1;
-      if (s === '2' || s === 'sticky' || s === 'no-auto' || s === 'noauto') return 2;
-    }
+  var scale = 1, minScale = 1, maxScale = 2.6;
+  var offsetX = 0, offsetY = 0;
+  var baseW = 0;
 
-    // legacy boolean
-    if (typeof v === 'boolean') return v ? 1 : 0;
+  var isFullscreen = false;
+  var isZoomAnimating = false;
+  var animId = 0;
 
-    // legacy numeric-ish
-    if (typeof v === 'number') return v ? 1 : 0;
-
-    // default
-    return 1;
-  }
-
-  function readZoomModeFromPrefs(){
-    try {
-      if (window.GoPrefs && typeof window.GoPrefs.josekiZoomMode !== 'undefined'){
-        return normalizeZoomMode(window.GoPrefs.josekiZoomMode);
-      }
-      if (window.GoPrefs && typeof window.GoPrefs.josekiZoom !== 'undefined'){
-        return normalizeZoomMode(!!window.GoPrefs.josekiZoom);
-      }
-    } catch(_){}
-    return 1;
-  }
-
-  var zoomMode = readZoomModeFromPrefs();
-  var zoomEnabled = zoomMode !== 0;
-
-  function isAutoZoomOutEnabled(){
-    return zoomMode === 1;
-  }
+  var panStart = null, tapStart = null, isPanning = false;
+  var TAP_SLOP2 = 64;
+  var zoomInFactor = 2.4;
 
   // React to global settings changes if your settings page dispatches them
   window.addEventListener('go:prefs-changed', function(e){
     var d = (e && e.detail) || {};
-
-    if (d.key === 'josekiZoomMode'){
-      zoomMode = normalizeZoomMode(d.value);
-      zoomEnabled = zoomMode !== 0;
-
-      if (!zoomEnabled){
-        smoothZoomOutAndExit();
-      }
-      return;
-    }
-
-    // backward compatibility if your settings still emit the old key
     if (d.key === 'josekiZoom'){
-      zoomMode = normalizeZoomMode(!!d.value);
-      zoomEnabled = zoomMode !== 0;
-
-      if (!zoomEnabled){
-        smoothZoomOutAndExit();
-      }
+      zoomEnabled = !!d.value;
+      if (!zoomEnabled) smoothZoomOutAndExit();
     }
   });
+
   function canvasCssScale(){
     var c = mount && mount.querySelector('canvas');
     if (!c) return 1;
@@ -1367,15 +1328,11 @@ function showRemoveToast(pattern, label){
 
         if (scale <= 1.05 && !isFullscreen){
           enterFullscreenAtGrid(gridI, gridJ, tapX, tapY);
-           } else {
+        } else {
           if (!isNoticeOpen()) playAt(gridI, gridJ);
-
-          // Only auto-return in mode 1
-          if (isAutoZoomOutEnabled()){
-            setTimeout(smoothZoomOutAndExit, 10);
-          }
+          // With no UI button, auto-return right after a move
+          setTimeout(smoothZoomOutAndExit, 10);
         }
-
       }
     }, {passive:false});
 
@@ -2265,6 +2222,7 @@ if (passBtn){
 
 </body>
 </html>
+
 
 
 
