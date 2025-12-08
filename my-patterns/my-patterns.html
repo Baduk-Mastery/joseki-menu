@@ -205,9 +205,26 @@
 }
 
 
-  #ownpatterns-root .s-header{
-    display:grid; grid-template-columns:auto 1fr; align-items:center; column-gap:14px; margin:6px 0 10px;
-  }
+#ownpatterns-root .s-header{
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  column-gap: 14px;
+  margin: 6px 0 10px;
+}
+
+/* Put back button on the left, title truly centered */
+#ownpatterns-root .s-header .s-back{
+  grid-column: 1;
+  justify-self: start;
+}
+
+#ownpatterns-root .s-header .s-title{
+  grid-column: 2;
+  justify-self: center;
+  text-align: center;
+}
+
   #ownpatterns-root .s-title{
     margin:0; font-size:24px; line-height:1.15; font-weight:800;
     text-shadow:0 1px 2px rgba(0,0,0,.35);
@@ -707,10 +724,25 @@
   -webkit-overflow-scrolling:touch;
 }
 
-  #level-overlay .s-header{
-    display:grid; grid-template-columns:auto 1fr; align-items:center; column-gap:14px;
-    margin:6px 0 10px;
-  }
+#level-overlay .s-header{
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  column-gap: 14px;
+  margin: 6px 0 10px;
+}
+
+#level-overlay .s-back{
+  grid-column: 1;
+  justify-self: start;
+}
+
+#level-overlay .s-title{
+  grid-column: 2;
+  justify-self: center;
+  text-align: center;
+}
+
   #level-overlay .s-title{
     margin:0; font-size:24px; line-height:1.15; font-weight:800;
     text-shadow:0 1px 2px rgba(0,0,0,.35);
