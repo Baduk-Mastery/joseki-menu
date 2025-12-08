@@ -1203,7 +1203,9 @@ function getGridSpacing(){
   let timerMs = 0;
   let timerId = null;
   let blitzCornerPlannedMoves = 0;
+  let blitzInitialBudgetGranted = false; // NEW: only grant 1500ms-per-move once
   let timeUp = false;
+
 
 function ensureTimerEl(){
   if (timerEl || !blitzMode) return;
@@ -1237,6 +1239,14 @@ function ensureTimerEl(){
     ensureTimerEl();
     stopTimer();
     timeUp = false;
+
+    // NEW safety: don't start a zero-length timer
+    if (timerMs <= 0){
+      timerMs = 0;
+      if (timerEl) timerEl.textContent = fmtMs(timerMs);
+      return;
+    }
+
     timerId = setInterval(()=>{
       timerMs -= 100;
       if (timerEl) timerEl.textContent = fmtMs(timerMs);
@@ -1247,6 +1257,7 @@ function ensureTimerEl(){
       }
     }, 100);
   }
+
   function stopTimer(){ if (timerId){ clearInterval(timerId); timerId=null; } }
   /* =========================
      Blitz countdown (3-2-1-Go)
@@ -2331,14 +2342,14 @@ function startDrill(i, opts){
 
   blitzCornerPlannedMoves = remain.length;
 
-  if (blitzMode){
+    if (blitzMode){
     ensureTimerEl();
 
-    // IMPORTANT:
-    // Only add the per-corner time budget if we did NOT skip into this corner.
-    // This prevents "Skip spamming" from growing the timer.
-    if (!fromSkip){
-      timerMs += blitzCornerPlannedMoves * 1500;
+    // Grant the initial pool ONCE per blitz session
+    // based on the first corner's planned moves.
+    if (!blitzInitialBudgetGranted){
+      timerMs = blitzCornerPlannedMoves * 1500;
+      blitzInitialBudgetGranted = true;
     }
 
     if (!timerId) startTimer();
@@ -2350,6 +2361,7 @@ function startDrill(i, opts){
       plannedN: blitzCornerPlannedMoves
     };
   }
+
 
   setProgress();
   locked = false;
@@ -2504,7 +2516,9 @@ function startDrill(i, opts){
   if (blitzMode){
     // Reset timer visuals, but do NOT start timer yet.
     // startDrill() will add the first corner budget and start the timer.
-    timerMs = 0;
+blitzInitialBudgetGranted = false;
+timerMs = 0;
+
     ensureTimerEl();
     if (timerEl){
       timerEl.style.display = 'block';
@@ -2613,6 +2627,8 @@ btnNext.addEventListener('click', function(){
       const sel = getDrillSelections();
       const selMode = (sel && sel.mode === 'blitz') ? 'blitz' : 'complete';
       blitzMode = (selMode === 'blitz');
+      blitzInitialBudgetGranted = false;
+
 
       function buildSlots(baseLines){
         const raw = [];
@@ -2648,7 +2664,9 @@ btnNext.addEventListener('click', function(){
                 if (blitzMode){
           // Reset timer visuals, but do NOT start timer yet.
           // startDrill() will add the first corner budget and start the timer.
-          timerMs = 0;
+blitzInitialBudgetGranted = false;
+timerMs = 0;
+
           ensureTimerEl();
           if (timerEl){
             timerEl.style.display = 'block';
