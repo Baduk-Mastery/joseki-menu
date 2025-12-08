@@ -23,6 +23,27 @@
   box-shadow: none !important;
   margin: 0 !important;
 }
+/* Reserve board space before JS so it doesn't "pop in" */
+#go-board-drill-wrap{
+  width: 100%;
+}
+
+#go-board-drill{
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  /* optional safety so tiny screens still show a block */
+  min-height: 240px;
+}
+
+/* If you want the placeholder to match the board mood */
+#go-board-drill{
+  background-image:
+    linear-gradient(rgba(0,0,0,.10), rgba(0,0,0,.25)),
+    url('../img/wood.jpg');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+}
 
 #go-board-drill{
   touch-action: none;
