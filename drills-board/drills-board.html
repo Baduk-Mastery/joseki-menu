@@ -1131,6 +1131,7 @@ if (!window.StoneSFX) {
 
   // --- board state ---
   let SIZE = 19, board=null, grid=null;
+let lastMove = null; // {x,y,color}
   // Map grid indices -> CSS coordinates (used by zoom)
   function canvasCssScale(){
     const c = mount ? mount.querySelector('canvas') : null;
@@ -1361,7 +1362,11 @@ mount.appendChild(layer);
   }
 
 
-  function resetGrid(){ grid = Array.from({length:SIZE}, ()=>Array(SIZE).fill(null)); }
+function resetGrid(){
+  grid = Array.from({length:SIZE}, ()=>Array(SIZE).fill(null));
+  lastMove = null;
+}
+
   function addStone(x,y,color){ grid[y][x]=color; }
 
   function inside(x,y){ return x>=0 && y>=0 && x<SIZE && y<SIZE; }
@@ -1397,23 +1402,40 @@ mount.appendChild(layer);
       if (gSelf.libs === 0) removeStones(gSelf.stones);
     }
   }
-  function playMove(x,y,color, silent=false){
-    addStone(x,y,color);
-    resolveCapturesAfterPlacing(x,y,color);
-    if (!silent && window.StoneSFX) StoneSFX.play();
-    redraw();
+function playMove(x,y,color, silent=false){
+  addStone(x,y,color);
+  resolveCapturesAfterPlacing(x,y,color);
+
+  lastMove = { x, y, color };
+
+  if (!silent && window.StoneSFX) StoneSFX.play();
+  redraw();
+}
+
+
+function redraw(){
+  if (!board) return;
+  board.removeAllObjects();
+
+  for (let y=0;y<SIZE;y++) for (let x=0;x<SIZE;x++){
+    const v=grid[y][x];
+    if (v==='B') board.addObject({x,y,c:WGo.B});
+    else if (v==='W') board.addObject({x,y,c:WGo.W});
   }
 
-  function redraw(){
-    if (!board) return;
-    board.removeAllObjects();
-    for (let y=0;y<SIZE;y++) for (let x=0;x<SIZE;x++){
-      const v=grid[y][x];
-      if (v==='B') board.addObject({x,y,c:WGo.B});
-      else if (v==='W') board.addObject({x,y,c:WGo.W});
+  // Show last move marker if enabled
+  try{
+    if (GoPrefs && GoPrefs.highlightLast && lastMove){
+      const v = grid[lastMove.y] && grid[lastMove.y][lastMove.x];
+      if (v){ // only mark if the stone still exists
+        board.addObject({ x:lastMove.x, y:lastMove.y, type:'CR' });
+      }
     }
-    if (blitzMode) drawBlitzMarkers();
-  }
+  }catch(_){}
+
+  if (blitzMode) drawBlitzMarkers();
+}
+
 
   function isCornerHoshi(pt,S){
     const a = 3, b = S-4;
@@ -2298,18 +2320,26 @@ const baseView = (!isFullscreen && scale <= 1.05);
     }
   };
 
-  // React to go:prefs-changed if fired by Settings
-  window.addEventListener('go:prefs-changed', function(e){
-    const d = e.detail || {};
-    if (!d || typeof d.key === 'undefined') return;
-    if (d.key === 'josekiZoom'){
-      zoomEnabled = !!d.value;
-      if (!zoomEnabled){
-        if (isFullscreen) exitFullscreen();
-        else resetViewLocal();
-      }
+window.addEventListener('go:prefs-changed', function(e){
+  const d = e.detail || {};
+  if (!d || typeof d.key === 'undefined') return;
+
+  if (d.key === 'josekiZoom'){
+    zoomEnabled = !!d.value;
+    if (!zoomEnabled){
+      if (isFullscreen) exitFullscreen();
+      else resetViewLocal();
     }
-  });
+    return;
+  }
+
+  if (d.key === 'highlightLast'){
+    GoPrefs.highlightLast = !!d.value;
+    redraw();
+    return;
+  }
+});
+
 
   function prepareCorner(tline, startIndex){
     resetGrid();
