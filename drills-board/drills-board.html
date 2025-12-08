@@ -1833,30 +1833,21 @@ function clampPan(){
     offsetY = 0;
     applyPanAndSize(true);
   }
-  function resetViewLocal(){
-    cancelFling();
-    scale = 1;
-    offsetX = 0;
-    offsetY = 0;
-    applyPanAndSize(true);
-  }
 
-  // NEW: force zoom-out for outcome events (ignores disableAutoZoomOut)
-  function forceZoomOutForOutcome(){
-    if (!zoomEnabled) return;
-
+// Hard reset for outcome/state transitions.
+// Ignores disableAutoZoomOut and does not depend on zoomEnabled.
+function forceZoomOutForOutcome(){
+  try{
     if (isFullscreen){
       exitFullscreen();
       return;
     }
-
     if (scale > 1.01){
       resetViewLocal();
     }
-  }
+  }catch(_){}
+}
 
-  function ensureOverlay(){
-    if (overlay) return;
 
   function ensureOverlay(){
     if (overlay) return;
@@ -2413,6 +2404,7 @@ window.addEventListener('go:prefs-changed', function(e){
 
 function startDrill(i, opts){
   opts = opts || {};
+  forceZoomOutForOutcome();
   const fromSkip = !!opts.fromSkip;
 
   index = i;
@@ -2625,7 +2617,7 @@ function startDrill(i, opts){
 
   // Consume one daily attempt for this mode (Complete / Blitz)
   recordDailyAttemptForCurrentMode();
-
+  forceZoomOutForOutcome();
   doneM.style.display = 'none';
   resetStats();
   reshuffleSlots();
@@ -2790,6 +2782,7 @@ btnNext.addEventListener('click', function(){
 
         resetStats();
         index=0;
+        forceZoomOutForOutcome();
         blitzCornerState = null;
         timeUp = false;
 
