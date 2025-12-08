@@ -74,11 +74,18 @@
 
       <div id="own-editor-wrap">
         <div id="own-editor-board"></div>
-        <div class="own-editor-ctrls">
-          <button id="own-edit-undo"   class="s-btn" type="button">Undo</button>
-          <button id="own-edit-reset"  class="s-btn" type="button">Reset</button>
-          <button id="own-edit-save"   class="s-btn s-btn-lg" type="button">Add</button>
-        </div>
+<div class="own-editor-ctrls">
+  <div class="own-editor-row">
+    <button id="own-edit-undo"  class="s-btn" type="button">Undo</button>
+    <button id="own-edit-reset" class="s-btn" type="button">Reset</button>
+    <button id="own-edit-pass"  class="s-btn" type="button">Pass</button>
+  </div>
+
+  <div class="own-editor-row">
+    <button id="own-edit-save" class="s-btn s-btn-lg" type="button">Add</button>
+  </div>
+</div>
+
       </div>
     </div>
   </div>
@@ -478,15 +485,24 @@
     margin:0 auto;
   }
 
-  #ownpatterns-root .own-editor-ctrls{
-    max-width:var(--board-max);
-    margin:10px auto 0;
-    padding:8px 12px;
-    display:flex;
-    gap:10px;
-    justify-content:center;
-    flex-wrap:wrap;
-  }
+#ownpatterns-root .own-editor-ctrls{
+  max-width:var(--board-max);
+  margin:10px auto 0;
+  padding:8px 12px;
+
+  display:flex;
+  flex-direction:column;   /* makes two rows */
+  gap:10px;
+  align-items:stretch;
+}
+
+#ownpatterns-root .own-editor-row{
+  display:flex;
+  gap:10px;
+  justify-content:center;
+  flex-wrap:wrap;
+}
+
 
   /* Centered info notice (OK-only) – match Practice Board notif design */
   #ownpatterns-root #own-notice{
@@ -817,9 +833,10 @@ if (!window._stoneSFXInit) {
   var openBtn  = root.querySelector('#own-add');
   var backTop  = root.querySelector('#own-back');
   var backEd   = root.querySelector('#own-edit-back');
-  var undoBtn  = root.querySelector('#own-edit-undo');
-  var resetBtn = root.querySelector('#own-edit-reset');
-  var saveBtn  = root.querySelector('#own-edit-save');
+var undoBtn  = root.querySelector('#own-edit-undo');
+var resetBtn = root.querySelector('#own-edit-reset');
+var passBtn  = root.querySelector('#own-edit-pass');
+var saveBtn  = root.querySelector('#own-edit-save');
   var mount    = root.querySelector('#own-editor-board');
   var wrap     = root.querySelector('#own-editor-wrap');
   var listEl   = root.querySelector('#own-list');
@@ -1709,6 +1726,16 @@ title.textContent = displayName + ' (' + moveCount + ' Moves)';
       if (!isNoticeOpen()) resetAll();
     });
   }
+if (passBtn){
+  passBtn.addEventListener('click', function(){
+    if (isNoticeOpen()) return;
+
+    // Treat pass as an editor helper:
+    // it flips the turn so you can play the same color again.
+    koPoint = null; // a pass counts as an intervening move for ko purposes here
+    turn = (turn === 'B') ? 'W' : 'B';
+  });
+}
 
   if (saveBtn){
     saveBtn.addEventListener('click', function(){
