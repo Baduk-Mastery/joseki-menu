@@ -1833,104 +1833,30 @@ function clampPan(){
     offsetY = 0;
     applyPanAndSize(true);
   }
-  // Force zoom-out for end-of-variation / end-of-session events
-  // This intentionally ignores GoPrefs.disableAutoZoomOut
-  function forceEndZoomOut(){
-    try{
-      if (isFullscreen){
-        exitFullscreen();
-      } else if (scale > 1.01){
-        resetViewLocal();
-      }
-    }catch(_){}
-  }
-  function showClearedAuto(){
-    clearTimers();
-
-    // Force zoom-out even if "disable auto zoom out" is enabled
-    forceEndZoomOut();
-
-    clearedM.style.display='flex';
-    locked = true;
-    clearedTimer = setTimeout(() => {
-      clearedM.style.display='none';
-      locked = false;
-      startDrill(index+1);
-    }, 850);
+  function resetViewLocal(){
+    cancelFling();
+    scale = 1;
+    offsetX = 0;
+    offsetY = 0;
+    applyPanAndSize(true);
   }
 
-  function showClearedThenDone(){
-    clearTimers();
+  // NEW: force zoom-out for outcome events (ignores disableAutoZoomOut)
+  function forceZoomOutForOutcome(){
+    if (!zoomEnabled) return;
 
-    // Force zoom-out even if "disable auto zoom out" is enabled
-    forceEndZoomOut();
-
-    clearedM.style.display='flex';
-    locked = true;
-    clearedTimer = setTimeout(() => {
-      clearedM.style.display='none';
-      showDone();
-    }, 800);
-  }
-  function showWrongAuto(){
-    clearTimers();
-
-    // Force zoom-out even if "disable auto zoom out" is enabled
-    forceEndZoomOut();
-
-    wrongM.style.display='flex';
-    locked = true;
-    wrongTimer = setTimeout(() => {
-      wrongM.style.display='none';
-      locked = false;
-      if (index >= (slots.length - 1)) showDone(); else startDrill(index+1);
-    }, 1000);
-  }
-  function showWrongThenRestart(){
-    clearTimers();
-
-    // Optional: force zoom-out on blitz wrong as well
-    forceEndZoomOut();
-
-    wrongM.style.display='flex';
-    locked = true;
-    wrongTimer = setTimeout(() => {
-      wrongM.style.display='none';
-      restartSameCornerBlitz();
-    }, 800);
-  }
-  function showDone(customTitle){
-    clearTimers();
-
-    // Force zoom-out even if "disable auto zoom out" is enabled
-    forceEndZoomOut();
-
-    if (statSolvedEl) statSolvedEl.textContent = String(solvedCount);
-    if (statFailedEl) statFailedEl.textContent = String(failedCount);
-    if (doneTitle)    doneTitle.textContent   = customTitle || 'All Drills Complete';
-
-    const left = dailyAttemptsLeftForCurrentMode();
-
-    if (left <= 0){
-      if (doneMsgEl) doneMsgEl.textContent = 'You reached your drills limit.';
-      doneRetry.disabled = true;
-      doneRetry.style.opacity = '.6';
-      doneRetry.style.cursor = 'not-allowed';
-    } else {
-      if (doneMsgEl) {
-        doneMsgEl.textContent = customTitle
-          ? 'Session ended.'
-          : 'Session finished. You can retry the set or go back to selection.';
-      }
-      doneRetry.disabled = false;
-      doneRetry.style.opacity = '1';
-      doneRetry.style.cursor = 'pointer';
+    if (isFullscreen){
+      exitFullscreen();
+      return;
     }
 
-    doneM.style.display = 'flex';
-    if (blitzMode) stopTimer();
+    if (scale > 1.01){
+      resetViewLocal();
+    }
   }
 
+  function ensureOverlay(){
+    if (overlay) return;
 
   function ensureOverlay(){
     if (overlay) return;
@@ -2583,6 +2509,10 @@ function startDrill(i, opts){
 
   function showWrongThenRestart(){
     clearTimers();
+
+    // NEW: always zoom out when a variation is done wrong (Blitz too)
+    forceZoomOutForOutcome();
+
     wrongM.style.display='flex';
     locked = true;
     wrongTimer = setTimeout(() => {
@@ -2590,8 +2520,13 @@ function startDrill(i, opts){
       restartSameCornerBlitz();
     }, 800);
   }
+
   function showWrongAuto(){
     clearTimers();
+
+    // NEW: always zoom out when a variation is done wrong
+    forceZoomOutForOutcome();
+
     wrongM.style.display='flex';
     locked = true;
     wrongTimer = setTimeout(() => {
@@ -2601,8 +2536,13 @@ function startDrill(i, opts){
     }, 1000);
   }
 
+
   function showClearedAuto(){
     clearTimers();
+
+    // NEW: always zoom out when a variation finishes
+    forceZoomOutForOutcome();
+
     clearedM.style.display='flex';
     locked = true;
     clearedTimer = setTimeout(() => {
@@ -2611,8 +2551,13 @@ function startDrill(i, opts){
       startDrill(index+1);
     }, 850);
   }
+
   function showClearedThenDone(){
     clearTimers();
+
+    // NEW: always zoom out when the final variation finishes
+    forceZoomOutForOutcome();
+
     clearedM.style.display='flex';
     locked = true;
     clearedTimer = setTimeout(() => {
@@ -2621,9 +2566,10 @@ function startDrill(i, opts){
     }, 800);
   }
 
+
     function showDone(customTitle){
     clearTimers();
-
+    forceZoomOutForOutcome();
     if (statSolvedEl) statSolvedEl.textContent = String(solvedCount);
     if (statFailedEl) statFailedEl.textContent = String(failedCount);
     if (doneTitle)    doneTitle.textContent   = customTitle || 'All Drills Complete';
@@ -2734,9 +2680,13 @@ btnNext.addEventListener('click', function(){
   // If stats are ever visible mid-run, keep them in sync
   if (statFailedEl) statFailedEl.textContent = String(failedCount);
 
+  // NEW: always zoom out when a variation is skipped
+  forceZoomOutForOutcome();
+
   // Skip should not grant Blitz time for the next corner.
   startDrill(index + 1, { fromSkip: true });
 });
+
 
 
 
@@ -3001,6 +2951,8 @@ timerMs = 0;
 
 </body>
 </html>
+
+
 
 
 
