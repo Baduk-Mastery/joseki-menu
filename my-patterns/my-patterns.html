@@ -726,22 +726,12 @@
 
 #level-overlay .s-header{
   display: grid;
-  grid-template-columns: 1fr auto 1fr;
+  grid-template-columns: minmax(max-content, 1fr) auto minmax(max-content, 1fr);
   align-items: center;
   column-gap: 14px;
   margin: 6px 0 10px;
 }
 
-#level-overlay .s-back{
-  grid-column: 1;
-  justify-self: start;
-}
-
-#level-overlay .s-title{
-  grid-column: 2;
-  justify-self: center;
-  text-align: center;
-}
 
   #level-overlay .s-title{
     margin:0; font-size:24px; line-height:1.15; font-weight:800;
@@ -779,6 +769,21 @@
       box-shadow .08s ease-out,
       filter .12s ease-out;
   }
+#level-overlay .s-back{
+  grid-column: 1;
+  justify-self: start;
+  white-space: nowrap;
+
+  position:relative;
+  display:inline-flex; align-items:center; justify-content:center;
+  padding:6px 12px;
+  border-radius:8px;
+  border:1px solid rgba(255,255,255,.40);
+  font-size:14px;
+  font-weight:800;
+  line-height:1.1;
+}
+
   #level-overlay .s-back:hover{
     filter:brightness(1.12) saturate(.98);
     transform:translateY(-1px);
