@@ -182,7 +182,9 @@
   align-items:flex-start;
 }
 #ownpatterns-root .s-inner{
-  width:min(92vw,var(--board-max));
+  /* Match Joseki page width behavior more closely */
+  width: min(100vw, var(--board-max));
+
   height:100%;
   max-height:100%;
   margin:0 auto;
@@ -197,9 +199,11 @@
 
 @media (max-width:480px){
   #ownpatterns-root .s-inner{
+    /* Same mobile side feel as your Joseki layout */
     padding:16px 12px 22px;
   }
 }
+
 
   #ownpatterns-root .s-header{
     display:grid; grid-template-columns:auto 1fr; align-items:center; column-gap:14px; margin:6px 0 10px;
@@ -257,11 +261,12 @@
     flex-wrap:wrap;
   }
 
-/* My Patterns buttons – copied from Practice Board wood button skin */
+ /* Wood-style buttons – size + feel aligned with Practice Board .pbtn */
 #ownpatterns-root .s-back,
 #ownpatterns-root .s-btn{
   position: relative;
 
+  /* same baseline footprint as Practice */
   min-width: 90px;
   padding: 8px 24px;
 
@@ -269,7 +274,6 @@
   align-items: center;
   justify-content: center;
   box-sizing: border-box;
-
   text-align: center;
 
   border-radius: 10px;
@@ -328,26 +332,37 @@
     0 4px 8px rgba(0,0,0,.55);
 }
 
-#ownpatterns-root .s-back:focus-visible,
-#ownpatterns-root .s-btn:focus-visible{
-  outline: 2px solid rgba(255,255,255,.9);
-  outline-offset: 2px;
-}
 
-/* Slim header back button (same as Practice header back) */
+  #ownpatterns-root .s-back:hover,
+  #ownpatterns-root .s-btn:hover{
+    filter:brightness(1.12) saturate(.98);
+    transform:translateY(-1px);
+    box-shadow:
+      0 4px 0 rgba(133,74,26,.9),
+      0 10px 16px rgba(0,0,0,.48);
+  }
+
+  #ownpatterns-root .s-back:active,
+  #ownpatterns-root .s-btn:active{
+    filter:brightness(.97) saturate(.96);
+    transform:translateY(2px);
+    box-shadow:
+      0 1px 0 rgba(120,60,20,.9),
+      0 4px 8px rgba(0,0,0,.55);
+  }
+
+/* Slimmer header back button (like Practice header) */
 #ownpatterns-root .s-header .s-back{
-  min-width: auto;
+  min-width: auto;   /* prevent the Practice-sized minimum here */
   padding: 6px 12px;
   font-size: 14px;
   border-radius: 8px;
 }
-
-/* Primary big buttons keep Practice baseline */
+/* Larger primary buttons – keep same baseline as Practice */
 #ownpatterns-root .s-btn.s-btn-lg{
   padding: 8px 24px;
   font-size: 16px;
 }
-
 
 
   /* Danger variant for Remove (red-tinted wood) */
@@ -462,40 +477,50 @@
     max-height: 100%;
   }
 
-  /* Editor layout */
-  #ownpatterns-root #own-editor-wrap{
-    width:100%;
-    max-width:var(--board-max);
-    margin:0 auto;
-    box-sizing:border-box;
+#ownpatterns-root #own-editor-wrap{
+  width:100%;
+  max-width:var(--board-max);
+  margin:0 auto;
+  box-sizing:border-box;
 
-    /* helps keep board + buttons nicely centered as a stack */
-    display:flex;
-    flex-direction:column;
-    align-items:center;
-  }
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+}
 
-  #ownpatterns-root #own-editor-board{
-    position:relative;
-    width:100%;
-    border-radius:10px;
-    overflow:hidden;
-    margin:0 auto;
-    box-shadow:0 18px 40px rgba(0,0,0,.32), 0 6px 16px rgba(0,0,0,.22);
-  }
+/* Editor board box matches Joseki board corners + shadow */
+#ownpatterns-root #own-editor-board{
+  position:relative;
+  width:100%;
 
-  #ownpatterns-root #own-editor-board .own-zoom-layer{
-    position:absolute;
-    inset:0;
-    background-image: var(--wood);
-    background-size: cover;
-    background-position: center;
-  }
+  border-radius:10px;
+  overflow:hidden;
 
-  #ownpatterns-root #own-editor-board canvas{
-    display:block;
-    margin:0 auto;
-  }
+  margin:0 auto;
+
+  box-shadow:
+    0 18px 40px rgba(0,0,0,.32),
+    0 6px 16px rgba(0,0,0,.22);
+}
+
+/* Ensure all children respect rounding */
+#ownpatterns-root #own-editor-board > *{
+  border-radius: inherit;
+}
+
+#ownpatterns-root #own-editor-board .own-zoom-layer{
+  position:absolute;
+  inset:0;
+  background-image: var(--wood);
+  background-size: cover;
+  background-position: center;
+}
+
+#ownpatterns-root #own-editor-board canvas{
+  display:block;
+  margin:0 auto;
+}
+
 
 #ownpatterns-root .own-editor-ctrls{
   max-width:var(--board-max);
@@ -1821,3 +1846,10 @@ if (passBtn){
 
 </body>
 </html>
+
+
+
+
+
+
+
