@@ -483,6 +483,24 @@ body.drill-zoom-mode #go-zoom-exit-drill{
   box-sizing:border-box;
 }
 
+/* =========================
+   Drills dock: let board taps pass through empty space
+   ========================= */
+
+/* In zoom mode, don't let the whole controls bar capture taps */
+body.drill-zoom-mode #go-zoom-ui-drill #drill-ctrls{
+  pointer-events: none;
+}
+
+/* Re-enable only the real interactive element(s) */
+body.drill-zoom-mode #go-zoom-ui-drill #dbtn-next{
+  pointer-events: auto;
+}
+
+/* Progress text should not block board taps */
+body.drill-zoom-mode #go-zoom-ui-drill #drill-progress{
+  pointer-events: none;
+}
 
 body.drill-zoom-mode #drill-ctrls{
   max-width:720px;
