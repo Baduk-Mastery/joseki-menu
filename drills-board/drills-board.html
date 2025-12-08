@@ -1497,19 +1497,20 @@ function getInitialAMarkLastIndex(moves, S){
 }
 
 function drawBlitzMarkers(){
-  if (!board || !currentTransformed || !Array.isArray(currentTransformed.moves)) return;
+  // Show ONLY the next expected move marker
+  if (!board) return;
+  if (!remain || !remain.length) return;
 
-  const moves = currentTransformed.moves;
-  if (!moves.length) return;
+  const next = remain[0];
+  if (!next) return;
 
-  const lastIdx = getInitialAMarkLastIndex(moves, SIZE);
-  if (lastIdx < 0) return;
+  // If the point is already occupied (e.g., redraw inside playMove),
+  // do NOT draw the marker so it never sits on top of a stone.
+  if (grid && grid[next.y] && grid[next.y][next.x] !== null) return;
 
-  for (let i = 0; i <= lastIdx; i++){
-    const m = moves[i];
-    if (!m) break;
-    board.addObject({ x: m.x, y: m.y, type: 'LB', text: 'A' });
-  }
+  // Keep your existing visual language: letter marker "A"
+  board.addObject({ x: next.x, y: next.y, type: 'LB', text: 'A' });
+}
 }
 
   function shuffle(a){ for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } return a; }
