@@ -1462,19 +1462,23 @@ function findFirstDirectionalIndex(moves, S){
 
 // new blitz hint rule
 function drawBlitzMarkers(){
-  if (!currentTransformed || !Array.isArray(currentTransformed.moves) || !currentTransformed.moves.length) return;
+  // Only in Blitz
+  if (!blitzMode) return;
+  if (!board) return;
 
-  const moves = currentTransformed.moves;
-  const m1 = moves[0];
+  // Only show a hint when we actually have a "next move"
+  if (!remain || !remain.length) return;
 
-  board.addObject({ x: m1.x, y: m1.y, type: 'LB', text: 'A' });
+  const next = remain[0];
+  if (!next) return;
+  if (!inside(next.x, next.y)) return;
 
-  const dirIdx = findFirstDirectionalIndex(moves, SIZE);
-  if (dirIdx != null){
-    const md = moves[dirIdx];
-    board.addObject({ x: md.x, y: md.y, type: 'LB', text: 'A' });
+  // Do not draw a label on an occupied point
+  if (grid && grid[next.y] && grid[next.y][next.x] === null){
+    board.addObject({ x: next.x, y: next.y, type: 'LB', text: 'A' });
   }
 }
+
 
   function shuffle(a){ for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } return a; }
   function range(a,b){ const out=[]; for(let i=a;i<=b;i++) out.push(i); return out; }
@@ -2425,6 +2429,9 @@ function startDrill(i, opts){
     if (next.x === x && next.y === y){
       playMove(x,y,next.color, false);
       remain.shift();
+  if (blitzMode && remain.length){
+    redraw();
+  }
 
       if (!remain.length){
         solvedCount++;
