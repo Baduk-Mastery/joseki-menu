@@ -522,32 +522,37 @@
 }
 
 
+/* Practice-matching control container under the editor board */
 #ownpatterns-root .own-editor-ctrls{
-  max-width:var(--board-max);
-  margin:10px auto 0;
-  padding:8px 12px;
+  max-width: var(--board-max);
+  width: 100%;
+  align-self: stretch;          /* key fix inside centered flex parent */
+  box-sizing: border-box;
 
-  display:flex;
-  flex-direction:column;   /* makes two rows */
-  gap:10px;
-  align-items:stretch;
+  margin: 14px auto 0;          /* closer to Practice feel */
+  padding: 0 12px 18px;         /* mirrors #prac-ctrls spacing */
+
+  display: flex;
+  flex-direction: column;       /* two rows */
+  gap: 12px;
+  align-items: stretch;
 }
 
-#ownpatterns-root .own-editor-row{
-  display:flex;
-  gap:10px;
-  justify-content:center;
-  flex-wrap:wrap;
-}
-/* Practice-like equal-width control rows in the editor */
+/* Rows behave like Practice control row */
 #ownpatterns-root .own-editor-row{
   width: 100%;
+  display: flex;
+  gap: 12px;                    /* match Practice gap */
+  justify-content: center;
+  flex-wrap: wrap;
 }
 
+/* Equal-width buttons per row, same baseline as Practice */
 #ownpatterns-root .own-editor-row .s-btn{
-  flex: 1 1 0;       /* equal widths when multiple buttons share a row */
-  min-width: 90px;   /* same baseline as Practice */
+  flex: 1 1 0;
+  min-width: 90px;
 }
+
 
 
   /* Centered info notice (OK-only) – match Practice Board notif design */
