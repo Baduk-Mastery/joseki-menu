@@ -35,8 +35,8 @@
   min-height: 240px;
 }
 
-/* If you want the placeholder to match the board mood */
-#go-board-drill{
+/* Placeholder background only when NOT in fullscreen zoom */
+#go-board-drill:not(.is-fullscreen){
   background-image:
     linear-gradient(rgba(0,0,0,.10), rgba(0,0,0,.25)),
     url('../img/wood.jpg');
@@ -44,6 +44,12 @@
   background-position: center;
   background-repeat: no-repeat;
 }
+
+/* In fullscreen, let the page background show through */
+#go-board-drill.is-fullscreen{
+  background: transparent !important;
+}
+
 
 #go-board-drill{
   touch-action: none;
