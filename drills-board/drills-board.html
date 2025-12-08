@@ -2582,10 +2582,18 @@ timerMs = 0;
 
 btnNext.addEventListener('click', function(){
   if (!slots.length) return;
+  if (locked || timeUp) return; // safety
+
+  // Count a skipped pattern as failed
+  failedCount++;
+
+  // If stats are ever visible mid-run, keep them in sync
+  if (statFailedEl) statFailedEl.textContent = String(failedCount);
 
   // Skip should not grant Blitz time for the next corner.
   startDrill(index + 1, { fromSkip: true });
 });
+
 
 
   btnMenu.addEventListener('click',  function(){
