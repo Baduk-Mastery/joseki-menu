@@ -2480,41 +2480,61 @@ function startDrill(i, opts){
     }
   }
 
-  doneRetry.addEventListener('click', function(){
-    // Use the shared per-day counter (same as drills.html)
-    if (!hasDailyAttemptsLeftForCurrentMode()){
-      showCapMsg();
-      if (doneMsgEl) doneMsgEl.textContent = 'You reached your drills limit.';
-      doneRetry.disabled = true;
-      doneRetry.style.opacity = '.6';
-      doneRetry.style.cursor = 'not-allowed';
-      return;
+ doneRetry.addEventListener('click', function(){
+  // Use the shared per-day counter (same as drills.html)
+  if (!hasDailyAttemptsLeftForCurrentMode()){
+    showCapMsg();
+    if (doneMsgEl) doneMsgEl.textContent = 'You reached your drills limit.';
+    doneRetry.disabled = true;
+    doneRetry.style.opacity = '.6';
+    doneRetry.style.cursor = 'not-allowed';
+    return;
+  }
+
+  // Consume one daily attempt for this mode (Complete / Blitz)
+  recordDailyAttemptForCurrentMode();
+
+  doneM.style.display = 'none';
+  resetStats();
+  reshuffleSlots();
+  newRunPlan();
+  blitzCornerState = null;
+  timeUp = false;
+
+  if (blitzMode){
+    // Reset timer visuals, but do NOT start timer yet.
+    // startDrill() will add the first corner budget and start the timer.
+    timerMs = 0;
+    ensureTimerEl();
+    if (timerEl){
+      timerEl.style.display = 'block';
+      timerEl.textContent = fmtMs(timerMs);
     }
+    stopTimer();
 
-    // Consume one daily attempt for this mode (Complete / Blitz)
-    recordDailyAttemptForCurrentMode();
+    // Lock input during countdown
+    locked = true;
 
-    doneM.style.display = 'none';
-    resetStats();
-    reshuffleSlots();
-    newRunPlan();
-    blitzCornerState = null;
-    timeUp = false;
+    runBlitzCountdown().then(() => {
+      locked = false;
+      timeUp = false;
+      if (slots.length){
+        startDrill(0);
+      }
+    });
 
-    if (blitzMode){
-      timerMs = 0;
-      ensureTimerEl();
-      if (timerEl) timerEl.textContent = fmtMs(timerMs);
-      startTimer();
-    } else {
-      if (timerEl) timerEl.style.display = 'none';
-      stopTimer();
-    }
+    // Prevent the non-blitz start below
+    return;
+  } else {
+    if (timerEl) timerEl.style.display = 'none';
+    stopTimer();
+  }
 
-    if (slots.length){
-      startDrill(0);
-    }
-  });
+  if (slots.length){
+    startDrill(0);
+  }
+});
+
 
 btnNext.addEventListener('click', function(){
   if (!slots.length) return;
