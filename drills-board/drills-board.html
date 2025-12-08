@@ -1437,108 +1437,33 @@ function redraw(){
 }
 
 
-// Pick the nearest corner to the first move
-function detectNearestCorner(p, S){
-  const corners = [
-    { id:'TL', x:0,   y:0   },
-    { id:'TR', x:S-1, y:0   },
-    { id:'BL', x:0,   y:S-1 },
-    { id:'BR', x:S-1, y:S-1 }
-  ];
-  let best = corners[0];
-  let bestD = 1e9;
-  for (const c of corners){
-    const d = Math.abs(p.x - c.x) + Math.abs(p.y - c.y);
-    if (d < bestD){
-      bestD = d;
-      best = c;
+  function isCornerHoshi(pt,S){
+    const a = 3, b = S-4;
+    return ( (pt.x===a || pt.x===b) && (pt.y===a || pt.y===b) );
+  }
+  function corner33BelowOfHoshi(h,S){
+    const dx = (h.x===3) ? -1 : +1;
+    const dy = (h.y===3) ? -1 : +1;
+    return { x: h.x + dx, y: h.y + dy };
+  }
+  function drawBlitzMarkers(){
+    if (!currentTransformed || !Array.isArray(currentTransformed.moves) || currentTransformed.moves.length < 1) return;
+    const m1 = currentTransformed.moves[0];
+    board.addObject({ x:m1.x, y:m1.y, type:'LB', text:'A' });
+
+    if (currentTransformed.moves.length >= 2 && isCornerHoshi(m1, SIZE)){
+      const m2 = currentTransformed.moves[1];
+      board.addObject({ x:m2.x, y:m2.y, type:'LB', text:'a' });
+
+      if (currentTransformed.moves.length >= 3){
+        const below = corner33BelowOfHoshi(m1, SIZE);
+        if (m2.x === below.x && m2.y === below.y){
+          const m3 = currentTransformed.moves[2];
+          board.addObject({ x:m3.x, y:m3.y, type:'LB', text:'A' });
+        }
+      }
     }
   }
-  return best.id;
-}
-
-// Convert absolute board coords to "corner-local" 1-based distances.
-// This lets us interpret 2-2 / 3-3 / 4-4 as lx===ly.
-function cornerLocal(p, S, cornerId){
-  switch(cornerId){
-    case 'TL': return { lx: p.x + 1,     ly: p.y + 1     };
-    case 'TR': return { lx: (S - p.x),  ly: p.y + 1     };
-    case 'BL': return { lx: p.x + 1,     ly: (S - p.y)  };
-    case 'BR': return { lx: (S - p.x),  ly: (S - p.y)  };
-    default:   return { lx: p.x + 1,     ly: p.y + 1     };
-  }
-}
-
-// Returns the last index that should be marked with "A"
-function getInitialAMarkLastIndex(moves, S){
-  if (!moves || !moves.length) return -1;
-
-  const cornerId = detectNearestCorner(moves[0], S);
-
-  // Always mark the first move
-  let lastIdx = 0;
-
-  // Check subsequent moves
-  for (let i = 1; i < moves.length; i++){
-    const { lx, ly } = cornerLocal(moves[i], S, cornerId);
-
-    if (lx === ly){
-      // Still non-directional → keep marking
-      lastIdx = i;
-      continue;
-    }
-
-    // First directional move → mark it too, then stop
-    lastIdx = i;
-    break;
-  }
-
-  return lastIdx;
-}
-
-function drawBlitzMarkers(){
-  if (!board) return;
-  if (!remain || !remain.length) return;
-
-  // How many moves have already been played in this corner?
-  const plannedN =
-    (blitzCornerState && typeof blitzCornerState.plannedN === 'number')
-      ? blitzCornerState.plannedN
-      : remain.length;
-
-  const playedSoFar = Math.max(0, plannedN - remain.length);
-
-  // After the first move, show ONLY the next expected move
-  if (playedSoFar > 0){
-    const next = remain[0];
-    if (!next) return;
-    if (grid && grid[next.y] && grid[next.y][next.x] !== null) return;
-
-    board.addObject({ x: next.x, y: next.y, type: 'LB', text: 'A' });
-    return;
-  }
-
-  // At the very start: apply your rule
-  let lastIdx = 0;
-  try{
-    lastIdx = getInitialAMarkLastIndex(remain, SIZE);
-  }catch(_){
-    lastIdx = 0;
-  }
-  if (lastIdx < 0) return;
-
-  const end = Math.min(lastIdx, remain.length - 1);
-
-  for (let i = 0; i <= end; i++){
-    const m = remain[i];
-    if (!m) continue;
-    if (grid && grid[m.y] && grid[m.y][m.x] !== null) continue;
-
-    board.addObject({ x: m.x, y: m.y, type: 'LB', text: 'A' });
-  }
-}
-
-
 
   function shuffle(a){ for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } return a; }
   function range(a,b){ const out=[]; for(let i=a;i<=b;i++) out.push(i); return out; }
@@ -2485,35 +2410,32 @@ function startDrill(i, opts){
     if (grid[y][x] !== null) return;
     if (!remain.length) return;
 
-  const next = remain[0];
-if (next.x === x && next.y === y){
+    const next = remain[0];
+    if (next.x === x && next.y === y){
+      playMove(x,y,next.color, false);
+      remain.shift();
 
-  // Shift FIRST so redraw inside playMove sees the new "next"
-  remain.shift();
-
-  playMove(x, y, next.color, false);
-
-  if (!remain.length){
-    solvedCount++;
-    if (blitzMode){
-      timerMs += blitzCornerPlannedMoves * 500;
-      if (timerEl) timerEl.textContent = fmtMs(timerMs);
-    }
-    if (index >= (slots.length - 1)) {
-      showClearedThenDone();
+      if (!remain.length){
+        solvedCount++;
+        if (blitzMode){
+          timerMs += blitzCornerPlannedMoves * 500;
+          if (timerEl) timerEl.textContent = fmtMs(timerMs);
+        }
+        if (index >= (slots.length - 1)) {
+          showClearedThenDone();
+        } else {
+          showClearedAuto();
+        }
+      }
     } else {
-      showClearedAuto();
+      failedCount++;
+      if (blitzMode){
+        showWrongThenRestart();
+      } else {
+        showWrongAuto();
+      }
     }
   }
-
-} else {
-  failedCount++;
-  if (blitzMode){
-    showWrongThenRestart();
-  } else {
-    showWrongAuto();
-  }
-}
 
   function showWrongThenRestart(){
     clearTimers();
