@@ -1299,67 +1299,59 @@ function ensureTimerEl(){
   }
 
   // board helpers
-  function initBoard(){
-    if (!window.WGo) return setTimeout(initBoard, 40);
-    if (board) return; // safety
+function initBoard(){
+  if (!window.WGo) return setTimeout(initBoard, 40);
+  if (board) return;
 
-    board = new WGo.Board(mount, { size: SIZE });
+  // Ensure mount is a predictable zoom container
+  mount.style.position = 'relative';
+  mount.style.overflow = 'hidden';
 
-    // wood bg inside mount – also serves as the zoom "layer"
-    (function ensureDrillWoodLayer(){
-      if (mount.__woodLayerReady) return;
-      const layer = document.createElement('div');
-      layer.id = 'go-drill-wood';
-      layer.style.position = 'absolute';
-      layer.style.left = '0';
-      layer.style.top  = '0';
-      layer.style.right = '0';
-      layer.style.bottom = '0';
-      layer.style.backgroundImage = "url('https://3d85c7a311526e02aeeeb19e952d0c09.cdn.bubble.io/f1755870506985x437178801728222500/wood.jpg')";
-      layer.style.backgroundSize = 'cover';
-      layer.style.backgroundPosition = 'center';
-layer.style.backgroundRepeat = 'no-repeat';
+  // Create a stable host for the WGo canvases + wood skin
+  if (!mount.__boardHost){
+    const host = document.createElement('div');
+    host.id = 'go-drill-host';
 
-/* match core zoom layer behavior */
-layer.style.transformOrigin = '0 0';
-layer.style.willChange = 'transform';
+    // Let JS own sizing; keep host anchored to top-left
+    host.style.position = 'absolute';
+    host.style.left = '0';
+    host.style.top  = '0';
 
-mount.appendChild(layer);
+    // Visual wood layer (optional but matches your previous intent)
+    host.style.backgroundImage =
+      "url('https://3d85c7a311526e02aeeeb19e952d0c09.cdn.bubble.io/f1755870506985x437178801728222500/wood.jpg')";
+    host.style.backgroundSize = 'cover';
+    host.style.backgroundPosition = 'center';
+    host.style.backgroundRepeat = 'no-repeat';
 
+    // Match core zoom layer behavior
+    host.style.transformOrigin = '0 0';
+    host.style.willChange = 'transform';
 
-      function moveChildrenIntoLayer(){
-        const kids = Array.from(mount.childNodes).filter(n => n !== layer);
-        for (const n of kids) layer.appendChild(n);
-      }
-      moveChildrenIntoLayer();
-
-      const mo = new MutationObserver(moveChildrenIntoLayer);
-      mo.observe(mount, { childList: true });
-
-      mount.__woodLayerReady = true;
-      mount.__woodLayer = layer;
-      mount.__woodObserver = mo;
-    })();
-
-    // Prepare container for zoom transformations
-    mount.style.position = 'relative';
-    mount.style.overflow = 'hidden';
-
-    // This is what gets translated+scaled
-    zoomLayer = mount.__woodLayer || mount;
-
-    // Initial sizing
-    fitBoard();
-
-    // Click handler – respect zoom touch handler's suppression flag
-    board.addEventListener('click', function(x, y){
-      if (suppressNextBoardClick){
-        suppressNextBoardClick = false;
-        return;
-      }
-      onBoardClick(x, y);
-    });
+    mount.appendChild(host);
+    mount.__boardHost = host;
   }
+
+  const host = mount.__boardHost;
+
+  // Mount WGo into the host (not into mount directly)
+  board = new WGo.Board(host, { size: SIZE });
+
+  // This is what gets translated+scaled
+  zoomLayer = host;
+
+  // Initial sizing
+  fitBoard();
+
+  // Click handler – respect zoom touch handler's suppression flag
+  board.addEventListener('click', function(x, y){
+    if (suppressNextBoardClick){
+      suppressNextBoardClick = false;
+      return;
+    }
+    onBoardClick(x, y);
+  });
+}
 
 
 function resetGrid(){
@@ -1437,33 +1429,52 @@ function redraw(){
 }
 
 
-  function isCornerHoshi(pt,S){
-    const a = 3, b = S-4;
-    return ( (pt.x===a || pt.x===b) && (pt.y===a || pt.y===b) );
-  }
-  function corner33BelowOfHoshi(h,S){
-    const dx = (h.x===3) ? -1 : +1;
-    const dy = (h.y===3) ? -1 : +1;
-    return { x: h.x + dx, y: h.y + dy };
-  }
-  function drawBlitzMarkers(){
-    if (!currentTransformed || !Array.isArray(currentTransformed.moves) || currentTransformed.moves.length < 1) return;
-    const m1 = currentTransformed.moves[0];
-    board.addObject({ x:m1.x, y:m1.y, type:'LB', text:'A' });
 
-    if (currentTransformed.moves.length >= 2 && isCornerHoshi(m1, SIZE)){
-      const m2 = currentTransformed.moves[1];
-      board.addObject({ x:m2.x, y:m2.y, type:'LB', text:'a' });
+function cornerEdgesForFirstMove(m1, S){
+  const dL = m1.x;
+  const dR = (S - 1) - m1.x;
+  const dT = m1.y;
+  const dB = (S - 1) - m1.y;
 
-      if (currentTransformed.moves.length >= 3){
-        const below = corner33BelowOfHoshi(m1, SIZE);
-        if (m2.x === below.x && m2.y === below.y){
-          const m3 = currentTransformed.moves[2];
-          board.addObject({ x:m3.x, y:m3.y, type:'LB', text:'A' });
-        }
-      }
-    }
+  return {
+    edgeX: (dL <= dR) ? 'left'  : 'right',
+    edgeY: (dT <= dB) ? 'top'   : 'bottom'
+  };
+}
+
+function cornerCoords(m, edges, S){
+  const cx = (edges.edgeX === 'left') ? (m.x + 1) : (S - m.x);
+  const cy = (edges.edgeY === 'top')  ? (m.y + 1) : (S - m.y);
+  return { cx, cy };
+}
+
+function findFirstDirectionalIndex(moves, S){
+  if (!moves || moves.length < 2) return null;
+
+  const edges = cornerEdgesForFirstMove(moves[0], S);
+
+  for (let i = 1; i < moves.length; i++){
+    const { cx, cy } = cornerCoords(moves[i], edges, S);
+    if (cx !== cy) return i;
   }
+  return null;
+}
+
+// new blitz hint rule
+function drawBlitzMarkers(){
+  if (!currentTransformed || !Array.isArray(currentTransformed.moves) || !currentTransformed.moves.length) return;
+
+  const moves = currentTransformed.moves;
+  const m1 = moves[0];
+
+  board.addObject({ x: m1.x, y: m1.y, type: 'LB', text: 'A' });
+
+  const dirIdx = findFirstDirectionalIndex(moves, SIZE);
+  if (dirIdx != null){
+    const md = moves[dirIdx];
+    board.addObject({ x: md.x, y: md.y, type: 'LB', text: 'A' });
+  }
+}
 
   function shuffle(a){ for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } return a; }
   function range(a,b){ const out=[]; for(let i=a;i<=b;i++) out.push(i); return out; }
