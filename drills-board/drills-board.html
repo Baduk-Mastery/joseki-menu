@@ -5,90 +5,62 @@
   <title>Joseki Master – Drills Board</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
 
-<style>
-  html, body{
-    margin:0;
-    padding:0;
-    height:100%;
-    min-height:100%;
-    font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
-    background-color:#1b1208;
-    overscroll-behavior:none;
-    overflow: hidden;
-    touch-action: none;
-  }
-  /* Fullscreen visual reset only (positioning handled by overlay + JS) */
-  #go-board-drill.is-fullscreen{
-    border-radius: 0 !important;
-    box-shadow: none !important;
-    margin: 0 !important;
-  }
-  /* Reserve board space before JS so it doesn't "pop in" */
-  #go-board-drill-wrap{
-    width: 100%;
-  }
+  <style>
+ html, body{
+  margin:0;
+  padding:0;
+  height:100%;
+  min-height:100%;
+  font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  background-color:#1b1208;
+  overscroll-behavior:none;
+  overflow: hidden;
+  touch-action: none;
+}
+/* Fullscreen visual reset only (positioning handled by overlay + JS) */
+#go-board-drill.is-fullscreen{
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  margin: 0 !important;
+}
 
-  #go-board-drill{
-    width: 100%;
-    aspect-ratio: 1 / 1;
-    /* optional safety so tiny screens still show a block */
-    min-height: 240px;
-  }
+#go-board-drill{
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
 
-  /* If you want the placeholder to match the board mood */
-  #go-board-drill{
-    background-image:
-      linear-gradient(rgba(0,0,0,.10), rgba(0,0,0,.25)),
-      url('../img/wood.jpg');
-    background-size: cover;
-    background-position: center;
-    background-repeat: no-repeat;
-  }
+#drill-root{
+  --wood:url('../img/wood.jpg');
+  position:fixed;
+  inset:0;
 
-  #go-board-drill{
-    touch-action: none;
-    user-select: none;
-    -webkit-user-select: none;
-    -webkit-tap-highlight-color: transparent;
-  }
+  background-color:#1b1208;
+  background-image:
+    linear-gradient(rgba(0,0,0,.35), rgba(0,0,0,.45)),
+    var(--wood);
+  background-size:cover;
+  background-position:center;
+  background-repeat:no-repeat;
+}
 
-  /* CHANGED: Switched to Flexbox to match Practice Board alignment */
-  #drill-root{
-    --wood:url('../img/wood.jpg');
-    position:fixed;
-    inset:0;
-    
-    display: flex;             /* NEW: Flex layout */
-    flex-direction: column;    /* NEW: Stack vertical */
-    align-items: center;       /* NEW: Center horizontally */
-    justify-content: center;   /* NEW: Center vertically */
+/* Practice-style centering of the whole drills block */
+#drill-inner{
+  position:absolute;
+  top:50%;
+  left:50%;
+  transform:translate(-50%, -50%);
 
-    background-color:#1b1208;
-    background-image:
-      linear-gradient(rgba(0,0,0,.35), rgba(0,0,0,.45)),
-      var(--wood);
-    background-size:cover;
-    background-position:center;
-    background-repeat:no-repeat;
-  }
+  width:100%;
+  max-width:720px;
+  box-sizing:border-box;
+}
 
-  /* CHANGED: Removed absolute positioning */
-  #drill-inner{
-    position: relative;        /* Changed from absolute */
-    top: auto;                 /* Reset top */
-    left: auto;                /* Reset left */
-    transform: none;           /* Reset transform */
-
-    width:100%;
-    max-width:720px;
-    box-sizing:border-box;
-    margin: 0 auto;            /* Ensure centering */
-  }
-
-  /* Same mobile padding logic as Practice */
-  @media (max-width: 480px){
-    #drill-inner{ padding:8px 12px 0; }
-  }
+/* Same mobile padding logic as Practice */
+@media (max-width: 480px){
+  #drill-inner{ padding:8px 12px 0; }
+}
 
 
     /* we don’t hide the wrapper via data-hidden now, so it’s always visible */
@@ -107,54 +79,56 @@
     .pbtn-strong{ background:#111827; color:#fff; border-color:#111827; }
     .pbtn-alt{ background:#e7f0ff; color:#0b4aa2; border-color:#a7c1ff; }
 
-  #blitz-timer{
-    margin-left:auto;
-    display:inline-flex;
-    align-items:center;
-    justify-content:center;
+#blitz-timer{
+  margin-left:auto;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
 
-    /* keep the size you wanted */
-    padding:6px 12px;
-    border-radius:8px;
+  /* keep the size you wanted */
+  padding:6px 12px;
+  border-radius:8px;
 
-    /* lock width so 10.0s -> 9.9s doesn't shrink */
-    min-width:7ch;
+  /* lock width so 10.0s -> 9.9s doesn't shrink */
+  min-width:7ch;
 
-    white-space:nowrap;
-    text-align:center;
+  white-space:nowrap;
+  text-align:center;
 
-    /* chip styling (not a wood button) */
-    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-    font-weight:900;
-    font-size:14px;
-    line-height:1.1;
-    letter-spacing:0.5px;
+  /* chip styling (not a wood button) */
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-weight:900;
+  font-size:14px;
+  line-height:1.1;
+  letter-spacing:0.5px;
 
-    color:#fff3cf;
-    text-shadow:0 1px 0 rgba(0,0,0,.35);
+  color:#fff3cf;
+  text-shadow:0 1px 0 rgba(0,0,0,.35);
 
-    background:
-      linear-gradient(
-        to bottom,
-        rgba(255,255,255,.10),
-        rgba(0,0,0,.18)
-      ),
-      rgba(0,0,0,.28);
+  background:
+    linear-gradient(
+      to bottom,
+      rgba(255,255,255,.10),
+      rgba(0,0,0,.18)
+    ),
+    rgba(0,0,0,.28);
 
-    border:1px solid rgba(255,255,255,.35);
+  border:1px solid rgba(255,255,255,.35);
 
-    box-shadow:
-      inset 0 1px 0 rgba(255,255,255,.12),
-      0 4px 10px rgba(0,0,0,.35);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.12),
+    0 4px 10px rgba(0,0,0,.35);
 
-    cursor:default;
-    user-select:none;
-    -webkit-user-select:none;
-    -webkit-tap-highlight-color:transparent;
-  }
+  cursor:default;
+  user-select:none;
+  -webkit-user-select:none;
+  -webkit-tap-highlight-color:transparent;
+}
 
-  /* class kept for clarity/future tweaks */
-  .blitz-chip{ }
+/* class kept for clarity/future tweaks */
+.blitz-chip{ }
+
+
   </style>
 <style>
 /* =========================
@@ -777,29 +751,19 @@ body.drill-zoom-mode #drill-ctrls{
 </div>
 
 
-
+<!-- WGo (if not already loaded) -->
 <script>
-(function(){
-  const WGO_SRC = "https://3d85c7a311526e02aeeeb19e952d0c09.cdn.bubble.io/f1754893285939x971907393576095400/wgo.min.js";
-
-  window.loadWGoOnce = function(){
-    if (window.WGo) return Promise.resolve();
-    if (window.__wgoPromise) return window.__wgoPromise;
-
-    window.__wgoPromise = new Promise((resolve, reject) => {
-      const s = document.createElement("script");
-      s.src = WGO_SRC;
-      s.async = true;
-      s.onload = () => resolve();
-      s.onerror = () => reject(new Error("WGo failed to load"));
-      document.head.appendChild(s);
-    });
-
-    return window.__wgoPromise;
-  };
-})();
+if (!window.WGo) {
+  var s = document.createElement('script');
+  s.src = "https://3d85c7a311526e02aeeeb19e952d0c09.cdn.bubble.io/f1754893285939x971907393576095400/wgo.min.js";
+  s.async = true;
+  document.head.appendChild(s);
+}
 </script>
 
+
+
+<!-- Sound bridge (respects Settings → Sound) -->
 <script>
 if (!window.StoneSFX) {
   window.StoneSFX = (() => {
@@ -838,10 +802,7 @@ if (!window.StoneSFX) {
 })();
 
 (function DrillBoardMount(){
-  if (window.loadWGoOnce) { window.loadWGoOnce(); }
-
-  const SGF_URL = "../sgf/library-1.sgf";
-
+  const SGF_URL = "../sgf/library-1.sgf";  // same as drills.html
   const MIN_MOVES = 10;
 
   /* ===== Plan helpers (match drills list) ===== */
@@ -2694,6 +2655,8 @@ btnNext.addEventListener('click', function(){
 
 </body>
 </html>
+
+
 
 
 
