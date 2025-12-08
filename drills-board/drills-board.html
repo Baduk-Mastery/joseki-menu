@@ -751,15 +751,9 @@ body.drill-zoom-mode #drill-ctrls{
 </div>
 
 
-<!-- WGo (if not already loaded) -->
-<script>
-if (!window.WGo) {
-  var s = document.createElement('script');
-  s.src = "https://3d85c7a311526e02aeeeb19e952d0c09.cdn.bubble.io/f1754893285939x971907393576095400/wgo.min.js";
-  s.async = true;
-  document.head.appendChild(s);
-}
-</script>
+<!-- WGo (eager load) -->
+<script src="https://3d85c7a311526e02aeeeb19e952d0c09.cdn.bubble.io/f1754893285939x971907393576095400/wgo.min.js"></script>
+
 
 <!-- Sound bridge (respects Settings → Sound) -->
 <script>
