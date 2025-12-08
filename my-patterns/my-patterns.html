@@ -462,16 +462,32 @@
 }
 
 
-  /* ===== Editor overlay centering (make it feel like Core board) ===== */
-  #ownpatterns-root #own-editor{
-    align-items: center; /* centers the whole editor content vertically */
-  }
+/* ===== Editor overlay centering (make it feel like Drills/Core board) ===== */
+#ownpatterns-root #own-editor{
+  align-items: center; /* centers the whole editor content vertically */
+}
 
-  /* Override the shared full-height inner container only for the editor */
-  #ownpatterns-root #own-editor .s-inner{
-    height: auto;
-    max-height: 100%;
-  }
+/* For the editor, let the content span full width like Drills (max 720px via wrap) */
+#ownpatterns-root #own-editor .s-inner{
+  height:auto;
+  max-height:100%;
+
+  /* take full viewport width, no side padding */
+  width:100%;
+  max-width:none;
+  margin:0;
+  padding:16px 0 22px;
+
+  /* keep the stack centered */
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+
+  /* scrollable area stays the editor content */
+  overflow:auto;
+  -webkit-overflow-scrolling:touch;
+}
+
 
   /* Editor layout */
   #ownpatterns-root #own-editor-wrap{
@@ -486,14 +502,14 @@
     align-items:center;
   }
 
-  #ownpatterns-root #own-editor-board{
-    position:relative;
-    width:100%;
-    border-radius:10px;
-    overflow:hidden;
-    margin:0 auto;
-    box-shadow:0 18px 40px rgba(0,0,0,.32), 0 6px 16px rgba(0,0,0,.22);
-  }
+#ownpatterns-root #own-editor-board{
+  position:relative;
+  width:100%;
+  border-radius:6px;
+  overflow:hidden;
+  margin:0 auto;
+  box-shadow:0 18px 40px rgba(0,0,0,.32), 0 6px 16px rgba(0,0,0,.22);
+}
 
   #ownpatterns-root #own-editor-board .own-zoom-layer{
     position:absolute;
