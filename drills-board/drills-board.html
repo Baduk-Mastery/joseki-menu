@@ -154,6 +154,30 @@
 
 /* class kept for clarity/future tweaks */
 .blitz-chip{ }
+/* =========================
+   Blitz countdown overlay
+   ========================= */
+#blitz-countdown{
+  position: fixed;
+  inset: 0;
+  z-index: 100001; /* above drill-notif */
+  display: none;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0,0,0,.55);
+}
+
+#blitz-countdown-card{
+  min-width: 220px;
+  padding: 24px 22px;
+}
+
+#blitz-countdown-number{
+  font-weight: 900;
+  font-size: 56px;
+  line-height: 1;
+  letter-spacing: 1px;
+}
 
 
   </style>
@@ -770,6 +794,12 @@ body.drill-zoom-mode #drill-ctrls{
   </div>
 </div>
 
+<!-- Blitz Countdown – My Patterns style -->
+<div id="blitz-countdown" class="drill-notif" aria-live="assertive">
+  <div id="blitz-countdown-card" class="drill-notif-card">
+    <div id="blitz-countdown-number" class="drill-notif-title">3</div>
+  </div>
+</div>
 
 <!-- Run Cap overlay – My Patterns style -->
 <div id="drill-cap" class="drill-notif" role="dialog" aria-modal="true">
@@ -1095,6 +1125,9 @@ if (!window.StoneSFX) {
   const statSolvedEl = document.getElementById('drill-stat-solved');
   const statFailedEl = document.getElementById('drill-stat-failed');
   const doneMsgEl    = document.getElementById('drill-done-msg');
+  // Blitz countdown elements
+  const blitzCdM   = document.getElementById('blitz-countdown');
+  const blitzCdNum = document.getElementById('blitz-countdown-number');
 
   // --- board state ---
   let SIZE = 19, board=null, grid=null;
@@ -1215,6 +1248,43 @@ function ensureTimerEl(){
     }, 100);
   }
   function stopTimer(){ if (timerId){ clearInterval(timerId); timerId=null; } }
+  /* =========================
+     Blitz countdown (3-2-1-Go)
+     ========================= */
+  const BLITZ_COUNTDOWN_SECONDS = 3;
+
+  function runBlitzCountdown(){
+    return new Promise(resolve => {
+      if (!blitzCdM || !blitzCdNum){
+        resolve();
+        return;
+      }
+
+      let n = BLITZ_COUNTDOWN_SECONDS;
+      blitzCdNum.textContent = String(n);
+      blitzCdM.style.display = 'flex';
+
+      const stepMs = 650;
+
+      function tick(){
+        n -= 1;
+
+        if (n <= 0){
+          blitzCdNum.textContent = 'Go!';
+          setTimeout(() => {
+            blitzCdM.style.display = 'none';
+            resolve();
+          }, 180);
+          return;
+        }
+
+        blitzCdNum.textContent = String(n);
+        setTimeout(tick, stepMs);
+      }
+
+      setTimeout(tick, stepMs);
+    });
+  }
 
   // board helpers
   function initBoard(){
@@ -2555,18 +2625,33 @@ btnNext.addEventListener('click', function(){
         blitzCornerState = null;
         timeUp = false;
 
-        if (blitzMode){
+                if (blitzMode){
+          // Reset timer visuals, but do NOT start timer yet.
+          // startDrill() will add the first corner budget and start the timer.
           timerMs = 0;
           ensureTimerEl();
-          timerEl.style.display = 'block';
-          timerEl.textContent = fmtMs(timerMs);
-          startTimer();
+          if (timerEl){
+            timerEl.style.display = 'block';
+            timerEl.textContent = fmtMs(timerMs);
+          }
+          stopTimer();
+
+          // Lock input during countdown
+          locked = true;
+
+          runBlitzCountdown().then(() => {
+            locked = false;
+            timeUp = false;
+            startDrill(0);
+          });
+
         } else {
           if (timerEl) timerEl.style.display = 'none';
           stopTimer();
+
+          startDrill(0);
         }
 
-        startDrill(0);
         try{ (wrap).scrollIntoView({behavior:'smooth',block:'start'});}catch(_){}
       }
 
