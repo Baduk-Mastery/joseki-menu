@@ -751,19 +751,29 @@ body.drill-zoom-mode #drill-ctrls{
 </div>
 
 
-<!-- WGo (if not already loaded) -->
+
 <script>
-if (!window.WGo) {
-  var s = document.createElement('script');
-  s.src = "https://3d85c7a311526e02aeeeb19e952d0c09.cdn.bubble.io/f1754893285939x971907393576095400/wgo.min.js";
-  s.async = true;
-  document.head.appendChild(s);
-}
+(function(){
+  const WGO_SRC = "https://3d85c7a311526e02aeeeb19e952d0c09.cdn.bubble.io/f1754893285939x971907393576095400/wgo.min.js";
+
+  window.loadWGoOnce = function(){
+    if (window.WGo) return Promise.resolve();
+    if (window.__wgoPromise) return window.__wgoPromise;
+
+    window.__wgoPromise = new Promise((resolve, reject) => {
+      const s = document.createElement("script");
+      s.src = WGO_SRC;
+      s.async = true;
+      s.onload = () => resolve();
+      s.onerror = () => reject(new Error("WGo failed to load"));
+      document.head.appendChild(s);
+    });
+
+    return window.__wgoPromise;
+  };
+})();
 </script>
 
-
-
-<!-- Sound bridge (respects Settings → Sound) -->
 <script>
 if (!window.StoneSFX) {
   window.StoneSFX = (() => {
@@ -802,7 +812,10 @@ if (!window.StoneSFX) {
 })();
 
 (function DrillBoardMount(){
-  const SGF_URL = "../sgf/library-1.sgf";  // same as drills.html
+  if (window.loadWGoOnce) { window.loadWGoOnce(); }
+
+  const SGF_URL = "../sgf/library-1.sgf";
+
   const MIN_MOVES = 10;
 
   /* ===== Plan helpers (match drills list) ===== */
