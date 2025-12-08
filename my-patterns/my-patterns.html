@@ -432,28 +432,60 @@
 }
 
 
+  /* ===== Editor overlay centering (make it feel like Core board) ===== */
+  #ownpatterns-root #own-editor{
+    align-items: center; /* centers the whole editor content vertically */
+  }
+
+  /* Override the shared full-height inner container only for the editor */
+  #ownpatterns-root #own-editor .s-inner{
+    height: auto;
+    max-height: 100%;
+  }
+
   /* Editor layout */
   #ownpatterns-root #own-editor-wrap{
-    width:100%; max-width:var(--board-max); margin:0 auto; box-sizing:border-box;
+    width:100%;
+    max-width:var(--board-max);
+    margin:0 auto;
+    box-sizing:border-box;
+
+    /* helps keep board + buttons nicely centered as a stack */
+    display:flex;
+    flex-direction:column;
+    align-items:center;
   }
+
   #ownpatterns-root #own-editor-board{
-    position:relative; width:100%;
-    border-radius:10px; overflow:hidden;
+    position:relative;
+    width:100%;
+    border-radius:10px;
+    overflow:hidden;
     margin:0 auto;
     box-shadow:0 18px 40px rgba(0,0,0,.32), 0 6px 16px rgba(0,0,0,.22);
   }
+
   #ownpatterns-root #own-editor-board .own-zoom-layer{
-    position:absolute; inset:0;
+    position:absolute;
+    inset:0;
     background-image: var(--wood);
-    background-size: cover; background-position: center;
+    background-size: cover;
+    background-position: center;
   }
+
   #ownpatterns-root #own-editor-board canvas{
-    display:block; margin:0 auto;
+    display:block;
+    margin:0 auto;
   }
 
   #ownpatterns-root .own-editor-ctrls{
-    max-width:var(--board-max); margin:10px auto 0;
-    padding:8px 12px; display:flex; gap:10px; justify-content:center; flex-wrap:wrap;
+    max-width:var(--board-max);
+    margin:10px auto 0;
+    padding:8px 12px;
+    display:flex;
+    gap:10px;
+    justify-content:center;
+    flex-wrap:wrap;
   }
 
   /* Centered info notice (OK-only) – match Practice Board notif design */
