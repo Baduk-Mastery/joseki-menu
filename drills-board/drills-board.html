@@ -1116,6 +1116,31 @@ function getGridSpacing(){
     var sY = Math.abs(getYcss(1) - getYcss(0));
     return { x: sX, y: sY };
   }
+  // === Grid hit-test (prevents border/wood taps from snapping) ===
+  const HIT_FACTOR = 0.45; // tighter than 0.5 to ignore outer wood border
+
+  function pickNearestGrid(boardX, boardY){
+    const spacing = getGridSpacing();
+
+    let bestI = -1, bestJ = -1;
+    let bestDx = 1e9, bestDy = 1e9;
+
+    for (let i = 0; i < SIZE; i++){
+      const dx = Math.abs(getXcss(i) - boardX);
+      if (dx < bestDx){ bestDx = dx; bestI = i; }
+    }
+    for (let j = 0; j < SIZE; j++){
+      const dy = Math.abs(getYcss(j) - boardY);
+      if (dy < bestDy){ bestDy = dy; bestJ = j; }
+    }
+
+    const ok =
+      bestI >= 0 && bestJ >= 0 &&
+      bestDx <= spacing.x * HIT_FACTOR &&
+      bestDy <= spacing.y * HIT_FACTOR;
+
+    return { i: ok ? bestI : null, j: ok ? bestJ : null, ok, bestDx, bestDy };
+  }
 
   // session control
   let solvedCount = 0;
@@ -2016,24 +2041,10 @@ const boardY = (sy + offsetY) / scale;
 
 
 
-    const bounds = getBoardBounds();
+      const hit = pickNearestGrid(boardX, boardY);
+    const gridI = hit.i;
+    const gridJ = hit.j;
 
-    let gridI = null, gridJ = null;
-    if (boardX >= bounds.minX && boardX <= bounds.maxX &&
-        boardY >= bounds.minY && boardY <= bounds.maxY){
-      let bestI = 0, bestDx = Infinity;
-      for (let i = 0; i < SIZE; i++){
-        const dxI = Math.abs(getXcss(i) - boardX);
-        if (dxI < bestDx){ bestDx = dxI; bestI = i; }
-      }
-      let bestJ = 0, bestDy = Infinity;
-      for (let j = 0; j < SIZE; j++){
-        const dyJ = Math.abs(getYcss(j) - boardY);
-        if (dyJ < bestDy){ bestDy = dyJ; bestJ = j; }
-      }
-      gridI = bestI;
-      gridJ = bestJ;
-    }
 
     tapStart = {
       x: e.clientX,
@@ -2108,29 +2119,31 @@ const boardY = (sy + offsetY) / scale;
 const baseView = (!isFullscreen && scale <= 1.05);
 
 
-      if (baseView){
-        // Tap from base view – zoom in around tap
+       if (baseView){
         let ti = gi;
         let tj = gj;
 
-        // If tap was in gutter, recalculate best grid point based on click coords
-        if (ti == null || tj == null || ti < 0 || tj < 0 || ti >= SIZE || tj >= SIZE){
+        // If we didn’t get a valid grid from pointerdown, try once more with threshold
+        if (ti == null || tj == null){
           const rect = mount.getBoundingClientRect();
           const sx = tapClientX - rect.left;
           const sy = tapClientY - rect.top;
 
-          let bestI = 0, bestDx = Infinity;
-          for (let i = 0; i < SIZE; i++){
-            const dxI = Math.abs(getXcss(i) - sx);
-            if (dxI < bestDx){ bestDx = dxI; bestI = i; }
-          }
-          let bestJ = 0, bestDy = Infinity;
-          for (let j = 0; j < SIZE; j++){
-            const dyJ = Math.abs(getYcss(j) - sy);
-            if (dyJ < bestDy){ bestDy = dyJ; bestJ = j; }
-          }
-          ti = bestI;
-          tj = bestJ;
+          const bx = (sx + offsetX) / scale;
+          const by = (sy + offsetY) / scale;
+
+          const hit = pickNearestGrid(bx, by);
+          ti = hit.i;
+          tj = hit.j;
+        }
+
+        // If still no valid grid: this was the outer wood/border → swallow tap
+        if (ti == null || tj == null){
+          e.preventDefault();
+          e.stopPropagation();
+          if (e.stopImmediatePropagation) e.stopImmediatePropagation();
+          suppressNextBoardClick = true;
+          return;
         }
 
         e.preventDefault();
@@ -2142,10 +2155,6 @@ const baseView = (!isFullscreen && scale <= 1.05);
         return;
       }
 
-      // Already zoomed – treat tap as move if on the grid
-      if (gi == null || gj == null || gi < 0 || gj < 0 || gi >= SIZE || gj >= SIZE){
-        return;
-      }
 
       e.preventDefault();
       e.stopPropagation();
