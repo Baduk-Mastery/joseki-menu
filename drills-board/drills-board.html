@@ -1497,20 +1497,47 @@ function getInitialAMarkLastIndex(moves, S){
 }
 
 function drawBlitzMarkers(){
-  // Show ONLY the next expected move marker
   if (!board) return;
   if (!remain || !remain.length) return;
 
-  const next = remain[0];
-  if (!next) return;
+  // How many moves have already been played in this corner?
+  const plannedN =
+    (blitzCornerState && typeof blitzCornerState.plannedN === 'number')
+      ? blitzCornerState.plannedN
+      : remain.length;
 
-  // If the point is already occupied (e.g., redraw inside playMove),
-  // do NOT draw the marker so it never sits on top of a stone.
-  if (grid && grid[next.y] && grid[next.y][next.x] !== null) return;
+  const playedSoFar = Math.max(0, plannedN - remain.length);
 
-  // Keep your existing visual language: letter marker "A"
-  board.addObject({ x: next.x, y: next.y, type: 'LB', text: 'A' });
+  // After the first move, show ONLY the next expected move
+  if (playedSoFar > 0){
+    const next = remain[0];
+    if (!next) return;
+    if (grid && grid[next.y] && grid[next.y][next.x] !== null) return;
+
+    board.addObject({ x: next.x, y: next.y, type: 'LB', text: 'A' });
+    return;
+  }
+
+  // At the very start: apply your rule
+  let lastIdx = 0;
+  try{
+    lastIdx = getInitialAMarkLastIndex(remain, SIZE);
+  }catch(_){
+    lastIdx = 0;
+  }
+  if (lastIdx < 0) return;
+
+  const end = Math.min(lastIdx, remain.length - 1);
+
+  for (let i = 0; i <= end; i++){
+    const m = remain[i];
+    if (!m) continue;
+    if (grid && grid[m.y] && grid[m.y][m.x] !== null) continue;
+
+    board.addObject({ x: m.x, y: m.y, type: 'LB', text: 'A' });
+  }
 }
+
 
 
   function shuffle(a){ for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } return a; }
@@ -2458,32 +2485,35 @@ function startDrill(i, opts){
     if (grid[y][x] !== null) return;
     if (!remain.length) return;
 
-    const next = remain[0];
-    if (next.x === x && next.y === y){
-      playMove(x,y,next.color, false);
-      remain.shift();
+  const next = remain[0];
+if (next.x === x && next.y === y){
 
-      if (!remain.length){
-        solvedCount++;
-        if (blitzMode){
-          timerMs += blitzCornerPlannedMoves * 500;
-          if (timerEl) timerEl.textContent = fmtMs(timerMs);
-        }
-        if (index >= (slots.length - 1)) {
-          showClearedThenDone();
-        } else {
-          showClearedAuto();
-        }
-      }
+  // Shift FIRST so redraw inside playMove sees the new "next"
+  remain.shift();
+
+  playMove(x, y, next.color, false);
+
+  if (!remain.length){
+    solvedCount++;
+    if (blitzMode){
+      timerMs += blitzCornerPlannedMoves * 500;
+      if (timerEl) timerEl.textContent = fmtMs(timerMs);
+    }
+    if (index >= (slots.length - 1)) {
+      showClearedThenDone();
     } else {
-      failedCount++;
-      if (blitzMode){
-        showWrongThenRestart();
-      } else {
-        showWrongAuto();
-      }
+      showClearedAuto();
     }
   }
+
+} else {
+  failedCount++;
+  if (blitzMode){
+    showWrongThenRestart();
+  } else {
+    showWrongAuto();
+  }
+}
 
   function showWrongThenRestart(){
     clearTimers();
