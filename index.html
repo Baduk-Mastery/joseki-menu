@@ -5,9 +5,11 @@
   <title>Joseki Dojo</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
 
+  <!-- Preload helps ensure the logo is ready before the fade -->
+  <link rel="preload" as="image" href="./img/Go-Mastery-Lab.png" />
+
   <style>
     :root{
-      /* Total splash duration (adjust to taste) */
       --splash-ms: 2400ms;
     }
 
@@ -27,7 +29,6 @@
       font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
     }
 
-    /* Logo sizing: responsive but controlled */
     #splash-logo{
       width: clamp(160px, 38vw, 320px);
       height: auto;
@@ -40,7 +41,6 @@
       pointer-events: none;
     }
 
-    /* Fade in -> brief hold -> fade out */
     @keyframes logoFade{
       0%   { opacity: 0; }
       35%  { opacity: 1; }
@@ -48,7 +48,6 @@
       100% { opacity: 0; }
     }
 
-    /* Accessibility: reduce motion */
     @media (prefers-reduced-motion: reduce){
       #splash-logo{
         animation: none;
@@ -58,16 +57,16 @@
   </style>
 
   <noscript>
-    <!-- Fallback if JS is disabled -->
     <meta http-equiv="refresh" content="0; url=./joseki-menu/index.html">
   </noscript>
 </head>
 <body>
   <img
     id="splash-logo"
-   src="../img/Go-Mastery-Lab.png"
+    src="./img/Go-Mastery-Lab.png"
     alt="Go Mastery Lab"
     draggable="false"
+    decoding="async"
   />
 
   <script>
@@ -75,11 +74,9 @@
       var REDIRECT_URL = "./joseki-menu/index.html";
       var root = document.documentElement;
 
-      // Read the CSS duration so JS stays in sync with your animation
       var splashMsStr = getComputedStyle(root).getPropertyValue("--splash-ms").trim();
       var splashMs = 2400;
 
-      // Convert CSS time to milliseconds
       if (splashMsStr.endsWith("ms")) {
         splashMs = parseFloat(splashMsStr);
       } else if (splashMsStr.endsWith("s")) {
@@ -88,7 +85,6 @@
 
       var reduceMotion = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
-      // If reduced motion, keep it very short
       if (reduceMotion) {
         setTimeout(function () {
           window.location.replace(REDIRECT_URL);
@@ -105,12 +101,10 @@
         window.location.replace(REDIRECT_URL);
       }
 
-      // Prefer the animation end event for exact timing
       if (logo) {
         logo.addEventListener("animationend", go, { once: true });
       }
 
-      // Safety fallback in case animationend doesn't fire
       setTimeout(go, Math.max(0, splashMs + 50));
     })();
   </script>
