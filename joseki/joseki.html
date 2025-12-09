@@ -946,7 +946,7 @@ lockExitBtn();
     })(t0);
   }
 
-  function enterFullscreenAtGrid(i, j, tapClientX, tapClientY){
+ function enterFullscreenAtGrid(i, j, tapClientX, tapClientY){
     if (isFullscreen) return;
     cancelFling();
 
@@ -975,7 +975,11 @@ lockExitBtn();
     requestAnimationFrame(function(){
       applyPanAndSize(true);
 
-      const initialFactor = 2.4;
+      // --- CHANGED: Dynamic calculation to match Practice Board ---
+      const needToCover = Math.max(vw, vh) / baseW;
+      const initialFactor = Math.max(1.8, needToCover + 0.02);
+      // -----------------------------------------------------------
+
       const px_curr = getXcss(i);
       const py_curr = getYcss(j);
 
@@ -2064,10 +2068,14 @@ hook('jbtnForward', function(){
     menuConfirmOverlay.classList.remove('is-open');
   }
 
+  // Disable click-outside-to-close.
+  // The dialog should close only via the explicit buttons.
   if (menuConfirmOverlay){
     menuConfirmOverlay.addEventListener('click', function(e){
       if (e.target === menuConfirmOverlay) {
-        closeMenuConfirm();
+        e.preventDefault();
+        e.stopPropagation();
+        // no close here
       }
     });
   }
