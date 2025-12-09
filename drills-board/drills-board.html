@@ -182,9 +182,6 @@
 
   </style>
 <style>
-/* =========================
-   Practice-style Back + Controls for Drills
-   ========================= */
 
 #drill-topbar{
   max-width:720px;
@@ -196,6 +193,14 @@
   align-items:center;
   justify-content:space-between;
   gap:10px;
+}
+
+body.drill-zoom-mode #drill-topbar{
+  pointer-events: none;
+}
+
+body.drill-zoom-mode #drill-topbar > *{
+  pointer-events: auto;
 }
 
 
