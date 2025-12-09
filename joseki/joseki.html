@@ -698,13 +698,41 @@ body.bg-wood [class*="blur"]{
   var isFlinging = false, flingId = 0, flingVX = 0, flingVY = 0, flingLastTime = 0;
   var panSamplePrev = null, panSampleCurr = null;
 
-  var exitBtn = document.getElementById('zoom-exit-btn');
-  if (exitBtn){
-    exitBtn.addEventListener('click', function(e){
+var exitBtn = document.getElementById('zoom-exit-btn');
+
+function lockExitBtn(){
+  if (!exitBtn) return;
+  exitBtn.dataset.locked = '1';
+  exitBtn.style.pointerEvents = 'none';
+}
+
+function unlockExitBtn(){
+  if (!exitBtn) return;
+  exitBtn.dataset.locked = '';
+  exitBtn.style.pointerEvents = '';
+}
+
+if (exitBtn){
+
+  // extra safety: block any early pointer interaction while animating
+  exitBtn.addEventListener('pointerdown', function(e){
+    if (isZoomAnimating){
+      e.preventDefault();
       e.stopPropagation();
-      smoothZoomOutAndExit();
-    });
-  }
+    }
+  }, { passive:false });
+
+  exitBtn.addEventListener('click', function(e){
+    if (isZoomAnimating){
+      e.preventDefault();
+      e.stopPropagation();
+      return;
+    }
+    e.stopPropagation();
+    smoothZoomOutAndExit();
+  });
+}
+
   // ===== Zoom dock wiring (Joseki controls) =====
   var dock = document.getElementById('go-zoom-ui-joseki');
   var ctrls = document.getElementById('joseki-ctrls');
@@ -887,11 +915,11 @@ body.bg-wood [class*="blur"]{
 
     const s0 = scale, ox0 = offsetX, oy0 = offsetY;
     const t0 = performance.now();
-    const dur = 300;
+    const dur = 260;
 
     cancelAnimationFrame(animId);
     isZoomAnimating = true;
-
+lockExitBtn();
     const targetOffsetX = (pxWorld * targetScale) - sxTarget;
     const targetOffsetY = (pyWorld * targetScale) - syTarget;
 
@@ -908,11 +936,13 @@ body.bg-wood [class*="blur"]{
 
       if (t < 1){
         animId = requestAnimationFrame(step);
-      } else {
-        isZoomAnimating = false;
-        applyPanAndSize(true);
-        if (typeof onDone === 'function') onDone();
-      }
+     } else {
+  isZoomAnimating = false;
+  unlockExitBtn();
+  applyPanAndSize(true);
+  if (typeof onDone === 'function') onDone();
+}
+
     })(t0);
   }
 
@@ -967,9 +997,11 @@ body.bg-wood [class*="blur"]{
   }
 
   function exitFullscreen(){
-    cancelFling();
-    cancelAnimationFrame(animId);
-    isZoomAnimating = false;
+cancelFling();
+cancelAnimationFrame(animId);
+isZoomAnimating = false;
+unlockExitBtn();
+
 
     mount.classList.remove('is-fullscreen');
     if (exitBtn) exitBtn.style.display = 'none';
@@ -995,9 +1027,11 @@ body.bg-wood [class*="blur"]{
   }
 
   function smoothZoomOutAndExit(){
-    cancelFling();
-    cancelAnimationFrame(animId);
-    isZoomAnimating = false;
+cancelFling();
+cancelAnimationFrame(animId);
+isZoomAnimating = false;
+unlockExitBtn();
+
 
     scale = 1; offsetX = 0; offsetY = 0;
     applyPanAndSize(true);
