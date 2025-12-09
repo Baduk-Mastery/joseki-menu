@@ -1993,37 +1993,6 @@ function enterFullscreenAtGrid(i, j, tapClientX, tapClientY){
 
   // Your existing zoom-in animation frame
   requestAnimationFrame(function(){
-    // --- CHANGED: Dynamic calculation to match Practice/Joseki Board ---
-    const vw = window.innerWidth;
-    const vh = window.innerHeight;
-    // baseW is updated in resetViewLocal -> applyPanAndSize just before this runs
-    const needToCover = Math.max(vw, vh) / baseW;
-    const initialFactor = Math.max(1.8, needToCover + 0.02);
-    // ------------------------------------------------------------------
-
-    const px_curr = getXcss(i);
-    const py_curr = getYcss(j);
-
-    const rect = mount.getBoundingClientRect();
-    let sx = rect.width  / 2;
-    let sy = rect.height / 2;
-
-    if (typeof tapClientX === 'number' && typeof tapClientY === 'number'){
-      sx = tapClientX - rect.left;
-      sy = tapClientY - rect.top;
-    }
-
-    scale = 1;
-    offsetX = px_curr * 1.0 - sx;
-    offsetY = py_curr * 1.0 - sy;
-
-    applyPanAndSize(false);
-
-    animateTo(initialFactor, px_curr, py_curr, sx, sy);
-  });
-}
-  // Your existing zoom-in animation frame
-  requestAnimationFrame(function(){
     const initialFactor = 2.0;
 
     const px_curr = getXcss(i);
@@ -3000,3 +2969,5 @@ timerMs = 0;
 
 </body>
 </html>
+
+
