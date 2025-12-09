@@ -1993,43 +1993,6 @@ function enterFullscreenAtGrid(i, j, tapClientX, tapClientY){
 
   // Your existing zoom-in animation frame
   requestAnimationFrame(function(){
-    // --- FIX START: Safely calculate dynamic zoom depth ---
-    const vw = window.innerWidth;
-    const vh = window.innerHeight;
-    // In fullscreen, the board size is the smaller of width or height.
-    // We calculate this directly here to avoid timing issues with the global baseW.
-    const boardSize = Math.min(vw, vh) || 1; 
-    
-    // We want to zoom enough to cover the LARGER dimension (width or height)
-    const needToCover = Math.max(vw, vh) / boardSize;
-    
-    // Set factor: at least 1.8x, or whatever is needed to cover the screen + 2% padding
-    const initialFactor = Math.max(1.8, needToCover + 0.02);
-    // --- FIX END ---
-
-    const px_curr = getXcss(i);
-    const py_curr = getYcss(j);
-
-    const rect = mount.getBoundingClientRect();
-    let sx = rect.width  / 2;
-    let sy = rect.height / 2;
-
-    if (typeof tapClientX === 'number' && typeof tapClientY === 'number'){
-      sx = tapClientX - rect.left;
-      sy = tapClientY - rect.top;
-    }
-
-    scale = 1;
-    offsetX = px_curr * 1.0 - sx;
-    offsetY = py_curr * 1.0 - sy;
-
-    applyPanAndSize(false);
-
-    animateTo(initialFactor, px_curr, py_curr, sx, sy);
-  });
-}
-  // Your existing zoom-in animation frame
-  requestAnimationFrame(function(){
     const initialFactor = 2.0;
 
     const px_curr = getXcss(i);
