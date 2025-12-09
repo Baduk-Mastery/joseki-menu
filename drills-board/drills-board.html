@@ -1296,7 +1296,6 @@ function ensureTimerEl(){
      ========================= */
   const BLITZ_COUNTDOWN_SECONDS = 3;
 
-  function runBlitzCountdown(){
   // Wait until the black reveal has fully faded before starting the Blitz countdown.
   function waitForDrillReveal(){
     return new Promise(resolve => {
@@ -1335,9 +1334,43 @@ function ensureTimerEl(){
     });
   }
 
-  function runBlitzCountdownAfterReveal(){
-    return waitForDrillReveal().then(runBlitzCountdown);
+  function runBlitzCountdown(){
+    return new Promise(resolve => {
+      if (!blitzCdM || !blitzCdNum){
+        resolve();
+        return;
+      }
+
+      let n = BLITZ_COUNTDOWN_SECONDS;
+      blitzCdNum.textContent = String(n);
+      blitzCdM.style.display = 'flex';
+
+      const stepMs = 650;
+
+      function tick(){
+        n -= 1;
+
+        if (n <= 0){
+          blitzCdNum.textContent = 'Go!';
+          setTimeout(() => {
+            blitzCdM.style.display = 'none';
+            resolve();
+          }, 180);
+          return;
+        }
+
+        blitzCdNum.textContent = String(n);
+        setTimeout(tick, stepMs);
+      }
+
+      setTimeout(tick, stepMs);
+    });
   }
+
+  function runBlitzCountdownAfterReveal(){
+    return waitForDrillReveal().then(() => runBlitzCountdown());
+  }
+
 
     return new Promise(resolve => {
       if (!blitzCdM || !blitzCdNum){
