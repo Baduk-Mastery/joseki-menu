@@ -4,6 +4,30 @@
   <meta charset="utf-8" />
   <title>Joseki Master – Drills Board</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
+<style>
+/* Black reveal overlay (covers drills page on load, then fades away) */
+#drill-fade{
+  position: fixed;
+  inset: 0;
+  background: #000;
+  z-index: 200000; /* safely above drill-notif (100000+) and zoom UI */
+  opacity: 1;
+  transition: opacity .9s ease;
+}
+
+/* Triggered by JS */
+#drill-fade.is-hidden{
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* Accessibility */
+@media (prefers-reduced-motion: reduce){
+  #drill-fade{
+    transition: none;
+  }
+}
+</style>
 
   <style>
  html, body{
@@ -722,7 +746,7 @@ body.drill-zoom-mode #drill-ctrls{
 
 </head>
 <body>
-
+  <div id="drill-fade" aria-hidden="true"></div>
 <!-- ================= DRILL BOARD (adds Blitz mode) ================= -->
 <div id="drill-root">
   <div id="drill-inner">
@@ -2984,6 +3008,40 @@ timerMs = 0;
     autoStartStandalone();
   }
 })();
+</script>
+<script>
+  (function () {
+    var fade = document.getElementById("drill-fade");
+    if (!fade) return;
+
+    var reduceMotion = window.matchMedia &&
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+    if (reduceMotion) {
+      fade.remove();
+      return;
+    }
+
+    function runReveal() {
+      // snap to black without animating
+      fade.style.transition = "none";
+      fade.classList.remove("is-hidden");
+
+      // force reflow so the browser applies opacity:1 immediately
+      void fade.offsetHeight;
+
+      // restore CSS transition
+      fade.style.transition = "";
+
+      // fade out on next frame
+      requestAnimationFrame(function () {
+        fade.classList.add("is-hidden");
+      });
+    }
+
+    // pageshow runs on first load AND when returning via back/forward cache
+    window.addEventListener("pageshow", runReveal);
+  })();
 </script>
 
 </body>

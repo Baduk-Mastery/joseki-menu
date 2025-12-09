@@ -22,10 +22,43 @@
     /* No black fullscreen background */
     overscroll-behavior:none;
   }
+/* Black reveal overlay (covers Drills page on load, then fades away) */
+#drills-fade{
+  position: fixed;
+  inset: 0;
+  background: #000;
+  z-index: 100200; /* higher than drills overlay (100000) */
+  opacity: 1;
+  transition: opacity .9s ease;
+}
+
+/* Triggered by JS */
+#drills-fade.is-hidden{
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* Accessibility */
+@media (prefers-reduced-motion: reduce){
+  #drills-fade{
+    transition: none;
+  }
+}
+
 </style>
 
 </head>
 <body>
+<body>
+
+  <div id="drills-fade" aria-hidden="true"></div>
+
+  <noscript>
+    <p>
+      JavaScript is required to use Drills.
+      <a href="../joseki-menu/index.html">Back to menu</a>
+    </p>
+  </noscript>
 
 <noscript>
   <p>
@@ -1669,6 +1702,40 @@
       window.GoDrills.open();
     }
   });
+</script>
+<script>
+  (function () {
+    var fade = document.getElementById("drills-fade");
+    if (!fade) return;
+
+    var reduceMotion = window.matchMedia &&
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+    if (reduceMotion) {
+      fade.remove();
+      return;
+    }
+
+    function runReveal() {
+      // snap to black without animating
+      fade.style.transition = "none";
+      fade.classList.remove("is-hidden");
+
+      // force reflow so the browser applies opacity:1 immediately
+      void fade.offsetHeight;
+
+      // hand control back to CSS
+      fade.style.transition = "";
+
+      // fade out on next frame
+      requestAnimationFrame(function () {
+        fade.classList.add("is-hidden");
+      });
+    }
+
+    // pageshow runs on first load AND when returning via back/forward cache
+    window.addEventListener("pageshow", runReveal);
+  })();
 </script>
 
 </body>
