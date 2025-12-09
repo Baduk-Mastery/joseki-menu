@@ -234,6 +234,15 @@
     padding:16px 12px 22px;
   }
 }
+/* Match Practice List width ONLY for the My Patterns list overlay */
+#ownpatterns-root #own-overlay .s-inner{
+  width: min(92vw, var(--board-max));
+}
+@media (max-width:480px){
+  #ownpatterns-root #own-overlay .s-inner{
+    padding:16px 24px 22px; /* mirror Practice List */
+  }
+}
 
 
 /* Practice/Drills-aligned header frame for My Patterns */

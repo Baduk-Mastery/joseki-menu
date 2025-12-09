@@ -13,37 +13,139 @@
       font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
     }
 
-    /* ===== Overlay chrome (wood bg) — scroll-safe & global-proof ===== */
-    #plans-overlay{
-      position:fixed;
-      inset:0;
-      z-index:100000;
-      display:none;                     /* JS will turn this to flex on load */
-      justify-content:center;           /* center horizontally */
-      align-items:flex-start;           /* pin to top so header is never cut */
-      overflow:auto;                    /* overlay scrolls */
-      -webkit-overflow-scrolling:touch; /* iOS smooth scroll */
-      overscroll-behavior:contain;
-      padding: calc(env(safe-area-inset-top, 0px) + 20px) 0
-               calc(env(safe-area-inset-bottom, 0px) + 20px);
-      color:#fff;
-      -webkit-tap-highlight-color:transparent;
-      background-image:
-        linear-gradient(rgba(0,0,0,.35), rgba(0,0,0,.45)),
-        url('https://3d85c7a311526e02aeeeb19e952d0c09.cdn.bubble.io/f1755870506985x437178801728222500/wood.jpg');
-      background-size:cover;
-      background-position:center;
-      isolation:isolate;
-      box-sizing:border-box;
-    }
-    #plans-overlay .s-inner{
-      width:min(92vw,560px);
-      padding:12px 24px 22px;
-      margin:0 auto;
-      text-align:center;
-      position:relative;
-      box-sizing:border-box !important;
-    }
+#plans-overlay{
+  position:fixed;
+  inset:0;
+  z-index:100000;
+  display:none;                     /* JS will turn this to flex on load */
+  justify-content:center;           /* center horizontally */
+  align-items:flex-start;           /* pin to top so header is never cut */
+  overflow:auto;                    /* overlay scrolls */
+  -webkit-overflow-scrolling:touch; /* iOS smooth scroll */
+  overscroll-behavior:contain;
+  padding: calc(env(safe-area-inset-top, 0px) + 20px) 0
+           calc(env(safe-area-inset-bottom, 0px) + 20px);
+  color:#fff;
+  -webkit-tap-highlight-color:transparent;
+  isolation:isolate;
+  box-sizing:border-box;
+
+  --maxw:560px;
+  --wood:url('https://3d85c7a311526e02aeeeb19e952d0c09.cdn.bubble.io/f1755870506985x437178801728222500/wood.jpg');
+
+  background-image:
+    linear-gradient(rgba(0,0,0,.35), rgba(0,0,0,.45)),
+    var(--wood);
+  background-size:cover;
+  background-position:center;
+}
+
+#plans-overlay .s-inner{
+  width:100%;
+  max-width:var(--maxw);
+  padding:12px 24px 22px;
+  margin:0 auto;
+  text-align:center;
+  position:relative;
+  box-sizing:border-box !important;
+}
+
+/* ===== Wood-style buttons (match Practice List + Settings) ===== */
+#plans-overlay .s-back,
+#plans-overlay .pl-btn{
+  position:relative;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  gap:6px;
+
+  padding:8px 18px;
+  border-radius:10px;
+  border:1px solid rgba(255,255,255,.40);
+
+  font-size:16px;
+  font-weight:800;
+  line-height:1.1;
+  color:#fff3cf;
+  text-shadow:0 1px 0 rgba(120,60,20,.7);
+  cursor:pointer;
+
+  user-select:none;
+  -webkit-user-select:none;
+  -moz-user-select:none;
+  -ms-user-select:none;
+  -webkit-tap-highlight-color:transparent;
+
+  background-image:
+    linear-gradient(
+      to bottom,
+      rgba(255,255,255,.12),
+      rgba(255,255,255,.03) 38%,
+      rgba(0,0,0,.14) 100%
+    ),
+    var(--wood);
+  background-size:100% 100%, cover;
+  background-position:center;
+  background-repeat:no-repeat;
+
+  filter:brightness(1.08) saturate(.96);
+
+  box-shadow:
+    0 3px 0 rgba(133,74,26,.85),
+    0 8px 14px rgba(0,0,0,.45);
+
+  transition:
+    transform .08s ease-out,
+    box-shadow .08s ease-out,
+    filter .12s ease-out;
+
+  white-space:nowrap;
+}
+
+/* Hover/active states */
+#plans-overlay .s-back:hover,
+#plans-overlay .pl-btn:hover{
+  filter:brightness(1.12) saturate(.98);
+  transform:translateY(-1px);
+  box-shadow:
+    0 4px 0 rgba(133,74,26,.9),
+    0 10px 16px rgba(0,0,0,.48);
+}
+
+#plans-overlay .s-back:active,
+#plans-overlay .pl-btn:active{
+  filter:brightness(.97) saturate(.96);
+  transform:translateY(2px);
+  box-shadow:
+    0 1px 0 rgba(120,60,20,.9),
+    0 4px 8px rgba(0,0,0,.55);
+}
+
+/* Slim header back button (same compact feel as Practice header) */
+#plans-overlay .pl-header .s-back{
+  padding:6px 12px;
+  font-size:14px;
+  border-radius:8px;
+}
+
+/* Keep your CTA layout */
+#plans-overlay .pl-cta{
+  display:flex;
+  gap:8px;
+  padding:6px;
+}
+#plans-overlay .pl-btn{
+  flex:1;
+}
+
+/* Selected/current plan emphasis (wood-style, not blue) */
+#plans-overlay .pl-strong{
+  filter:brightness(1.18) saturate(1.05);
+  border-color:rgba(255,224,170,.85);
+  box-shadow:
+    0 4px 0 rgba(147,92,36,.96),
+    0 12px 20px rgba(0,0,0,.58);
+}
 
     /* ===== Header layout (row1: back + title; row2: status spans both) ===== */
     .pl-header{
@@ -55,30 +157,6 @@
       row-gap:6px;
       margin-bottom:8px;
       text-align:left;
-    }
-    .pl-header .s-back{
-      grid-column:1;
-      grid-row:1;
-      position:static !important;
-      float:none !important;
-      margin:0 !important;
-      padding:8px 12px;
-      border-radius:12px;
-      cursor:pointer;
-      font-weight:700;
-      background: rgba(37,99,235,.22);
-      color:#e6f3ff;
-      border:2px solid rgba(37,99,235,.75);
-      box-shadow:0 8px 20px rgba(2,6,23,.45), inset 0 0 0 1px rgba(255,255,255,.08);
-      transition:transform .06s, background .15s, box-shadow .15s;
-      white-space:nowrap;
-    }
-    .pl-header .s-back:hover{
-      background: rgba(37,99,235,.26);
-    }
-    .pl-header .s-back:active{
-      background: rgba(37,99,235,.32);
-      transform:translateY(1px);
     }
 
     .pl-header .s-title{
@@ -159,38 +237,7 @@
       gap:8px;
       padding:6px;
     }
-    .pl-btn{
-      flex:1;
-      padding:12px 14px;
-      border-radius:12px;
-      cursor:pointer;
-      font-weight:800;
-      background: rgba(37,99,235,.22);
-      color:#e6f3ff;
-      border:2px solid rgba(37,99,235,.75);
-      box-shadow:0 8px 20px rgba(2,6,23,.45), inset 0 0 0 1px rgba(255,255,255,.08);
-      transition:transform .06s, background .15s, box-shadow .15s;
-      position:static !important;
-      display:inline-block !important;
-      float:none !important;
-    }
-    .pl-btn:hover{
-      background: rgba(37,99,235,.26);
-    }
-    .pl-btn:active{
-      background: rgba(37,99,235,.32);
-      transform:translateY(1px);
-    }
-    .pl-strong{
-      background:#3b82f6;
-      color:#fff;
-      border-color:#3b82f6;
-      box-shadow:0 8px 22px rgba(59,130,246,.45), inset 0 0 0 1px rgba(255,255,255,.12);
-    }
-    .pl-strong:active{
-      background:#2563eb;
-    }
-
+  
     .pl-note{
       opacity:.9;
       margin:12px 0 0;
