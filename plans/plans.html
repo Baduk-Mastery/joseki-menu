@@ -278,7 +278,6 @@
             <li>Joseki board</li>
             <li>Practice Level 1–3</li>
             <li>3 Hints / day (Practice)</li>
-            <li>Level 2 &amp; 3: 5 lives per day<br><small>After 5 mistakes you can try again tomorrow</small></li>
             <li><strong>Drills:</strong> select up to <strong>2</strong> joseki variations; <strong>2</strong> runs/day</li>
           </ul>
           <div class="pl-cta">
@@ -304,8 +303,6 @@
           </div>
         </section>
       </div>
-
-      <p class="pl-note">You can change plans here anytime.</p>
     </div>
   </div>
 
@@ -366,27 +363,24 @@
       return (String(s || 'free').toLowerCase() === 'pro') ? 'Pro' : 'Free';
     }
 
-    // Update button labels and visual emphasis based on current plan
-    function updateButtonStates(){
-      if (!freeBtn || !proBtn) return;
-      var tier = Tier.get();
+function updateButtonStates(){
+  if (!freeBtn || !proBtn) return;
+  var tier = Tier.get();
 
-      if (tier === 'pro'){
-        // Current plan = Pro
-        freeBtn.textContent = 'Go Free';
-        proBtn.textContent  = 'Keep Pro';
+  // Labels can still reflect the current plan
+  if (tier === 'pro'){
+    freeBtn.textContent = 'Go Free';
+    proBtn.textContent  = 'Keep Pro';
+  } else {
+    freeBtn.textContent = 'Keep Free';
+    proBtn.textContent  = 'Go Pro';
+  }
 
-        freeBtn.classList.remove('pl-strong');
-        proBtn.classList.add('pl-strong');
-      } else {
-        // Current plan = Free
-        freeBtn.textContent = 'Keep Free';
-        proBtn.textContent  = 'Go Pro';
+  // Visual priority: always emphasize Pro
+  freeBtn.classList.remove('pl-strong');
+  proBtn.classList.add('pl-strong');
+}
 
-        freeBtn.classList.add('pl-strong');
-        proBtn.classList.remove('pl-strong');
-      }
-    }
 
     function refreshStatus(){
       if (statusEl){
