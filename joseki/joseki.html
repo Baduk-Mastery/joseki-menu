@@ -365,9 +365,13 @@ box-sizing: border-box;
 
     background:rgba(148,163,184,.35);
     border:1px solid rgba(148,163,184,.85);
-    box-shadow:0 6px 16px rgba(0,0,0,.55);
+box-shadow:0 6px 16px rgba(0,0,0,.55);
 
-    display:none;
+    /* NUCLEAR FIX: Combine all hiding methods */
+    display: none;        /* Default hidden */
+    visibility: hidden;   /* Extra layer of invisible */
+    pointer-events: none; /* CRITICAL: Clicks pass through to board */
+    
     cursor:pointer;
     z-index:99999;
 
@@ -926,9 +930,16 @@ body.bg-wood [class*="blur"]{
     mount.parentNode.insertBefore(returnAnchor, mount);
 
     document.body.appendChild(mount);
-    mount.classList.add('is-fullscreen');
+mount.classList.add('is-fullscreen');
     isFullscreen = true;
-    if (exitBtn) exitBtn.style.display = 'flex';
+    
+    // Turn button ON
+    if (exitBtn) {
+        exitBtn.style.display = 'flex';         // Restore layout
+        exitBtn.style.visibility = 'visible';   // Make visible
+        exitBtn.style.pointerEvents = 'auto';   // Make clickable
+    }
+
     enableDockMode();
 
 
@@ -971,8 +982,15 @@ body.bg-wood [class*="blur"]{
     cancelAnimationFrame(animId);
     isZoomAnimating = false;
 
-    mount.classList.remove('is-fullscreen');
-    if (exitBtn) exitBtn.style.display = 'none';
+mount.classList.remove('is-fullscreen');
+    
+    // Turn button OFF (Nuclear mode)
+    if (exitBtn) {
+        exitBtn.style.display = 'none';         // Remove layout
+        exitBtn.style.visibility = 'hidden';    // Hide visual
+        exitBtn.style.pointerEvents = 'none';   // Pass clicks through
+    }
+
     isFullscreen = false;
     disableDockMode();
 
@@ -2154,6 +2172,8 @@ koPoint = null;
 
 </body>
 </html>
+
+
 
 
 

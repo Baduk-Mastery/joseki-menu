@@ -2051,7 +2051,13 @@ if (!isPanning && dist2 > TAP_SLOP2){
     mount.addEventListener('pointerdown', function(e){
       if (!zoomEnabled) return;
       if (e.pointerType && e.pointerType !== 'touch') return;
-      cancelFling();
+      if (isZoomAnimating){
+        e.preventDefault();
+        e.stopPropagation();
+        return;
+      }
+      
+cancelFling();
       e.preventDefault();
 
       const r  = mount.getBoundingClientRect();
@@ -2099,6 +2105,15 @@ if (!isPanning && dist2 > TAP_SLOP2){
 
 
 mount.addEventListener('pointerup', function(e){
+  // NEW: swallow fast second taps during the zoom-in animation
+  if (isZoomAnimating){
+    e.preventDefault();
+    e.stopPropagation();
+    tapStart = null;
+    endPan(e);
+    return;
+  }
+
   if (!zoomEnabled || !tapStart) { endPan(e); return; }
   if (e.pointerType && e.pointerType !== 'touch') {
     endPan(e);
@@ -2501,7 +2516,11 @@ if (winRetryBtn){
 
 
     function handlePracticeClick(x, y){
+      // NEW: block taps while zoom animation is running
+      if (isZoomAnimating) return;
+
       if (!hasSGF || isAutoPlacing) return;
+
 
       if (!isPro() && (level === 2 || level === 3)){
         var peek = QUOTA.peek('prac:lives-l23', MAX_LIVES_FREE_L23);
