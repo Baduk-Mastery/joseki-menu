@@ -1493,7 +1493,7 @@ function enterFullscreenAtGrid(i, j, tapClientX, tapClientY){
 
     // 5. Start Animation
     requestAnimationFrame(function(){
-      // --- FIX: Robust dynamic zoom calculation ---
+      // --- FIX START: Robust dynamic zoom calculation ---
       var vw = window.innerWidth;
       var vh = window.innerHeight;
       
@@ -1506,7 +1506,7 @@ function enterFullscreenAtGrid(i, j, tapClientX, tapClientY){
       
       // Calculate dynamic factor (at least 1.8, or whatever covers screen + 2%)
       var dynamicZoom = Math.max(1.8, needToCover + 0.02);
-      // -------------------------------------------
+      // --- FIX END -------------------------------------
 
       applyPanAndSize(true);
 
@@ -1526,7 +1526,7 @@ function enterFullscreenAtGrid(i, j, tapClientX, tapClientY){
       offsetY = py - sy;
       applyPanAndSize(false);
 
-      // Use the calculated dynamicZoom instead of fixed 'zoomInFactor'
+      // Use the calculated dynamicZoom instead of global variable
       animateTo(dynamicZoom, px, py, sx, sy);
 
       // 6. DELAY showing the button. 
