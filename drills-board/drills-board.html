@@ -1297,6 +1297,48 @@ function ensureTimerEl(){
   const BLITZ_COUNTDOWN_SECONDS = 3;
 
   function runBlitzCountdown(){
+  // Wait until the black reveal has fully faded before starting the Blitz countdown.
+  function waitForDrillReveal(){
+    return new Promise(resolve => {
+      const fade = document.getElementById('drill-fade');
+      const reduce = window.matchMedia &&
+        window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+      // No fade or reduced motion → nothing to wait for
+      if (!fade || reduce){
+        resolve();
+        return;
+      }
+
+      // If already hidden, resolve immediately
+      try{
+        const op = parseFloat(getComputedStyle(fade).opacity || '1');
+        if (fade.classList.contains('is-hidden') && op === 0){
+          resolve();
+          return;
+        }
+      }catch(_){}
+
+      let done = false;
+      function finish(){
+        if (done) return;
+        done = true;
+        window.removeEventListener('drill:fade-done', finish);
+        resolve();
+      }
+
+      // Listen for the custom event from the fade script
+      window.addEventListener('drill:fade-done', finish, { once:true });
+
+      // Safety fallback (matches your 0.9s transition)
+      setTimeout(finish, 1000);
+    });
+  }
+
+  function runBlitzCountdownAfterReveal(){
+    return waitForDrillReveal().then(runBlitzCountdown);
+  }
+
     return new Promise(resolve => {
       if (!blitzCdM || !blitzCdNum){
         resolve();
@@ -2709,13 +2751,14 @@ timerMs = 0;
     // Lock input during countdown
     locked = true;
 
-    runBlitzCountdown().then(() => {
+    runBlitzCountdownAfterReveal().then(() => {
       locked = false;
       timeUp = false;
       if (slots.length){
         startDrill(0);
       }
     });
+
 
     // Prevent the non-blitz start below
     return;
@@ -2870,11 +2913,12 @@ timerMs = 0;
           // Lock input during countdown
           locked = true;
 
-          runBlitzCountdown().then(() => {
+          runBlitzCountdownAfterReveal().then(() => {
             locked = false;
             timeUp = false;
             startDrill(0);
           });
+
 
         } else {
           if (timerEl) timerEl.style.display = 'none';
@@ -3012,12 +3056,23 @@ timerMs = 0;
 <script>
   (function () {
     var fade = document.getElementById("drill-fade");
-    if (!fade) return;
+    if (!fade) {
+      // No fade element → consider reveal done
+      try { window.dispatchEvent(new Event("drill:fade-done")); } catch(e){}
+      return;
+    }
 
     var reduceMotion = window.matchMedia &&
       window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
+    function fireDoneOnce(){
+      if (fireDoneOnce._fired) return;
+      fireDoneOnce._fired = true;
+      try { window.dispatchEvent(new Event("drill:fade-done")); } catch(e){}
+    }
+
     if (reduceMotion) {
+      fireDoneOnce();
       fade.remove();
       return;
     }
@@ -3033,14 +3088,28 @@ timerMs = 0;
       // restore CSS transition
       fade.style.transition = "";
 
-      // fade out on next frame
       requestAnimationFrame(function () {
+        // Listen for the opacity transition end
+        var onEnd = function (e) {
+          if (e && e.propertyName && e.propertyName !== "opacity") return;
+          fade.removeEventListener("transitionend", onEnd);
+          fireDoneOnce();
+        };
+        fade.addEventListener("transitionend", onEnd);
+
+        // Fallback if transitionend doesn't fire
+        setTimeout(fireDoneOnce, 950);
+
+        // start fade out
         fade.classList.add("is-hidden");
       });
     }
 
     // pageshow runs on first load AND when returning via back/forward cache
-    window.addEventListener("pageshow", runReveal);
+    window.addEventListener("pageshow", function(){
+      fireDoneOnce._fired = false; // reset per show cycle
+      runReveal();
+    });
   })();
 </script>
 
