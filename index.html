@@ -10,7 +10,7 @@
 
   <style>
     :root{
-      --splash-ms: 2400ms;
+      --splash-ms: 2600ms;
     }
 
     html, body{
@@ -103,11 +103,16 @@ max-width: 92vw;
         window.location.replace(REDIRECT_URL);
       }
 
-      if (logo) {
-        logo.addEventListener("animationend", go, { once: true });
-      }
+   if (logo) {
+  logo.addEventListener("animationend", function () {
+    // tiny cushion so the last bit of dimming is fully finished/perceived
+    setTimeout(go, 140);
+  }, { once: true });
+}
 
-      setTimeout(go, Math.max(0, splashMs + 50));
+// Safety fallback in case animationend doesn't fire
+setTimeout(go, Math.max(0, splashMs + 200));
+
     })();
   </script>
 </body>
