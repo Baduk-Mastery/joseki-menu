@@ -163,6 +163,22 @@
   -webkit-overflow-scrolling:touch;
 }
 
+/* Width/overflow sanity: keep inner + cards perfectly aligned */
+#practice-overlay .s-inner,
+#level-overlay .s-inner{
+  box-sizing: border-box;   /* include padding in width */
+  overflow-x: hidden;       /* never allow sideways creep */
+}
+
+/* Cards/grids should measure width including padding/border */
+#practice-overlay .s-card,
+#level-overlay .s-card,
+#practice-overlay .prac-card,
+#level-overlay .level-card,
+#practice-overlay .prac-grid,
+#level-overlay .level-grid{
+  box-sizing: border-box;
+}
 
   /* Headers */
   #practice-overlay .s-header, #level-overlay .s-header{
