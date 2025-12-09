@@ -46,6 +46,27 @@
     background-size:cover;
     background-position:center;
   }
+/* Black reveal overlay (covers menu on load, then fades away) */
+#menu-fade{
+  position: fixed;
+  inset: 0;
+  background: #000;
+  z-index: 100000; /* higher than #start-menu (99999) */
+  opacity: 1;
+  transition: opacity .6s ease;
+}
+
+/* Triggered by JS */
+#menu-fade.is-hidden{
+  opacity: 0;
+}
+
+/* Accessibility */
+@media (prefers-reduced-motion: reduce){
+  #menu-fade{
+    transition: none;
+  }
+}
 
   .menu-inner{
     position:relative;
@@ -198,6 +219,8 @@
 </head>
 <body>
 
+  <div id="menu-fade" aria-hidden="true"></div>
+
   <div id="start-menu" aria-modal="true" role="dialog">
     <div class="menu-inner">
       <h1 class="menu-title sr-only">Joseki Dojo</h1>
@@ -219,7 +242,36 @@
       <a href="../plans/plans.html"                  class="menu-btn menu-primary">Plans</a>
     </div>
   </div>
+  <script>
+    (function () {
+      var fade = document.getElementById("menu-fade");
+      if (!fade) return;
 
+      var reduceMotion = window.matchMedia &&
+        window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+      if (reduceMotion) {
+        fade.remove();
+        return;
+      }
+
+      function hideFade() {
+        requestAnimationFrame(function () {
+          fade.classList.add("is-hidden");
+        });
+
+        fade.addEventListener("transitionend", function () {
+          fade.remove();
+        }, { once: true });
+
+        setTimeout(function () {
+          if (fade && fade.parentNode) fade.remove();
+        }, 1200);
+      }
+
+      window.addEventListener("load", hideFade);
+    })();
+  </script>
 </body>
 </html>
 
