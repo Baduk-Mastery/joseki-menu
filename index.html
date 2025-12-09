@@ -2,14 +2,117 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <title>Joseki Master</title>
-  <!-- relative path – works locally AND on GitHub Pages project repos -->
-  <meta http-equiv="refresh" content="0; url=./joseki-menu/index.html">
+  <title>Joseki Dojo</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <style>
+    :root{
+      /* Total splash duration (adjust to taste) */
+      --splash-ms: 2400ms;
+    }
+
+    html, body{
+      width: 100%;
+      height: 100%;
+      margin: 0;
+      padding: 0;
+    }
+
+    body{
+      background: #000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    /* Logo sizing: responsive but controlled */
+    #splash-logo{
+      width: clamp(160px, 38vw, 320px);
+      height: auto;
+      opacity: 0;
+      transform: translateZ(0);
+      animation: logoFade var(--splash-ms) ease-in-out forwards;
+      will-change: opacity;
+      user-select: none;
+      -webkit-user-select: none;
+      pointer-events: none;
+    }
+
+    /* Fade in -> brief hold -> fade out */
+    @keyframes logoFade{
+      0%   { opacity: 0; }
+      35%  { opacity: 1; }
+      55%  { opacity: 1; }
+      100% { opacity: 0; }
+    }
+
+    /* Accessibility: reduce motion */
+    @media (prefers-reduced-motion: reduce){
+      #splash-logo{
+        animation: none;
+        opacity: 1;
+      }
+    }
+  </style>
+
+  <noscript>
+    <!-- Fallback if JS is disabled -->
+    <meta http-equiv="refresh" content="0; url=./joseki-menu/index.html">
+  </noscript>
 </head>
 <body>
-  <p>
-    Redirecting to menu…
-    <a href="./joseki-menu/index.html">Click here if you’re not redirected.</a>
-  </p>
+  <img
+    id="splash-logo"
+   src="../img/Go-Mastery-Lab.png"
+    alt="Go Mastery Lab"
+    draggable="false"
+  />
+
+  <script>
+    (function () {
+      var REDIRECT_URL = "./joseki-menu/index.html";
+      var root = document.documentElement;
+
+      // Read the CSS duration so JS stays in sync with your animation
+      var splashMsStr = getComputedStyle(root).getPropertyValue("--splash-ms").trim();
+      var splashMs = 2400;
+
+      // Convert CSS time to milliseconds
+      if (splashMsStr.endsWith("ms")) {
+        splashMs = parseFloat(splashMsStr);
+      } else if (splashMsStr.endsWith("s")) {
+        splashMs = parseFloat(splashMsStr) * 1000;
+      }
+
+      var reduceMotion = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+      // If reduced motion, keep it very short
+      if (reduceMotion) {
+        setTimeout(function () {
+          window.location.replace(REDIRECT_URL);
+        }, 150);
+        return;
+      }
+
+      var logo = document.getElementById("splash-logo");
+      var redirected = false;
+
+      function go() {
+        if (redirected) return;
+        redirected = true;
+        window.location.replace(REDIRECT_URL);
+      }
+
+      // Prefer the animation end event for exact timing
+      if (logo) {
+        logo.addEventListener("animationend", go, { once: true });
+      }
+
+      // Safety fallback in case animationend doesn't fire
+      setTimeout(go, Math.max(0, splashMs + 50));
+    })();
+  </script>
 </body>
 </html>
