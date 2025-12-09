@@ -37,7 +37,7 @@
   </script>
 </head>
 <body>
-
+  <div id="own-fade" aria-hidden="true"></div>
 <noscript>
   <p>
     JavaScript is required to use My Patterns.
@@ -172,6 +172,29 @@
 </div>
 
 <style>
+/* Black reveal overlay (covers page on load, then fades away) */
+#own-fade{
+  position: fixed;
+  inset: 0;
+  background: #000;
+  z-index: 100010; /* higher than overlays/notices so it truly covers everything */
+  opacity: 1;
+  transition: opacity .9s ease;
+}
+
+/* Triggered by JS */
+#own-fade.is-hidden{
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* Accessibility */
+@media (prefers-reduced-motion: reduce){
+  #own-fade{
+    transition: none;
+  }
+}
+
   /* Scope EVERYTHING to this page via #ownpatterns-root */
   #ownpatterns-root {
     --wood:url('../img/wood.jpg'); /* keep in lockstep with Practice */
@@ -1166,6 +1189,28 @@ var saveBtn  = root.querySelector('#own-edit-save');
   function show(el){ el.style.display='flex'; }
   function hide(el){ el.style.display='none'; }
   function isNoticeOpen(){ return root.classList.contains('notice-open'); }
+  /* ===== Fade helpers (reuse #own-fade) ===== */
+  var fadeEl = document.getElementById('own-fade');
+  var reduceMotion = window.matchMedia &&
+    window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  function startBlackCover(){
+    if (!fadeEl || reduceMotion) return false;
+    // snap to black instantly
+    fadeEl.style.transition = "none";
+    fadeEl.classList.remove("is-hidden");
+    void fadeEl.offsetHeight;
+    // return control to CSS transitions
+    fadeEl.style.transition = "";
+    return true;
+  }
+
+  function fadeReveal(){
+    if (!fadeEl || reduceMotion) return;
+    requestAnimationFrame(function () {
+      fadeEl.classList.add("is-hidden");
+    });
+  }
 
   /* Info notice helpers (OK-only) */
   function showNotice(msg, title){
@@ -2481,15 +2526,20 @@ title.textContent = displayName + ' (' + moveCount + ' Moves)';
         hideRemoveToast();
         resetAll();
       },
-      openCreate: function(){
+      openCreate: function(afterReady){
         hideNotice();
         hideRemoveToast();
         hide(overlay);
         show(editor);
+
         ensureBoard(function(){
           resetAll();
           fitSoon();
+          if (typeof afterReady === 'function'){
+            try { afterReady(); } catch(_){}
+          }
         });
+
         requestAnimationFrame(fitSoon);
       },
       __ready: true
@@ -2499,9 +2549,30 @@ title.textContent = displayName + ' (' + moveCount + ' Moves)';
   /* Wiring */
   if (openBtn){
     openBtn.addEventListener('click', function(){
-      window.GoOwnPatterns.openCreate();
+      // If no fade or reduced motion, keep current behavior
+      if (!startBlackCover()){
+        window.GoOwnPatterns.openCreate();
+        return;
+      }
+
+      var revealed = false;
+
+      // safety fallback so we never get stuck black
+      var fallback = setTimeout(function(){
+        if (revealed) return;
+        revealed = true;
+        fadeReveal();
+      }, 1200);
+
+      window.GoOwnPatterns.openCreate(function(){
+        if (revealed) return;
+        revealed = true;
+        clearTimeout(fallback);
+        fadeReveal();
+      });
     });
   }
+
 
   if (backTop){
     backTop.addEventListener('click', function(){
@@ -2514,15 +2585,27 @@ title.textContent = displayName + ' (' + moveCount + ' Moves)';
 
   if (backEd){
     backEd.addEventListener('click', function(){
-      disableOwnDockMode();
-      if (isFullscreen) smoothZoomOutAndExit();
+      // Use the same black cover effect when returning to the list
+      var didCover = startBlackCover();
 
-      hide(editor);
-      hideNotice();
-      hideRemoveToast();
-      resetAll();
-      renderList();
-      show(overlay);
+      try {
+        disableOwnDockMode();
+        if (isFullscreen) smoothZoomOutAndExit();
+
+        hide(editor);
+        hideNotice();
+        hideRemoveToast();
+        resetAll();
+        renderList();
+        show(overlay);
+      } finally {
+        // Reveal after the DOM swap so the fade feels like a transition
+        if (didCover) {
+          requestAnimationFrame(function(){
+            fadeReveal();
+          });
+        }
+      }
     });
   }
 
@@ -2565,11 +2648,13 @@ if (passBtn){
         showNotice('Add at least one move to save a pattern.', 'Add a move');
         return;
       }
+
       var S = SIZE;
       function pp(m){
         var L="ABCDEFGHJKLMNOPQRST".slice(0,Math.min(19,S));
         return (L[m.x]||String(m.x))+(S-m.y);
       }
+
       var title = 'Pattern: ' + moves.slice(0,3).map(pp).join(' → ') + (moves.length>3 ? ' …' : '');
       var items = loadPatterns();
       var pat = {
@@ -2581,14 +2666,28 @@ if (passBtn){
         rootAW: [],
         moves: moves.map(function(m){ return { x:m.x, y:m.y, color:m.color }; })
       };
+
       items.unshift(pat);
       savePatterns(items);
-      resetAll();
-      hide(editor);
-      renderList();
-      show(overlay);
+
+      // Fade transition back to list
+      var didCover = startBlackCover();
+
+      try {
+        resetAll();
+        hide(editor);
+        renderList();
+        show(overlay);
+      } finally {
+        if (didCover) {
+          requestAnimationFrame(function(){
+            fadeReveal();
+          });
+        }
+      }
     });
   }
+
 
   // Esc handling for whole page (back to menu if root overlay open)
   window.addEventListener('keydown', function(e){
@@ -2617,6 +2716,40 @@ if (passBtn){
       window.GoOwnPatterns.open();
     }
   });
+</script>
+<script>
+  (function () {
+    var fade = document.getElementById("own-fade");
+    if (!fade) return;
+
+    var reduceMotion = window.matchMedia &&
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+    if (reduceMotion) {
+      fade.remove();
+      return;
+    }
+
+    function runReveal() {
+      // snap to black without animating
+      fade.style.transition = "none";
+      fade.classList.remove("is-hidden");
+
+      // force reflow so the browser applies opacity:1 immediately
+      void fade.offsetHeight;
+
+      // hand control back to CSS
+      fade.style.transition = "";
+
+      // fade out on next frame
+      requestAnimationFrame(function () {
+        fade.classList.add("is-hidden");
+      });
+    }
+
+    // pageshow runs on first load AND when returning via back/forward cache
+    window.addEventListener("pageshow", runReveal);
+  })();
 </script>
 
 </body>
