@@ -2548,7 +2548,7 @@ function startDrill(i, opts){
       if (!remain.length){
         solvedCount++;
         if (blitzMode){
-          timerMs += blitzCornerPlannedMoves * 500;
+          timerMs += blitzCornerPlannedMoves * 750;
           if (timerEl) timerEl.textContent = fmtMs(timerMs);
         }
         if (index >= (slots.length - 1)) {
@@ -2706,19 +2706,22 @@ timerMs = 0;
     }
     stopTimer();
 
-    // Lock input during countdown
+        // Lock input during countdown
     locked = true;
 
-    runBlitzCountdown().then(() => {
-      locked = false;
-      timeUp = false;
-      if (slots.length){
-        startDrill(0);
-      }
-    });
+    waitForDrillFade()
+      .then(runBlitzCountdown)
+      .then(() => {
+        locked = false;
+        timeUp = false;
+        if (slots.length){
+          startDrill(0);
+        }
+      });
 
     // Prevent the non-blitz start below
     return;
+
   } else {
     if (timerEl) timerEl.style.display = 'none';
     stopTimer();
@@ -2728,6 +2731,60 @@ timerMs = 0;
     startDrill(0);
   }
 });
+  /* =========================
+     Wait for page reveal fade
+     (so Blitz countdown doesn’t start under black)
+     ========================= */
+  function waitForDrillFade(){
+    const fade = document.getElementById('drill-fade');
+    if (!fade) return Promise.resolve();
+
+    // Respect reduced motion (your fade script removes the element)
+    try{
+      const reduceMotion = window.matchMedia &&
+        window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      if (reduceMotion) return Promise.resolve();
+    }catch(_){}
+
+    // If already hidden, don’t wait
+    try{
+      if (fade.classList.contains('is-hidden')){
+        const op = parseFloat(getComputedStyle(fade).opacity);
+        if (!isNaN(op) && op <= 0.01) return Promise.resolve();
+      }
+    }catch(_){}
+
+    return new Promise(resolve => {
+      let done = false;
+
+      function finish(){
+        if (done) return;
+        done = true;
+        fade.removeEventListener('transitionend', onEnd);
+        clearTimeout(fallback);
+        resolve();
+      }
+
+      function onEnd(e){
+        if (e && e.target !== fade) return;
+        if (e && e.propertyName && e.propertyName !== 'opacity') return;
+        finish();
+      }
+
+      fade.addEventListener('transitionend', onEnd);
+
+      // Fallback in case transitionend is missed
+      const fallback = setTimeout(() => {
+        try{
+          const op = parseFloat(getComputedStyle(fade).opacity);
+          if (!isNaN(op) && op <= 0.01) finish();
+          else finish();
+        }catch(_){
+          finish();
+        }
+      }, 1400);
+    });
+  }
 
 
 btnNext.addEventListener('click', function(){
@@ -2867,14 +2924,17 @@ timerMs = 0;
           }
           stopTimer();
 
-          // Lock input during countdown
+                   // Lock input during countdown
           locked = true;
 
-          runBlitzCountdown().then(() => {
-            locked = false;
-            timeUp = false;
-            startDrill(0);
-          });
+          waitForDrillFade()
+            .then(runBlitzCountdown)
+            .then(() => {
+              locked = false;
+              timeUp = false;
+              startDrill(0);
+            });
+
 
         } else {
           if (timerEl) timerEl.style.display = 'none';
