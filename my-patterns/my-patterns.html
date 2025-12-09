@@ -1491,13 +1491,23 @@ function enterFullscreenAtGrid(i, j, tapClientX, tapClientY){
 
     scale = 1; offsetX = 0; offsetY = 0;
 
-    var vw = window.innerWidth;
-    var vh = window.innerHeight;
-    baseW = Math.floor(Math.min(vw, vh));
-    if (baseW % 2) baseW--;
-
     // 5. Start Animation
     requestAnimationFrame(function(){
+      // --- FIX: Robust dynamic zoom calculation ---
+      var vw = window.innerWidth;
+      var vh = window.innerHeight;
+      
+      // In fullscreen, the board size is effectively the smaller dimension.
+      // We calculate it here locally to be safe.
+      var boardSize = Math.min(vw, vh) || 360; 
+      
+      // We want to cover the LARGER dimension.
+      var needToCover = Math.max(vw, vh) / boardSize;
+      
+      // Calculate dynamic factor (at least 1.8, or whatever covers screen + 2%)
+      var dynamicZoom = Math.max(1.8, needToCover + 0.02);
+      // -------------------------------------------
+
       applyPanAndSize(true);
 
       var px = getXcss(i);
@@ -1516,7 +1526,8 @@ function enterFullscreenAtGrid(i, j, tapClientX, tapClientY){
       offsetY = py - sy;
       applyPanAndSize(false);
 
-      animateTo(zoomInFactor, px, py, sx, sy);
+      // Use the calculated dynamicZoom instead of fixed 'zoomInFactor'
+      animateTo(dynamicZoom, px, py, sx, sy);
 
       // 6. DELAY showing the button. 
       // We use 200ms to guarantee the browser's "click" event has passed.
