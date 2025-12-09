@@ -1712,12 +1712,18 @@ function bindZoomExitBtn(){
 if (scale <= 1.05 && !isFullscreen){
   enterFullscreenAtGrid(gridI, gridJ, tapX, tapY);
 } else {
-  if (!isNoticeOpen()) playAt(gridI, gridJ);
-  // Match Core setting: only auto-return if user didn't disable it
-  if (!disableAutoZoomOut){
+  var didPlay = false;
+
+  if (!isNoticeOpen()){
+    didPlay = !!playAt(gridI, gridJ);
+  }
+
+  // Only auto-return if a move was actually placed
+  if (didPlay && !disableAutoZoomOut){
     setTimeout(smoothZoomOutAndExit, 10);
   }
 }
+
 
       }
     }, {passive:false});
@@ -1861,12 +1867,12 @@ if (scale <= 1.05 && !isFullscreen){
     }
   }
 
-  function playAt(x,y){
-    if (grid[y][x]!==null) return;
+function playAt(x,y){
+    if (grid[y][x]!==null) return false;
 
     if (koPoint && x===koPoint.x && y===koPoint.y){
       showNotice('Ko — immediate recapture is not allowed. Play elsewhere first.', 'Ko');
-      return;
+      return false;
     }
 
     var me = turn;
@@ -1893,7 +1899,7 @@ if (scale <= 1.05 && !isFullscreen){
     if (myGroup.libs.size===0 && capturedList.length===0){
       grid[y][x]=null;
       showNotice('Self-capture is not allowed in this editor.', 'Illegal move');
-      return;
+      return false;
     }
 
     var prevKo = koPoint ? {x:koPoint.x, y:koPoint.y} : null;
@@ -1917,7 +1923,10 @@ if (scale <= 1.05 && !isFullscreen){
     turn = opp;
     redraw();
     try { StoneSFX.play(); } catch(_) {}
+
+    return true;
   }
+
 
   function bindBoardClicks(){
     if (!board || board._bound) return;
