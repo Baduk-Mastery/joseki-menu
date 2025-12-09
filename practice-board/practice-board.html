@@ -2,320 +2,412 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <title>Joseki Master – My Patterns</title>
+  <title>Joseki Master – Practice Board</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <style>
     html, body{
       margin:0;
       padding:0;
-      min-height:100%;
+      height:100%;
       font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
     }
+
+    /* Let the body be a simple container */
+    body{
+      position:relative;
+    }
+
+    /* Center the practice board block on the page */
+    #go-board-prac-wrap{
+      position:absolute;
+      top:50%;
+      left:50%;
+      transform:translate(-50%, -50%);
+    }
   </style>
-  <script src="../lib/tier-bridge.js"></script>
 
-  <!-- Preferences bootstrap (same storage + defaults as Core) -->
+  <!-- Simple global menu bridge for Practice Board -->
   <script>
-  (function(){
-    var STORAGE_KEY = 'go_prefs';
-    var GoPrefs = (window.GoPrefs = window.GoPrefs || {});
-    try {
-      var saved = localStorage.getItem(STORAGE_KEY);
-      if (saved) Object.assign(GoPrefs, JSON.parse(saved) || {});
-    } catch (e) {}
-
-    if (typeof GoPrefs.josekiZoom === 'undefined')         GoPrefs.josekiZoom = true;
-    if (typeof GoPrefs.soundOn === 'undefined')            GoPrefs.soundOn = true;
-    if (typeof GoPrefs.highlightLast === 'undefined')      GoPrefs.highlightLast = true;
-    if (typeof GoPrefs.disableAutoZoomOut === 'undefined') GoPrefs.disableAutoZoomOut = false;
-
-    window.GoPrefsSave = function(){
-      try { localStorage.setItem(STORAGE_KEY, JSON.stringify(GoPrefs)); }
-      catch (e) {}
+    window.GoMenu = window.GoMenu || {
+      open: function(){
+        // From /practice-board/ go back to main menu
+        window.location.href = "../joseki-menu/index.html";
+      }
     };
-  })();
   </script>
+
+  <!-- WGo (local) -->
+  <script src="../lib/wgo.min.js"></script>
+<script src="../lib/tier-bridge.js"></script>
+
 </head>
 <body>
 
 <noscript>
   <p>
-    JavaScript is required to use My Patterns.
+    JavaScript is required to use Practice mode.
     <a href="../joseki-menu/index.html">Back to menu</a>
   </p>
 </noscript>
 
-<!-- Simple global menu bridge used by My Patterns -->
-<script>
-  window.GoMenu = window.GoMenu || {
-    open: function(){
-      // From /my-patterns/ go back to main menu
-      window.location.href = "../joseki-menu/index.html";
-    }
-  };
-</script>
+<!-- Practice Board (standalone page) -->
+<div id="go-board-prac-wrap" data-hidden="1" style="width:100%;max-width:720px;margin:0 auto;box-sizing:border-box;">
 
-<!-- ============== OWN PATTERNS (ported from Bubble) ============== -->
-<div id="ownpatterns-root">
-  <!-- My Patterns overlay -->
-  <div id="own-overlay" aria-modal="true" role="dialog" style="display:none">
-    <div class="s-inner">
-      <div class="s-header">
-        <button id="own-back" class="s-back" type="button" aria-label="Back">← Back</button>
-        <h1 class="s-title">My Patterns</h1>
-      </div>
+<!-- Top bar: Back + Lives (center) + Hints (right) -->
+<div id="prac-topbar">
+  <button id="prac-back-top" class="s-back" type="button" aria-label="Back">← Back</button>
 
-      <!-- Message card -->
-      <div class="s-card info">
-        <div class="info-title">Bring your own patterns</div>
-        <div class="info-desc">Can’t find the pattern you want to study? Add your own and train it in the Practice section.</div>
-      </div>
-
-      <!-- Primary action -->
-      <div class="actions">
-        <button id="own-add" class="s-btn s-btn-lg" type="button">Add</button>
-      </div>
-
-      <!-- Patterns list (populated by script) -->
-      <div class="own-grid" id="own-list">
-        <div class="s-card empty">
-          <div class="empty-title">No patterns yet</div>
-          <div class="empty-desc">Start by adding your first pattern.</div>
-        </div>
-      </div>
-    </div>
+  <!-- Centered lives row -->
+  <div class="meter-row" id="row-lives">
+    <div id="meter-lives" class="stones" role="img" aria-label="Lives remaining"></div>
   </div>
 
-  <!-- Editor overlay (opens when you press Add) -->
-  <div id="own-editor" aria-modal="true" role="dialog" style="display:none">
-    <div class="s-inner">
-      <div class="s-header">
-        <button id="own-edit-back" class="s-back" type="button" aria-label="Back">← Back</button>
-        <h1 class="s-title">Add Pattern</h1>
-      </div>
-
-      <div id="own-editor-wrap">
-        <div id="own-editor-board"></div>
-<div class="own-editor-ctrls">
-  <div class="own-editor-row">
-    <button id="own-edit-undo"  class="s-btn" type="button">Undo</button>
-    <button id="own-edit-reset" class="s-btn" type="button">Reset</button>
-    <button id="own-edit-pass"  class="s-btn" type="button">Pass</button>
-  </div>
-
-  <div class="own-editor-row">
-    <button id="own-edit-save" class="s-btn s-btn-lg" type="button">Add</button>
-  </div>
-</div>
-
-      </div>
-    </div>
-  </div>
-
-  <!-- Info notice (OK-only). Kept for empty pattern etc. -->
-  <div id="own-notice" role="alert" aria-live="polite" style="display:none">
-      <div class="s-inner">
-        <div class="s-card own-notice-card">
-          <div class="info-title" id="own-notice-title">Heads up</div>
-          <div class="info-desc" id="own-notice-text">Add at least one move to save a pattern.</div>
-          <div class="actions" style="margin-top:12px;">
-            <button id="own-notice-ok" class="s-btn s-btn-lg" type="button" aria-label="Close">OK</button>
-          </div>
-        </div>
-      </div>
-  </div>
-  <div id="zoom-exit-btn" aria-label="Zoom out" role="button"></div>
-</div>
-
-
-<!-- Level Selector Overlay (reused from Practice List) -->
-<div id="level-overlay" aria-modal="true" role="dialog" style="display:none">
-  <div class="s-inner">
-    <div class="s-header">
-      <button id="level-back" class="s-back" type="button" aria-label="Back to patterns">← Back</button>
-      <h1 class="s-title">Choose Level</h1>
-    </div>
-    <div class="level-grid">
-      <button class="s-card level-card" data-level="1" type="button">
-        <div class="level-title">Level 1</div>
-        <div class="level-desc">Every move is marked with “A”. Get familiar with the sequence.</div>
-      </button>
-      <button class="s-card level-card" data-level="2" type="button">
-        <div class="level-title">Level 2</div>
-        <div class="level-desc">You play Black only; White moves are auto-placed.</div>
-      </button>
-      <button class="s-card level-card" data-level="3" type="button">
-        <div class="level-title">Level 3</div>
-        <div class="level-desc">You play White only; Black moves are auto-placed.</div>
-      </button>
-      <button class="s-card level-card" data-level="4" type="button">
-        <div class="level-title">Level 4</div>
-        <div class="level-desc">Only the second move is marked “A”; you play the rest for both colors.</div>
-        <span class="pro-chip" aria-hidden="true">PRO</span>
-      </button>
-      <button class="s-card level-card" data-level="5" type="button">
-        <div class="level-title">Level 5</div>
-        <div class="level-desc">Like Level 4, but the opening color alternates each try.</div>
-        <span class="pro-chip" aria-hidden="true">PRO</span>
-      </button>
+  <!-- Hints (right-aligned group) -->
+  <div id="prac-meters" aria-live="polite">
+    <div class="meter-row" id="row-hints">
+      <span class="meter-label">Hints</span>
+      <span id="meter-hints" class="hints-num" role="text">3</span>
     </div>
   </div>
 </div>
+
+
+
+  <div id="go-board-prac"
+       style="position:relative;width:100%;border-radius:6px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.08);"></div>
+
+  <!-- Practice controls -->
+  <div id="prac-ctrls" class="prac-ctrls">
+    <button id="pbtn-menu"  class="pbtn pbtn-strong" type="button">Menu</button>
+    <button id="pbtn-hint"  class="pbtn"            type="button">Hint</button>
+    <button id="pbtn-reset" class="pbtn pbtn-alt"   type="button">Reset</button>
+  </div>
+</div>
+
+<!-- In-app "Back to menu" confirmation (same look as other notifications) -->
+<div id="menu-confirm-overlay" aria-hidden="true">
+  <div class="menu-confirm-dialog notif-card"
+       style="width:min(86vw,420px);"
+       role="dialog"
+       aria-modal="true"
+       aria-labelledby="menuConfirmTitle">
+    <div class="menu-confirm-title" id="menuConfirmTitle"
+         style="font-weight:800;font-size:18px;margin-bottom:8px;">
+      Back to menu?
+    </div>
+    <div class="menu-confirm-text"
+         style="margin-bottom:14px;">
+      Do you want to leave this practice view and return to the main menu?
+    </div>
+    <div class="menu-confirm-actions notif-actions">
+      <button type="button" id="menuConfirmCancel" class="pbtn">No</button>
+      <button type="button" id="menuConfirmOk" class="pbtn">Yes</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- Wrong Move Modal -->
+<div id="prac-wrong" style="display:none;position:fixed;inset:0;z-index:99999;align-items:center;justify-content:center;">
+  <div style="position:absolute;inset:0;background:rgba(0,0,0,.55);"></div>
+  <div class="notif-card" style="width:min(86vw,420px);">
+    <div style="font-weight:800;font-size:18px;margin-bottom:8px;">Wrong Move</div>
+    <div style="color:#334155;margin-bottom:14px;">That point isn’t part of this joseki.</div>
+    <div class="notif-actions">
+      <button id="prac-wrong-back" class="pbtn" type="button">Back</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- Cleared Modal -->
+<div id="prac-cleared" style="display:none;position:fixed;inset:0;z-index:99999;align-items:center;justify-content:center;">
+  <div style="position:absolute;inset:0;background:rgba(0,0,0,.55);"></div>
+  <div class="notif-card" style="width:min(86vw,420px);">
+    <div style="font-weight:800;font-size:18px;margin-bottom:8px;">Cleared</div>
+    <div style="color:#334155;margin-bottom:14px;">Great! Let’s try the next side/corner.</div>
+    <div class="notif-actions">
+      <button id="prac-cleared-next" class="pbtn" type="button">Next</button>
+    </div>
+  </div>
+</div>
+
+<!-- Congratulations Modal -->
+<div id="prac-win" style="display:none;position:fixed;inset:0;z-index:99999;align-items:center;justify-content:center;">
+  <div style="position:absolute;inset:0;background:rgba(0,0,0,.55);"></div>
+  <div class="notif-card" style="width:min(86vw,520px);">
+    <div style="font-weight:800;font-size:18px;margin-bottom:14px;">Congratulations!</div>
+    <div style="color:#334155;margin-bottom:14px;">You cleared all 8 sides.</div>
+    <div class="notif-actions">
+      <button id="prac-win-back"     class="pbtn" type="button">Joseki selection</button>
+      <button id="prac-win-retry"    class="pbtn" type="button">Retry</button>
+      <button id="prac-win-progress" class="pbtn" type="button" style="display:none;">Next level</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- Out of Lives Modal -->
+<div id="prac-locked" style="display:none;position:fixed;inset:0;z-index:99999;align-items:center;justify-content:center;">
+  <div style="position:absolute;inset:0;background:rgba(0,0,0,.55);"></div>
+  <div class="notif-card" style="width:min(86vw,460px);">
+    <div style="font-weight:800;font-size:18px;margin-bottom:14px;">Out of Lives</div>
+    <div id="prac-locked-msg" style="color:#334155;margin-bottom:14px;">You’ve used all lives for today on Levels 2–3.</div>
+    <div class="notif-actions">
+      <button id="prac-locked-pro"  class="pbtn" type="button">Go Pro</button>
+      <button id="prac-locked-back" class="pbtn" type="button">Back</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- Out of Hints Modal -->
+<div id="prac-hints-out" style="display:none;position:fixed;inset:0;z-index:99999;align-items:center;justify-content:center;">
+  <div style="position:absolute;inset:0;background:rgba(0,0,0,.55);"></div>
+  <div class="notif-card" style="width:min(86vw,460px);">
+    <div style="font-weight:800;font-size:18px;margin-bottom:14px;">Out of Hints</div>
+    <div style="color:#334155;margin-bottom:14px;">You’ve used all 3 daily hints on Practice.</div>
+    <div class="notif-actions">
+      <button id="prac-hints-pro"  class="pbtn" type="button">Go Pro</button>
+      <button id="prac-hints-back" class="pbtn" type="button">Back</button>
+    </div>
+  </div>
+</div>
+
+
 
 <style>
-  /* Scope EVERYTHING to this page via #ownpatterns-root */
-  #ownpatterns-root {
-    --wood:url('../img/wood.jpg'); /* keep in lockstep with Practice */
-    --board-max: 720px;
+  @media (max-width: 480px){
+    #go-board-prac-wrap { padding:8px 12px 0; }
   }
 
-  /* Overlays (My Patterns + Editor) */
-#ownpatterns-root #own-overlay,
-#ownpatterns-root #own-editor{
-  position:fixed;
-  inset:0;
-  z-index:100000;
-  display:none;
-
-  /* Full-screen flex, wood stays fixed, no scroll here */
-  align-items:stretch;
-  justify-content:center;
-  padding:0 0 12px 0;          /* only bottom margin of wood */
-  box-sizing:border-box;
-  overflow:hidden;             /* prevent overscroll showing body */
-  color:#e6f3ff;
-  -webkit-tap-highlight-color:transparent;
-
-  background-color:#1b1208;    /* warm fallback */
-  background-image:
-    linear-gradient(rgba(0,0,0,.35), rgba(0,0,0,.45)),
-    var(--wood);
-  background-size:cover;
-  background-position:center;
-}
-
-/* Keep the My Patterns list aligned to the top */
-#ownpatterns-root #own-overlay{
-  align-items:flex-start;
-}
-
-/* Keep the My Patterns list aligned to the top */
-#ownpatterns-root #own-overlay{
-  align-items:flex-start;
-}
-#ownpatterns-root .s-inner{
-  /* Match Joseki page width behavior more closely */
-  width: min(100vw, var(--board-max));
-
-  height:100%;
-  max-height:100%;
-  margin:0 auto;
-  padding:16px 24px 22px;
-  text-align:left;
-  position:relative;
-
-  /* This is the only scrollable area */
-  overflow:auto;
-  -webkit-overflow-scrolling:touch;
-}
-
-@media (max-width:480px){
-  #ownpatterns-root .s-inner{
-    /* Same mobile side feel as your Joseki layout */
-    padding:16px 12px 22px;
+  #go-board-prac-wrap[data-hidden="1"]{
+    position:fixed !important;
+    left:-200vw !important; top:-200vh !important;
+    opacity:0 !important; pointer-events:none !important;
   }
-}
+  #go-board-prac canvas{ display:block; margin:0 auto; }
 
+  /* Hide legacy Bubble buttons if present (harmless on standalone) */
+  #group-practice[data-hidden="1"]{ display:none !important; }
+  #group-joseki[data-hidden="1"]{ display:none !important; }
+  #go-board-wrap[data-hidden="1"]{ display:none !important; }
+  #group-practice[data-force-show="1"]{
+    display:block !important; visibility:visible !important; opacity:1 !important;
+  }
+  #btnBack, #btnForward, #btnReset { display:none !important; }
 
-#ownpatterns-root .s-header{
-  display: grid;
-  grid-template-columns: 1fr auto 1fr;
-  align-items: center;
-  column-gap: 14px;
-  margin: 6px 0 10px;
-}
+  /* New controls */
+  .prac-ctrls{
+    max-width:720px; margin:10px auto 0;
+    padding:8px 12px; display:flex; gap:10px; justify-content:center; flex-wrap:wrap;
+  }
+  .pbtn{
+    padding:12px 16px; border-radius:12px; border:1px solid #cbd5e1;
+    background:#fff; font-weight:800; font-size:15px; color:#0f172a;
+    cursor:pointer; box-shadow:0 2px 8px rgba(15,23,42,.06);
+  }
+  .pbtn:active{ transform:translateY(1px); }
+  .pbtn-strong{ background:#111827; color:#fff; border-color:#111827; }
+  .pbtn-alt{ background:#e7f0ff; color:#0b4aa2; border-color:#a7c1ff; }
 
-/* Put back button on the left, title truly centered */
-#ownpatterns-root .s-header .s-back{
-  grid-column: 1;
-  justify-self: start;
-}
-
-#ownpatterns-root .s-header .s-title{
-  grid-column: 2;
-  justify-self: center;
-  text-align: center;
-}
-
-  #ownpatterns-root .s-title{
-    margin:0; font-size:24px; line-height:1.15; font-weight:800;
-    text-shadow:0 1px 2px rgba(0,0,0,.35);
+  .pbtn-locked{
+    background:#f3f4f6; color:#64748b; border-color:#e5e7eb;
+    box-shadow:none;
   }
 
-  /* Buttons + cards – align with Practice List (glass cards + wood buttons) */
-
-  /* Glass cards (keep same look as Practice List) */
-  #ownpatterns-root .s-card{
-    background: rgba(37,99,235,.22);
-    border:2px solid rgba(37,99,235,.75);
-    border-radius:12px;
-    box-shadow:0 8px 20px rgba(2,6,23,.45), inset 0 0 0 1px rgba(255,255,255,.08);
-    color:#e6f3ff;
-    padding:12px;
-    box-sizing:border-box;
-    overflow:hidden;
-  }
-
-  #ownpatterns-root .info-title{
-    font-weight:900;
-    font-size:16px;
-    margin-bottom:4px;
-  }
-  #ownpatterns-root .info-desc{
-    font-size:13px;
-    line-height:1.5;
-    opacity:.96;
-    white-space:normal;
-    word-break:break-word;
-    overflow-wrap:anywhere;
-    max-width:100%;
-  }
-/* Match Practice Board notification typography inside the My Patterns notice */
-#ownpatterns-root #own-notice .info-title{
-  font-size:18px;
-  margin-bottom:8px;
-}
-
-#ownpatterns-root #own-notice .info-desc{
-  font-size:16px;
-  line-height:1.4;
-  margin-bottom:14px; /* same feel as notif body text on Practice Board */
-}
-
-
-  #ownpatterns-root .actions{
-    margin-top:14px;
+  /* Practice meters (Free) */
+  #prac-meters{
     display:flex;
-    gap:10px;
+    flex-direction:row;
+    gap:8px;
+    align-items:center;
+    justify-content:flex-end;
     flex-wrap:wrap;
   }
 
- /* Wood-style buttons – size + feel aligned with Practice Board .pbtn */
-#ownpatterns-root .s-back,
-#ownpatterns-root .s-btn{
-  position: relative;
+/* Apply pill/card style to both Hints and Lives */
+#prac-meters .meter-row,
+#row-lives{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  background:#fff;
+  border:1px solid #e2e8f0;
+  border-radius:10px;
+  padding:8px 12px;
+  box-shadow:0 6px 16px rgba(15,23,42,.06);
+}
 
-  /* same baseline footprint as Practice */
+  .meter-label{ font-weight:800; font-size:14px; color:#0f172a; }
+  .stones{ display:flex; gap:6px; }
+  .stone{
+    width:18px;
+    height:18px;
+    border-radius:50%;
+    box-sizing:border-box; /* makes empty + full stones same outer size */
+    background: radial-gradient(circle at 30% 30%, #3b3b3d 0%, #121317 65%, #000 100%);
+    box-shadow: inset 0 0 2px rgba(255,255,255,.18), 0 1px 2px rgba(0,0,0,.25);
+  }
+
+  .stone.empty{
+    background:none;
+    border:2px solid rgba(0,0,0,.35);
+    box-shadow: inset 0 0 0 2px rgba(255,255,255,.12);
+    opacity:.55;
+  }
+  .hints-num{
+    font-weight:800; font-size:14px; color:#0f172a;
+    min-width:1.5ch; text-align:right;
+  }
+
+  /* DOM hint ring */
+  .hint-ring{
+    position:absolute;
+    pointer-events:none;
+    border-radius:50%;
+    border:2px solid rgba(11,74,162,.95);
+    background:rgba(231,240,255,.30);
+    animation: pracPulse 0.9s ease-in-out infinite alternate;
+    box-shadow:0 0 0 1px rgba(11,74,162,.18), 0 0 6px rgba(11,74,162,.35) inset;
+    z-index:10000;
+  }
+  @keyframes pracPulse{
+    from{ transform:scale(.94); opacity:.75; }
+    to  { transform:scale(1.03); opacity:1; }
+  }
+
+  /* Practice-only fullscreen overlay */
+  #go-zoom-overlay-prac{
+    position:fixed;
+    inset:0;
+    z-index:99998;
+    display:none;
+    align-items:center;
+    justify-content:center;
+
+    /* keep page background visible */
+    background:transparent;
+
+    -webkit-tap-highlight-color:transparent;
+  }
+
+  #go-zoom-stage-prac{
+    width:100vw; height:100vh;
+    display:flex; align-items:center; justify-content:center;
+    touch-action:none;
+  }
+
+  /* Small zoom-out square (bigger, like in screenshot) */
+  #go-zoom-exit-prac{
+    position:fixed;
+    left:14px;
+    bottom:90px;
+
+    width:120px;
+    height:80px;
+    border-radius:9px;
+
+    background:rgba(148,163,184,.35);
+    border:1px solid rgba(148,163,184,.85);
+    box-shadow:0 6px 16px rgba(0,0,0,.55);
+
+    display:none; /* toggled in JS */
+    cursor:pointer;
+    z-index:99999;
+    backdrop-filter:blur(2px);
+    -webkit-tap-highlight-color:transparent;
+
+    color:#e5e7eb;
+    font-size:18px;
+    font-weight:600;
+    line-height:36px;
+    text-align:center;
+  }
+  #go-zoom-exit-prac::before{
+    content:"";
+  }
+
+  /* NEW: UI container for meters + buttons while zoomed */
+  #go-zoom-ui-prac{
+    position:fixed;
+    left:0;
+    right:0;
+    bottom:0;
+    padding:0 12px 18px;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    pointer-events:none; /* children re-enable */
+  }
+  #go-zoom-ui-prac > *{
+    pointer-events:auto;
+  }
+  /* NEW: Top UI container (Back + meters) while zoomed */
+  #go-zoom-top-prac{
+    position:fixed;
+    left:0;
+    right:0;
+    top:0;
+    padding:12px 12px 0;
+    display:flex;
+    justify-content:center;
+    align-items:flex-start;
+    pointer-events:none;
+    z-index:99999; /* keep above the board */
+  }
+  #go-zoom-top-prac > *{
+    pointer-events:auto;
+  }
+
+  /* Board drop shadow */
+  #go-board-prac{
+    box-shadow:
+      0 18px 40px rgba(0,0,0,.32),
+      0 6px 16px rgba(0,0,0,.22) !important;
+    border-radius: 10px;
+    touch-action: none; /* prevents browser scroll on drag, smoother panning */
+  }
+  #go-board-prac.is-fullscreen{
+    box-shadow: none !important;
+  }
+</style>
+
+<style>
+/* Practice Board buttons – subtle gloss, board-like wood */
+#prac-ctrls{
+  max-width: 720px;
+  width: 100%;
+  box-sizing: border-box;
+  margin: 14px auto 0;
+  padding: 0 12px 18px;
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+/* Use the same wood style on board controls AND notification buttons */
+#prac-ctrls .pbtn,
+#prac-ctrls .pbtn-strong,
+#prac-ctrls .pbtn-alt,
+.notif-card .pbtn,
+.notif-card .pbtn-strong,
+.notif-card .pbtn-alt{
+  position: relative;
   min-width: 90px;
   padding: 8px 24px;
 
-  display: inline-flex;
+  /* Make the *content* perfectly centered */
+  flex: 1 1 0;
+  display: flex;
   align-items: center;
   justify-content: center;
   box-sizing: border-box;
+
   text-align: center;
 
-  border-radius: 6px;
+  border-radius: 10px;
   border: 1px solid rgba(255,255,255,.40);
 
   font-size: 16px;
@@ -327,6 +419,8 @@
 
   user-select: none;
   -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
   -webkit-tap-highlight-color: transparent;
 
   background-image:
@@ -336,7 +430,7 @@
       rgba(255,255,255,.03) 38%,
       rgba(0,0,0,.14) 100%
     ),
-    var(--wood);
+    url('../img/wood.jpg');
   background-size: 100% 100%, cover;
   background-position: center;
   background-repeat: no-repeat;
@@ -353,8 +447,8 @@
     filter .12s ease-out;
 }
 
-#ownpatterns-root .s-back:hover,
-#ownpatterns-root .s-btn:hover{
+#prac-ctrls .pbtn:hover,
+.notif-card .pbtn:hover{
   filter: brightness(1.12) saturate(.98);
   transform: translateY(-1px);
   box-shadow:
@@ -362,8 +456,8 @@
     0 10px 16px rgba(0,0,0,.48);
 }
 
-#ownpatterns-root .s-back:active,
-#ownpatterns-root .s-btn:active{
+#prac-ctrls .pbtn:active,
+.notif-card .pbtn:active{
   filter: brightness(.97) saturate(.96);
   transform: translateY(2px);
   box-shadow:
@@ -371,467 +465,71 @@
     0 4px 8px rgba(0,0,0,.55);
 }
 
-
-  #ownpatterns-root .s-back:hover,
-  #ownpatterns-root .s-btn:hover{
-    filter:brightness(1.12) saturate(.98);
-    transform:translateY(-1px);
-    box-shadow:
-      0 4px 0 rgba(133,74,26,.9),
-      0 10px 16px rgba(0,0,0,.48);
-  }
-
-  #ownpatterns-root .s-back:active,
-  #ownpatterns-root .s-btn:active{
-    filter:brightness(.97) saturate(.96);
-    transform:translateY(2px);
-    box-shadow:
-      0 1px 0 rgba(120,60,20,.9),
-      0 4px 8px rgba(0,0,0,.55);
-  }
-
-/* Slimmer header back button (like Practice header) */
-#ownpatterns-root .s-header .s-back{
-  min-width: auto;   /* prevent the Practice-sized minimum here */
-  padding: 6px 12px;
-  font-size: 14px;
-  border-radius: 8px;
-}
-/* Larger primary buttons – keep same baseline as Practice */
-#ownpatterns-root .s-btn.s-btn-lg{
-  padding: 8px 24px;
-  font-size: 16px;
+#prac-ctrls .pbtn:focus-visible,
+#prac-ctrls .pbtn-strong:focus-visible,
+#prac-ctrls .pbtn-alt:focus-visible,
+.notif-card .pbtn:focus-visible,
+.notif-card .pbtn-strong:focus-visible,
+.notif-card .pbtn-alt:focus-visible{
+  outline: 2px solid rgba(255,255,255,.9);
+  outline-offset: 2px;
 }
 
-
-  /* Danger variant for Remove (red-tinted wood) */
-  #ownpatterns-root .s-btn.s-btn-danger{
-    background-image:
-      linear-gradient(
-        to bottom,
-        rgba(255,255,255,.10),
-        rgba(255,255,255,.03) 38%,
-        rgba(0,0,0,.18) 100%
-      ),
-      var(--wood);
-    background-size:100% 100%, cover;
-    background-position:center;
-    background-repeat:no-repeat;
-    background-color:rgba(220,38,38,.55);
-    border-color:rgba(248,113,113,.95);
-    box-shadow:
-      0 3px 0 rgba(120,30,20,.9),
-      0 8px 14px rgba(0,0,0,.50);
-  }
-
-
-/* List grid */
-#ownpatterns-root .own-grid{
-  display:grid;
-  grid-template-columns:1fr;
-  gap:12px;
-  margin-top:16px;
-  padding-bottom:12px;   /* extra space under the last pattern card */
-}
-@media (min-width: 720px){
-  #ownpatterns-root .own-grid{ grid-template-columns:1fr 1fr; }
-}
-
-  #ownpatterns-root .empty-title{
-    font-weight:900; font-size:16px; margin-bottom:4px;
-  }
-  #ownpatterns-root .empty-desc{
-    font-size:13px; opacity:.95;
-  }
-
-  /* Own list card layout — updated to match Practice alignment */
-  #ownpatterns-root .own-card{
-    display:flex; align-items:stretch; gap:12px; width:100%; text-align:left; padding:10px; cursor:pointer;
-    transition:transform .06s, background .15s; user-select:none; -webkit-user-select:none;
-  }
-  #ownpatterns-root .own-card:active{ transform:translateY(1px); }
-
-  /* Thumbnail: wood background & frame (WGo board floats above) */
-  #ownpatterns-root .own-thumb{
-    width:132px; height:132px; border-radius:10px; overflow:hidden; flex:none;
-    position: relative;
-    background-image:
-      linear-gradient(rgba(0,0,0,.04), rgba(0,0,0,.06)),
-      var(--wood);
-    background-size:cover; background-position:center;
-    border:2px solid rgba(37,99,235,.65);
-    box-shadow: inset 0 0 0 1px rgba(255,255,255,.06);
-  }
-#ownpatterns-root .own-thumb canvas.own-canvas{
-  position:absolute;
-  inset:0;
-  width:100%;
-  height:100%;
-  display:block;
-  pointer-events:none;
-}
-
-
-  #ownpatterns-root .own-meta{
-    flex:1; min-width:0; display:flex; flex-direction:column; height:100%;
-  }
-  #ownpatterns-root .own-title{
-    font-weight:800; font-size:18px; line-height:1.3;
-  }
-/* Buttons area inside each pattern card */
-#ownpatterns-root .own-cta{
-  margin-top:auto;
-  display:flex;
-  flex-direction:column;   /* stack vertically by default */
-  gap:8px;
-  align-items:stretch;     /* make children fill width */
-}
-
-/* Make the wood buttons fill the card width inside own-cta */
-#ownpatterns-root .own-cta .s-btn{
-  width:100%;
-  justify-content:center;
-  box-sizing:border-box;
-}
-
-/* On wider screens you can show them side-by-side without overflow */
-@media (min-width: 720px){
-  #ownpatterns-root .own-cta{
-    flex-direction:row;
-  }
-  #ownpatterns-root .own-cta .s-btn{
-    flex:1 1 0;
-  }
-}
-
-
-  /* ===== Editor overlay centering (make it feel like Core board) ===== */
-  #ownpatterns-root #own-editor{
-    align-items: center; /* centers the whole editor content vertically */
-  }
-
-  /* Override the shared full-height inner container only for the editor */
-  #ownpatterns-root #own-editor .s-inner{
-    height: auto;
-    max-height: 100%;
-  }
-
-#ownpatterns-root #own-editor-wrap{
-  width:100%;
-  max-width:var(--board-max);
-  margin:0 auto;
-  box-sizing:border-box;
-
-  display:flex;
-  flex-direction:column;
-  align-items:center;
-}
-
-/* Editor board box matches Joseki board corners + shadow */
-#ownpatterns-root #own-editor-board{
-  position:relative;
-  width:100%;
-
-  border-radius:6px;
-  overflow:hidden;
-
-  margin:0 auto;
-
-  box-shadow:
-    0 18px 40px rgba(0,0,0,.32),
-    0 6px 16px rgba(0,0,0,.22);
-}
-/* ===== My Patterns editor zoom fullscreen state (no button) ===== */
-#ownpatterns-root #own-editor-board.is-fullscreen{
-  position: fixed !important;
-  inset: 0 !important;
-  width: 100vw !important;
-  height: 100vh !important;
-
-  border-radius: 0 !important;
-  box-shadow: none !important;
-  margin: 0 !important;
-
-  z-index: 100003;
-  overflow: hidden !important;
-  touch-action: none;
-}
-/* ZOOM OUT BUTTON - matching Core board (safe hitbox) */
-#ownpatterns-root #zoom-exit-btn{
-  position:fixed;
-  left:14px;
-  bottom:90px;
-
-  width:120px;
-  height:80px;
-  border-radius:9px;
-
-  background:rgba(148,163,184,.35);
-  border:1px solid rgba(148,163,184,.85);
-  box-shadow:0 6px 16px rgba(0,0,0,.55);
-
-  display:none;            /* JS toggles this */
-  pointer-events:none;     /* critical: no invisible hitbox */
-  opacity:0;               /* extra safety + nicer transitions */
-
-  cursor:pointer;
-
-  z-index:100004;
-
-  backdrop-filter:blur(2px);
-  -webkit-tap-highlight-color:transparent;
-
-  color:#e5e7eb;
-  font-size:18px;
-  font-weight:600;
-
-  align-items:center;
-  justify-content:center;
-
-  transition: opacity .12s ease;
-}
-
-
-/* Text content placeholder (same as Core) */
-#ownpatterns-root #zoom-exit-btn::after { content: ""; }
-
-
-/* Give the wood/zoom layer the same transform setup as Core */
-#ownpatterns-root #own-editor-board .own-zoom-layer{
-  transform-origin: 0 0;
-  will-change: transform;
-}
-
-
-/* Ensure all children respect rounding */
-#ownpatterns-root #own-editor-board > *{
-  border-radius: inherit;
-}
-
-#ownpatterns-root #own-editor-board .own-zoom-layer{
-  position:absolute;
-  inset:0;
-  background-image: var(--wood);
-  background-size: cover;
-  background-position: center;
-}
-
-#ownpatterns-root #own-editor-board canvas{
-  display:block;
-  margin:0 auto;
-}
-
-
-/* Practice-matching control container under the editor board */
-#ownpatterns-root .own-editor-ctrls{
-  max-width: var(--board-max);
-  width: 100%;
-  align-self: stretch;          /* key fix inside centered flex parent */
-  box-sizing: border-box;
-
-  margin: 14px auto 0;          /* closer to Practice feel */
-  padding: 0 12px 18px;         /* mirrors #prac-ctrls spacing */
-
+/* Layout helper for buttons inside notifications */
+.notif-actions{
+  margin-top: 10px;
   display: flex;
-  flex-direction: column;       /* two rows */
-  gap: 12px;
-  align-items: stretch;
-}
-
-/* Rows behave like Practice control row */
-#ownpatterns-root .own-editor-row{
-  width: 100%;
-  display: flex;
-  gap: 12px;                    /* match Practice gap */
+  gap: 10px;
   justify-content: center;
   flex-wrap: wrap;
 }
-
-/* Equal-width buttons per row, same baseline as Practice */
-#ownpatterns-root .own-editor-row .s-btn{
-  flex: 1 1 0;
-  min-width: 90px;
-}
-
-
-
-  /* Centered info notice (OK-only) – match Practice Board notif design */
-  #ownpatterns-root #own-notice{
-    position:fixed;
-    inset:0;
-    z-index:100001;
-    display:none;
-    align-items:center;
-    justify-content:center;
-    padding:0;
-    background:rgba(0,0,0,.55); /* same dim backdrop as Practice modals */
-  }
-#ownpatterns-root #own-notice .s-inner{
-  width:auto;
-  padding:0;
-  margin:0;
-  display:block;
-  height:auto;
-  max-height:none;
-  overflow:visible;
-}
-
-  #ownpatterns-root #own-notice .own-notice-card{
-    position:relative;
-    border-radius:10px;
-    border:1px solid #e2e8f0;
-    box-shadow:0 12px 28px rgba(15,23,42,.18);
-    padding:16px;
-    text-align:center;
-    font-family:system-ui,Segoe UI,Arial,sans-serif;
-    color:#fff3cf;
-
-    /* Same background as Practice .notif-card */
-    background-image:
-      linear-gradient(
-        to bottom,
-        rgba(0,0,0,.10),
-        rgba(0,0,0,.25)
-      ),
-      url('../img/notification.jpg');
-    background-size:cover;
-    background-position:center;
-    background-repeat:no-repeat;
-
-    min-width:280px;
-    max-width:min(86vw, 420px);
-    max-height:calc(100vh - 32px);
-    overflow:auto;
-  }
-  #ownpatterns-root #own-notice .own-notice-card > *{
-    color:inherit !important; /* override any inline colors like on Practice */
-  }
-  #ownpatterns-root #own-notice .actions{
-    margin-top:10px;
-    display:flex;
-    gap:10px;
-    justify-content:center;
-    flex-wrap:wrap;
-  }
-
-
-    /* Centered confirm toast (Remove) – match Practice Board notif design */
-  #ownpatterns-root .own-toast{
-    position:fixed;
-    inset:0;
-    z-index:100002;
-    display:none;
-    align-items:center;
-    justify-content:center;
-    background:rgba(0,0,0,.55); /* dim backdrop */
-  }
-  #ownpatterns-root .own-toast .own-toast-card{
-    position:relative;
-    border-radius:10px;
-    border:1px solid #e2e8f0;
-    box-shadow:0 12px 28px rgba(15,23,42,.18);
-    padding:16px;
-    text-align:center;
-    font-family:system-ui,Segoe UI,Arial,sans-serif;
-    color:#fff3cf;
-
-    background-image:
-      linear-gradient(
-        to bottom,
-        rgba(0,0,0,.10),
-        rgba(0,0,0,.25)
-      ),
-      url('../img/notification.jpg');
-    background-size:cover;
-    background-position:center;
-    background-repeat:no-repeat;
-
-    min-width:280px;
-    max-width:min(86vw, 420px);
-    max-height:calc(100vh - 32px);
-    overflow:auto;
-  }
-  #ownpatterns-root .own-toast .own-toast-card > *{
-    color:inherit !important;
-  }
-#ownpatterns-root .own-toast .own-toast-text{
-  font-weight:800;
-  font-size:18px;
-  line-height:1.35;
-  margin-bottom:8px; /* same visual spacing as Practice Board titles */
-}
-  #ownpatterns-root .own-toast .own-toast-actions{
-    margin-top:10px;
-    display:flex;
-    gap:10px;
-    justify-content:center;
-    flex-wrap:wrap;
-  }
-
-
-  /* Lock interactions while any notice/toast open */
-  #ownpatterns-root.notice-open #own-editor-board{ pointer-events:none; }
-  #ownpatterns-root.notice-open #own-overlay .s-inner{ pointer-events:none; }
-
-  /* Level overlay styling (copied to match Practice List style) */
-  #level-overlay{
-  position:fixed;
-  inset:0;
-  z-index:100000;
-  display:none;
-
-  align-items:stretch;
-  justify-content:center;
-  padding:0 0 12px 0;
+</style>
+<style>
+/* Practice Board top bar (Back + meters) */
+#prac-topbar{
+  max-width:720px;
+  width:100%;
+  margin:16px auto 10px;
+  padding:0;               /* aligns with board edges via wrapper padding */
   box-sizing:border-box;
-  overflow:hidden;
-
-  color:#e6f3ff;
-  -webkit-tap-highlight-color:transparent;
-  background-color:#1b1208;
-  background-image:
-    linear-gradient(rgba(0,0,0,.35), rgba(0,0,0,.45)),
-    url('../img/wood.jpg');
-  background-size:cover;
-  background-position:center;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:8px;
+  flex-wrap:wrap;          /* if it gets too tight, meters wrap below */
 }
-
-#level-overlay .s-inner{
-  width:min(92vw,720px);
-  height:100%;
-  max-height:100%;
+/* Center the lives meter between Back and Hints */
+#row-lives{
   margin:0 auto;
-  padding:16px 24px 22px;
-  text-align:left;
-  overflow:auto;
-  -webkit-overflow-scrolling:touch;
-}
-
-#level-overlay .s-header{
-  display: grid;
-  grid-template-columns: minmax(max-content, 1fr) auto minmax(max-content, 1fr);
-  align-items: center;
-  column-gap: 14px;
-  margin: 6px 0 10px;
 }
 
 
-  #level-overlay .s-title{
-    margin:0; font-size:24px; line-height:1.15; font-weight:800;
-    text-shadow:0 1px 2px rgba(0,0,0,.35);
-  }
-  #level-overlay .s-back{
+
+  /* Wood-style Back button – same look as Practice List .s-back */
+  .s-back{
     position:relative;
-    display:inline-flex; align-items:center; justify-content:center;
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    gap:6px;
+
     padding:6px 12px;
     border-radius:8px;
     border:1px solid rgba(255,255,255,.40);
+
     font-size:14px;
     font-weight:800;
     line-height:1.1;
     color:#fff3cf;
     text-shadow:0 1px 0 rgba(120,60,20,.7);
     cursor:pointer;
+
+    user-select:none;
+    -webkit-user-select:none;
+    -moz-user-select:none;
+    -ms-user-select:none;
+    -webkit-tap-highlight-color:transparent;
+
     background-image:
       linear-gradient(
         to bottom,
@@ -843,97 +541,137 @@
     background-size:100% 100%, cover;
     background-position:center;
     background-repeat:no-repeat;
+
     filter:brightness(1.08) saturate(.96);
+
     box-shadow:
       0 3px 0 rgba(133,74,26,.85),
       0 8px 14px rgba(0,0,0,.45);
+
     transition:
       transform .08s ease-out,
       box-shadow .08s ease-out,
       filter .12s ease-out;
   }
-#level-overlay .s-back{
-  grid-column: 1;
-  justify-self: start;
-  white-space: nowrap;
 
-  position:relative;
-  display:inline-flex; align-items:center; justify-content:center;
-  padding:6px 12px;
-  border-radius:8px;
-  border:1px solid rgba(255,255,255,.40);
-  font-size:14px;
-  font-weight:800;
-  line-height:1.1;
-}
-
-  #level-overlay .s-back:hover{
+  .s-back:hover{
     filter:brightness(1.12) saturate(.98);
     transform:translateY(-1px);
     box-shadow:
       0 4px 0 rgba(133,74,26,.9),
       0 10px 16px rgba(0,0,0,.48);
   }
-  #level-overlay .s-back:active{
+
+  .s-back:active{
     filter:brightness(.97) saturate(.96);
     transform:translateY(2px);
     box-shadow:
       0 1px 0 rgba(120,60,20,.9),
       0 4px 8px rgba(0,0,0,.55);
   }
-
-#level-overlay .level-grid{
-  display:grid;
-  grid-template-columns:1fr;
-  gap:12px;
-  margin-top:8px;
-  padding-bottom:12px;   /* same extra space under the last level card */
-}
-@media (min-width: 720px){
-  #level-overlay .level-grid{ grid-template-columns:1fr 1fr; }
-}
-
-  #level-overlay .level-card{
-    background: rgba(37,99,235,.22);
-    border:2px solid rgba(37,99,235,.75);
-    border-radius:12px;
-    box-shadow:0 8px 20px rgba(2,6,23,.45), inset 0 0 0 1px rgba(255,255,255,.08);
-    color:#e6f3ff;
-    position:relative; padding:12px; text-align:left; cursor:pointer;
-    transition:transform .06s, background .15s;
-  }
-  #level-overlay .level-card:active{
-    transform:translateY(1px);
-  }
-  #level-overlay .level-title{
-    font-weight:900; font-size:16px; margin-bottom:4px;
-  }
-  #level-overlay .level-desc{
-    font-size:13px; line-height:1.5; opacity:.95;
-  }
-  #level-overlay .pro-chip{
-    position:absolute; top:10px; right:10px; padding:3px 8px; font-size:11px; font-weight:900;
-    border-radius:999px; background:#3b82f6; color:#fff; border:1px solid #3b82f6;
-    box-shadow:0 6px 16px rgba(2,6,23,.45);
-  }
-  #level-overlay .level-card[aria-disabled="true"]{
-    opacity:.55; cursor:not-allowed; filter:saturate(.9);
-  }
 </style>
 
-<!-- Load WGo only if not already present on the page -->
+<style>
+  /* In-app "Back to menu" dialog – reuse same overlay + notif-card look */
+
+  #menu-confirm-overlay{
+    position:fixed;
+    inset:0;
+    display:none;
+    align-items:center;
+    justify-content:center;
+    background:rgba(0,0,0,.55);
+    z-index:99999;
+    -webkit-tap-highlight-color:transparent;
+  }
+
+  #menu-confirm-overlay.is-open{
+    display:flex;
+  }
+
+  /* Keep only light typography tweaks; visual style comes from .notif-card */
+  .menu-confirm-title{
+    font-size:18px;
+    font-weight:800;
+    margin-bottom:8px;
+  }
+
+.menu-confirm-text{
+    margin-bottom:14px;
+}
+
+  .menu-confirm-actions{
+    /* same layout as other notif-actions, but you already add notif-actions class in HTML */
+    display:flex;
+    gap:10px;
+    justify-content:center;
+    flex-wrap:wrap;
+  }
+</style>
+<style>
+  /* Shared notification card background (uses /img/notification.jpg) */
+  .notif-card{
+    position:relative;
+    z-index:1;
+
+    /* Keep basic card look */
+    border-radius:10px;
+    border:1px solid #e2e8f0;
+    box-shadow:0 12px 28px rgba(15,23,42,.18);
+
+    padding:16px;
+    text-align:center;
+    font-family:system-ui,Segoe UI,Arial,sans-serif;
+color:#fff3cf;
+
+    /* New notification background */
+    background-image:
+      linear-gradient(
+        to bottom,
+        rgba(0,0,0,.10),
+        rgba(0,0,0,.25)
+      ),
+      url('../img/notification.jpg');
+    background-size:cover;
+    background-position:center;
+    background-repeat:no-repeat;
+  }
+.notif-card > div{
+  color:inherit !important;
+}
+
+</style>
+
+<!-- Shared Go prefs (same key as Joseki board + Settings) -->
 <script>
-(function ensureWGo(){
-  if (window.WGo) return;
-  var s = document.createElement('script');
-  // You can replace this with a local path if you host wgo.min.js yourself
-  s.src = "https://3d85c7a311526e02aeeeb19e952d0c09.cdn.bubble.io/f1754893285939x971907393576095400/wgo.min.js";
-  s.async = true;
-  document.head.appendChild(s);
+(function(){
+  var STORAGE_KEY = 'go_prefs';
+  var GoPrefs = (window.GoPrefs = window.GoPrefs || {});
+
+  try {
+    var saved = localStorage.getItem(STORAGE_KEY);
+    if (saved) {
+      Object.assign(GoPrefs, JSON.parse(saved) || {});
+    }
+  } catch (e) {}
+
+  if (typeof GoPrefs.josekiZoom === 'undefined')           GoPrefs.josekiZoom           = true;
+  if (typeof GoPrefs.soundOn === 'undefined')              GoPrefs.soundOn              = true;
+  if (typeof GoPrefs.highlightLast === 'undefined')        GoPrefs.highlightLast        = true;
+  if (typeof GoPrefs.disableAutoZoomOut === 'undefined')   GoPrefs.disableAutoZoomOut   = false;
+  if (typeof GoPrefs.autoPlaySpeed === 'undefined')        GoPrefs.autoPlaySpeed        = 'fast';
+
+
+
+  window.GoPrefsSave = function(){
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(GoPrefs));
+    } catch (e) {}
+  };
 })();
 </script>
 
-<!-- Stone SFX (same module & bridge used by Practice) -->
+<!-- Stone SFX (local, guarded) -->
 <script>
 if (!window.StoneSFX) {
   window.StoneSFX = (() => {
@@ -944,12 +682,7 @@ if (!window.StoneSFX) {
       });
       const unlock = () => {
         if (unlocked) return;
-        for (const a of pool) {
-          try {
-            a.play().then(()=>a.pause()).catch(()=>{});
-            a.currentTime = 0;
-          } catch(e){}
-        }
+        for (const a of pool) { try { a.play().then(()=>a.pause()).catch(()=>{}); a.currentTime = 0; } catch(e){} }
         unlocked = true;
         window.removeEventListener('touchstart', unlock);
         window.removeEventListener('mousedown',  unlock);
@@ -957,30 +690,25 @@ if (!window.StoneSFX) {
       window.addEventListener('touchstart', unlock, { once:true });
       window.addEventListener('mousedown',  unlock, { once:true });
     }
-    function play(){
-      if (!pool.length) return;
-      const a = pool[i++ % pool.length];
-      try {
-        a.currentTime=0;
-        a.playbackRate=0.97+Math.random()*0.06;
-        a.play();
-      } catch(e){}
-    }
+    function play(){ if (!pool.length) return; const a = pool[i++ % pool.length]; try { a.currentTime=0; a.playbackRate=0.97+Math.random()*0.06; a.play(); } catch(e){} }
     return { init, play };
   })();
 }
 if (!window._stoneSFXInit) {
-  StoneSFX.init("https://3d85c7a311526e02aeeeb19e952d0c09.cdn.bubble.io/f1754926303439x491369894441766600/klick.mp3");
+  // Local SFX file
+  StoneSFX.init("../sound/click.mp3");
   window._stoneSFXInit = true;
 }
 (function(){
   if (!window.StoneSFX || window._soundBridgeReady) return;
   window._soundBridgeReady = true;
+
   if (typeof StoneSFX.play === 'function' && !('_enabled' in StoneSFX)){
     StoneSFX._enabled = (window.GoPrefs ? !!window.GoPrefs.soundOn : true);
     const _origPlay = StoneSFX.play.bind(StoneSFX);
     StoneSFX.play = function(){ if (StoneSFX._enabled) _origPlay(); };
   }
+
   window.JosekiSound   = window.JosekiSound   || {
     isEnabled(){ return !!StoneSFX._enabled; },
     setEnabled(v){ StoneSFX._enabled = !!v; }
@@ -990,1380 +718,2113 @@ if (!window._stoneSFXInit) {
 </script>
 
 <script>
-/* Scoped logic; exposes GoOwnPatterns and uses PracticeConfig + Level overlay like Practice List */
-(function(){
-  var root     = document.getElementById('ownpatterns-root');
-  if (!root) return;
+(function mountPracticeBoard(){
+  try {
+    if (!window.WGo) return setTimeout(mountPracticeBoard, 50);
 
-  var overlay  = root.querySelector('#own-overlay');
-  var editor   = root.querySelector('#own-editor');
-  var notice   = root.querySelector('#own-notice');
-  var noticeText = root.querySelector('#own-notice-text');
-  var noticeOk   = root.querySelector('#own-notice-ok');
+    var wrap  = document.getElementById('go-board-prac-wrap');
+    var mount = document.getElementById('go-board-prac');
+    var pracCtrls  = document.getElementById('prac-ctrls');
+    var pracMeters = document.getElementById('prac-meters');
+    var pracTopbar = document.getElementById('prac-topbar');
 
-  var openBtn  = root.querySelector('#own-add');
-  var backTop  = root.querySelector('#own-back');
-  var backEd   = root.querySelector('#own-edit-back');
-var undoBtn  = root.querySelector('#own-edit-undo');
-var resetBtn = root.querySelector('#own-edit-reset');
-var passBtn  = root.querySelector('#own-edit-pass');
-var saveBtn  = root.querySelector('#own-edit-save');
-  var mount    = root.querySelector('#own-editor-board');
-  var wrap     = root.querySelector('#own-editor-wrap');
-  var listEl   = root.querySelector('#own-list');
-  var exitBtn  = root.querySelector('#zoom-exit-btn');
-// Hard default: never allow hitbox unless explicitly shown
-if (exitBtn){
-  exitBtn.style.display = 'none';
-  exitBtn.style.pointerEvents = 'none';
-  exitBtn.style.opacity = '0';
+    if (!wrap || !mount) return setTimeout(mountPracticeBoard, 50);
+
+    /* Page background helper (wood) */
+    (function(){
+      if (!document.getElementById('site-bg-wood')){
+        var css = `
+:root{ --wood-url: url('../img/wood.jpg'); }
+html.bg-wood, body.bg-wood{
+  background-image: linear-gradient(rgba(0,0,0,.35), rgba(0,0,0,.45)), var(--wood-url);
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-attachment: fixed;
+  min-height:100%;
 }
-
-  if (exitBtn){
-    exitBtn.style.display = 'none';
-    exitBtn.style.pointerEvents = 'none';
-  }
-
-
-  // Practice Board bridge: persist config across pages
-  var PRACTICE_CFG_KEY = 'go_practice_config';
-  function savePracticeConfig(){
-    try {
-      localStorage.setItem(PRACTICE_CFG_KEY, JSON.stringify(window.PracticeConfig || {}));
-    } catch(e){}
-  }
-
-  function show(el){ el.style.display='flex'; }
-  function hide(el){ el.style.display='none'; }
-  function isNoticeOpen(){ return root.classList.contains('notice-open'); }
-
-  /* Info notice helpers (OK-only) */
-  function showNotice(msg, title){
-    if (noticeText) noticeText.textContent = msg || 'Notice';
-    var t = root.querySelector('#own-notice-title');
-    if (t) t.textContent = title || 'Heads up';
-    show(notice);
-    root.classList.add('notice-open');
-    setTimeout(function(){
-      try { noticeOk && noticeOk.focus(); } catch(_){}
-    }, 30);
-  }
-  function hideNotice(){
-    hide(notice);
-    root.classList.remove('notice-open');
-  }
-  // Expose notice helper for Level overlay
-  window.OwnShowNotice = showNotice;
-
-  noticeOk && noticeOk.addEventListener('click', hideNotice);
-  window.addEventListener('keydown', function(e){
-    if (e.key === 'Escape' && isNoticeOpen()) hideNotice();
-  });
-
-  /* Removal confirm toast (centered) */
-  var removeToast = null, removeText = null, btnYes = null, btnNo = null, currentRemoveId = null;
-  function ensureRemoveToast(){
-    if (removeToast) return;
-    removeToast = document.createElement('div');
-    removeToast.className = 'own-toast';
-    removeToast.setAttribute('role','alertdialog');
-    removeToast.setAttribute('aria-modal','true');
-    removeToast.innerHTML =
-      '<div class="s-card own-toast-card">' +
-        '<div class="own-toast-text" id="own-remove-text">Remove this pattern?</div>' +
-        '<div class="own-toast-actions">' +
-          '<button type="button" class="s-btn s-btn-lg" id="own-remove-cancel">Cancel</button>' +
-          '<button type="button" class="s-btn s-btn-lg s-btn-danger" id="own-remove-yes">Remove</button>' +
-        '</div>' +
-      '</div>';
-    root.appendChild(removeToast);
-    removeText = removeToast.querySelector('#own-remove-text');
-    btnYes = removeToast.querySelector('#own-remove-yes');
-    btnNo  = removeToast.querySelector('#own-remove-cancel');
-
-    btnNo.addEventListener('click', hideRemoveToast);
-    btnYes.addEventListener('click', function(){
-      if (!currentRemoveId) return hideRemoveToast();
-      removePattern(currentRemoveId);
-      currentRemoveId = null;
-      hideRemoveToast();
-    });
-    window.addEventListener('keydown', function(e){
-      if (removeToast.style.display !== 'none' && e.key === 'Escape') hideRemoveToast();
-    });
-  }
-function showRemoveToast(pattern, label){
-  ensureRemoveToast();
-  currentRemoveId = pattern.id;
-  var name = label || pattern.title || 'this pattern';
-  removeText.textContent = 'Remove "' + name + '"?';
-  removeToast.style.display = 'flex';   // was 'block'
-  root.classList.add('notice-open');
-  setTimeout(function(){
-    try { btnNo && btnNo.focus(); } catch(_){}
-  }, 30);
+#bubble, .bubble-r-container, #page, .page, #root, [data-visual-element="Page"], .bubble-element.Page{
+  background: transparent !important;
 }
-
-
-  function hideRemoveToast(){
-    if (!removeToast) return;
-    removeToast.style.display = 'none';
-    root.classList.remove('notice-open');
-  }
-
-  /* Storage for patterns */
-  var STORE_KEY = 'go:ownpatterns';
-  function loadPatterns(){
-    try { return JSON.parse(localStorage.getItem(STORE_KEY) || '[]'); }
-    catch(_) { return []; }
-  }
-  function savePatterns(arr){
-    try { localStorage.setItem(STORE_KEY, JSON.stringify(arr)); } catch(_) {}
-  }
-  function removePattern(id){
-    var items = loadPatterns().filter(function(p){ return p.id !== id; });
-    savePatterns(items);
-    renderList();
-  }
-
-  /* Editor state */
-  var SIZE=19, board=null, grid=null, moves=null, last=null, turn='B';
-  /* ===================== Editor Zoom (ported from Core, trimmed) ===================== */
-
-  // Uses GoPrefs.josekiZoom if it exists elsewhere; otherwise defaults on.
-  var zoomEnabled = (window.GoPrefs && typeof window.GoPrefs.josekiZoom !== 'undefined')
-    ? !!window.GoPrefs.josekiZoom
-    : true;
-// Match Core: whether we should avoid auto-return after a move while zoomed
-var disableAutoZoomOut = (window.GoPrefs && typeof window.GoPrefs.disableAutoZoomOut !== 'undefined')
-  ? !!window.GoPrefs.disableAutoZoomOut
-  : false;
-
-  var scale = 1, minScale = 1, maxScale = 2.6;
-  var offsetX = 0, offsetY = 0;
-  var baseW = 0;
-
-  var isFullscreen = false;
-  var isZoomAnimating = false;
-  var animId = 0;
-
-  var panStart = null, tapStart = null, isPanning = false;
-  var TAP_SLOP2 = 64;
-  var zoomInFactor = 2.4;
-
-// React to global settings changes if your settings page dispatches them
-window.addEventListener('go:prefs-changed', function(e){
-  var d = (e && e.detail) || {};
-  if (!d || typeof d.key === 'undefined') return;
-
-  if (d.key === 'josekiZoom'){
-    zoomEnabled = !!d.value;
-    if (!zoomEnabled) smoothZoomOutAndExit();
-  } else if (d.key === 'disableAutoZoomOut'){
-    disableAutoZoomOut = !!d.value;
-  }
-});
-
-
-  function canvasCssScale(){
-    var c = mount && mount.querySelector('canvas');
-    if (!c) return 1;
-    var cssW = c.clientWidth || c.getBoundingClientRect().width || 0;
-    var intW = c.width || 0;
-    if (!cssW || !intW) return 1;
-    return cssW / intW;
-  }
-  function getXcss(i){ return board.getX(i) * canvasCssScale(); }
-  function getYcss(j){ return board.getY(j) * canvasCssScale(); }
-
-  function getZoomLayer(){
-    return mount ? mount.querySelector('.own-zoom-layer') : null;
-  }
-
-  function clampPan(){
-    if (isZoomAnimating || !mount) return;
-
-    var vw = mount.clientWidth || 0;
-    var vh = mount.clientHeight || 0;
-    var bw = Math.round(baseW * scale);
-
-    var maxOX = Math.max(0, bw - vw);
-    var maxOY = Math.max(0, bw - vh);
-
-    offsetX = Math.max(0, Math.min(offsetX, maxOX));
-    offsetY = Math.max(0, Math.min(offsetY, maxOY));
-  }
-
-  function applyPanAndSize(redrawAfter){
-    if (!board || !mount) return;
-
-    var layer = getZoomLayer();
-    if (!layer) return;
-
-    if (!baseW){
-      baseW = Math.floor(mount.getBoundingClientRect().width || 0);
-      if (baseW % 2) baseW--;
-    }
-
-    if (board._zoomW !== baseW){
-      board.setWidth(baseW);
-      layer.style.width  = baseW + 'px';
-      layer.style.height = baseW + 'px';
-      board._zoomW = baseW;
-      if (redrawAfter === undefined) redrawAfter = true;
-    }
-
-    clampPan();
-
-    layer.style.transform =
-      'translate3d(' + (-offsetX) + 'px,' + (-offsetY) + 'px,0) scale(' + scale + ')';
-
-    if (redrawAfter){
-      try { redraw(); } catch(_) {}
-    }
-  }
-
-  function animateTo(targetScale, pxWorld, pyWorld, sxTarget, syTarget){
-    targetScale = Math.max(minScale, Math.min(maxScale, targetScale));
-
-    var s0 = scale, ox0 = offsetX, oy0 = offsetY;
-    var t0 = performance.now();
-    var dur = 300;
-
-    isZoomAnimating = true;
-    cancelAnimationFrame(animId);
-
-    var targetOffsetX = (pxWorld * targetScale) - sxTarget;
-    var targetOffsetY = (pyWorld * targetScale) - syTarget;
-
-    (function step(now){
-      var t = (now - t0) / dur;
-      if (t > 1) t = 1;
-      var e = 1 - Math.pow(1 - t, 3);
-
-      scale   = s0  + (targetScale - s0) * e;
-      offsetX = ox0 + (targetOffsetX - ox0) * e;
-      offsetY = oy0 + (targetOffsetY - oy0) * e;
-
-      applyPanAndSize(false);
-
-      if (t < 1){
-        animId = requestAnimationFrame(step);
-      } else {
-        isZoomAnimating = false;
-        applyPanAndSize(true);
+html.no-wood, body.no-wood{ background: none !important; }
+        `;
+        var st = document.createElement('style');
+        st.id = 'site-bg-wood';
+        st.textContent = css;
+        document.head.appendChild(st);
       }
-    })(t0);
-  }
-function showExitBtn(){
-  if (!exitBtn) return;
-  exitBtn.style.display = 'flex';
-  exitBtn.style.pointerEvents = 'auto';
-  exitBtn.style.opacity = '1';
-}
-
-function hideExitBtn(){
-  if (!exitBtn) return;
-  exitBtn.style.pointerEvents = 'none';
-  exitBtn.style.opacity = '0';
-  exitBtn.style.display = 'none';
-}
-
-  function enterFullscreenAtGrid(i, j, tapClientX, tapClientY){
-    if (!mount || isFullscreen) return;
-
-mount.classList.add('is-fullscreen');
-isFullscreen = true;
-showExitBtn();
-
-      exitBtn.style.pointerEvents = 'auto';
-    }
-
-    mount.style.width  = '100vw';
-    mount.style.height = '100vh';
-
-
-    scale = 1; offsetX = 0; offsetY = 0;
-
-    var vw = window.innerWidth;
-    var vh = window.innerHeight;
-    baseW = Math.floor(Math.min(vw, vh));
-    if (baseW % 2) baseW--;
-
-    requestAnimationFrame(function(){
-      applyPanAndSize(true);
-
-      var px = getXcss(i);
-      var py = getYcss(j);
-
-      var rect = mount.getBoundingClientRect();
-      var sx = rect.width / 2;
-      var sy = rect.height / 2;
-
-      if (typeof tapClientX === 'number' && typeof tapClientY === 'number'){
-        sx = tapClientX - rect.left;
-        sy = tapClientY - rect.top;
+      function addBG(){
+        document.documentElement.classList.remove('no-wood');
+        document.body.classList.remove('no-wood');
+        document.documentElement.classList.add('bg-wood');
+        document.body.classList.add('bg-wood');
       }
-
-      offsetX = px - sx;
-      offsetY = py - sy;
-      applyPanAndSize(false);
-
-      animateTo(zoomInFactor, px, py, sx, sy);
-    });
-  }
-
-  function exitFullscreen(){
-    if (!mount) return;
-
-    cancelAnimationFrame(animId);
-    isZoomAnimating = false;
-
-mount.classList.remove('is-fullscreen');
-isFullscreen = false;
-hideExitBtn();
-
-      exitBtn.style.pointerEvents = 'none';
-    }
-
-    mount.style.width  = '';
-    mount.style.height = '';
-
-
-    scale = 1; offsetX = 0; offsetY = 0;
-
-    // Restore normal sizing
-    fitSoon();
-  }
-
-function smoothZoomOutAndExit(){
-  cancelAnimationFrame(animId);
-  isZoomAnimating = false;
-
-  scale = 1; offsetX = 0; offsetY = 0;
-
-  // Safety: never leave an active hitbox behind
-  hideExitBtn();
-
-  if (isFullscreen){
-    exitFullscreen();
-  } else {
-    applyPanAndSize(true);
-  }
-}
-
-  function bindZoomExitBtn(){
-    if (!exitBtn || exitBtn._bound) return;
-    exitBtn._bound = true;
-
-    exitBtn.addEventListener('click', function(e){
-      e.preventDefault();
-      e.stopPropagation();
-      smoothZoomOutAndExit();
-    });
-  }
-
-  function bindZoomHandlers(){
-    if (!mount || mount._zoomBound) return;
-    mount._zoomBound = true;
-
-    mount.addEventListener('pointerdown', function(e){
-      if (!zoomEnabled) return;
-      if (e.pointerType !== 'touch' && e.button !== 0) return;
-
-      var r = mount.getBoundingClientRect();
-      var sx = e.clientX - r.left;
-      var sy = e.clientY - r.top;
-
-      var boardX = (sx + offsetX) / scale;
-      var boardY = (sy + offsetY) / scale;
-
-      var bestI = -1, bestJ = -1, bestDx = 1e9, bestDy = 1e9;
-
-      for (var i=0; i<SIZE; i++){
-        var dx = Math.abs(getXcss(i) - boardX);
-        if (dx < bestDx){ bestDx = dx; bestI = i; }
+      function removeBG(){
+        document.documentElement.classList.remove('bg-wood');
+        document.body.classList.remove('bg-wood');
+        document.documentElement.classList.add('no-wood');
+        document.body.classList.add('no-wood');
       }
-      for (var j=0; j<SIZE; j++){
-        var dy = Math.abs(getYcss(j) - boardY);
-        if (dy < bestDy){ bestDy = dy; bestJ = j; }
-      }
-
-      panStart = { x:e.clientX, y:e.clientY, ox:offsetX, oy:offsetY };
-      try { mount.setPointerCapture(e.pointerId); } catch(_){}
-
-      tapStart = { x:e.clientX, y:e.clientY, gridI:bestI, gridJ:bestJ };
-      isPanning = false;
-    }, {passive:false});
-
-    mount.addEventListener('pointermove', function(e){
-      if (!zoomEnabled) return;
-      if (!panStart) return;
-      if (scale <= 1.01 && !isFullscreen) return;
-
-      var dx = e.clientX - panStart.x;
-      var dy = e.clientY - panStart.y;
-
-      if (!isPanning && (dx*dx + dy*dy > TAP_SLOP2)) isPanning = true;
-
-      if (isPanning){
-        offsetX = panStart.ox - dx;
-        offsetY = panStart.oy - dy;
-        applyPanAndSize(false);
-        e.preventDefault();
-      }
-    }, {passive:false});
-
-    mount.addEventListener('pointerup', function(e){
-      if (!zoomEnabled){
-        panStart = null; tapStart = null; isPanning = false;
-        return;
-      }
-
-      try { mount.releasePointerCapture(e.pointerId); } catch(_){}
-
-      if (!tapStart){
-        panStart = null;
-        return;
-      }
-
-      var dist2 =
-        (e.clientX - tapStart.x) * (e.clientX - tapStart.x) +
-        (e.clientY - tapStart.y) * (e.clientY - tapStart.y);
-
-      var gridI = tapStart.gridI;
-      var gridJ = tapStart.gridJ;
-      var tapX  = tapStart.x;
-      var tapY  = tapStart.y;
-
-      panStart = null; tapStart = null;
-
-      if (isPanning){
-        isPanning = false;
-        return;
-      }
-
-      if (dist2 <= TAP_SLOP2){
-        e.preventDefault();
-
-if (scale <= 1.05 && !isFullscreen){
-  enterFullscreenAtGrid(gridI, gridJ, tapX, tapY);
-} else {
-  if (!isNoticeOpen()) playAt(gridI, gridJ);
-  // Match Core setting: only auto-return if user didn't disable it
-  if (!disableAutoZoomOut){
-    setTimeout(smoothZoomOutAndExit, 10);
-  }
-}
-
-      }
-    }, {passive:false});
-
-    // Minimal escape hatch without adding UI
-    window.addEventListener('keydown', function(e){
-      if (e.key === 'Escape' && isFullscreen){
-        e.stopPropagation();
-        smoothZoomOutAndExit();
-      }
-    });
-  }
-
-  var koPoint=null;
-  var highlightLastEnabled = (window.GoPrefs && typeof window.GoPrefs.highlightLast !== 'undefined') ? !!window.GoPrefs.highlightLast : true;
-
-  window.addEventListener('go:prefs-changed', function(e){
-    var d = (e && e.detail) || {};
-    if (d.key === 'highlightLast'){
-      highlightLastEnabled = !!d.value;
-      try { redraw(); } catch(_) {}
-    }
-    if (d.key === 'soundOn' && window.StoneSFX){
-      StoneSFX._enabled = !!d.value;
-    }
-  });
-
-  window.OwnHighlight = {
-    isEnabled(){ return highlightLastEnabled; },
-    setEnabled(v){ highlightLastEnabled = !!v; try { redraw(); } catch(_) {} }
-  };
-
-  function initState(){
-    grid = Array.from({length:SIZE}, ()=>Array(SIZE).fill(null));
-    moves = [];
-    last  = null;
-    turn  = 'B';
-    koPoint = null;
-  }
-
-  function redraw(){
-    if (!board) return;
-    board.removeAllObjects();
-
-    // First pass (legacy; kept but redundant)
-    for (var y=0;y<SIZE;y++){
-      for (var x=0;x<SIZE;x++){
-        var v=grid[y][x];
-        if (v==='B') board.addObject({x:x,y:y,c:WGo.B});
-        if (v==='W') board.addObject({x:x,y:x,c:WGo.W}); // typo guarded by second pass
-      }
-    }
-
-    // Correct second pass
-    board.removeAllObjects();
-    for (var y2=0;y2<SIZE;y2++){
-      for (var x2=0;x2<SIZE;x2++){
-        var v2=grid[y2][x2];
-        if (v2==='B') board.addObject({x:x2,y:y2,c:WGo.B});
-        if (v2==='W') board.addObject({x:x2,y:y2,c:WGo.W});
-      }
-    }
-
-    if (highlightLastEnabled && last){
-      board.addObject({ x:last.x, y:last.y, type:'CR' });
-    }
-  }
-
-  function resetAll(){
-    initState();
-    redraw();
-  }
-
-  function ensureWoodLayer(){
-    if (!mount || mount._woodReady) return;
-    var layer = document.createElement('div');
-    layer.className = 'own-zoom-layer';
-    while (mount.firstChild) layer.appendChild(mount.firstChild);
-    mount.appendChild(layer);
-    mount._woodReady = true;
-  }
-
-  function ensureBoard(cb){
-    function mountNow(){
-      if (board){ cb&&cb(); return; }
-      board = new WGo.Board(mount, { size: SIZE });
-      ensureWoodLayer();
-
-      // Make sure the layer exists before binding zoom
-      bindZoomHandlers();
-      bindZoomExitBtn();
-      resetAll();
-      bindBoardClicks();
-      fitSoon();
-      cb && cb();
-
-    }
-    if (window.WGo) return mountNow();
-    var tries=0;
-    (function wait(){
-      if (window.WGo) return mountNow();
-      if (tries++>120) return;
-      setTimeout(wait,50);
+      window.PageBG = window.PageBG || { add: addBG, remove: removeBG };
     })();
-  }
 
-  /* Liberty / capture helpers */
-  function neighbors(x,y){
-    var n=[];
-    if (x>0) n.push({x:x-1,y:y});
-    if (x<SIZE-1) n.push({x:x+1,y:y});
-    if (y>0) n.push({x:x,y:y-1});
-    if (y<SIZE-1) n.push({x:x,y:y+1});
-    return n;
-  }
-  function groupAt(x,y){
-    var color = grid[y][x];
-    if (!color) return { stones:[], libs:new Set() };
-    var seen = new Set(), q=[{x:x,y:y}], stones=[], libs=new Set();
-    function key(p){ return p.x+','+p.y; }
-    while(q.length){
-      var p=q.pop();
-      var k=key(p);
-      if (seen.has(k)) continue;
-      seen.add(k);
-      stones.push(p);
-      neighbors(p.x,p.y).forEach(function(nb){
-        var v=grid[nb.y][nb.x];
-        if (v===null){ libs.add(nb.x+','+nb.y); }
-        else if (v===color){
-          if (!seen.has(nb.x+','+nb.y)) q.push(nb);
-        }
-      });
-    }
-    return { stones:stones, libs:libs };
-  }
-  function removeStones(sts){
-    for (var i=0;i<sts.length;i++){
-      var s=sts[i];
-      grid[s.y][s.x]=null;
-    }
-  }
+    var SIZE = 19, B='B', W='W';
+    var board = new WGo.Board(mount, { size: SIZE });
+    var grid  = Array.from({length:SIZE}, ()=>Array(SIZE).fill(null));
+    var history = [], current = 0, turn = B;
 
-  function playAt(x,y){
-    if (grid[y][x]!==null) return;
+    var highlightLastEnabled =
+      (window.GoPrefs && typeof window.GoPrefs.highlightLast !== 'undefined')
+        ? !!window.GoPrefs.highlightLast : true;
 
-    if (koPoint && x===koPoint.x && y===koPoint.y){
-      showNotice('Ko — immediate recapture is not allowed. Play elsewhere first.', 'Ko');
-      return;
-    }
+    var zoomEnabled = (window.GoPrefs && typeof window.GoPrefs.josekiZoom !== 'undefined')
+      ? !!window.GoPrefs.josekiZoom : true;
 
-    var me = turn;
-    var opp = (me==='B') ? 'W' : 'B';
+    var disableAutoZoomOut =
+      (window.GoPrefs && typeof window.GoPrefs.disableAutoZoomOut !== 'undefined')
+        ? !!window.GoPrefs.disableAutoZoomOut : false;
 
-    grid[y][x]=me;
+    // NEW: auto-play speed and derived delay
+    var autoPlaySpeed =
+      (window.GoPrefs && typeof window.GoPrefs.autoPlaySpeed === 'string')
+        ? window.GoPrefs.autoPlaySpeed
+        : 'fast';
 
-    var capturedList = [];
-    var seenOpp = new Set();
-    neighbors(x,y).forEach(function(nb){
-      if (grid[nb.y][nb.x]===opp){
-        var key = nb.x+','+nb.y;
-        if (seenOpp.has(key)) return;
-        seenOpp.add(key);
-        var g = groupAt(nb.x, nb.y);
-        if (g.libs.size===0){
-          g.stones.forEach(function(s){ capturedList.push({x:s.x,y:s.y,color:opp}); });
-          removeStones(g.stones);
-        }
+    var AUTO_DELAY_FAST = 300;  // current behavior
+    var AUTO_DELAY_SLOW = 700;  // slower mode
+    var AUTO_DELAY      = (autoPlaySpeed === 'slow') ? AUTO_DELAY_SLOW : AUTO_DELAY_FAST;
+
+
+
+    var lastX = null, lastY = null;
+
+    window.addEventListener('go:prefs-changed', function(e){
+      var d = e.detail || {};
+      if (!d || typeof d.key === 'undefined') return;
+
+      if (d.key === 'highlightLast') {
+        highlightLastEnabled = !!d.value;
+        try { redraw(); } catch(_) {}
+      } else if (d.key === 'josekiZoom') {
+        try {
+          if (window.PracticeZoom && typeof PracticeZoom.setEnabled === 'function') {
+            PracticeZoom.setEnabled(!!d.value);
+          }
+        } catch (_) {}
+      } else if (d.key === 'soundOn') {
+        try {
+          if (window.PracticeSound && typeof PracticeSound.setEnabled === 'function') {
+            PracticeSound.setEnabled(!!d.value);
+          } else if (window.StoneSFX && '_enabled' in StoneSFX) {
+            StoneSFX._enabled = !!d.value;
+          }
+        } catch (_) {}
+      } else if (d.key === 'disableAutoZoomOut') {
+        disableAutoZoomOut = !!d.value;
+      } else if (d.key === 'autoPlaySpeed') {          // NEW
+        autoPlaySpeed = (d.value === 'slow') ? 'slow' : 'fast';
+        AUTO_DELAY    = (autoPlaySpeed === 'slow') ? AUTO_DELAY_SLOW : AUTO_DELAY_FAST;
       }
     });
 
-    var myGroup = groupAt(x,y);
-    if (myGroup.libs.size===0 && capturedList.length===0){
-      grid[y][x]=null;
-      showNotice('Self-capture is not allowed in this editor.', 'Illegal move');
-      return;
-    }
+    // NEW: bridge so Settings can call PracticeSpeed.setSpeed(...)
+    window.PracticeSpeed = {
+      getSpeed: function(){
+        return autoPlaySpeed;
+      },
+      setSpeed: function(speed){
+        autoPlaySpeed = (speed === 'slow') ? 'slow' : 'fast';
+        AUTO_DELAY    = (autoPlaySpeed === 'slow') ? AUTO_DELAY_SLOW : AUTO_DELAY_FAST;
+      }
+    };
 
-    var prevKo = koPoint ? {x:koPoint.x, y:koPoint.y} : null;
-    koPoint = null;
+    window.PracticeHighlight = {
+      isEnabled(){ return highlightLastEnabled; },
+      setEnabled(v){ highlightLastEnabled = !!v; try { redraw(); } catch(_) {} }
+    };
 
-    if (capturedList.length === 1){
-      if (myGroup.stones.length === 1 && myGroup.libs.size === 1){
-        var onlyLib = Array.from(myGroup.libs)[0].split(',').map(function(v){ return parseInt(v,10); });
-        if (onlyLib[0] === capturedList[0].x && onlyLib[1] === capturedList[0].y){
-          koPoint = { x: capturedList[0].x, y: capturedList[0].y };
+    var hasSGF=false, sgfRootSeq=null, currentNode=null;
+    var rootAB=[], rootAW=[];
+    var level = 2;
+    var showSingleNext = false;
+    var tryIndex = 0;
+    var swapColorsThisRound = false;
+    var isAutoPlacing = false;
+
+    var playerOnly = false;
+    var playerColor = null;
+    var l2HintConsumed = false;
+
+
+    /* Tier + quota – event driven via GoTier, no polling */
+    var TierAPI = window.GoTier || window.Tier || {
+      get: function(){
+        try {
+          return (localStorage.getItem('go_tier') || 'free').toLowerCase();
+        } catch(_) {
+          return 'free';
         }
       }
+    };
+
+    function getTier(){
+      try {
+        if (TierAPI && typeof TierAPI.get === 'function'){
+          return String(TierAPI.get() || 'free').toLowerCase();
+        }
+      } catch(e){}
+      return 'free';
     }
 
-    last = { x:x, y:y };
-    moves.push({
-      x:x, y:y, color: me,
-      captured: capturedList,
-      prevKo: prevKo
+    function isPro(){
+      return getTier() === 'pro';
+    }
+
+    // Whenever the actual plan changes, refresh the UI
+    window.addEventListener('tier:changed', function(e){
+      if (typeof window.refreshLivesUI === 'function') window.refreshLivesUI();
+      if (typeof window.refreshHintsUI === 'function') window.refreshHintsUI();
     });
-    turn = opp;
-    redraw();
-    try { StoneSFX.play(); } catch(_) {}
-  }
 
-  function bindBoardClicks(){
-    if (!board || board._bound) return;
-    board._bound = true;
-    board.addEventListener('click', function(x,y){
-      // Custom pointer zoom handlers own taps when zoomed
-      if (zoomEnabled && (isFullscreen || scale > 1.05)) return;
-      if (!isNoticeOpen()) playAt(x,y);
-    });
-  }
+    function openPlansPage(){
+      // If you ever wire in a JS paywall again, this still works:
+      if (window.GoPlans && typeof GoPlans.open === 'function'){
+        GoPlans.open();
+        return;
+      }
+      if (window.Paywall && typeof Paywall.open === 'function'){
+        Paywall.open();
+        return;
+      }
 
-
-  function targetWidth(){
-    var cap = parseInt(getComputedStyle(root).getPropertyValue('--board-max')) || 720;
-    var avail = Math.round((wrap && wrap.getBoundingClientRect().width) ||
-                           (editor && editor.getBoundingClientRect().width) ||
-                           (window.innerWidth || cap));
-    var prac = document.getElementById('go-board-prac');
-    var wP = prac ? Math.round(prac.getBoundingClientRect().width || 0) : 0;
-    var w = wP ? Math.min(wP, avail, cap) : Math.min(avail, cap);
-    w = Math.floor(w);
-    if (w % 2) w--;
-    return w;
-  }
-  function fit(){
-    if (!board) return;
-    if (isFullscreen) return;
-
-    var w = targetWidth();
-    if (!w){
-      setTimeout(fit,60);
-      return;
+      // Static site fallback – same as Menu "Plans" button
+      try {
+        window.location.href = "../plans/plans.html";
+      } catch (e) {}
     }
 
-    baseW = w;
+    var QUOTA = (function(){
+      function todayKey(name){
+        var d = new Date();
+        var day = d.toISOString().slice(0,10);
+        return 'q:' + name + ':' + day;
+      }
+      function read(k){ try { return parseInt(localStorage.getItem(k)||'0',10) || 0; } catch(_){ return 0; } }
+      function write(k,v){ try { localStorage.setItem(k, String(v)); } catch(_){} }
+      function use(name, limit){
+        var k=todayKey(name), used=read(k);
+        if (used >= limit) return { ok:false, used:used, remaining:0 };
+        write(k, used+1);
+        return { ok:true, used:used+1, remaining: Math.max(0, limit-(used+1)) };
+      }
+      function peek(name, limit){
+        var k=todayKey(name), used=read(k);
+        return { used:used, remaining: Math.max(0, limit-used) };
+      }
+      return { use:use, peek:peek };
+    })();
 
-    mount.style.width  = w + 'px';
-    mount.style.height = w + 'px';
+    var MAX_LIVES_FREE_L23 = 5;
+    var MAX_HINTS_FREE     = 3;
 
-    // Ensure the internal layer matches the base size
-    var layer = mount.querySelector('.own-zoom-layer');
-    if (layer){
-      layer.style.width  = w + 'px';
-      layer.style.height = w + 'px';
+    function refreshMetersContainer(){
+      var meters = document.getElementById('prac-meters');
+      if (!meters) return;
+      var rows = meters.querySelectorAll('.meter-row');
+      var any = false;
+      for (var i=0;i<rows.length;i++){
+        if (rows[i].style.display !== 'none'){ any = true; break; }
+      }
+      meters.style.display = any ? '' : 'none';
     }
 
-    applyPanAndSize(true);
-  }
+    function canvasCssScale(){
+      var c = mount.querySelector('canvas');
+      if (!c) return 1;
+      var cssW = c.clientWidth || c.getBoundingClientRect().width || 0;
+      var intW = c.width || 0;
+      if (!cssW || !intW) return 1;
+      return cssW / intW;
+    }
+    function getXcss(i){ return board.getX(i) * canvasCssScale(); }
+    function getYcss(j){ return board.getY(j) * canvasCssScale(); }
 
-  function fitSoon(){
-    fit();
-    setTimeout(fit,60);
-    setTimeout(fit,180);
-    setTimeout(fit,360);
-  }
-  window.addEventListener('resize', fit);
-  window.addEventListener('orientationchange', function(){ setTimeout(fit,150); });
-  window.addEventListener('pageshow', fitSoon);
+    (function(){
+      const LIVES_ID = 'meter-lives';
+      const ROW_ID   = 'row-lives';
 
-  (function observeEditorVisibility(){
-    var mo = new MutationObserver(function(muts){
-      for (var i=0;i<muts.length;i++){
-        if (muts[i].type === 'attributes' && muts[i].attributeName === 'style'){
-          if (editor.style.display === 'none'){
-            resetAll();
-          } else {
-            fitSoon();
+      function renderLives(rem){
+        const el = document.getElementById(LIVES_ID);
+        if (!el) return;
+        el.innerHTML = '';
+        for (let i = 0; i < MAX_LIVES_FREE_L23; i++){
+          const s = document.createElement('span');
+          s.className = 'stone' + (i < rem ? '' : ' empty');
+          el.appendChild(s);
+        }
+      }
+      window.refreshLivesUI = function(){
+        const row = document.getElementById(ROW_ID);
+        if (!row) return;
+        const visible = (!isPro()) && (level === 2 || level === 3);
+        row.style.display = visible ? '' : 'none';
+        if (visible){
+          const { remaining } = QUOTA.peek('prac:lives-l23', MAX_LIVES_FREE_L23);
+          renderLives(remaining);
+        }
+        refreshMetersContainer();
+      };
+    })();
+
+    (function(){
+      const ROW_ID = 'row-hints';
+      const NUM_ID = 'meter-hints';
+      window.refreshHintsUI = function(){
+        var row = document.getElementById(ROW_ID);
+        var num = document.getElementById(NUM_ID);
+        if (!row || !num) return;
+        var visible = !isPro();
+        row.style.display = visible ? '' : 'none';
+        if (visible){
+          var stats = QUOTA.peek('prac:hints', MAX_HINTS_FREE);
+          num.textContent = String(stats.remaining);
+        }
+        refreshMetersContainer();
+      };
+    })();
+
+    var hintXY = null;
+    var forceHintMarker = false;
+    var hintPulsePhase = 0;
+    var hintPulseTimer = null;
+    var zoomLayer = null;
+    var zoomHintAnchor = null;   // grid coords of virtual hint
+
+    // Canvas draw handler for the pulsating hint ring
+    var HINT_DRAW = {
+      stone: {
+        draw: function(args, board) {
+          var cx = board.getX(args.x);
+          var cy = board.getY(args.y);
+          var sr = board.stoneRadius;
+
+          var scale = 0.94 + 0.08 * Math.sin(hintPulsePhase);
+          var rOuter = sr * scale;
+
+          this.save();
+          this.beginPath();
+          this.arc(cx - 0.5, cy - 0.5, rOuter, 0, 2 * Math.PI, true);
+          this.strokeStyle  = 'rgba(11,74,162,0.95)';
+          this.lineWidth    = Math.max(2, board.lineWidth * 1.6);
+          this.shadowColor  = 'rgba(11,74,162,0.35)';
+          this.shadowBlur   = sr * 0.7;
+          this.globalAlpha  = 0.85;
+          this.stroke();
+
+          this.beginPath();
+          this.arc(cx - 0.5, cy - 0.5, rOuter - this.lineWidth * 0.4, 0, 2 * Math.PI, true);
+          this.fillStyle = 'rgba(231,240,255,0.30)';
+          this.fill();
+
+          this.restore();
+        }
+      }
+    };
+
+    function startHintPulse(){
+      if (hintPulseTimer) return;
+      hintPulsePhase = 0;
+      hintPulseTimer = setInterval(function(){
+        hintPulsePhase += 0.25;
+        redraw();
+      }, 80);
+    }
+
+    function stopHintPulse(){
+      if (!hintPulseTimer) return;
+      clearInterval(hintPulseTimer);
+      hintPulseTimer = null;
+    }
+
+    function clearHint(){
+      hintXY = null;
+      forceHintMarker = false;
+      stopHintPulse();
+      try { redraw(); } catch(e){}
+    }
+
+    function showHintAt(x,y){
+      hintXY = { x:x, y:y };
+      forceHintMarker = true;
+      startHintPulse();
+      redraw();
+    }
+
+    function neighbors(x,y){ var ns=[]; if(x>0)ns.push([x-1,y]); if(x<SIZE-1)ns.push([x+1,y]); if(y>0)ns.push([x,y-1]); if(y<SIZE-1)ns.push([x,y+1]); return ns; }
+    function groupAndLiberties(x,y){
+      var color=grid[y][x]; if(!color) return {stones:[],liberties:0};
+      var st=[[x,y]], seen={}, stones=[], libs=0;
+      while(st.length){
+        var p=st.pop(), cx=p[0], cy=p[1], k=cx+':'+cy; if(seen[k]) continue;
+        seen[k]=1; stones.push([cx,cy]);
+        var ns=neighbors(cx,cy);
+        for(var i=0;i<ns.length;i++){
+          var nx=ns[i][0], ny=ns[i][1], v=grid[ny][nx];
+          if(v===null) libs++; else if(v===color && !seen[nx+':'+ny]) st.push([nx,ny]);
+        }
+      }
+      return {stones:stones, liberties:libs};
+    }
+    function attemptPlay(x,y,color){
+      if(grid[y][x]!==null) return {ok:false, captures:[]};
+      grid[y][x]=color;
+      var opp=(color===B?W:B), captures=[], ns=neighbors(x,y);
+      for(var i=0;i<ns.length;i++){
+        var nx=ns[i][0], ny=ns[i][1];
+        if(grid[ny][nx]===opp){
+          var g=groupAndLiberties(nx,ny);
+          if(g.liberties===0){
+            for(var j=0;j<g.stones.length;j++){ var s=g.stones[j]; grid[s[1]][s[0]]=null; captures.push([s[0],s[1]]); }
           }
         }
       }
-    });
-    try { mo.observe(editor, { attributes:true, attributeFilter:['style'] }); } catch(_){}
-  })();
+      var self=groupAndLiberties(x,y);
+      if(captures.length===0 && self.liberties===0){ grid[y][x]=null; return {ok:false, captures:[]}; }
+      return {ok:true, captures:captures};
+    }
+    function addLB(x,y,text){ board.addObject({ x:x, y:y, type:'LB', text:text }); }
 
-  /* Thumbnail rendering – same logic as Practice List, no WGo needed */
-
-  function simulatePosition(size, rootAB, rootAW, moves){
-    var N = size || 19;
-    var E = 0, B = 1, W = 2;
-    var board = Array.from({length:N}, function(){ return Array(N).fill(E); });
-
-    function inB(x,y){ return x>=0 && y>=0 && x<N && y<N; }
-    function at(x,y){ return board[y][x]; }
-    function set(x,y,v){ board[y][x] = v; }
-    function neigh(x,y){
-      return [
-        [x+1,y],[x-1,y],
-        [x,y+1],[x,y-1]
-      ].filter(function(p){ return inB(p[0],p[1]); });
+    function nextIsPlayersTurn(){
+      if (!playerOnly) return false;
+      var opts = getNextCandidates(currentNode);
+      return (opts.length && opts[0].color === playerColor);
     }
 
-    (Array.isArray(rootAB) ? rootAB : []).forEach(function(p){
-      if (inB(p.x,p.y)) set(p.x,p.y,B);
-    });
-    (Array.isArray(rootAW) ? rootAW : []).forEach(function(p){
-      if (inB(p.x,p.y)) set(p.x,p.y,W);
-    });
+    function shouldShowHint(){
+      if (!hasSGF) return false;
+      if (level === 1) return true;
+      if (level === 2) return nextIsPlayersTurn() && !l2HintConsumed;
+      if (level === 3) return false;
+      if (level === 4 || level === 5) return showSingleNext;
+      return false;
+    }
 
-    function groupAndLibs(x,y){
-      var color = at(x,y);
-      if (color === E) return null;
-      var q = [[x,y]];
-      var seen = new Set([x + '_' + y]);
-      var group = [[x,y]];
-      var libs = 0;
-      while(q.length){
-        var cur = q.pop();
-        var cx = cur[0], cy = cur[1];
-        neigh(cx,cy).forEach(function(n){
-          var nx = n[0], ny = n[1];
-          var v = at(nx,ny);
-          if (v === E){
-            libs++;
-          } else if (v === color){
-            var k = nx + '_' + ny;
-            if (!seen.has(k)){
-              seen.add(k);
-              q.push([nx,ny]);
-              group.push([nx,ny]);
+    function getHintAnchorPoint(){
+      return zoomHintAnchor;
+    }
+
+    function redraw(){
+      board.removeAllObjects();
+
+      for (var y = 0; y < SIZE; y++){
+        for (var x = 0; x < SIZE; x++){
+          var v = grid[y][x];
+          if (v === B)      board.addObject({ x:x, y:y, c:WGo.B });
+          else if (v === W) board.addObject({ x:x, y:y, c:WGo.W });
+        }
+      }
+
+      zoomHintAnchor = null;
+
+      if (hasSGF){
+        var cands = getNextCandidates(currentNode) || [];
+        if (cands.length){
+          var chosen = null;
+
+          if (playerOnly){
+            for (var i = 0; i < cands.length; i++){
+              if (cands[i].color === playerColor){
+                chosen = cands[i];
+                break;
+              }
             }
           }
-        });
-      }
-      return { group: group, libs: libs };
-    }
+          if (!chosen) chosen = cands[0];
 
-    function removeGroup(g){
-      g.forEach(function(p){ set(p[0],p[1],E); });
-    }
+          var p = tfXY(chosen.xy.x, chosen.xy.y);
+          zoomHintAnchor = { x:p.x, y:p.y };
 
-    function play(move){
-      if (!move) return;
-      var x = move.x, y = move.y;
-      if (!inB(x,y)) return;
-      var color = (move.color === 'W') ? W : B;
-      var opp   = (color === B) ? W : B;
-      if (at(x,y) !== E) return;
-      set(x,y,color);
+          // reset per redraw
+          var showA = false;
 
-      var oppToCheck = [];
-      neigh(x,y).forEach(function(n){
-        var nx = n[0], ny = n[1];
-        if (at(nx,ny) === opp) oppToCheck.push([nx,ny]);
-      });
+          if (shouldShowHint()){
+            showA = true;
+          } else if (shouldShowDirectionalMarkerForNode(chosen.node)){
+            showA = true;
+          }
 
-      var captured = 0;
-      oppToCheck.forEach(function(n){
-        var info = groupAndLibs(n[0], n[1]);
-        if (info && info.libs === 0){
-          removeGroup(info.group);
-          captured += info.group.length;
-        }
-      });
-
-      var mine = groupAndLibs(x,y);
-      if (mine && mine.libs === 0 && captured === 0){
-        // suicide – undo it
-        removeGroup(mine.group);
-      }
-    }
-
-    (Array.isArray(moves) ? moves : []).forEach(play);
-
-    var out = [];
-    for (var y=0; y<N; y++){
-      for (var x=0; x<N; x++){
-        var v = board[y][x];
-        if (v === B) out.push({ x:x, y:y, color:'B' });
-        else if (v === W) out.push({ x:x, y:y, color:'W' });
-      }
-    }
-    return out;
-  }
-
-  function hoshiPoints(size){
-    if (size === 19) return [3,9,15];
-    if (size === 13) return [3,6,9];
-    if (size === 9)  return [2,4,6];
-    var mid = Math.floor((size-1)/2);
-    var off = size >= 15 ? 3 : Math.max(2, Math.round(size/6));
-    return [off, mid, size-1-off];
-  }
-
-  function ensureThumbCanvas(el){
-    var cv = el.querySelector('canvas.own-canvas');
-    if (!cv){
-      cv = document.createElement('canvas');
-      cv.className = 'own-canvas';
-      el.appendChild(cv);
-    }
-    return cv;
-  }
-
-  function drawStone(ctx, cx, cy, r, color){
-    var isBlack = (color === 'B');
-    ctx.save();
-    ctx.shadowColor = 'transparent';
-
-    ctx.beginPath();
-    ctx.arc(cx, cy, r, 0, Math.PI * 2);
-    ctx.clip();
-
-    var hx = cx - r * 0.28;
-    var hy = cy - r * 0.28;
-    var body = ctx.createRadialGradient(hx, hy, r * 0.12, cx, cy, r);
-    if (isBlack){
-      body.addColorStop(0.00, '#686868');
-      body.addColorStop(0.65, '#141414');
-      body.addColorStop(1.00, '#000000');
-    } else {
-      body.addColorStop(0.00, '#ffffff');
-      body.addColorStop(0.70, '#f2f2f2');
-      body.addColorStop(1.00, '#e4e4e4');
-    }
-    ctx.fillStyle = body;
-    ctx.fillRect(cx - r, cy - r, 2*r, 2*r);
-
-    var edge = Math.max(0.6, r * 0.08);
-    var rim = ctx.createRadialGradient(cx, cy, r - edge, cx, cy, r);
-    if (isBlack){
-      rim.addColorStop(0, 'rgba(255,255,255,0)');
-      rim.addColorStop(1, 'rgba(255,255,255,0.12)');
-    } else {
-      rim.addColorStop(0, 'rgba(0,0,0,0)');
-      rim.addColorStop(1, 'rgba(0,0,0,0.18)');
-    }
-    ctx.fillStyle = rim;
-    ctx.fillRect(cx - r, cy - r, 2*r, 2*r);
-
-    var spec = ctx.createRadialGradient(hx, hy, 0, hx, hy, r * 0.55);
-    if (isBlack){
-      spec.addColorStop(0, 'rgba(255,255,255,0.10)');
-      spec.addColorStop(1, 'rgba(255,255,255,0)');
-    } else {
-      spec.addColorStop(0, 'rgba(255,255,255,0.22)');
-      spec.addColorStop(1, 'rgba(255,255,255,0)');
-    }
-    ctx.fillStyle = spec;
-    ctx.fillRect(cx - r, cy - r, 2*r, 2*r);
-
-    ctx.restore();
-  }
-
-  function drawBoardThumb(el, size, stones, opts){
-    var crop = !!(opts && opts.crop);
-    var w = Math.max(64, Math.floor(el.clientWidth || 132));
-    var h = w;
-    var dpr = Math.max(1, window.devicePixelRatio || 1);
-
-    var cv = ensureThumbCanvas(el);
-    if (cv.width !== w*dpr || cv.height !== h*dpr){
-      cv.width = Math.floor(w*dpr);
-      cv.height = Math.floor(h*dpr);
-      cv.style.width = w + 'px';
-      cv.style.height = h + 'px';
-    }
-
-    var ctx = cv.getContext('2d');
-    ctx.setTransform(dpr,0,0,dpr,0,0);
-    ctx.clearRect(0,0,w,h);
-
-    var pad   = Math.round(w * 0.10);
-    var inner = w - pad*2;
-    var step  = inner / (size - 1);
-    var getX  = function(i){ return pad + i*step; };
-    var getY  = function(j){ return pad + j*step; };
-
-    var minX=0, minY=0, maxX=size-1, maxY=size-1;
-    if (crop && stones && stones.length){
-      minX = maxX = stones[0].x;
-      minY = maxY = stones[0].y;
-      stones.forEach(function(s){
-        if (s.x < minX) minX = s.x;
-        if (s.x > maxX) maxX = s.x;
-        if (s.y < minY) minY = s.y;
-        if (s.y > maxY) maxY = s.y;
-      });
-
-      var MARGIN = 1;
-      minX = Math.max(0, minX - MARGIN);
-      minY = Math.max(0, minY - MARGIN);
-      maxX = Math.min(size-1, maxX + MARGIN);
-      maxY = Math.min(size-1, maxY + MARGIN);
-
-      var EDGE_NEAR = 6;
-      var pinLeft   = (minX <= EDGE_NEAR);
-      var pinTop    = (minY <= EDGE_NEAR);
-      var pinRight  = (maxX >= size-1-EDGE_NEAR);
-      var pinBottom = (maxY >= size-1-EDGE_NEAR);
-      if (pinLeft)  minX = 0;
-      if (pinTop)   minY = 0;
-      if (pinRight) maxX = size-1;
-      if (pinBottom)maxY = size-1;
-
-      var wG = (maxX - minX + 1);
-      var hG = (maxY - minY + 1);
-      var target = Math.max(wG, hG);
-
-      if (hG < target){
-        var need = target - hG;
-        if (pinTop && !pinBottom)      maxY = Math.min(size-1, maxY + need);
-        else if (pinBottom && !pinTop) minY = Math.max(0, minY - need);
-        else {
-          var up = Math.ceil(need/2), dn = Math.floor(need/2);
-          minY = Math.max(0, minY - up);
-          maxY = Math.min(size-1, maxY + dn);
+          if (showA){
+            addLB(p.x, p.y, 'A');
+          }
         }
       }
-      if (wG < target){
-        need = target - wG;
-        if (pinLeft && !pinRight)       maxX = Math.min(size-1, maxX + need);
-        else if (pinRight && !pinLeft)  minX = Math.max(0, minX - need);
-        else {
-          var lf = Math.ceil(need/2), rt = Math.floor(need/2);
-          minX = Math.max(0, minX - lf);
-          maxX = Math.min(size-1, maxX + rt);
+
+      if (forceHintMarker && hintXY){
+        board.addObject({ x: hintXY.x, y: hintXY.y, type: HINT_DRAW });
+      }
+
+      if (highlightLastEnabled && lastX != null && lastY != null){
+        board.addObject({ x:lastX, y:lastY, type:'CR' });
+      }
+    }
+
+
+    function rebuildFromHistory(){
+      for (var y=0;y<SIZE;y++) grid[y].fill(null);
+      if (hasSGF){
+        for (var i=0;i<rootAB.length;i++){
+          var pb=rootAB[i]; var a=tfXY(pb.x,pb.y);
+          var color = swapColorsThisRound ? W : B;
+          grid[a.y][a.x]=color;
+        }
+        for (var j=0;j<rootAW.length;j++){
+          var pw=rootAW[j]; var b=tfXY(pw.x,pw.y);
+          var color2 = swapColorsThisRound ? B : W;
+          grid[b.y][b.x]=color2;
+        }
+      }
+      for (var k=0;k<current;k++){
+        var m=history[k]; attemptPlay(m.x,m.y,m.color);
+      }
+      turn = (current%2===0)?B:W; redraw();
+    }
+
+    function readBracket(str,i){ var out='',k=i; while(k<str.length){ var ch=str[k++]; if(ch==='\\'){ if(k<str.length) out+=str[k++]; continue; } if(ch===']') break; out+=ch; } return {text:out,next:k}; }
+    function parseGameTree(str,i){
+      var seq=[],node=null; if(str[i]!=='(') return {seq:[],next:i}; i++;
+      while(i<str.length){
+        var ch=str[i];
+        if(ch===';'){ node={}; seq.push(node); i++; }
+        else if((ch>='A'&&ch<='Z')||(ch>='a'&&ch<='z')){
+          var key=''; while(i<str.length){ var c=str[i]; if((c>='A'&&c<='Z')||(c>='a'&&c<='z')){ key+=c; i++; } else break; }
+          var vals=[]; while(i<str.length && str[i]==='['){ var r=readBracket(str,i+1); vals.push(r.text); i=r.next; }
+          if(!node){ node={}; seq.push(node); } node[key]=vals.length>1?vals:vals[0];
+        }
+        else if(ch==='('){ var child=parseGameTree(str,i); i=child.next; if(seq.length){ var p=seq[seq.length-1]; (p.variations||(p.variations=[])).push(child.seq); } }
+        else if(ch===')'){ i++; break; }
+        else i++;
+      }
+      for(var t=0;t<seq.length-1;t++) seq[t].next=seq[t+1];
+      return {seq:seq,next:i};
+    }
+    function sgfCoordToXY(s){ if(!s||s.length<2) return null; var x=s.charCodeAt(0)-97,y=s.charCodeAt(1)-97; if(x<0||y<0||x>=SIZE||y>=SIZE) return null; return {x:x,y:y}; }
+    function listCoords(prop){ var out=[], list=Array.isArray(prop)?prop:(prop?[prop]:[]); for(var i=0;i<list.length;i++){ var xy=sgfCoordToXY(list[i]); if(xy) out.push(xy); } return out; }
+    function linkify(seq,parent){
+      for(var i=0;i<seq.length;i++){
+        var n=seq[i];
+        n.prev=(i===0?parent:seq[i-1]);
+        n.next=(i<seq.length-1?seq[i+1]:null);
+        if(n.AB) n.AB_=listCoords(n.AB);
+        if(n.AW) n.AW_=listCoords(n.AW);
+        if(n.variations&&n.variations.length){
+          for(var v=0;v<n.variations.length;v++){
+            var childSeq=n.variations[v];
+            if(childSeq&&childSeq.length) linkify(childSeq,n);
+          }
         }
       }
     }
-
-    var leftPx   = getX(minX) - step/2;
-    var rightPx  = getX(maxX) + step/2;
-    var topPx    = getY(minY) - step/2;
-    var bottomPx = getY(maxY) + step/2;
-    var cropSide = Math.max(rightPx-leftPx, bottomPx-topPx);
-    var scale    = w / cropSide;
-
-    ctx.save();
-    ctx.scale(scale, scale);
-    ctx.translate(-leftPx, -topPx);
-
-    ctx.strokeStyle = 'rgba(0,0,0,.9)';
-    var desiredPx = Math.max(1, Math.floor(w * 0.006));
-    ctx.lineWidth = desiredPx / scale;
-
-    for (var i=0; i<size; i++){
-      var y = getY(i);
-      ctx.beginPath(); ctx.moveTo(getX(0), y); ctx.lineTo(getX(size-1), y); ctx.stroke();
-      var x = getX(i);
-      ctx.beginPath(); ctx.moveTo(x, getY(0)); ctx.lineTo(x, getY(size-1)); ctx.stroke();
+    function extractRoot(seq){
+      rootAB=[]; rootAW=[];
+      if(!seq||!seq.length) return;
+      var n=seq[0];
+      if(n.AB_) rootAB=n.AB_;
+      if(n.AW_) rootAW=n.AW_;
+    }
+    function nodeHasMove(n){ return !!(n && (n.B||n.W)); }
+    function nodeMoveXY(n){
+      var s=n.B||n.W; var xy=sgfCoordToXY(s); if(!xy) return null;
+      var color = n.B?B:W;
+      if (swapColorsThisRound) color = (color===B?W:B);
+      return {x:xy.x,y:xy.y,color:color};
+    }
+    // Raw SGF coordinates (no color / orientation changes)
+    function nodeMoveXYRaw(n){
+      var s = n && (n.B || n.W);
+      if (!s) return null;
+      return sgfCoordToXY(s);
     }
 
-    ctx.fillStyle = '#000';
-    var hs = hoshiPoints(size);
-    var hr = Math.max(1, step * 0.02);
-    hs.forEach(function(ix){
-      hs.forEach(function(iy){
-        var cx = getX(ix), cy = getY(iy);
-        ctx.beginPath(); ctx.arc(cx, cy, hr, 0, Math.PI*2); ctx.fill();
-      });
-    });
-
-    var r = step * 0.46;
-    (stones || []).forEach(function(s){
-      drawStone(ctx, getX(s.x), getY(s.y), r, (s.color === 'W' ? 'W' : 'B'));
-    });
-
-    ctx.restore();
-  }
-
-  function renderOwnThumb(el, line){
-    var size = line.size || 19;
-    var stones = simulatePosition(
-      size,
-      Array.isArray(line.rootAB) ? line.rootAB : [],
-      Array.isArray(line.rootAW) ? line.rootAW : [],
-      Array.isArray(line.moves)  ? line.moves  : []
-    );
-    drawBoardThumb(el, size, stones, { crop:true });
-  }
-
-
-  /* Pattern list rendering */
-  function renderList(){
-    var items = loadPatterns();
-    listEl.innerHTML='';
-    if (!items.length){
-      var empty=document.createElement('div');
-      empty.className='s-card empty';
-      empty.innerHTML='<div class="empty-title">No patterns yet</div><div class="empty-desc">Start by adding your first pattern.</div>';
-      listEl.appendChild(empty);
-      return;
+    // Map a move into canonical coordinates (relative to the "start" corner)
+    // using startTF, but WITHOUT rotating to the current tryIndex.
+    function moveCanonCoord(n){
+      var xy = nodeMoveXYRaw(n);
+      if (!xy) return null;
+      // Canonical orientation: first move near a specific corner.
+      var p = startTF({ x: xy.x, y: xy.y });
+      return p;
     }
 
-    items.forEach(function(pat, idx){
-      var card=document.createElement('button');
-      card.type='button';
-      card.className='s-card own-card';
-      card.dataset.id=pat.id;
+    // A "neutral" move is one that lies on the diagonal from the corner:
+    // distances from the corner in x and y are equal (1-1, 2-2, 3-3, 4-4, ...).
+    function isNeutralFromCornerCanon(p){
+      if (!p) return false;
+      var dx = (SIZE - 1) - p.x; // distance from right edge (NE corner)
+      var dy = p.y;              // distance from top
+      return dx === dy;
+    }
 
-      var thumb=document.createElement('div');
-      thumb.className='own-thumb';
+    // Given a path of nodes from root to some node, find the FIRST move
+    // that is non-neutral AFTER a prefix of one or more neutral moves.
+    // Returns that node, or null if there is no such move.
+    function firstDirectionalAfterNeutralNode(path){
+      if (!path || !path.length) return null;
 
-      var meta=document.createElement('div');
-      meta.className='own-meta';
+      var moves = [];
+      for (var i = 0; i < path.length; i++){
+        var nd = path[i];
+        if (!nodeHasMove(nd)) continue;
+        var canon = moveCanonCoord(nd);
+        if (!canon) continue;
+        var neutral = isNeutralFromCornerCanon(canon);
+        moves.push({ node: nd, neutral: neutral });
+      }
+      if (!moves.length) return null;
 
-      var title=document.createElement('div');
-      title.className='own-title';
+      // Count how many moves at the very beginning are neutral.
+      var idx = 0;
+      while (idx < moves.length && moves[idx].neutral) idx++;
 
-      var cta=document.createElement('div');
-      cta.className='own-cta';
+      // We only care if the joseki actually starts with at least one neutral move.
+      if (idx === 0) return null;          // starts directional -> no special marker
+      if (idx >= moves.length) return null; // all moves so far are neutral -> no directional yet
 
-var moveCount = (pat && Array.isArray(pat.moves)) ? pat.moves.length : 0;
-var displayName = 'Pattern ' + (idx+1);
-title.textContent = displayName + ' (' + moveCount + ' Moves)';
+      // This is the first non-neutral move after the neutral prefix.
+      return moves[idx].node;
+    }
 
+    // True if "nextNode" is exactly that first directional move after the
+    // neutral prefix at the beginning.
+    function shouldShowDirectionalMarkerForNode(nextNode){
+      if (!nextNode) return false;
+      var path = pathTo(nextNode);
+      var firstDir = firstDirectionalAfterNeutralNode(path);
+      return firstDir === nextNode;
+    }
 
-      var practiceBtn = document.createElement('span');
-      practiceBtn.className = 's-btn';
-      practiceBtn.textContent = 'Practice';
-      practiceBtn.addEventListener('click', function(ev){
-        ev.stopPropagation();
-        ev.preventDefault();
-        if (!pat || !(pat.moves||[]).length){
-          showNotice('This pattern is empty. Please add some moves first.', 'Empty pattern');
+    function candidatesDedup(list){ var seen={},out=[]; for(var i=0;i<list.length;i++){ var mv=list[i],key=mv.xy.x+':'+mv.xy.y+':'+mv.color; if(!seen[key]){ seen[key]=1; out.push(mv); } } return out; }
+
+    function getRootCandidates(){
+      var out=[]; if(!sgfRootSeq||!sgfRootSeq.length) return out; var r=sgfRootSeq[0];
+      var n=r; while(n && !nodeHasMove(n)) n=n.next;
+      if(n && nodeHasMove(n)){ var mv=nodeMoveXY(n); if(mv) out.push({node:n,xy:{x:mv.x,y:mv.y},color:mv.color}); }
+      if(r.variations && r.variations.length){
+        for(var v=0; v<r.variations.length; v++){
+          var seq=r.variations[v];
+          if (seq && seq.length){
+            var m=seq[0]; while(m && !nodeHasMove(m)) m=m.next;
+            if(m && nodeHasMove(m)){ var mv2=nodeMoveXY(m); if(mv2) out.push({node:m,xy:{x:mv2.x,y:mv2.y},color:mv2.color}); }
+          }
+        }
+      }
+      return candidatesDedup(out);
+    }
+    function getNextCandidates(node){
+      if(!node) return getRootCandidates();
+      var arr=[];
+      if(node.next){
+        var n=node.next; while(n && !nodeHasMove(n)) n=n.next;
+        if(n && nodeHasMove(n)){ var mv=nodeMoveXY(n); if(mv) arr.push({node:n,xy:{x:mv.x,y:mv.y},color:mv.color}); }
+      }
+      if(node.variations && node.variations.length){
+        for(var v=0; v<node.variations.length; v++){
+          var seq=node.variations[v];
+          if (seq && seq.length){
+            var m=seq[0]; while(m && !nodeHasMove(m)) m=m.next;
+            if(m && nodeHasMove(m)){ var mv2=nodeMoveXY(m); if(mv2) arr.push({node:m,xy:{x:mv2.x,y:mv2.y},color:mv2.color}); }
+          }
+        }
+      }
+      return candidatesDedup(arr);
+    }
+    function pathTo(node){ var out=[],n=node; while(n){ out.push(n); n=n.prev; } out.reverse(); return out; }
+    function buildPositionTo(node){
+      clearHint();
+      lastX = lastY = null;
+      for (var y=0;y<SIZE;y++) grid[y].fill(null);
+      history.length = 0;
+
+      for (var i=0;i<rootAB.length;i++){ var pb=rootAB[i]; var ap=tfXY(pb.x,pb.y); var c = swapColorsThisRound?W:B; grid[ap.y][ap.x]=c; }
+      for (var j=0;j<rootAW.length;j++){ var pw=rootAW[j]; var bp=tfXY(pw.x,pw.y); var c2= swapColorsThisRound?B:W; grid[bp.y][bp.x]=c2; }
+
+      if(!node){ current=0; turn=B; redraw(); return; }
+
+      var path=pathTo(node);
+      for (var k=0;k<path.length;k++){
+        var nd=path[k];
+        if (nd.AB_) for (var a=0;a<nd.AB_.length;a++){ var p=nd.AB_[a]; var pa=tfXY(p.x,p.y); grid[pa.y][pa.x]= swapColorsThisRound?W:B; }
+        if (nd.AW_) for (var b=0;b<nd.AW_.length;b++){ var q=nd.AW_[b]; var qb=tfXY(q.x,q.y); grid[qb.y][qb.x]= swapColorsThisRound?B:W; }
+        if (nodeHasMove(nd)){
+          var mv=nodeMoveXY(nd);
+          if(mv){
+            var pos=tfXY(mv.x,mv.y);
+            var r=attemptPlay(pos.x,pos.y,mv.color);
+            if(r.ok) history.push({x:pos.x,y:pos.y,color:mv.color,captures:r.captures});
+            lastX = pos.x; lastY = pos.y;
+          }
+        }
+      }
+      current=history.length; turn=(current%2===0)?B:W; redraw();
+    }
+
+    function t_identity(p){ return { x: p.x, y: p.y }; }
+    function t_swap(p){ return { x: p.y, y: p.x }; }
+    function t_rot90(p){  return { x: SIZE - 1 - p.y, y: p.x }; }
+    function t_rot180(p){ return { x: SIZE - 1 - p.x, y: SIZE - 1 - p.y }; }
+    function t_rot270(p){ return { x: p.y, y: SIZE - 1 - p.x }; }
+    function compose(a, b){
+      return function(p){ return a(b(p)); };
+    }
+
+    var FLIP_NE = compose(t_swap, t_rot180);
+
+    // Base orientation list (unchanged) – used for corner joseki
+    var ORIENTS = [
+      { name: 'Start',       tf: t_identity },
+      { name: 'Next-1',      tf: t_rot90 },
+      { name: 'Next-2',      tf: compose(t_rot90,  FLIP_NE) },
+      { name: 'Across-1',    tf: t_rot180 },
+      { name: 'Across-2',    tf: compose(t_rot180, FLIP_NE) },
+      { name: 'Prev-1',      tf: t_rot270 },
+      { name: 'Prev-2',      tf: compose(t_rot270, FLIP_NE) },
+      { name: 'Start-Other', tf: FLIP_NE }
+    ];
+
+    // NEW: orientation order for *side* patterns.
+    // For a side joseki whose first try is, say, on the top side near the right,
+    // the tries go clockwise:
+    //   0: top-right side
+    //   1: right-top
+    //   2: right-bottom
+    //   3: bottom-right
+    //   4: bottom-left
+    //   5: left-bottom
+    //   6: left-top
+    //   7: top-left
+    var ORIENTS_SIDE = [
+      ORIENTS[0], // Start        (id)
+      ORIENTS[7], // Start-Other  (flip)
+      ORIENTS[1], // Next-1       (r90)
+      ORIENTS[2], // Next-2       (r90 ∘ flip)
+      ORIENTS[3], // Across-1     (r180)
+      ORIENTS[4], // Across-2     (r180 ∘ flip)
+      ORIENTS[5], // Prev-1       (r270)
+      ORIENTS[6]  // Prev-2       (r270 ∘ flip)
+    ];
+
+    var startTF    = t_identity;
+    var startTFInv = t_identity;
+    var activeOrients = ORIENTS; // default: corner behaviour
+
+    (function(){
+      var ALL = [
+        t_identity, t_rot90, t_rot180, t_rot270,
+        FLIP_NE,
+        compose(t_rot90,  FLIP_NE),
+        compose(t_rot180, FLIP_NE),
+        compose(t_rot270, FLIP_NE)
+      ];
+
+      function isIdentity(f){
+        var pts = [
+          { x: 0,       y: 0 },
+          { x: SIZE-1,  y: 0 },
+          { x: 0,       y: SIZE-1 },
+          { x: 5,       y: 7 },
+          { x: 9,       y: 9 }
+        ];
+        for (var i = 0; i < pts.length; i++){
+          var p = pts[i];
+          var q = f(p);
+          if (q.x !== p.x || q.y !== p.y) return false;
+        }
+        return true;
+      }
+
+      function invertTF(tf){
+        for (var i = 0; i < ALL.length; i++){
+          if (isIdentity(compose(ALL[i], tf))) return ALL[i];
+        }
+        return t_identity;
+      }
+
+      window.detectStartTF = function(){
+        var opts = getRootCandidates();
+        if (!opts.length){
+          startTF      = t_identity;
+          startTFInv   = t_identity;
+          activeOrients = ORIENTS;
           return;
         }
 
-        window.PracticeConfig = window.PracticeConfig || {};
-        window.PracticeConfig.selectedLine = {
-          size:  pat.size || 19,
-          rootAB: Array.isArray(pat.rootAB) ? pat.rootAB.slice() : [],
-          rootAW: Array.isArray(pat.rootAW) ? pat.rootAW.slice() : [],
-          moves:  pat.moves.map(function(m){ return { x:m.x, y:m.y, color:m.color }; })
-        };
+        // First move of the main sequence (in SGF coordinates)
+        var mv = { x: opts[0].xy.x, y: opts[0].xy.y };
 
-        savePracticeConfig();
+        function cornerOf(p){
+          var NE = { x: SIZE-1, y: 0 };
+          var SE = { x: SIZE-1, y: SIZE-1 };
+          var SW = { x: 0,      y: SIZE-1 };
+          var NW = { x: 0,      y: 0 };
+          function d2(a){
+            var dx = a.x - p.x;
+            var dy = a.y - p.y;
+            return dx*dx + dy*dy;
+          }
+          var ds = [ d2(NE), d2(SE), d2(SW), d2(NW) ];
+          var k  = 0, best = ds[0];
+          for (var i = 1; i < 4; i++){
+            if (ds[i] < best){ best = ds[i]; k = i; }
+          }
+          return k;
+        }
 
-        var lvlOverlayEl = document.getElementById('level-overlay');
-        if (lvlOverlayEl){
-          applyTierGateOnLevelOverlay();
-          lvlOverlayEl.style.display = 'flex';
+        // Rotate so the nearest corner is NE
+        var corner = cornerOf(mv);
+        var rotToNE =
+          (corner === 0) ? t_identity :
+          (corner === 1) ? t_rot270 :
+          (corner === 2) ? t_rot180 :
+                           t_rot90;
+
+        var q = rotToNE(mv);
+        var inwardX  = (SIZE - 1) - q.x;
+        var inwardY  = q.y;
+        var needFlip = inwardY > inwardX;
+
+        // Start transform (possibly with the NE flip)
+        startTF    = needFlip ? compose(FLIP_NE, rotToNE) : rotToNE;
+        startTFInv = invertTF(startTF);
+
+        // Canonical root after applying the start transform
+        var canon = startTF(mv);
+
+        // Decide if this is a corner or a side joseki in canonical coordinates.
+        var margin   = 3; // how close to the edge counts as "on the side"
+        var onTop    = (canon.y <= margin);
+        var onBottom = (canon.y >= SIZE - 1 - margin);
+        var onLeft   = (canon.x <= margin);
+        var onRight  = (canon.x >= SIZE - 1 - margin);
+
+        var nearCorner = ( (onTop || onBottom) && (onLeft || onRight) );
+        var nearEdge   =  (onTop || onBottom || onLeft || onRight);
+
+        if (nearCorner){
+          // Corner joseki – keep the original orientation order (already clockwise)
+          activeOrients = ORIENTS;
+        } else if (nearEdge){
+          // Side joseki – use the special side cycle (clockwise along the sides)
+          activeOrients = ORIENTS_SIDE;
         } else {
-          window.PracticeConfig.level = 2;
-          savePracticeConfig();
-          window.location.href = "../practice-board/practice-board.html";
+          // Central-ish patterns – treat them like sides for rotation purposes
+          activeOrients = ORIENTS_SIDE;
         }
-      });
-
-      var removeBtn = document.createElement('span');
-      removeBtn.className = 's-btn s-btn-danger';
-      removeBtn.textContent = 'Remove';
-   removeBtn.addEventListener('click', function(ev){
-  ev.stopPropagation();
-  ev.preventDefault();
-  showRemoveToast(pat, displayName);
-});
-
-
-      cta.appendChild(practiceBtn);
-      cta.appendChild(removeBtn);
-
-      meta.appendChild(title);
-      meta.appendChild(cta);
-      card.appendChild(thumb);
-      card.appendChild(meta);
-      listEl.appendChild(card);
-
-      renderOwnThumb(thumb, pat);
-
-      card.addEventListener('click', function(){
-        practiceBtn.click();
-      });
-    });
-  }
-
-  /* Tier gating reused for Level overlay (use shared GoTier bridge if present) */
-  var TierAPI = window.GoTier || window.Tier || {
-    get: function(){
-      try { return (localStorage.getItem('go_tier') || 'free').toLowerCase(); }
-      catch(_) { return 'free'; }
-    }
-  };
-
-  function getTier(){
-    try {
-      if (TierAPI && typeof TierAPI.get === 'function'){
-        return String(TierAPI.get() || 'free').toLowerCase();
-      }
-    } catch(_){}
-    return 'free';
-  }
-
-  function isPro(){
-    return getTier() === 'pro';
-  }
-
-  function applyTierGateOnLevelOverlay(){
-    var proLocked = !isPro();
-    document.querySelectorAll('#level-overlay .level-card').forEach(function(btn){
-      var lvl = +(btn.getAttribute('data-level') || 0);
-      btn.setAttribute('aria-disabled', (proLocked && lvl >= 4) ? 'true' : 'false');
-    });
-  }
-
-  // When GoTier.set() changes the plan, refresh level gating in-place
-  window.addEventListener('tier:changed', function(){
-    applyTierGateOnLevelOverlay();
-  });
-
-
-  /* Level overlay wiring */
-  var lvlOverlay = document.getElementById('level-overlay');
-  var lvlBack    = lvlOverlay ? document.getElementById('level-back') : null;
-
-  if (lvlOverlay){
-    lvlOverlay.addEventListener('click', function(e){
-      var card = e.target.closest('.level-card');
-      if (!card) return;
-
-      if (card.getAttribute('aria-disabled') === 'true'){
-        if (window.OwnShowNotice){
-          window.OwnShowNotice('Levels 4 and 5 are part of Joseki Master Pro.', 'Pro feature');
-        }
-        return;
-      }
-
-      var lvl = parseInt(card.getAttribute('data-level') || '2', 10) || 2;
-      window.PracticeConfig = window.PracticeConfig || {};
-      window.PracticeConfig.level = lvl;
-      savePracticeConfig();
-
-      if (!window.PracticeConfig.selectedLine){
-        console.warn('[OwnPatterns] Level picked but no selectedLine in PracticeConfig; not opening board.');
-        return;
-      }
-
-      window.location.href = "../practice-board/practice-board.html";
-    });
-
-    if (lvlBack){
-      lvlBack.addEventListener('click', function(){
-        lvlOverlay.style.display = 'none';
-      });
-    }
-  }
-
-  /* Public API */
-  if (!window.GoOwnPatterns || !window.GoOwnPatterns.__ready){
-    window.GoOwnPatterns = {
-      open: function(){
-        hideNotice();
-        hideRemoveToast();
-        renderList();
-        show(overlay);
-      },
-close: function(){
-  hide(overlay);
-  hide(editor);
-  if (lvlOverlay) lvlOverlay.style.display='none';
-  hideNotice();
-  hideRemoveToast();
-
-  hideExitBtn(); // hard reset on close
-
-  resetAll();
-},
-
-      openCreate: function(){
-        hideNotice();
-        hideRemoveToast();
-        hide(overlay);
-        show(editor);
-openCreate: function(){
-  hideNotice();
-  hideRemoveToast();
-  hide(overlay);
-  show(editor);
-
-  hideExitBtn(); // hard reset on open
-
-  ensureBoard(function(){
-    resetAll();
-    fitSoon();
-  });
-  requestAnimationFrame(fitSoon);
-},
-
-        ensureBoard(function(){
-          resetAll();
-          fitSoon();
-        });
-        requestAnimationFrame(fitSoon);
-      },
-      __ready: true
-    };
-  }
-
-  /* Wiring */
-  if (openBtn){
-    openBtn.addEventListener('click', function(){
-      window.GoOwnPatterns.openCreate();
-    });
-  }
-
-  if (backTop){
-    backTop.addEventListener('click', function(){
-      window.GoOwnPatterns.close();
-      if (window.GoMenu && typeof window.GoMenu.open === 'function'){
-        window.GoMenu.open();
-      }
-    });
-  }
-
-if (backEd){
-  backEd.addEventListener('click', function(){
-    hideExitBtn();
-
-    hide(editor);
-    hideNotice();
-    hideRemoveToast();
-    resetAll();
-    renderList();
-    show(overlay);
-  });
-}
-
-
-  if (undoBtn){
-    undoBtn.addEventListener('click', function(){
-      if (!moves.length || isNoticeOpen()) return;
-      var m=moves.pop();
-      grid[m.y][m.x]=null;
-      if (Array.isArray(m.captured)){
-        m.captured.forEach(function(s){ grid[s.y][s.x]=s.color; });
-      }
-      koPoint = m.prevKo ? { x:m.prevKo.x, y:m.prevKo.y } : null;
-      last = moves.length ? { x:moves[moves.length-1].x, y:moves[moves.length-1].y } : null;
-      turn = m.color;
-      redraw();
-    });
-  }
-
-  if (resetBtn){
-    resetBtn.addEventListener('click', function(){
-      if (!isNoticeOpen()) resetAll();
-    });
-  }
-if (passBtn){
-  passBtn.addEventListener('click', function(){
-    if (isNoticeOpen()) return;
-
-    // Treat pass as an editor helper:
-    // it flips the turn so you can play the same color again.
-    koPoint = null; // a pass counts as an intervening move for ko purposes here
-    turn = (turn === 'B') ? 'W' : 'B';
-  });
-}
-
-  if (saveBtn){
-    saveBtn.addEventListener('click', function(){
-      if (isNoticeOpen()) return;
-      if (!moves.length){
-        showNotice('Add at least one move to save a pattern.', 'Add a move');
-        return;
-      }
-      var S = SIZE;
-      function pp(m){
-        var L="ABCDEFGHJKLMNOPQRST".slice(0,Math.min(19,S));
-        return (L[m.x]||String(m.x))+(S-m.y);
-      }
-      var title = 'Pattern: ' + moves.slice(0,3).map(pp).join(' → ') + (moves.length>3 ? ' …' : '');
-      var items = loadPatterns();
-      var pat = {
-        id: 'own-' + Date.now(),
-        title: title,
-        createdAt: new Date().toISOString(),
-        size: SIZE,
-        rootAB: [],
-        rootAW: [],
-        moves: moves.map(function(m){ return { x:m.x, y:m.y, color:m.color }; })
       };
-      items.unshift(pat);
-      savePatterns(items);
-      resetAll();
-      hide(editor);
-      renderList();
-      show(overlay);
-    });
+    })();
+
+    function tfXY(x, y){
+      // Use activeOrients (corner vs side aware), fall back to ORIENTS just in case
+      var arr  = activeOrients || ORIENTS;
+      var step = arr[ tryIndex % arr.length ].tf;
+
+      var p = startTF({ x: x, y: y });
+      p     = step(p);
+      p     = startTFInv(p);
+
+      return { x: p.x, y: p.y };
+    }
+
+
+    var zoomEnabled = (window.GoPrefs && typeof window.GoPrefs.josekiZoom !== 'undefined')
+                      ? !!window.GoPrefs.josekiZoom : true;
+    var scale = 1, minScale = 1, maxScale = 2.6;
+    var baseW = 0;
+    var offsetX = 0, offsetY = 0;
+    var animId = 0;
+    var isZoomAnimating = false;
+    // Kinetic panning state
+    var flingId = 0;
+    var isFlinging = false;
+    var flingVX = 0, flingVY = 0;  // px per ms in offset-space
+    var flingLastTime = 0;
+    var panSamplePrev = null;
+    var panSampleCurr = null;
+
+    function cancelFling(){
+      if (!isFlinging && !flingId) return;
+      isFlinging = false;
+      if (flingId){
+        cancelAnimationFrame(flingId);
+        flingId = 0;
+      }
+    }
+
+    function startFling(vx, vy){
+      // Only fling when zoomed & fullscreen
+      if (!isFullscreen || scale <= 1) return;
+
+      cancelFling();
+
+      var speed = Math.sqrt(vx*vx + vy*vy);
+
+      // New: cap very fast swipes so they don't slide too far
+      var MAX_SPEED = 0.50; // try 0.15–0.22 range
+      if (speed > MAX_SPEED){
+        var s = MAX_SPEED / speed;
+        vx *= s;
+        vy *= s;
+        speed = MAX_SPEED;
+      }
+
+      // Ignore tiny velocities (keep this as-is, or tweak)
+      if (speed < 0.04) return;
+
+      isFlinging    = true;
+      flingVX       = vx;
+      flingVY       = vy;
+      flingLastTime = performance.now();
+
+      (function step(now){
+        if (!isFlinging) return;
+
+        var dt = now - flingLastTime;
+        if (dt <= 0){
+          flingId = requestAnimationFrame(step);
+          return;
+        }
+        if (dt > 50) dt = 50;
+        flingLastTime = now;
+
+        offsetX += flingVX * dt;
+        offsetY += flingVY * dt;
+
+        var friction = 0.0010; // px/ms²
+        var speed = Math.sqrt(flingVX*flingVX + flingVY*flingVY);
+        var decel = friction * dt;
+
+        if (speed <= 0.01 || decel >= speed){
+          cancelFling();
+          applyPanAndSize(true);
+          return;
+        }
+
+        var newSpeed    = speed - decel;
+        var scaleFactor = newSpeed / speed;
+        flingVX *= scaleFactor;
+        flingVY *= scaleFactor;
+
+        applyPanAndSize(false);
+        flingId = requestAnimationFrame(step);
+      })(performance.now());
+    }
+
+
+    var isFullscreen = false;
+    var overlay = null, stage = null, returnAnchor = null, zoomExitBtn = null, zoomUI = null, zoomTop = null;
+    var prevOverflow = "";
+    var ctrlsReturnParent = null, ctrlsReturnNext = null;
+    var topbarReturnParent = null, topbarReturnNext = null;
+
+    // Prevent the first synthetic click on the zoom-out box from immediately exiting
+    var justEnteredFullscreen = false;
+    var JUST_ENTER_EXIT_DELAY = 350; // ms
+
+
+    function ensureZoomLayer(){
+      if (zoomLayer) return;
+      mount.style.position = 'relative';
+      mount.style.overflow = 'hidden';
+
+      zoomLayer = document.createElement('div');
+      zoomLayer.style.position = 'absolute';
+      zoomLayer.style.left = '0px';
+      zoomLayer.style.top  = '0px';
+
+      zoomLayer.style.transformOrigin = '0 0';
+      zoomLayer.style.willChange = 'transform';
+
+      while (mount.firstChild) zoomLayer.appendChild(mount.firstChild);
+      mount.appendChild(zoomLayer);
+
+      zoomLayer.style.backgroundImage = "url('../img/wood.jpg')";
+      zoomLayer.style.backgroundSize = "cover";
+      zoomLayer.style.backgroundPosition = "center";
+      mount.style.backgroundImage = "none";
+    }
+
+    ensureZoomLayer();
+
+    function ensureOverlay(){
+      if (!overlay){
+        overlay = document.getElementById('go-zoom-overlay-prac');
+        if (!overlay){
+          overlay = document.createElement('div');
+          overlay.id = 'go-zoom-overlay-prac';
+          overlay.innerHTML =
+            '<div id="go-zoom-stage-prac"></div>' +
+            '<div id="go-zoom-exit-prac" aria-label="Zoom out"></div>' +
+            '<div id="go-zoom-top-prac"></div>' +
+            '<div id="go-zoom-ui-prac"></div>';
+          document.body.appendChild(overlay);
+        } else {
+          if (!overlay.querySelector('#go-zoom-stage-prac')){
+            var stageDiv = document.createElement('div');
+            stageDiv.id = 'go-zoom-stage-prac';
+            overlay.appendChild(stageDiv);
+          }
+          if (!overlay.querySelector('#go-zoom-exit-prac')){
+            var exitDiv = document.createElement('div');
+            exitDiv.id = 'go-zoom-exit-prac';
+            overlay.appendChild(exitDiv);
+          }
+          if (!overlay.querySelector('#go-zoom-top-prac')){
+            var topDiv = document.createElement('div');
+            topDiv.id = 'go-zoom-top-prac';
+            overlay.appendChild(topDiv);
+          }
+          if (!overlay.querySelector('#go-zoom-ui-prac')){
+            var uiDiv = document.createElement('div');
+            uiDiv.id = 'go-zoom-ui-prac';
+            overlay.appendChild(uiDiv);
+          }
+        }
+      }
+
+      stage       = overlay.querySelector('#go-zoom-stage-prac');
+      zoomExitBtn = overlay.querySelector('#go-zoom-exit-prac');
+      zoomTop     = overlay.querySelector('#go-zoom-top-prac');
+      zoomUI      = overlay.querySelector('#go-zoom-ui-prac');
+
+      if (zoomExitBtn && !zoomExitBtn._bound){
+        zoomExitBtn._bound = true;
+        zoomExitBtn.addEventListener('click', function(e){
+          // Ignore the synthetic click that comes right after entering fullscreen
+          if (justEnteredFullscreen){
+            justEnteredFullscreen = false;
+            e.stopPropagation();
+            e.preventDefault();
+            return;
+          }
+
+          e.stopPropagation();
+          smoothZoomOutAndExit();
+        });
+      }
+    }
+
+    function viewportSize(){
+      if (isFullscreen) {
+        return {
+          vw: mount.clientWidth  || window.innerWidth  || baseW || 1,
+          vh: mount.clientHeight || window.innerHeight || baseW || 1
+        };
+      }
+      return {
+        vw: mount.clientWidth || baseW || 1,
+        vh: mount.clientHeight || baseW || 1
+      };
+    }
+
+    function clampPan(){
+      if (isZoomAnimating) return;
+
+      const {vw, vh} = viewportSize();
+      const bw = Math.round(baseW * scale);
+      const bleedX = Math.ceil(vw * 0.5);
+      const bleedY = Math.ceil(vh * 0.5);
+      const minOX = -bleedX;
+      const maxOX = Math.max(0, bw - vw) + bleedX;
+      const minOY = -bleedY;
+      const maxOY = Math.max(0, bw - vh) + bleedY;
+
+      offsetX = Math.max(minOX, Math.min(offsetX, maxOX));
+      offsetY = Math.max(minOY, Math.min(offsetY, maxOY));
+    }
+
+    function applyPanAndSize(redrawAfter){
+      const {vw, vh} = viewportSize();
+
+      const targetW = Math.max(2, Math.round(baseW || vw));
+
+      if (board._lastW !== targetW) {
+        board.setWidth(targetW);
+        if (zoomLayer) {
+          zoomLayer.style.width  = targetW + 'px';
+          zoomLayer.style.height = targetW + 'px';
+        }
+        board._lastW = targetW;
+        if (!redrawAfter) redrawAfter = true;
+      }
+
+      clampPan();
+
+      if (zoomLayer) {
+        zoomLayer.style.transform =
+          'translate3d(' + (-offsetX) + 'px,' + (-offsetY) + 'px,0) scale(' + scale + ')';
+      }
+
+      if (isFullscreen){
+        mount.style.width  = '100vw';
+        mount.style.height = '100vh';
+      } else {
+        mount.style.width  = '';
+        mount.style.height = baseW + 'px';
+      }
+
+      if (redrawAfter) redraw();
+    }
+
+    function resetViewLocal(){
+      cancelFling();
+      scale = 1;
+      offsetX = 0;
+      offsetY = 0;
+      applyPanAndSize(true);
+    }
+
+
+    function animateTo(targetScale, pxWorld, pyWorld, sxTarget, syTarget, onDone){
+      targetScale = Math.max(minScale, Math.min(maxScale, targetScale));
+
+      cancelFling(); // stop kinetic pan when zooming
+
+      const s0  = scale;
+      const t0  = performance.now();
+      const dur = 260;
+
+      cancelAnimationFrame(animId);
+      isZoomAnimating = true;
+
+      offsetX = pxWorld * s0 - sxTarget;
+      offsetY = pyWorld * s0 - syTarget;
+      applyPanAndSize(false);
+
+      (function step(now){
+        let t = (now - t0) / dur;
+        if (t > 1) t = 1;
+
+        const e = 1 - Math.pow(1 - t, 3);
+        const s = s0 + (targetScale - s0) * e;
+
+        scale   = s;
+        offsetX = pxWorld * s - sxTarget;
+        offsetY = pyWorld * s - syTarget;
+
+        applyPanAndSize(false);
+
+        if (t < 1){
+          animId = requestAnimationFrame(step);
+        } else {
+          isZoomAnimating = false;
+          applyPanAndSize(true);
+          if (typeof onDone === 'function') {
+            onDone();
+          }
+        }
+      })(t0);
+    }
+
+    function centerZoomAtGrid(i, j, factor, tapClientX, tapClientY){
+      const targetScale = Math.max(minScale, Math.min(maxScale, scale * factor));
+
+      const px_curr  = getXcss(i);
+      const py_curr  = getYcss(j);
+      const px_world = px_curr / scale;
+      const py_world = py_curr / scale;
+
+      const rect = mount.getBoundingClientRect();
+      let sx_target = rect.width  / 2;
+      let sy_target = rect.height / 2;
+
+      if (typeof tapClientX === 'number' && typeof tapClientY === 'number'){
+        sx_target = tapClientX - rect.left;
+        sy_target = tapClientY - rect.top;
+        sx_target = Math.max(0, Math.min(sx_target, rect.width));
+        sy_target = Math.max(0, Math.min(sy_target, rect.height));
+      }
+
+      animateTo(targetScale, px_world, py_world, sx_target, sy_target);
+    }
+
+    function enterFullscreenAtGrid(i, j, tapClientX, tapClientY){
+      if (isFullscreen) return;
+     cancelFling();
+      ensureOverlay();
+      prevOverflow = document.documentElement.style.overflow || "";
+      document.documentElement.style.overflow = 'hidden';
+
+      returnAnchor = document.createElement('div');
+      returnAnchor.style.display = 'none';
+      mount.parentNode.insertBefore(returnAnchor, mount);
+
+      stage.appendChild(mount);
+
+      // move top bar (Back + meters) to the top overlay
+      if (zoomTop && pracTopbar && !pracTopbar._inZoom){
+        topbarReturnParent = pracTopbar.parentNode;
+        topbarReturnNext   = pracTopbar.nextSibling;
+        zoomTop.appendChild(pracTopbar);
+        pracTopbar._inZoom = true;
+      }
+
+      // move bottom controls to the bottom overlay
+      if (zoomUI && pracCtrls && !pracCtrls._inZoom){
+        ctrlsReturnParent = pracCtrls.parentNode;
+        ctrlsReturnNext   = pracCtrls.nextSibling;
+        zoomUI.appendChild(pracCtrls);
+        pracCtrls._inZoom = true;
+      }
+
+      overlay.style.display = 'flex';
+      if (zoomExitBtn) zoomExitBtn.style.display = 'block';
+      mount.classList.add('is-fullscreen');
+      isFullscreen = true;
+      // We just entered fullscreen: ignore the very next click on the exit box
+      justEnteredFullscreen = true;
+      setTimeout(function(){
+        justEnteredFullscreen = false;
+      }, JUST_ENTER_EXIT_DELAY);
+
+
+      const vwFS = window.innerWidth || document.documentElement.clientWidth || 800;
+      const vhFS = window.innerHeight || document.documentElement.clientHeight || 800;
+      baseW = Math.floor(Math.min(vwFS, vhFS));
+      if (baseW % 2) baseW--;
+      resetViewLocal();
+
+      requestAnimationFrame(function(){
+        const {vw, vh} = viewportSize();
+        const needToCover   = Math.max(vw, vh) / baseW;
+        const initialFactor = Math.max(1.8, needToCover + 0.02);
+        centerZoomAtGrid(i, j, initialFactor, tapClientX, tapClientY);
+      });
+    }
+
+    function exitFullscreen(){
+      cancelFling();
+      mount.classList.remove('is-fullscreen');
+      if (!isFullscreen) return;
+      resetViewLocal();
+
+      if (returnAnchor && returnAnchor.parentNode){
+        returnAnchor.parentNode.insertBefore(mount, returnAnchor);
+        returnAnchor.parentNode.removeChild(returnAnchor);
+        returnAnchor = null;
+      }
+
+       // move top bar + buttons back
+      if (pracTopbar && pracTopbar._inZoom){
+        if (topbarReturnParent){
+          if (topbarReturnNext && topbarReturnNext.parentNode === topbarReturnParent){
+            topbarReturnParent.insertBefore(pracTopbar, topbarReturnNext);
+          } else {
+            topbarReturnParent.appendChild(pracTopbar);
+          }
+        }
+        pracTopbar._inZoom = false;
+      }
+
+      if (pracCtrls && pracCtrls._inZoom){
+        if (ctrlsReturnParent){
+          if (ctrlsReturnNext && ctrlsReturnNext.parentNode === ctrlsReturnParent){
+            ctrlsReturnParent.insertBefore(pracCtrls, ctrlsReturnNext);
+          } else {
+            ctrlsReturnParent.appendChild(pracCtrls);
+          }
+        }
+        pracCtrls._inZoom = false;
+      }
+
+
+      mount.style.width = '';
+      mount.style.height = '';
+      if (overlay) overlay.style.display = 'none';
+      if (zoomExitBtn) zoomExitBtn.style.display = 'none';
+      isFullscreen = false;
+      document.documentElement.style.overflow = prevOverflow;
+      fitBoard();
+
+      if (typeof refreshLivesUI  === 'function') refreshLivesUI();
+      if (typeof refreshHintsUI  === 'function') refreshHintsUI();
+    }
+
+    var isPanning = false, panStart = null, activePointerId = null,
+        tapStart = null, suppressNextBoardClick = false;
+// Allow a bit of finger jitter before we stop calling it a "tap"
+var TAP_SLOP2 = 64; // squared px distance (~8px total movement)
+
+    function beginPan(e){
+      cancelFling(); // stop existing kinetic motion
+
+      isPanning = false;
+      panStart = { x: e.clientX, y: e.clientY, ox: offsetX, oy: offsetY };
+      activePointerId = e.pointerId;
+
+      // reset velocity samples
+      panSamplePrev = null;
+      panSampleCurr = null;
+
+      try { mount.setPointerCapture(e.pointerId); } catch(_) {}
+    }
+
+
+    function updatePan(e){
+      if (e.pointerType && e.pointerType !== 'touch') return;
+      if (panStart == null) return;
+      if (!isFullscreen || scale <= 1) return;
+
+      const dx = e.clientX - panStart.x;
+      const dy = e.clientY - panStart.y;
+
+var dist2 = dx*dx + dy*dy;
+if (!isPanning && dist2 > TAP_SLOP2){
+  isPanning = true;
+  suppressNextBoardClick = true;
+}
+
+      if (!isPanning) return;
+
+      offsetX = panStart.ox - dx;
+      offsetY = panStart.oy - dy;
+
+      applyPanAndSize(false);
+
+      // Sample offsets over time for velocity estimation
+      const now = performance.now();
+      panSamplePrev = panSampleCurr;
+      panSampleCurr = { ox: offsetX, oy: offsetY, t: now };
+
+      e.preventDefault();
+    }
+
+    function endPan(e){
+      var wasPanning = isPanning;
+
+      if (activePointerId !== null){
+        try { mount.releasePointerCapture(activePointerId); } catch(_) {}
+      }
+      activePointerId = null;
+      panStart = null;
+      setTimeout(function(){ isPanning = false; }, 0);
+
+      // No fling in these cases
+      if (!wasPanning || !isFullscreen || scale <= 1) return;
+      if (e && e.type === 'pointercancel') return;
+      if (!panSamplePrev || !panSampleCurr) return;
+
+      var dt = panSampleCurr.t - panSamplePrev.t;
+      // Ignore weird or too-old samples
+      if (dt <= 0 || dt > 120) return;
+
+      var vx = (panSampleCurr.ox - panSamplePrev.ox) / dt; // px/ms
+      var vy = (panSampleCurr.oy - panSamplePrev.oy) / dt;
+
+      startFling(vx, vy);
+    }
+    // NEW: Compute clickable grid bounds so we can ignore taps outside the grid
+    function getBoardBounds(){
+      // Intersections in CSS space
+      var firstX = getXcss(0);
+      var lastX  = getXcss(SIZE - 1);
+      var firstY = getYcss(0);
+      var lastY  = getYcss(SIZE - 1);
+
+      // Estimate grid spacing
+      var spacingX = SIZE > 1 ? Math.abs(getXcss(1) - firstX) : 0;
+      var spacingY = SIZE > 1 ? Math.abs(getYcss(1) - firstY) : 0;
+      if (!spacingX && spacingY) spacingX = spacingY;
+      if (!spacingY && spacingX) spacingY = spacingX;
+
+      // Half spacing defines how far outside the outer intersections we still
+      // treat taps as "on the board". Beyond that is "outside the grid".
+      var halfX = spacingX * 0.5 || 8;
+      var halfY = spacingY * 0.5 || 8;
+
+      return {
+        minX: firstX - halfX,
+        maxX: lastX  + halfX,
+        minY: firstY - halfY,
+        maxY: lastY  + halfY
+      };
+    }
+
+
+    mount.addEventListener('pointerdown', function(e){
+      if (!zoomEnabled) return;
+      if (e.pointerType && e.pointerType !== 'touch') return;
+      cancelFling();
+      e.preventDefault();
+
+      const r  = mount.getBoundingClientRect();
+      const sx = e.clientX - r.left;
+      const sy = e.clientY - r.top;
+
+      // Map pointer back into board "world" coordinates
+      const boardX = (sx + offsetX) / scale;
+      const boardY = (sy + offsetY) / scale;
+
+      const bounds = getBoardBounds();
+
+      // Default: tap is not on any grid point
+      var gridI = null;
+      var gridJ = null;
+
+      // Only snap to a grid point if the tap falls inside the grid area
+      if (boardX >= bounds.minX && boardX <= bounds.maxX &&
+          boardY >= bounds.minY && boardY <= bounds.maxY){
+        let bestI = 0, bestJ = 0, bestDx = 1e9, bestDy = 1e9;
+
+        for (let i = 0; i < SIZE; i++){
+          const dx = Math.abs(getXcss(i) - boardX);
+          if (dx < bestDx){ bestDx = dx; bestI = i; }
+        }
+        for (let j = 0; j < SIZE; j++){
+          const dy = Math.abs(getYcss(j) - boardY);
+          if (dy < bestDy){ bestDy = dy; bestJ = j; }
+        }
+
+        gridI = bestI;
+        gridJ = bestJ;
+      }
+
+      tapStart = {
+        x: e.clientX,
+        y: e.clientY,
+        t: performance.now(),
+        gridI: gridI,
+        gridJ: gridJ
+      };
+
+      beginPan(e);
+    }, {passive:false});
+
+
+mount.addEventListener('pointerup', function(e){
+  if (!zoomEnabled || !tapStart) { endPan(e); return; }
+  if (e.pointerType && e.pointerType !== 'touch') {
+    endPan(e);
+    tapStart = null;
+    return;
   }
 
-  // Esc handling for whole page (back to menu if root overlay open)
-  window.addEventListener('keydown', function(e){
-    if (e.key !== 'Escape') return;
+  if (isPanning){
+    endPan(e);
+    tapStart = null;
+    return;
+  }
 
-    if (lvlOverlay && lvlOverlay.style.display !== 'none'){
-      lvlOverlay.style.display = 'none';
+  const dx = e.clientX - tapStart.x;
+  const dy = e.clientY - tapStart.y;
+  const dist2 = dx*dx + dy*dy;
+
+  const gi = tapStart.gridI;
+  const gj = tapStart.gridJ;
+  const tapClientX = tapStart.x;
+  const tapClientY = tapStart.y;
+
+  tapStart = null;
+  endPan(e);
+
+  // Treat as a tap if movement was small and we never started panning
+  if (dist2 <= TAP_SLOP2){
+    const baseView = (scale === 1 && !isFullscreen);
+
+    if (baseView){
+      // In normal view: allow taps anywhere on the board wood.
+      // If the tap was outside the strict grid bounds, zoom towards
+      // the nearest intersection instead of ignoring it.
+      let ti = gi;
+      let tj = gj;
+
+      if (ti == null || tj == null ||
+          ti < 0 || tj < 0 || ti >= SIZE || tj >= SIZE){
+        const rect = mount.getBoundingClientRect();
+        const sx   = tapClientX - rect.left;
+        const sy   = tapClientY - rect.top;
+
+        let bestI = 0, bestDx = Infinity;
+        for (let i = 0; i < SIZE; i++){
+          const dxI = Math.abs(getXcss(i) - sx);
+          if (dxI < bestDx){ bestDx = dxI; bestI = i; }
+        }
+
+        let bestJ = 0, bestDy = Infinity;
+        for (let j = 0; j < SIZE; j++){
+          const dyJ = Math.abs(getYcss(j) - sy);
+          if (dyJ < bestDy){ bestDy = dyJ; bestJ = j; }
+        }
+
+        ti = bestI;
+        tj = bestJ;
+      }
+
+      e.preventDefault();
+      e.stopPropagation();
+      if (e.stopImmediatePropagation) e.stopImmediatePropagation();
+
+      suppressNextBoardClick = true;
+      enterFullscreenAtGrid(ti, tj, tapClientX, tapClientY);
       return;
     }
 
-    if (overlay && overlay.style.display !== 'none' && !isNoticeOpen()){
-      window.GoOwnPatterns.close();
-      if (window.GoMenu && typeof window.GoMenu.open === 'function'){
-        window.GoMenu.open();
+    // Already zoomed: only accept taps that really land on the grid
+    if (gi == null || gj == null ||
+        gi < 0 || gj < 0 || gi >= SIZE || gj >= SIZE){
+      return;
+    }
+
+    e.preventDefault();
+    e.stopPropagation();
+    if (e.stopImmediatePropagation) e.stopImmediatePropagation();
+
+    suppressNextBoardClick = true;
+    try { handlePracticeClick(gi, gj); } catch (_) {}
+  }
+}, {passive:false, capture:true});
+
+
+
+    mount.addEventListener('pointermove', function(e){
+      if (!zoomEnabled) return;
+      if (e.pointerType && e.pointerType !== 'touch') return;
+      updatePan(e);
+    }, {passive:false});
+
+    mount.addEventListener('pointercancel', function(e){
+      if (e.pointerType && e.pointerType !== 'touch') return;
+      endPan(e);
+    }, {passive:true});
+
+    document.addEventListener('keydown', function(e){
+      if (e.key === 'Escape' && isFullscreen) exitFullscreen();
+    });
+
+    window.PracticeZoom = {
+      isEnabled(){ return zoomEnabled; },
+      setEnabled(v){ zoomEnabled = !!v; if (!zoomEnabled) { if (isFullscreen) exitFullscreen(); else resetViewLocal(); } },
+      resetView: function(){ if (isFullscreen) exitFullscreen(); else resetViewLocal(); },
+      isFullscreen: function(){ return isFullscreen; }
+    };
+
+    function fitBoard(){
+      if (isFullscreen){
+        const vwFS = window.innerWidth || document.documentElement.clientWidth || 800;
+        const vhFS = window.innerHeight || document.documentElement.clientHeight || 800;
+        baseW = Math.floor(Math.min(vwFS, vhFS));
+        if (baseW % 2) baseW--;
+        mount.style.width  = '100vw';
+        mount.style.height = '100vh';
+      } else {
+        var w = mount.getBoundingClientRect().width;
+        if (!w) {
+          var cs   = getComputedStyle(wrap);
+          var padX = (parseFloat(cs.paddingLeft) || 0) + (parseFloat(cs.paddingRight) || 0);
+          var wrapW = wrap.getBoundingClientRect().width || wrap.clientWidth || 400;
+          w = Math.max(0, wrapW - padX);
+        }
+        w = Math.floor(w);
+        if (w % 2) w--;
+        baseW = w;
+        mount.style.width  = '';
+        mount.style.height = baseW + 'px';
+      }
+      applyPanAndSize(true);
+    }
+    function refitSoon(){ fitBoard(); setTimeout(fitBoard,60); setTimeout(fitBoard,180); setTimeout(fitBoard,400); }
+    window.addEventListener('resize', fitBoard);
+    window.addEventListener('orientationchange', () => setTimeout(fitBoard,200));
+    fitBoard();
+
+    function primePractice(){
+      showSingleNext = false;
+      l2HintConsumed = false;
+      clearHint();
+      if (typeof refreshLivesUI === 'function') refreshLivesUI();
+      if (typeof refreshHintsUI === 'function') refreshHintsUI();
+
+      if (level === 1){
+        currentNode = null;
+        buildPositionTo(null);
+        return;
+      }
+
+      if (level === 2 || level === 3){
+        currentNode = null;
+        buildPositionTo(null);
+        autoPlaceOpponentIfNeeded();
+        return;
+      }
+
+      var opts = getRootCandidates();
+      if (opts.length){
+        currentNode = opts[0].node;
+        buildPositionTo(currentNode);
+        showSingleNext = true;
+        redraw();
+      } else {
+        currentNode = null;
+        buildPositionTo(null);
       }
     }
+
+    var wrongModal   = document.getElementById('prac-wrong');
+    var clearedModal = document.getElementById('prac-cleared');
+    var winModal     = document.getElementById('prac-win');
+    var winBackBtn   = document.getElementById('prac-win-back');
+    var winRetryBtn  = document.getElementById('prac-win-retry');
+    var winProgBtn   = document.getElementById('prac-win-progress');
+
+    function showLocked(){
+      if (zoomEnabled && (scale > 1 || isFullscreen)) { try { exitFullscreen(); } catch(e){} }
+      var m = document.getElementById('prac-locked');
+      if (m) m.style.display = 'flex';
+    }
+    function hideLocked(){ var m = document.getElementById('prac-locked'); if (m) m.style.display='none'; }
+
+    function showHintsOut(){
+      if (zoomEnabled && (scale > 1 || isFullscreen)) { try { exitFullscreen(); } catch(e){} }
+      var m = document.getElementById('prac-hints-out');
+      if (m) m.style.display = 'flex';
+    }
+    function hideHintsOut(){ var m = document.getElementById('prac-hints-out'); if (m) m.style.display='none'; }
+
+    function triggerHint(){
+      if (!hasSGF) return;
+
+      if (!isPro()){
+        var resH = QUOTA.use('prac:hints', MAX_HINTS_FREE);
+        if (typeof refreshHintsUI === 'function') refreshHintsUI();
+        if (!resH.ok){
+          showHintsOut();
+          return;
+        }
+      }
+
+      var cands = getNextCandidates(currentNode);
+      if (!cands || !cands.length) return;
+
+      if (playerOnly && cands[0].color !== playerColor){
+        autoPlaceOpponentIfNeeded();
+        setTimeout(triggerHint, AUTO_DELAY + 30);
+        return;
+      }
+
+      var anchor = getHintAnchorPoint();
+      if (!anchor) return;
+
+      showHintAt(anchor.x, anchor.y);
+    }
+
+    var hoBack = document.getElementById('prac-hints-back');
+    var hoPro  = document.getElementById('prac-hints-pro');
+    if (hoBack) hoBack.addEventListener('click', function(){ hideHintsOut(); });
+        if (hoPro)  hoPro.addEventListener('click', function(){
+      hideHintsOut();
+      openPlansPage();
+    });
+
+    function autoPlaceOpponentIfNeeded(){
+      if (!playerOnly || isAutoPlacing) return;
+      var nexts = getNextCandidates(currentNode);
+      if (!nexts.length){ showClearedOrWin(); return; }
+      var cand = nexts[0];
+      if (cand.color === playerColor){ redraw(); return; }
+      isAutoPlacing = true;
+      setTimeout(function(){
+        currentNode = cand.node;
+        buildPositionTo(currentNode);
+        StoneSFX.play();
+        isAutoPlacing = false;
+        var after = getNextCandidates(currentNode);
+        if (!after.length){ showClearedOrWin(); return; }
+        if (playerOnly && after[0].color !== playerColor){
+          autoPlaceOpponentIfNeeded();
+        } else {
+          redraw();
+        }
+      }, AUTO_DELAY);
+    }
+
+    function showWrong(){
+      if (!isPro() && (level === 2 || level === 3)){
+        var res = QUOTA.use('prac:lives-l23', MAX_LIVES_FREE_L23);
+        if (typeof refreshLivesUI === 'function') refreshLivesUI();
+        if (!res.ok){ showLocked(); return; }
+      }
+      if (zoomEnabled && (scale > 1 || isFullscreen)) {
+        try { exitFullscreen(); } catch(e){}
+        setTimeout(function(){ if (wrongModal) wrongModal.style.display = 'flex'; }, 10);
+      } else {
+        if (wrongModal) wrongModal.style.display = 'flex';
+      }
+    }
+
+    function hideWrong(){ if (wrongModal) wrongModal.style.display = 'none'; }
+    function showCleared(){ if (clearedModal) clearedModal.style.display = 'flex'; }
+    function hideCleared(){ if (clearedModal) clearedModal.style.display = 'none'; }
+
+    // When a corner/side is finished
+    function showClearedOrWin(){
+      var isZoomed = zoomEnabled && (scale > 1 || isFullscreen);
+      var delay    = AUTO_DELAY; // uses fast/slow from settings
+
+      function showModal(){
+        if (tryIndex >= ORIENTS.length - 1){
+          showWin();
+        } else {
+          showCleared();
+        }
+      }
+
+      // Zoom enabled and currently zoomed-in
+      if (isZoomed){
+        if (disableAutoZoomOut){
+          // Setting: "Disable auto zoom out" = ON
+          // Last stone is placed, wait (fast/slow), then zoom out and show modal.
+          setTimeout(function(){
+            smoothZoomOutAndExit();
+            showModal();
+          }, delay);
+        } else {
+          // Setting: "Disable auto zoom out" = OFF
+          // Zoom out first, then wait (fast/slow) before showing the notification.
+          smoothZoomOutAndExit();
+          setTimeout(showModal, delay);
+        }
+      } else {
+        // Not zoomed: just wait (fast/slow) after the last stone, then show the modal.
+        setTimeout(showModal, delay);
+      }
+    }
+
+
+    function configureWinModal(){
+      if (winRetryBtn) winRetryBtn.style.display = '';
+      if (!winProgBtn) return;
+      var next = null;
+      if (level === 1) next = 2;
+      else if (level === 2) next = 3;
+      else if (level === 3) next = 4;
+      else if (level === 4) next = 5;
+
+      if (next){
+        var proLocked = (!isPro() && next >= 4);
+        winProgBtn.textContent = proLocked ? ('Level ' + next + ' (Pro)') : ('Level ' + next);
+        winProgBtn.dataset.level = String(next);
+        winProgBtn.style.display = '';
+        if (proLocked) winProgBtn.classList.add('pbtn-locked');
+        else winProgBtn.classList.remove('pbtn-locked');
+      } else {
+        winProgBtn.style.display = 'none';
+      }
+    }
+    function showWin(){ configureWinModal(); if (winModal) winModal.style.display = 'flex'; }
+    function hideWin(){ if (winModal) winModal.style.display = 'none'; }
+
+    document.getElementById('prac-wrong-back').addEventListener('click', function(){ hideWrong(); redraw(); });
+
+
+    document.getElementById('prac-cleared-next').addEventListener('click', function(){
+      hideCleared();
+      tryIndex++;
+      swapColorsThisRound = (level === 5) ? (tryIndex % 2 === 1) : false;
+      if (tryIndex >= ORIENTS.length){ showWin(); return; }
+      primePractice();
+    });
+
+
+winBackBtn.addEventListener('click', function(){
+  hideWin();
+
+  // Let the board clean itself up if needed (harmless on standalone)
+  try {
+    if (window.PracticeBoard && typeof window.PracticeBoard.exit === 'function') {
+      window.PracticeBoard.exit();
+    }
+  } catch(e){}
+
+  // Then go back to the selection page we originally came from
+  goBackToSelection();
+});
+
+// NEW: Retry button – restart current level from side 0
+if (winRetryBtn){
+  winRetryBtn.addEventListener('click', function(){
+    hideWin();
+
+    // Start over from the first side / corner
+    tryIndex = 0;
+    swapColorsThisRound = (level === 5) ? (tryIndex % 2 === 1) : false;
+
+    // Rebuild the board and quotas for this level and joseki
+    primePractice();
   });
+}
 
-})();
-</script>
 
-<!-- Auto-open My Patterns overlay on page load -->
-<script>
-  window.addEventListener('load', function(){
-    if (window.GoOwnPatterns && typeof window.GoOwnPatterns.open === 'function'){
-      window.GoOwnPatterns.open();
+    winProgBtn && winProgBtn.addEventListener('click', function(){
+      var target = parseInt(winProgBtn.dataset.level || '2', 10);
+      hideWin();
+      if (!isPro() && target >= 4){
+        openPlansPage();
+        return;
+      }
+      if (window.PracticeBoard && typeof window.PracticeBoard.load === 'function'){
+        window.PracticeBoard.load(null, null, { level: target });
+      }
+    });
+
+    var lockedBack   = document.getElementById('prac-locked-back');
+    var lockedProBtn = document.getElementById('prac-locked-pro');
+    if (lockedBack)   lockedBack.addEventListener('click', function(){ hideLocked(); });
+    if (lockedProBtn) lockedProBtn.addEventListener('click', function(){
+      hideLocked();
+      openPlansPage();
+    });
+
+    function smoothZoomOutAndExit(){
+      if (!zoomEnabled) return;
+
+      cancelFling();
+      cancelAnimationFrame(animId);
+      isZoomAnimating = false;
+
+      scale   = 1;
+      offsetX = 0;
+      offsetY = 0;
+
+      applyPanAndSize(true);
+
+      if (isFullscreen){
+        exitFullscreen();
+      }
+    }
+
+
+    function handlePracticeClick(x, y){
+      if (!hasSGF || isAutoPlacing) return;
+
+      if (!isPro() && (level === 2 || level === 3)){
+        var peek = QUOTA.peek('prac:lives-l23', MAX_LIVES_FREE_L23);
+        if (peek.remaining <= 0){ showLocked(); return; }
+      }
+
+      var opts = getNextCandidates(currentNode);
+      if (!opts || !opts.length){
+        // Already at the end – just run the end-of-variation logic
+        showClearedOrWin();
+        return;
+      }
+
+      for (var i = 0; i < opts.length; i++){
+        var cand = opts[i];
+        var pos  = tfXY(cand.xy.x, cand.xy.y);
+
+        if (pos.x === x && pos.y === y){
+          if (playerOnly && cand.color !== playerColor){
+            showWrong();
+            return;
+          }
+
+          if ((level === 4 || level === 5) && showSingleNext) showSingleNext = false;
+          if (level === 2 && !l2HintConsumed) l2HintConsumed = true;
+
+          currentNode = cand.node;
+          buildPositionTo(currentNode);
+          StoneSFX.play();
+
+          // Check what comes next
+          var nexts = getNextCandidates(currentNode);
+
+          // If there is no next move, this was the last stone.
+          // Let showClearedOrWin handle zoom & delay using the settings.
+          if (!nexts.length){
+            showClearedOrWin();
+            return;
+          }
+
+          // Non-final move: auto zoom out if allowed and currently zoomed.
+          if (!disableAutoZoomOut && zoomEnabled && (scale > 1 || isFullscreen)){
+            setTimeout(smoothZoomOutAndExit, 10);
+          }
+
+          // In player-only levels, auto-place opponent moves as before.
+          if (playerOnly){
+            autoPlaceOpponentIfNeeded();
+          }
+          return;
+        }
+      }
+
+      showWrong();
+    }
+
+    board.addEventListener('click', function(x, y){
+      if (zoomEnabled && (scale > 1 || isFullscreen)) return;
+
+      if (zoomEnabled && suppressNextBoardClick){
+        suppressNextBoardClick = false;
+        return;
+      }
+
+      handlePracticeClick(x, y);
+    });
+
+    var menuConfirmOverlay = document.getElementById('menu-confirm-overlay');
+    var menuConfirmCancel  = document.getElementById('menuConfirmCancel');
+    var menuConfirmOk      = document.getElementById('menuConfirmOk');
+
+    function closeMenuConfirm(){
+      if (!menuConfirmOverlay) return;
+      menuConfirmOverlay.classList.remove('is-open');
+    }
+
+if (menuConfirmOverlay){
+  menuConfirmOverlay.addEventListener('click', function(e){
+    // Intentionally do nothing on background clicks so the user
+    // must choose "No" or "Yes" to close the dialog.
+    if (e.target === menuConfirmOverlay) {
+      e.stopPropagation();
+      e.preventDefault();
     }
   });
+}
+
+
+    if (menuConfirmCancel){
+      menuConfirmCancel.addEventListener('click', function(e){
+        e.stopPropagation();
+        closeMenuConfirm();
+      });
+    }
+
+    if (menuConfirmOk){
+      menuConfirmOk.addEventListener('click', function(e){
+        e.stopPropagation();
+        closeMenuConfirm();
+        if (window.GoMenu && typeof GoMenu.open === 'function'){
+          GoMenu.open();
+        } else if (window.BackConfirm && typeof BackConfirm.show === 'function'){
+          BackConfirm.show();
+        } else {
+          try { window.location.href = "../joseki-menu/index.html"; } catch(e){}
+        }
+      });
+    }
+
+    document.addEventListener('keydown', function(e){
+      if (e.key === 'Escape') {
+        closeMenuConfirm();
+      }
+    });
+
+    function openMenuWithConfirm(){
+      if (menuConfirmOverlay){
+        menuConfirmOverlay.classList.add('is-open');
+        return;
+      }
+      if (window.BackConfirm && typeof BackConfirm.show === 'function'){
+        BackConfirm.show();
+        return;
+      }
+      if (window.GoMenu && typeof GoMenu.open === 'function'){
+        GoMenu.open();
+        return;
+      }
+    }
+
+    var menuBtn  = document.getElementById('pbtn-menu');
+    var hintBtn  = document.getElementById('pbtn-hint');
+    var resetBtn = document.getElementById('pbtn-reset');
+
+    if (menuBtn)  menuBtn.addEventListener('click', openMenuWithConfirm);
+    if (resetBtn) resetBtn.addEventListener('click', function(){
+      clearHint();
+      primePractice();
+      if (isFullscreen) exitFullscreen();
+    });
+    if (hintBtn)  hintBtn.addEventListener('click', triggerHint);
+// Helper: go back to the joseki selection we came from
+function goBackToSelection(){
+  // If we have a referrer, just step back in history.
+  if (document.referrer){
+    window.history.back();
+    return;
+  }
+
+  // No referrer (opened directly / new tab) – fall back to Practice List,
+  // then to main menu as a last resort.
+  try{
+    window.location.href = "../practice-list/index.html";
+  } catch(_){
+    window.location.href = "../joseki-menu/index.html";
+  }
+}
+
+// Top-left Back button – go back to previous screen (Practice List, My Patterns, etc.)
+var headerBack = document.getElementById('prac-back-top');
+
+if (headerBack){
+  headerBack.addEventListener('click', function(e){
+    e.preventDefault();
+    goBackToSelection();
+  });
+}
+
+    function hook(id, fn){
+      var el = document.getElementById(id);
+      if (el) el.addEventListener('click', fn);
+      else setTimeout(function(){ hook(id, fn); }, 50);
+    }
+    hook('btnBack',   function(){ if (!hasSGF || isAutoPlacing) return; if (currentNode){ currentNode = currentNode.prev || null; buildPositionTo(currentNode); } });
+    hook('btnForward',function(){ if (!hasSGF || isAutoPlacing) return; var c=getNextCandidates(currentNode); if(c.length){ currentNode=c[0].node; buildPositionTo(currentNode); } });
+    hook('btnReset',  function(){ if (!hasSGF) return; primePractice(); if (isFullscreen) exitFullscreen(); });
+
+    function getParam(name){ 
+      try { return new URLSearchParams(location.search).get(name); } catch(e){ return null; } 
+    }
+
+    var SGF_URL = getParam('sgf');
+
+    function _sgfCoord(p){
+      return String.fromCharCode(97 + p.x) + String.fromCharCode(97 + p.y);
+    }
+    function _buildSingleLineSGF(sel){
+      const size = Math.max(2, Math.min(52, parseInt(sel.size || 19, 10) || 19));
+      let sgf = '(;GM[1]FF[4]CA[UTF-8]SZ[' + size + ']';
+      if (Array.isArray(sel.rootAB) && sel.rootAB.length){
+        sgf += 'AB' + sel.rootAB.map(p => '[' + _sgfCoord(p) + ']').join('');
+      }
+      if (Array.isArray(sel.rootAW) && sel.rootAW.length){
+        sgf += 'AW' + sel.rootAW.map(p => '[' + _sgfCoord(p) + ']').join('');
+      }
+      if (Array.isArray(sel.moves)){
+        for (const m of sel.moves){
+          const color = (m.color === 'W') ? 'W' : 'B';
+          sgf += ';' + color + '[' + _sgfCoord(m) + ']';
+        }
+      }
+      sgf += ')';
+      return sgf;
+    }
+
+    function loadSGFText(txt){
+      try{
+        if (txt.charCodeAt && txt.charCodeAt(0)===0xFEFF) txt = txt.slice(1);
+        var parsed = parseGameTree(txt, txt.indexOf('('));
+        var rootSeq = parsed.seq && parsed.seq.length ? parsed.seq : [];
+        if (!rootSeq.length){ hasSGF=false; redraw(); return; }
+        linkify(rootSeq, null); sgfRootSeq=rootSeq; extractRoot(rootSeq);
+        detectStartTF();
+        hasSGF=true; currentNode=null;
+        swapColorsThisRound = (level === 5) ? (tryIndex % 2 === 1) : false;
+        primePractice();
+      }catch(e){ console.error('SGF parse error (practice):', e); hasSGF=false; redraw(); }
+    }
+    function fetchAndLoadSGF(url){
+      fetch(url, { cache:'no-cache' })
+        .then(r=>r.text()).then(loadSGFText)
+        .catch(err=>console.error('SGF load failed (practice):', err));
+    }
+
+    function setHidden(el, hidden){
+      if (!el) return;
+      if (hidden) el.setAttribute('data-hidden','1');
+      else el.removeAttribute('data-hidden');
+    }
+
+    function hideJosekiEverything(){ /* no-op on standalone */ }
+    function showJosekiEverything(){ /* no-op on standalone */ }
+
+    function showPracticeUI(){
+      if (window.PageBG && typeof PageBG.add === 'function') PageBG.add();
+      setHidden(wrap, false);
+      wrap.setAttribute('data-hidden','0');
+      refitSoon();
+    }
+
+    function hidePracticeUI(){
+      setHidden(wrap, true);
+      wrap.setAttribute('data-hidden','1');
+      showJosekiEverything();
+    }
+
+    window.PracticeBoard = {
+      load: function(url, name, opts){
+        try {
+          if (window.PracticeUI && typeof PracticeUI.close === 'function') {
+            PracticeUI.close();
+          }
+        } catch (e) {}
+
+        try {
+          if (window.PracticeLevel && typeof PracticeLevel.close === 'function') {
+            PracticeLevel.close();
+          }
+        } catch (e) {}
+
+        if (opts && typeof opts.level !== 'undefined') level = parseInt(opts.level,10) || 2;
+        else if (window.PracticeConfig && window.PracticeConfig.level) level = parseInt(window.PracticeConfig.level,10) || 2;
+        else level = 2;
+
+        if (!isPro() && level >= 4){
+          openPlansPage();
+          return;
+        }
+
+
+        playerOnly = (level === 2 || level === 3);
+        playerColor = playerOnly ? (level === 2 ? B : W) : null;
+        l2HintConsumed = false;
+
+        tryIndex = 0;
+        swapColorsThisRound = (level === 5) ? (tryIndex % 2 === 1) : false;
+
+        if (window.PracticeConfig && window.PracticeConfig.selectedLine){
+          const single = _buildSingleLineSGF(window.PracticeConfig.selectedLine);
+          loadSGFText(single);
+        } else if (typeof url === 'string' && url) {
+          fetchAndLoadSGF(url);
+        } else {
+          fetchAndLoadSGF(SGF_URL);
+        }
+
+        showPracticeUI();
+      },
+      exit: function(){ hidePracticeUI(); }
+    };
+
+    var backYes = document.getElementById('back-yes');
+    if (backYes){
+      backYes.addEventListener('click', function(){ try{ window.PracticeBoard.exit(); }catch(e){} }, { passive:true });
+    }
+
+    if (!window.PracticeConfig){
+      try{
+        var stored = localStorage.getItem('go_practice_config');
+        if (stored) window.PracticeConfig = JSON.parse(stored);
+      }catch(e){}
+    }
+
+    window.addEventListener('load', function(){
+      var opts = null;
+      if (window.PracticeConfig && window.PracticeConfig.level){
+        opts = { level: window.PracticeConfig.level };
+      }
+      window.PracticeBoard.load(null, null, opts);
+    });
+
+  } catch(err){
+    console.error('Practice mount failed:', err);
+  }
+})();
 </script>
 
 </body>
 </html>
+
+
+
+
+
+
+
