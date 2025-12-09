@@ -59,7 +59,9 @@
 /* Triggered by JS */
 #menu-fade.is-hidden{
   opacity: 0;
+  pointer-events: none;
 }
+
 
 /* Accessibility */
 @media (prefers-reduced-motion: reduce){
@@ -242,36 +244,40 @@
       <a href="../plans/plans.html"                  class="menu-btn menu-primary">Plans</a>
     </div>
   </div>
-  <script>
-    (function () {
-      var fade = document.getElementById("menu-fade");
-      if (!fade) return;
+<script>
+  (function () {
+    var fade = document.getElementById("menu-fade");
+    if (!fade) return;
 
-      var reduceMotion = window.matchMedia &&
-        window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    var reduceMotion = window.matchMedia &&
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
-      if (reduceMotion) {
-        fade.remove();
-        return;
-      }
+    if (reduceMotion) {
+      fade.remove();
+      return;
+    }
 
-      function hideFade() {
-        requestAnimationFrame(function () {
-          fade.classList.add("is-hidden");
-        });
+    function runReveal() {
+      // snap to black without animating
+      fade.style.transition = "none";
+      fade.classList.remove("is-hidden");
 
-        fade.addEventListener("transitionend", function () {
-          fade.remove();
-        }, { once: true });
+      // force reflow so the browser applies opacity:1 immediately
+      void fade.offsetHeight;
 
-        setTimeout(function () {
-          if (fade && fade.parentNode) fade.remove();
-        }, 1200);
-      }
+      // restore transition (match your CSS timing)
+      fade.style.transition = "opacity .6s ease";
 
-      window.addEventListener("load", hideFade);
-    })();
-  </script>
+      // fade out on next frame
+      requestAnimationFrame(function () {
+        fade.classList.add("is-hidden");
+      });
+    }
+
+    // pageshow runs on first load AND when returning via back/forward cache
+    window.addEventListener("pageshow", runReveal);
+  })();
+</script>
 </body>
 </html>
 
