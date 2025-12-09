@@ -24,6 +24,29 @@
       left:50%;
       transform:translate(-50%, -50%);
     }
+/* Black reveal overlay (covers page on load, then fades away) */
+#menu-fade{
+  position: fixed;
+  inset: 0;
+  background: #000;
+  z-index: 100000; /* above practice overlays (most are 99999) */
+  opacity: 1;
+  transition: opacity .9s ease;
+}
+
+/* Triggered by JS */
+#menu-fade.is-hidden{
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* Accessibility */
+@media (prefers-reduced-motion: reduce){
+  #menu-fade{
+    transition: none;
+  }
+}
+
   </style>
 
   <!-- Simple global menu bridge for Practice Board -->
@@ -42,7 +65,7 @@
 
 </head>
 <body>
-
+ <div id="menu-fade" aria-hidden="true"></div>
 <noscript>
   <p>
     JavaScript is required to use Practice mode.
@@ -2836,6 +2859,40 @@ if (headerBack){
     console.error('Practice mount failed:', err);
   }
 })();
+</script>
+<script>
+  (function () {
+    var fade = document.getElementById("menu-fade");
+    if (!fade) return;
+
+    var reduceMotion = window.matchMedia &&
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+    if (reduceMotion) {
+      fade.remove();
+      return;
+    }
+
+    function runReveal() {
+      // snap to black without animating
+      fade.style.transition = "none";
+      fade.classList.remove("is-hidden");
+
+      // force reflow so the browser applies opacity:1 immediately
+      void fade.offsetHeight;
+
+      // hand control back to CSS
+      fade.style.transition = "";
+
+      // fade out on next frame
+      requestAnimationFrame(function () {
+        fade.classList.add("is-hidden");
+      });
+    }
+
+    // pageshow runs on first load AND when returning via back/forward cache
+    window.addEventListener("pageshow", runReveal);
+  })();
 </script>
 
 </body>
