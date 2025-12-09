@@ -1949,74 +1949,93 @@ function centerZoomAtGrid(i, j, factor, tapClientX, tapClientY){
 
 
 function enterFullscreenAtGrid(i, j, tapClientX, tapClientY){
-  if (isFullscreen) return;
-  if (!zoomLayer) zoomLayer = mount.__woodLayer || mount;
+    if (isFullscreen) return;
+    if (!zoomLayer) zoomLayer = mount.__woodLayer || mount;
 
-  ensureOverlay();
-  prevOverflow = document.documentElement.style.overflow || "";
-  document.documentElement.style.overflow = 'hidden';
+    ensureOverlay();
+    prevOverflow = document.documentElement.style.overflow || "";
+    document.documentElement.style.overflow = 'hidden';
 
-  returnAnchor = document.createElement('div');
-  returnAnchor.style.display = 'none';
-  mount.parentNode.insertBefore(returnAnchor, mount);
+    returnAnchor = document.createElement('div');
+    returnAnchor.style.display = 'none';
+    mount.parentNode.insertBefore(returnAnchor, mount);
 
-  stage.appendChild(mount);
+    stage.appendChild(mount);
 
-   overlay.style.display = 'flex';
+    overlay.style.display = 'flex';
 
-  // IMPORTANT: do NOT show/enable the exit box in the same tap frame
-  if (zoomExitBtn){
-    zoomExitBtn.style.display = 'none';
-    zoomExitBtn.style.pointerEvents = 'none';
-  }
-
-  isFullscreen = true;
-  mount.classList.add('is-fullscreen');
-
-  document.body.classList.add('drill-zoom-mode');
-
-  // Keep overlay non-blocking until we’re fully in zoom mode
-  if (overlay) overlay.style.pointerEvents = 'auto';
-
-  // Reset baseline sizing/state
-  resetViewLocal();
-  moveZoomUIIn();
-
-  // Enable the exit box only on the next frame
-  requestAnimationFrame(function(){
-    if (!isFullscreen) return;
+    // IMPORTANT: do NOT show/enable the exit box in the same tap frame
     if (zoomExitBtn){
-      zoomExitBtn.style.display = 'block';
-      zoomExitBtn.style.pointerEvents = 'auto';
-    }
-  });
-
-  // Your existing zoom-in animation frame
-  requestAnimationFrame(function(){
-    const initialFactor = 2.0;
-
-    const px_curr = getXcss(i);
-    const py_curr = getYcss(j);
-
-    const rect = mount.getBoundingClientRect();
-    let sx = rect.width  / 2;
-    let sy = rect.height / 2;
-
-    if (typeof tapClientX === 'number' && typeof tapClientY === 'number'){
-      sx = tapClientX - rect.left;
-      sy = tapClientY - rect.top;
+      zoomExitBtn.style.display = 'none';
+      zoomExitBtn.style.pointerEvents = 'none';
     }
 
-    scale = 1;
-    offsetX = px_curr * 1.0 - sx;
-    offsetY = py_curr * 1.0 - sy;
+    isFullscreen = true;
+    mount.classList.add('is-fullscreen');
 
-    applyPanAndSize(false);
+    document.body.classList.add('drill-zoom-mode');
 
-    animateTo(initialFactor, px_curr, py_curr, sx, sy);
-  });
-}
+    // Keep overlay non-blocking until we’re fully in zoom mode
+    if (overlay) overlay.style.pointerEvents = 'auto';
 
+    // Reset baseline sizing/state
+    resetViewLocal();
+    moveZoomUIIn();
+
+    // Enable the exit box only on the next frame
+    requestAnimationFrame(function(){
+      if (!isFullscreen) return;
+      if (zoomExitBtn){
+        zoomExitBtn.style.display = 'block';
+        zoomExitBtn.style.pointerEvents = 'auto';
+      }
+    });
+
+    // Your existing zoom-in animation frame
+    requestAnimationFrame(function(){
+      // --- FIX: Update GLOBAL scoped variables & Dynamic Zoom ---
+      const vw = window.innerWidth;
+      const vh = window.innerHeight;
+
+      // Update global baseW so applyPanAndSize works correctly in fullscreen
+      baseW = Math.floor(Math.min(vw, vh));
+      if (baseW % 2) baseW--;
+
+      // Reset global state for the start of the animation
+      scale = 1;
+      offsetX = 0;
+      offsetY = 0;
+
+      // Force an immediate apply to snap the DOM to the new baseW
+      applyPanAndSize(true);
+
+      // In fullscreen, the board side is effectively baseW.
+      // We want to cover the LARGER dimension.
+      const needToCover = Math.max(vw, vh) / (baseW || 360);
+      const dynamicZoom = Math.max(1.8, needToCover + 0.02);
+      // --------------------------------------------------------
+
+      const px_curr = getXcss(i);
+      const py_curr = getYcss(j);
+
+      const rect = mount.getBoundingClientRect();
+      let sx = rect.width  / 2;
+      let sy = rect.height / 2;
+
+      if (typeof tapClientX === 'number' && typeof tapClientY === 'number'){
+        sx = tapClientX - rect.left;
+        sy = tapClientY - rect.top;
+      }
+
+      // Update global offsets to center the tap point
+      offsetX = px_curr * 1.0 - sx;
+      offsetY = py_curr * 1.0 - sy;
+
+      applyPanAndSize(false);
+
+      animateTo(dynamicZoom, px_curr, py_curr, sx, sy);
+    });
+  }
 
   function exitFullscreen(){
     if (!isFullscreen) return;
