@@ -1446,15 +1446,18 @@ function redraw(){
     else if (v==='W') board.addObject({x,y,c:WGo.W});
   }
 
-  // Show last move marker if enabled
   try{
-    if (GoPrefs && GoPrefs.highlightLast && lastMove){
+    const showLast =
+      blitzMode ? !!(GoPrefs && GoPrefs.highlightLast) : false;
+
+    if (showLast && lastMove){
       const v = grid[lastMove.y] && grid[lastMove.y][lastMove.x];
       if (v){ // only mark if the stone still exists
         board.addObject({ x:lastMove.x, y:lastMove.y, type:'CR' });
       }
     }
   }catch(_){}
+
 
   if (blitzMode) drawBlitzMarkers();
 }
