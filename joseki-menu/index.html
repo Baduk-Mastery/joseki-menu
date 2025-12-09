@@ -72,20 +72,29 @@
   }
 
   /* Logo */
+  /* Logo */
   .menu-logo{
     display:flex;
     justify-content:center;
     align-items:center;
-    margin:0 0 8px;
+
+    /* pushes logo a touch lower overall,
+       and reduces the extra space before the buttons */
+    margin: 6px 0 2px;
   }
+
   .menu-logo img{
     display:block;
-    width:min(80%, 300px);
-    max-width:300px;
+
+    /* bigger logo */
+    width: min(92%, 340px);
+    max-width: 340px;
+
     height:auto;
     filter: drop-shadow(0 1px 2px rgba(0,0,0,.35));
     image-rendering:auto;
   }
+
 
   /* Practice-board-style wood buttons for menu */
   .menu-btn{
