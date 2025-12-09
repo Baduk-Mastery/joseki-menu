@@ -359,22 +359,6 @@
   #go-zoom-top-prac > *{
     pointer-events:auto;
   }
-  /* FIX: prevent the top bar box from blocking board taps in fullscreen */
-  #go-zoom-top-prac #prac-topbar{
-    pointer-events:none;
-  }
-
-  /* Re-enable only the actual interactive/visible controls */
-  #go-zoom-top-prac #prac-back-top{
-    pointer-events:auto;
-  }
-
-  /* Optional: if you ever make meters interactive, keep these enabled */
-  #go-zoom-top-prac #row-lives,
-  #go-zoom-top-prac #prac-meters,
-  #go-zoom-top-prac #prac-meters .meter-row{
-    pointer-events:auto;
-  }
 
   /* Board drop shadow */
   #go-board-prac{
@@ -2856,6 +2840,8 @@ if (headerBack){
 
 </body>
 </html>
+
+
 
 
 

@@ -442,10 +442,38 @@ box-sizing: border-box;
     display: none !important;
   }
 </style>
+</style>
+
+<style>
+/* Black reveal overlay (covers page on show, then fades away) */
+#page-fade{
+  position: fixed;
+  inset: 0;
+  background: #000;
+  z-index: 100000; /* above confirm overlay (99999) */
+  opacity: 1;
+  transition: opacity .9s ease;
+}
+
+/* Triggered by JS */
+#page-fade.is-hidden{
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* Accessibility */
+@media (prefers-reduced-motion: reduce){
+  #page-fade{
+    transition: none;
+  }
+}
+</style>
+
 </head>
 <body>
+  <div id="page-fade" aria-hidden="true"></div>
 
-<div id="page-wrap">
+  <div id="page-wrap">
   <!-- Joseki Board -->
   <div id="go-board-wrap">
     <!-- Board -->
@@ -2192,6 +2220,41 @@ koPoint = null;
 
 })(); // mountBoard
 } // _mainBoardMounted
+</script>
+<script>
+  (function () {
+    var fade = document.getElementById("page-fade");
+    if (!fade) return;
+
+    var reduceMotion = window.matchMedia &&
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+    if (reduceMotion) {
+      fade.classList.add("is-hidden");
+      fade.style.display = "none";
+      return;
+    }
+
+    function runReveal() {
+      // snap to black without animating
+      fade.style.transition = "none";
+      fade.classList.remove("is-hidden");
+
+      // force reflow so opacity:1 is applied immediately
+      void fade.offsetHeight;
+
+      // hand control back to CSS timing
+      fade.style.transition = "";
+
+      // fade out on next frame
+      requestAnimationFrame(function () {
+        fade.classList.add("is-hidden");
+      });
+    }
+
+    // pageshow runs on first load AND when returning via back/forward cache
+    window.addEventListener("pageshow", runReveal);
+  })();
 </script>
 
 </body>
