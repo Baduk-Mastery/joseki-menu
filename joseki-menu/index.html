@@ -53,7 +53,7 @@
   background: #000;
   z-index: 100000; /* higher than #start-menu (99999) */
   opacity: 1;
-  transition: opacity .6s ease;
+  transition: opacity .9s ease;
 }
 
 /* Triggered by JS */
@@ -157,7 +157,7 @@
     transition:
       transform .08s ease-out,
       box-shadow .08s ease-out,
-      filter .12s ease-out;
+      filter .9s ease-out;
   }
 
   /* Semi-transparent wood background */
@@ -257,22 +257,23 @@
       return;
     }
 
-    function runReveal() {
-      // snap to black without animating
-      fade.style.transition = "none";
-      fade.classList.remove("is-hidden");
+function runReveal() {
+  // snap to black without animating
+  fade.style.transition = "none";
+  fade.classList.remove("is-hidden");
 
-      // force reflow so the browser applies opacity:1 immediately
-      void fade.offsetHeight;
+  // force reflow so the browser applies opacity:1 immediately
+  void fade.offsetHeight;
 
-      // restore transition (match your CSS timing)
-      fade.style.transition = "opacity .6s ease";
+  // hand control back to CSS (so your duration change actually applies)
+  fade.style.transition = "";
 
-      // fade out on next frame
-      requestAnimationFrame(function () {
-        fade.classList.add("is-hidden");
-      });
-    }
+  // fade out on next frame
+  requestAnimationFrame(function () {
+    fade.classList.add("is-hidden");
+  });
+}
+
 
     // pageshow runs on first load AND when returning via back/forward cache
     window.addEventListener("pageshow", runReveal);
