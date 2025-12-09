@@ -2188,6 +2188,11 @@ const spacingY = SIZE > 1 ? Math.abs(getYcss(1) - firstY) : 0;
   mount.addEventListener('pointerdown', function(e){
     if (!zoomEnabled) return;
     if (e.pointerType && e.pointerType !== 'touch') return;
+    if (isZoomAnimating){
+      suppressNextBoardClick = true;
+      e.preventDefault();
+      return;
+    }
 
     cancelFling();
     e.preventDefault();
@@ -2255,6 +2260,16 @@ const boardY = (sy + offsetY) / scale;
       endPan(e);
       return;
     }
+    if (isZoomAnimating){
+      e.preventDefault();
+      e.stopPropagation();
+      if (e.stopImmediatePropagation) e.stopImmediatePropagation();
+      suppressNextBoardClick = true;
+      tapStart = null;
+      endPan(e);
+      return;
+    }
+
     if (e.pointerType && e.pointerType !== 'touch'){
       endPan(e);
       tapStart = null;
@@ -2464,7 +2479,12 @@ function startDrill(i, opts){
   }
 
   function onBoardClick(x,y){
+    if (isZoomAnimating) return; // NEW: block board clicks during zoom-in anim
     if (locked || timeUp) return;
+    if (x<0 || y<0 || x>=SIZE) return;
+    if (grid[y][x] !== null) return;
+    if (!remain.length) return;
+
     if (x<0 || y<0 || x>=SIZE) return;
     if (grid[y][x] !== null) return;
     if (!remain.length) return;
