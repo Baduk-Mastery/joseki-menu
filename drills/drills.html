@@ -255,9 +255,39 @@
 }
 
 
-  #drills-root .s-header{
-    display:grid; grid-template-columns:auto 1fr; align-items:center; column-gap:14px; margin:6px 0 10px;
-  }
+/* Header layout: Back left, title centered in the same row */
+#drills-root #drills-overlay .s-header{
+  position: relative;
+  display: flex;
+  align-items: center;
+  column-gap: 14px;
+  margin: 6px 0 10px;
+}
+
+/* Keep the back button in normal flow on the left */
+#drills-root #drills-overlay .s-header .s-back{
+  flex: 0 0 auto;
+}
+
+/* Center the title over the full header width without creating a new row */
+#drills-root #drills-overlay .s-header .s-title{
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  margin: 0;
+  text-align: center;
+
+  /* Safety so long titles don't overlap too hard */
+  max-width: 70%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+
+  /* Prevent the title from blocking the back button clicks */
+  pointer-events: none;
+}
+
+
   #drills-root .s-title{
     margin:0; font-size:24px; line-height:1.15; font-weight:800; text-shadow:0 1px 2px rgba(0,0,0,.35);
   }
