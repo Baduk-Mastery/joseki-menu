@@ -1572,62 +1572,12 @@ if (idx > 0 && idx < useList.length){
 var anchorQ = rotToNE(anchorRaw);
 var anchorD = inwardNE(anchorQ);
 
-// If the anchor is closer to the right side (dy > dx),
-// flip so the canonical start always becomes "approach from top".
-var needFlip = anchorD.dy > anchorD.dx;
-
 // Start transform (possibly with the NE flip)
 startTF    = needFlip ? compose(FLIP_NE, rotToNE) : rotToNE;
 startTFInv = invertTF(startTF);
 
-// Canonical root after applying the start transform
-var canon = startTF(mv);
-
-// Choose the orientation list that yields a *physical* clockwise
-// corner progression after the full startTF -> step -> startTFInv mapping.
-// This protects against the case where startTF includes a mirror.
-activeOrients = (function(){
-  // Pick a stable reference point near the NE area.
-  // Using a near-corner point helps us detect which corner each
-  // rotation state truly maps to in the original frame.
-  var ref = { x: SIZE - 2, y: 1 };
-
-  function cornerFor(arr, idx){
-    var step = arr[idx].tf;
-
-    var p = startTF(ref);
-    p = step(p);
-    p = startTFInv(p);
-
-    return cornerOf(p);
-  }
-
-  function seqCorners(arr){
-    return [
-      cornerFor(arr, 0),
-      cornerFor(arr, 2),
-      cornerFor(arr, 4),
-      cornerFor(arr, 6)
-    ];
-  }
-
-  function isClockwiseSeq(seq){
-    var c0 = seq[0];
-    return (
-      seq[1] === (c0 + 1) % 4 &&
-      seq[2] === (c0 + 2) % 4 &&
-      seq[3] === (c0 + 3) % 4
-    );
-  }
-
-  var s1 = seqCorners(ORIENTS);
-  if (isClockwiseSeq(s1)) return ORIENTS;
-
-  var s2 = seqCorners(ORIENTS_CCW);
-  if (isClockwiseSeq(s2)) return ORIENTS_CCW;
-
-  return ORIENTS;
-})();
+// Mirror flips rotation direction, so pick the opposite list when flipped.
+activeOrients = needFlip ? ORIENTS_CCW : ORIENTS;
 
 
       };
