@@ -1399,18 +1399,8 @@ html.no-wood, body.no-wood{ background: none !important; }
       return function(p){ return a(b(p)); };
     }
 
-    var FLIP_NE = compose(t_swap, t_rot180);
+var FLIP_NE = compose(t_swap, t_rot180);
 
- // Clockwise corner+direction cycle (8 states).
-// Canonical meaning (after startTF normalization):
-// 0: NE corner, approach from top
-// 1: NE corner, approach from right
-// 2: SE corner, approach from right
-// 3: SE corner, approach from bottom
-// 4: SW corner, approach from bottom
-// 5: SW corner, approach from left
-// 6: NW corner, approach from left
-// 7: NW corner, approach from top
 var ORIENTS = [
   { name: 'Start',          tf: t_identity },                 // NE/top
   { name: 'Start-Other',    tf: FLIP_NE },                    // NE/right
@@ -1422,9 +1412,19 @@ var ORIENTS = [
   { name: 'Prev-1-Other',   tf: compose(t_rot270, FLIP_NE) }  // NW/top
 ];
 
-// Keep a dedicated name for compatibility.
-// For now, side patterns follow the same clockwise corner+direction order.
+var ORIENTS_CCW = [
+  { name: 'Start',          tf: t_identity },                 // NE/top
+  { name: 'Start-Other',    tf: FLIP_NE },                    // NE/right
+  { name: 'Prev-1',         tf: t_rot270 },                   // NW/left (canonical)
+  { name: 'Prev-1-Other',   tf: compose(t_rot270, FLIP_NE) }, // NW/top
+  { name: 'Across-1',       tf: t_rot180 },                   // SW/bottom
+  { name: 'Across-1-Other', tf: compose(t_rot180, FLIP_NE) }, // SW/left
+  { name: 'Next-1',         tf: t_rot90 },                    // SE/right
+  { name: 'Next-1-Other',   tf: compose(t_rot90,  FLIP_NE) }  // SE/bottom
+];
+
 var ORIENTS_SIDE = ORIENTS;
+
 
 
     var startTF    = t_identity;
@@ -1580,11 +1580,55 @@ var needFlip = anchorD.dy > anchorD.dx;
 startTF    = needFlip ? compose(FLIP_NE, rotToNE) : rotToNE;
 startTFInv = invertTF(startTF);
 
-       // Canonical root after applying the start transform
+// Canonical root after applying the start transform
 var canon = startTF(mv);
 
-// Use the same clockwise corner+direction order for all patterns.
-activeOrients = ORIENTS;
+// Choose the orientation list that yields a *physical* clockwise
+// corner progression after the full startTF -> step -> startTFInv mapping.
+// This protects against the case where startTF includes a mirror.
+activeOrients = (function(){
+  // Pick a stable reference point near the NE area.
+  // Using a near-corner point helps us detect which corner each
+  // rotation state truly maps to in the original frame.
+  var ref = { x: SIZE - 2, y: 1 };
+
+  function cornerFor(arr, idx){
+    var step = arr[idx].tf;
+
+    var p = startTF(ref);
+    p = step(p);
+    p = startTFInv(p);
+
+    return cornerOf(p);
+  }
+
+  function seqCorners(arr){
+    return [
+      cornerFor(arr, 0),
+      cornerFor(arr, 2),
+      cornerFor(arr, 4),
+      cornerFor(arr, 6)
+    ];
+  }
+
+  function isClockwiseSeq(seq){
+    var c0 = seq[0];
+    return (
+      seq[1] === (c0 + 1) % 4 &&
+      seq[2] === (c0 + 2) % 4 &&
+      seq[3] === (c0 + 3) % 4
+    );
+  }
+
+  var s1 = seqCorners(ORIENTS);
+  if (isClockwiseSeq(s1)) return ORIENTS;
+
+  var s2 = seqCorners(ORIENTS_CCW);
+  if (isClockwiseSeq(s2)) return ORIENTS_CCW;
+
+  return ORIENTS;
+})();
+
 
       };
     })();
