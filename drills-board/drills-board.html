@@ -627,22 +627,19 @@ body.drill-zoom-mode #drill-ctrls{
   line-height:1.35;
   margin-bottom:8px;
 }
-/* Perfectly center single-word notifications (Wrong / Cleared) */
+/* Perfectly center single-word notifications (Wrong / Cleared)
+   without changing card size */
 #drill-wrong .drill-notif-card,
 #drill-cleared .drill-notif-card{
   display: flex;
   align-items: center;
   justify-content: center;
-
-  /* keep the card feeling balanced for a single word */
-  min-height: 84px;
-  padding: 18px 16px;
 }
 
 #drill-wrong .drill-notif-title,
 #drill-cleared .drill-notif-title{
   margin: 0;          /* remove the default bottom offset */
-  line-height: 1.1;   /* slightly tighter for visual centering */
+  line-height: 1.1;   /* tiny tweak for visual centering */
 }
 
 
