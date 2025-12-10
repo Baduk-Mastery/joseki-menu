@@ -129,6 +129,11 @@
     .pbtn:active{ transform:translateY(1px); }
     .pbtn-strong{ background:#111827; color:#fff; border-color:#111827; }
     .pbtn-alt{ background:#e7f0ff; color:#0b4aa2; border-color:#a7c1ff; }
+/* Block ALL board interaction during Blitz countdown */
+body.drill-countdown-lock #go-board-drill,
+body.drill-countdown-lock #go-board-drill *{
+  pointer-events: none !important;
+}
 
 #blitz-timer{
   margin-left:auto;
@@ -1252,6 +1257,15 @@ let blitzDirectionalIdx = null;
   let blitzCornerPlannedMoves = 0;
   let blitzInitialBudgetGranted = false; // NEW: only grant 1500ms-per-move once
   let timeUp = false;
+  // Hard lock used only for the Blitz countdown window
+  let countdownLock = false;
+
+  function setCountdownLock(v){
+    countdownLock = !!v;
+    if (document && document.body){
+      document.body.classList.toggle('drill-countdown-lock', countdownLock);
+    }
+  }
 
 
 function ensureTimerEl(){
@@ -2259,6 +2273,11 @@ const spacingY = SIZE > 1 ? Math.abs(getYcss(1) - firstY) : 0;
       e.preventDefault();
       return;
     }
+    if (countdownLock || locked || timeUp){
+      suppressNextBoardClick = true;
+      e.preventDefault();
+      return;
+    }
 
     cancelFling();
     e.preventDefault();
@@ -2291,6 +2310,16 @@ const boardY = (sy + offsetY) / scale;
 
 // Use capture so we intercept before WGo's own click handler
   mount.addEventListener('pointerup', function(e){
+    if (countdownLock || locked || timeUp){
+      suppressNextBoardClick = true;
+      tapStart = null;
+      endPan(e);
+      e.preventDefault();
+      e.stopPropagation();
+      if (e.stopImmediatePropagation) e.stopImmediatePropagation();
+      return;
+    }
+
     // --- CASE A: Zoom Disabled (Match Core Board behavior) ---
     if (!zoomEnabled) {
       if (e.pointerType && e.pointerType !== 'touch') return; // Let mouse use WGo default
