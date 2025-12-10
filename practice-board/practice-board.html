@@ -1401,39 +1401,31 @@ html.no-wood, body.no-wood{ background: none !important; }
 
     var FLIP_NE = compose(t_swap, t_rot180);
 
-    // Base orientation list (unchanged) – used for corner joseki
-    var ORIENTS = [
-      { name: 'Start',       tf: t_identity },
-      { name: 'Next-1',      tf: t_rot90 },
-      { name: 'Next-2',      tf: compose(t_rot90,  FLIP_NE) },
-      { name: 'Across-1',    tf: t_rot180 },
-      { name: 'Across-2',    tf: compose(t_rot180, FLIP_NE) },
-      { name: 'Prev-1',      tf: t_rot270 },
-      { name: 'Prev-2',      tf: compose(t_rot270, FLIP_NE) },
-      { name: 'Start-Other', tf: FLIP_NE }
-    ];
+ // Clockwise corner+direction cycle (8 states).
+// Canonical meaning (after startTF normalization):
+// 0: NE corner, approach from top
+// 1: NE corner, approach from right
+// 2: SE corner, approach from right
+// 3: SE corner, approach from bottom
+// 4: SW corner, approach from bottom
+// 5: SW corner, approach from left
+// 6: NW corner, approach from left
+// 7: NW corner, approach from top
+var ORIENTS = [
+  { name: 'Start',          tf: t_identity },                 // NE/top
+  { name: 'Start-Other',    tf: FLIP_NE },                    // NE/right
+  { name: 'Next-1',         tf: t_rot90 },                    // SE/right
+  { name: 'Next-1-Other',   tf: compose(t_rot90,  FLIP_NE) }, // SE/bottom
+  { name: 'Across-1',       tf: t_rot180 },                   // SW/bottom
+  { name: 'Across-1-Other', tf: compose(t_rot180, FLIP_NE) }, // SW/left
+  { name: 'Prev-1',         tf: t_rot270 },                   // NW/left
+  { name: 'Prev-1-Other',   tf: compose(t_rot270, FLIP_NE) }  // NW/top
+];
 
-    // NEW: orientation order for *side* patterns.
-    // For a side joseki whose first try is, say, on the top side near the right,
-    // the tries go clockwise:
-    //   0: top-right side
-    //   1: right-top
-    //   2: right-bottom
-    //   3: bottom-right
-    //   4: bottom-left
-    //   5: left-bottom
-    //   6: left-top
-    //   7: top-left
-    var ORIENTS_SIDE = [
-      ORIENTS[0], // Start        (id)
-      ORIENTS[7], // Start-Other  (flip)
-      ORIENTS[1], // Next-1       (r90)
-      ORIENTS[2], // Next-2       (r90 ∘ flip)
-      ORIENTS[3], // Across-1     (r180)
-      ORIENTS[4], // Across-2     (r180 ∘ flip)
-      ORIENTS[5], // Prev-1       (r270)
-      ORIENTS[6]  // Prev-2       (r270 ∘ flip)
-    ];
+// Keep a dedicated name for compatibility.
+// For now, side patterns follow the same clockwise corner+direction order.
+var ORIENTS_SIDE = ORIENTS;
+
 
     var startTF    = t_identity;
     var startTFInv = t_identity;
@@ -1480,67 +1472,98 @@ html.no-wood, body.no-wood{ background: none !important; }
           return;
         }
 
-        // First move of the main sequence (in SGF coordinates)
-        var mv = { x: opts[0].xy.x, y: opts[0].xy.y };
+      // Collect a few main-line raw moves to detect direction robustly.
+// We prefer the main sequence over variations.
+function getMainLineRawMoves(limit){
+  var out = [];
+  if (!sgfRootSeq || !sgfRootSeq.length) return out;
 
-        function cornerOf(p){
-          var NE = { x: SIZE-1, y: 0 };
-          var SE = { x: SIZE-1, y: SIZE-1 };
-          var SW = { x: 0,      y: SIZE-1 };
-          var NW = { x: 0,      y: 0 };
-          function d2(a){
-            var dx = a.x - p.x;
-            var dy = a.y - p.y;
-            return dx*dx + dy*dy;
-          }
-          var ds = [ d2(NE), d2(SE), d2(SW), d2(NW) ];
-          var k  = 0, best = ds[0];
-          for (var i = 1; i < 4; i++){
-            if (ds[i] < best){ best = ds[i]; k = i; }
-          }
-          return k;
-        }
+  var n = sgfRootSeq[0];
 
-        // Rotate so the nearest corner is NE
-        var corner = cornerOf(mv);
-        var rotToNE =
-          (corner === 0) ? t_identity :
-          (corner === 1) ? t_rot270 :
-          (corner === 2) ? t_rot180 :
-                           t_rot90;
+  // Skip root/setup nodes without moves
+  while (n && !nodeHasMove(n)) n = n.next;
 
-        var q = rotToNE(mv);
-        var inwardX  = (SIZE - 1) - q.x;
-        var inwardY  = q.y;
-        var needFlip = inwardY > inwardX;
+  while (n && out.length < (limit || 12)){
+    var xy = nodeMoveXYRaw(n);
+    if (xy) out.push(xy);
+    n = n.next;
+  }
+  return out;
+}
 
-        // Start transform (possibly with the NE flip)
-        startTF    = needFlip ? compose(FLIP_NE, rotToNE) : rotToNE;
-        startTFInv = invertTF(startTF);
+var mainMoves = getMainLineRawMoves(12);
 
-        // Canonical root after applying the start transform
-        var canon = startTF(mv);
+// Fallback to first root candidate if main line is empty
+var mv = mainMoves.length
+  ? { x: mainMoves[0].x, y: mainMoves[0].y }
+  : { x: opts[0].xy.x,  y: opts[0].xy.y };
 
-        // Decide if this is a corner or a side joseki in canonical coordinates.
-        var margin   = 3; // how close to the edge counts as "on the side"
-        var onTop    = (canon.y <= margin);
-        var onBottom = (canon.y >= SIZE - 1 - margin);
-        var onLeft   = (canon.x <= margin);
-        var onRight  = (canon.x >= SIZE - 1 - margin);
+// Rotate so the nearest corner of the first move is NE
+var corner = cornerOf(mv);
+var rotToNE =
+  (corner === 0) ? t_identity :
+  (corner === 1) ? t_rot270 :
+  (corner === 2) ? t_rot180 :
+                   t_rot90;
 
-        var nearCorner = ( (onTop || onBottom) && (onLeft || onRight) );
-        var nearEdge   =  (onTop || onBottom || onLeft || onRight);
+// Determine the anchor move that decides direction.
+// Rule:
+// - If the joseki starts with one or more neutral diagonal moves,
+//   use the first non-neutral move after that neutral prefix.
+// - Otherwise, use the first non-neutral move.
+// - If everything is neutral (very rare), fall back to the first move.
+var useList = mainMoves.length ? mainMoves : [mv];
 
-        if (nearCorner){
-          // Corner joseki – keep the original orientation order (already clockwise)
-          activeOrients = ORIENTS;
-        } else if (nearEdge){
-          // Side joseki – use the special side cycle (clockwise along the sides)
-          activeOrients = ORIENTS_SIDE;
-        } else {
-          // Central-ish patterns – treat them like sides for rotation purposes
-          activeOrients = ORIENTS_SIDE;
-        }
+function inwardNE(p){
+  return {
+    dx: (SIZE - 1) - p.x, // distance from right edge
+    dy: p.y               // distance from top
+  };
+}
+
+var idx = 0;
+while (idx < useList.length){
+  var q0 = rotToNE(useList[idx]);
+  var d0 = inwardNE(q0);
+  if (d0.dx !== d0.dy) break;
+  idx++;
+}
+
+// Anchor is first non-neutral after neutral prefix if prefix exists,
+// otherwise first non-neutral, otherwise first move.
+var anchorRaw = null;
+
+if (idx > 0 && idx < useList.length){
+  anchorRaw = useList[idx];
+} else {
+  for (var k = 0; k < useList.length; k++){
+    var qk = rotToNE(useList[k]);
+    var dk = inwardNE(qk);
+    if (dk.dx !== dk.dy){
+      anchorRaw = useList[k];
+      break;
+    }
+  }
+  if (!anchorRaw) anchorRaw = useList[0];
+}
+
+var anchorQ = rotToNE(anchorRaw);
+var anchorD = inwardNE(anchorQ);
+
+// If the anchor is closer to the right side (dy > dx),
+// flip so the canonical start always becomes "approach from top".
+var needFlip = anchorD.dy > anchorD.dx;
+
+// Start transform (possibly with the NE flip)
+startTF    = needFlip ? compose(FLIP_NE, rotToNE) : rotToNE;
+startTFInv = invertTF(startTF);
+
+       // Canonical root after applying the start transform
+var canon = startTF(mv);
+
+// Use the same clockwise corner+direction order for all patterns.
+activeOrients = ORIENTS;
+
       };
     })();
 
