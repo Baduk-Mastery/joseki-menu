@@ -146,12 +146,12 @@
 }
 
 :root{
-  --board-max: 720px;
+  --board-max: 860px; /* was 720px - increase for wider list cards */
 }
 
 #practice-overlay .s-inner,
 #level-overlay .s-inner{
-  width:min(92vw,720px);
+  width:min(94vw, var(--board-max));
 
   /* Fill all available height inside the overlay padding */
   height:100%;
@@ -165,6 +165,7 @@
   overflow:auto;
   -webkit-overflow-scrolling:touch;
 }
+
 
 /* Width/overflow sanity: keep inner + cards perfectly aligned */
 #practice-overlay .s-inner,
