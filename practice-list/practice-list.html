@@ -161,14 +161,11 @@
   -webkit-overflow-scrolling:touch;
 }
 
-
-/* Width/overflow sanity: keep inner + cards perfectly aligned */
+/* Prevent sideways creep without shrinking the inner width */
 #practice-overlay .s-inner,
 #level-overlay .s-inner{
-  box-sizing: border-box;   /* include padding in width */
-  overflow-x: hidden;       /* never allow sideways creep */
+  overflow-x: hidden;
 }
-
 /* Cards/grids should measure width including padding/border */
 #practice-overlay .s-card,
 #level-overlay .s-card,
@@ -178,6 +175,16 @@
 #level-overlay .level-grid{
   box-sizing: border-box;
 }
+
+/* Extra guard: never let a card exceed the inner width */
+#practice-overlay .s-card,
+#level-overlay .s-card,
+#practice-overlay .prac-card,
+#level-overlay .level-card{
+  width: 100%;
+  max-width: 100%;
+}
+
 
   /* Headers */
   #practice-overlay .s-header, #level-overlay .s-header{
@@ -1745,7 +1752,3 @@ cta.innerHTML     = '<span class="s-btn open-btn">Open</span>';
 
 </body>
 </html>
-
-
-
-
