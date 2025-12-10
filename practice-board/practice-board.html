@@ -1462,6 +1462,28 @@ var ORIENTS_SIDE = ORIENTS;
         }
         return t_identity;
       }
+      // Determine which corner a move belongs to.
+      // Return mapping used by rotToNE:
+      // 0 = NE, 1 = SE, 2 = SW, 3 = NW
+      function cornerOf(p){
+        if (!p) return 0;
+        var left   = p.x;
+        var right  = (SIZE - 1) - p.x;
+        var top    = p.y;
+        var bottom = (SIZE - 1) - p.y;
+
+        // Simple "distance to corner" metric
+        var dNE = right + top;
+        var dSE = right + bottom;
+        var dSW = left  + bottom;
+        var dNW = left  + top;
+
+        var min = Math.min(dNE, dSE, dSW, dNW);
+        if (min === dNE) return 0;
+        if (min === dSE) return 1;
+        if (min === dSW) return 2;
+        return 3;
+      }
 
       window.detectStartTF = function(){
         var opts = getRootCandidates();
