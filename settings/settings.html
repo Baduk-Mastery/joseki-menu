@@ -253,6 +253,68 @@
     font-size:22px;
   }
 }
+/* ===== Settings header centering fix (same row as Back) ===== */
+/* Paste at the END of the <style> block to override earlier grid-area layout */
+
+#settings-overlay .s-inner{
+  width:100%;
+  max-width:var(--maxw);
+  padding:16px 24px 22px;
+  margin:0 auto;
+  position:relative;
+
+  display:grid;
+  grid-template-columns:auto 1fr;
+  grid-template-rows:auto auto;
+  gap:12px 16px;
+  align-items:center;
+  text-align:left;
+  box-sizing:border-box;
+}
+
+/* Back stays left in row 1 */
+#settings-overlay .s-back{
+  grid-area:auto;
+  grid-column:1;
+  grid-row:1;
+  justify-self:start;
+}
+
+/* Title is truly centered across the full header width, same row */
+#settings-overlay .s-title{
+  grid-area:auto;
+  grid-column:1 / -1;
+  grid-row:1;
+  justify-self:center;
+  text-align:center;
+
+  /* keep clicks on Back clean */
+  pointer-events:none;
+
+  /* safety for long titles */
+  max-width:70%;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+
+/* Card goes below, full width */
+#settings-overlay .s-card{
+  grid-area:auto;
+  grid-column:1 / -1;
+  grid-row:2;
+}
+
+/* Re-apply your small-screen tweaks since this block overrides earlier ones */
+@media (max-width: 360px){
+  #settings-overlay .s-inner{
+    padding:16px 12px 20px;
+    gap:10px 12px;
+  }
+  #settings-overlay .s-title{
+    font-size:22px;
+  }
+}
 
   </style>
 </head>
@@ -585,6 +647,8 @@
 
 </body>
 </html>
+
+
 
 
 
