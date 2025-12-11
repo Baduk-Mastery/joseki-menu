@@ -496,19 +496,32 @@
       margin-left: calc( -1 * min(46vw, 360px) + 12px );
     }
   }
-  /* Floating Start button (bottom center) */
+/* Floating Start button (bottom center) */
   #drills-root .floating-start{
     position:fixed;
     left:50%;
     bottom:calc(env(safe-area-inset-bottom, 0px) + 28px);
+    
+    /* Center horizontally */
     transform:translate(-50%, 0);
+    
     z-index:100010;
     display:none;
     white-space:nowrap;
     pointer-events:auto;
     touch-action:manipulation;
   }
-  #drills-root .floating-start:active{ transform:translate(-50%, 0); }
+
+  /* FIX: Explicitly include the centering translateX(-50%) in hover/active states.
+     This overrides the generic .s-btn transforms (which only have translateY),
+     preventing the button from jumping to the right. */
+  #drills-root .floating-start:hover{
+    transform: translate(-50%, -1px);
+  }
+  #drills-root .floating-start:active{
+    transform: translate(-50%, 2px);
+  }
+
   @media (max-width:480px){
     #drills-root .floating-start{
       bottom:calc(env(safe-area-inset-bottom, 0px) + 20px);
