@@ -34,10 +34,28 @@
       }
     }
   </style>
+<style>
+/* Black reveal overlay */
+#menu-fade {
+  position: fixed;
+  inset: 0;
+  background: #000;
+  z-index: 100000; /* High z-index to cover everything */
+  opacity: 1;
+  transition: opacity 0.9s ease;
+}
+#menu-fade.is-hidden {
+  opacity: 0;
+  pointer-events: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  #menu-fade { transition: none; }
+}
+<style>
   <script src="../lib/tier-bridge.js"></script>
 </head>
 <body>
-  <div id="practice-fade" aria-hidden="true"></div>
+<div id="menu-fade" aria-hidden="true"></div>
 <noscript>
   <p>
     JavaScript is required to use Practice mode.
@@ -1699,7 +1717,8 @@ cta.innerHTML     = '<span class="s-btn open-btn">Open</span>';
 </script>
 <script>
   (function () {
-    var fade = document.getElementById("practice-fade");
+    // 1. Get the element (matches the ID in Step A)
+    var fade = document.getElementById("menu-fade");
     if (!fade) return;
 
     var reduceMotion = window.matchMedia &&
@@ -1710,28 +1729,28 @@ cta.innerHTML     = '<span class="s-btn open-btn">Open</span>';
       return;
     }
 
+    // 2. Define the reveal function
     function runReveal() {
-      // snap to black without animating
+      // Snap to black IMMEDIATELY (no animation)
       fade.style.transition = "none";
       fade.classList.remove("is-hidden");
 
-      // force reflow so the browser applies opacity:1 immediately
-      void fade.offsetHeight;
+      // Force the browser to paint the black screen right now
+      void fade.offsetWidth;
 
-      // hand control back to CSS
+      // Turn animation back on
       fade.style.transition = "";
 
-      // fade out on next frame
+      // Fade out on the next frame
       requestAnimationFrame(function () {
         fade.classList.add("is-hidden");
       });
     }
 
-    // pageshow runs on first load AND when returning via back/forward cache
+    // 3. Bind to 'pageshow' so it runs on Load AND Back Button
     window.addEventListener("pageshow", runReveal);
   })();
 </script>
-
 <script>
   // Auto-open Practice list when this page loads
   window.addEventListener('load', function(){
