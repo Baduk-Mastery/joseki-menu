@@ -1773,6 +1773,14 @@ cta.innerHTML     = '<span class="s-btn open-btn">Open</span>';
 
     // pageshow runs on first load AND when returning via back/forward cache
     window.addEventListener("pageshow", runReveal);
+window.addEventListener('pagehide', function(){
+  var fade = document.getElementById('practice-fade');
+  if (fade) {
+    // Instantly turn black (no animation time)
+    fade.style.transition = 'none';
+    fade.classList.remove('is-hidden');
+  }
+});
   })();
 </script>
 
