@@ -2361,12 +2361,64 @@ mount.addEventListener('pointerup', function(e){
     window.addEventListener('orientationchange', () => setTimeout(fitBoard,200));
     fitBoard();
 
-    function primePractice(){
+function primePractice(){
       showSingleNext = false;
       l2HintConsumed = false;
       clearHint();
       if (typeof refreshLivesUI === 'function') refreshLivesUI();
       if (typeof refreshHintsUI === 'function') refreshHintsUI();
+
+      // 1. Get possible first moves from root
+      var opts = getRootCandidates();
+      
+      // If no moves exist (empty SGF), just clear and return
+      if (!opts || !opts.length){
+        currentNode = null;
+        buildPositionTo(null);
+        return;
+      }
+
+      // 2. NEW LOGIC: DETECT CONSECUTIVE SETUP MOVES
+      // Look for a chain of moves of the SAME color at the start (e.g. B -> B -> B)
+      var chain = [];
+      var currMeta = opts[0]; // Start with the main variation's first move
+      chain.push(currMeta);
+      
+      var ptr = currMeta;
+      while(true){
+        var nexts = getNextCandidates(ptr.node);
+        if (!nexts || !nexts.length) break;
+        
+        var nextMeta = nexts[0]; // Follow main line
+        // If the next move is the SAME color, add it to the chain
+        if (nextMeta.color === ptr.color){
+          chain.push(nextMeta);
+          ptr = nextMeta;
+        } else {
+          break; // Color changed (e.g. B -> W), setup phase is done
+        }
+      }
+
+      // If we found 2 or more consecutive stones, fast-forward to the end of that chain.
+      if (chain.length > 1){
+        currentNode = chain[chain.length-1].node;
+        buildPositionTo(currentNode);
+
+        // Resume standard flow from this point:
+        if (level === 2 || level === 3){
+          // Player mode: Check if the *next* move is the opponent's (to auto-play it)
+          autoPlaceOpponentIfNeeded();
+        } else {
+          // Full/Pro mode: 
+          // Just waiting for user input. Show hint 'A' if appropriate.
+          if (level !== 1) showSingleNext = true;
+          redraw();
+        }
+        return;
+      }
+
+      // 3. Standard Behavior (Alternating start or single move)
+      // (This runs if the pattern is standard, e.g., B -> W)
 
       if (level === 1){
         currentNode = null;
@@ -2375,18 +2427,20 @@ mount.addEventListener('pointerup', function(e){
       }
 
       if (level === 2 || level === 3){
+        // Player modes start empty, allow auto-place to handle first move if it's the opponent
         currentNode = null;
         buildPositionTo(null);
         autoPlaceOpponentIfNeeded();
         return;
       }
 
-      var opts = getRootCandidates();
-      if (opts.length){
-        currentNode = opts[0].node;
-        buildPositionTo(currentNode);
-        showSingleNext = true;
-        redraw();
+      // Level 4/5 (Full control)
+      // Standard behavior: Place the first stone, let user play the second.
+      currentNode = opts[0].node;
+      buildPositionTo(currentNode);
+      showSingleNext = true;
+      redraw();
+    }
       } else {
         currentNode = null;
         buildPositionTo(null);
