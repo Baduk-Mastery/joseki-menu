@@ -1728,7 +1728,6 @@ cta.innerHTML     = '<span class="s-btn open-btn">Open</span>';
 </script>
 <script>
   (function () {
-    // MATCHED ID: targeting 'menu-fade' to match the HTML we just added
     var fade = document.getElementById("menu-fade");
     if (!fade) return;
 
@@ -1740,6 +1739,7 @@ cta.innerHTML     = '<span class="s-btn open-btn">Open</span>';
       return;
     }
 
+    // Function to run when the page appears (Load or Back button)
     function runReveal() {
       // 1. Snap to black instantly
       fade.style.transition = "none";
@@ -1757,7 +1757,15 @@ cta.innerHTML     = '<span class="s-btn open-btn">Open</span>';
       });
     }
 
+    // Run fade-in whenever page is shown
     window.addEventListener("pageshow", runReveal);
+
+    // FLICKER FIX: Before leaving the page, turn the screen black immediately.
+    // This ensures the "snapshot" inside the browser's back-button cache is black.
+    window.addEventListener("pagehide", function(){
+      fade.style.transition = "none";
+      fade.classList.remove("is-hidden");
+    });
   })();
 </script>
 </body>
