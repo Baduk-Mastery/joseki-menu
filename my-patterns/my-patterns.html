@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <title>Joseki Master – My Patterns</title>
+  <title>Joseki Dojo – My Patterns</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <style>
     html, body{
@@ -1047,6 +1047,71 @@ width: min(92vw, var(--board-max));
   #level-overlay .level-card[aria-disabled="true"]{
     opacity:.55; cursor:not-allowed; filter:saturate(.9);
   }
+/* Pro-level toast inside Level overlay (matches Practice List) */
+  #level-overlay .level-toast{
+    position:fixed; left:50%; top:50%; transform:translate(-50%,-50%);
+    z-index:100002; display:none; pointer-events:none;
+  }
+  #level-overlay .level-toast .level-toast-card{
+    pointer-events:auto;
+    position:relative;
+    z-index:1;
+
+    border-radius:10px;
+    border:1px solid #e2e8f0;
+    box-shadow:0 12px 28px rgba(15,23,42,.18);
+
+    padding:16px;
+    text-align:center;
+    font-family:system-ui,Segoe UI,Arial,sans-serif;
+    color:#fff3cf;
+
+    background-image:
+      linear-gradient(
+        to bottom,
+        rgba(0,0,0,.10),
+        rgba(0,0,0,.25)
+      ),
+      url('../img/notification.jpg');
+    background-size:cover;
+    background-position:center;
+    background-repeat:no-repeat;
+
+    width: min(92vw, var(--board-max));
+    max-width: 100%;
+    
+    max-height:calc(100vh - 32px);
+    overflow:auto;
+
+    text-shadow:0 1px 2px rgba(0,0,0,.35);
+  }
+  #level-overlay .level-toast .level-toast-card > div{
+    color:inherit !important;
+  }
+  #level-overlay .level-toast .level-toast-title{
+    font-weight:800;
+    font-size:18px;
+    line-height:1.35;
+    margin-bottom:8px;
+  }
+  #level-overlay .level-toast .level-toast-text{
+    font-size:16px;
+    line-height:1.4;
+    margin-bottom:14px;
+    font-weight:400;
+    opacity:1;
+  }
+  #level-overlay .level-toast .level-toast-actions{
+    margin-top:10px; display:flex; gap:10px; justify-content:center; flex-wrap:wrap;
+  }
+  
+  /* Scrim logic for Level Overlay */
+  #level-overlay.toast-open{ overflow: hidden; }
+  #level-overlay.toast-open::before{
+    content: ""; position: absolute; inset: 0;
+    background: rgba(0,0,0,.55); z-index: 100001;
+  }
+  #level-overlay.toast-open .s-inner{ pointer-events:none; }
 </style>
 
 <!-- Load WGo only if not already present on the page -->
@@ -2477,19 +2542,66 @@ title.textContent = displayName + ' (' + moveCount + ' Moves)';
   });
 
 
-  /* Level overlay wiring */
+/* Level overlay wiring */
   var lvlOverlay = document.getElementById('level-overlay');
   var lvlBack    = lvlOverlay ? document.getElementById('level-back') : null;
 
+  /* Pro-level toast logic (Specific to Levels) */
+  var proToast = null, proLaterBtn = null, proUpgradeBtn = null;
+
+  function ensureProToast(){
+    if (proToast) return;
+    proToast = document.createElement('div');
+    proToast.className = 'level-toast';
+    proToast.setAttribute('role','alertdialog');
+    proToast.setAttribute('aria-modal','true');
+    proToast.innerHTML =
+      '<div class="s-card level-toast-card">' +
+        '<div class="level-toast-title">Pro feature</div>' +
+        '<div class="level-toast-text">Levels 4 and 5 are part of Joseki Dojo Pro.</div>' +
+        '<div class="level-toast-actions">' +
+          '<button type="button" class="s-btn" id="level-pro-later">Maybe later</button>' +
+          '<button type="button" class="s-btn" id="level-pro-upgrade">View Pro</button>' +
+        '</div>' +
+      '</div>';
+    lvlOverlay.appendChild(proToast);
+
+    proLaterBtn   = proToast.querySelector('#level-pro-later');
+    proUpgradeBtn = proToast.querySelector('#level-pro-upgrade');
+
+    proLaterBtn.addEventListener('click', hideProToast);
+    proUpgradeBtn.addEventListener('click', function(){
+      // Redirect to Plans page
+      window.location.href = "../plans/plans.html";
+    });
+  }
+
+  function showProToast(){
+    ensureProToast();
+    proToast.style.display = 'block';
+    lvlOverlay.classList.add('toast-open');
+    setTimeout(function(){
+      try { proLaterBtn && proLaterBtn.focus(); } catch(_){}
+    }, 30);
+  }
+
+  function hideProToast(){
+    if (!proToast) return;
+    proToast.style.display = 'none';
+    lvlOverlay.classList.remove('toast-open');
+  }
+
   if (lvlOverlay){
     lvlOverlay.addEventListener('click', function(e){
+      // If toast is open, prevent clicks on grid behind it
+      if (lvlOverlay.classList.contains('toast-open')) return;
+
       var card = e.target.closest('.level-card');
       if (!card) return;
 
+      // REPLACED: Use specific Pro Toast instead of generic OwnShowNotice
       if (card.getAttribute('aria-disabled') === 'true'){
-        if (window.OwnShowNotice){
-          window.OwnShowNotice('Levels 4 and 5 are part of Joseki Master Pro.', 'Pro feature');
-        }
+        showProToast(); 
         return;
       }
 
@@ -2508,9 +2620,21 @@ title.textContent = displayName + ' (' + moveCount + ' Moves)';
 
     if (lvlBack){
       lvlBack.addEventListener('click', function(){
-        lvlOverlay.style.display = 'none';
+        if (lvlOverlay.classList.contains('toast-open')){
+          hideProToast();
+        } else {
+          lvlOverlay.style.display = 'none';
+        }
       });
     }
+    
+    // Close toast on Escape
+    window.addEventListener('keydown', function(e){
+      if (e.key === 'Escape' && lvlOverlay.classList.contains('toast-open')){
+        e.stopPropagation();
+        hideProToast();
+      }
+    });
   }
 
   /* Public API */
