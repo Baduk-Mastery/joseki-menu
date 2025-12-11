@@ -2979,19 +2979,8 @@ if (headerBack){
       });
     }
 
-    window.addEventListener("pageshow", function (evt) {
-      // Normal navigation (first load, reload): do the nice fade.
-      if (!evt.persisted) {
-        runReveal();
-        return;
-      }
-
-      // Coming back via the back/forward cache:
-      // don't re-animate the overlay (that’s what causes the flash).
-      if (fade.parentNode) {
-        fade.parentNode.removeChild(fade);
-      }
-    });
+    // pageshow runs on first load AND when returning via back/forward cache
+    window.addEventListener("pageshow", runReveal);
   })();
 </script>
 
