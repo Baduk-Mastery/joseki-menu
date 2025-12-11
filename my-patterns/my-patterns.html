@@ -1052,7 +1052,7 @@ width: min(92vw, var(--board-max));
     position:fixed; left:50%; top:50%; transform:translate(-50%,-50%);
     z-index:100002; display:none; pointer-events:none;
   }
-  #level-overlay .level-toast .level-toast-card{
+ #level-overlay .level-toast .level-toast-card{
     pointer-events:auto;
     position:relative;
     z-index:1;
@@ -1077,7 +1077,7 @@ width: min(92vw, var(--board-max));
     background-position:center;
     background-repeat:no-repeat;
 
-    /* FIXED: Use hardcoded 720px or fallback because variable is scoped elsewhere */
+    /* UPDATED: Full width matching board max */
     width: min(92vw, var(--board-max));
     max-width: 100%;
     
@@ -1086,91 +1086,32 @@ width: min(92vw, var(--board-max));
 
     text-shadow:0 1px 2px rgba(0,0,0,.35);
   }
-  
   /* Make inner text inherit the warm notification color */
   #level-overlay .level-toast .level-toast-card > div{
     color:inherit !important;
   }
-  
+/* Title style matching "Heads up" / "Pro feature" */
   #level-overlay .level-toast .level-toast-title{
     font-weight:800;
     font-size:18px;
     line-height:1.35;
     margin-bottom:8px;
   }
-  
+
+  /* Body text style matching other notifications (16px) */
   #level-overlay .level-toast .level-toast-text{
     font-size:16px;
     line-height:1.4;
     margin-bottom:14px;
-    font-weight:400;
+    font-weight:400; /* Regular weight, not bold */
     opacity:1;
   }
-  
+
   #level-overlay .level-toast .level-toast-actions{
-    margin-top:10px; 
-    display:flex; 
-    gap:10px; 
-    justify-content:center; 
-    flex-wrap:wrap;
-  }
-
-  /* CRITICAL FIX: Explicitly style buttons inside #level-overlay 
-     because the main .s-btn style is scoped to #ownpatterns-root */
-  #level-overlay .s-btn{
-    position:relative;
-    display:inline-flex;
-    align-items:center;
-    justify-content:center;
-    gap:6px;
-
-    padding:10px 22px; /* match s-btn-lg */
-    border-radius:10px;
-    border:1px solid rgba(255,255,255,.40);
-
-    font-size:16px;
-    font-weight:800;
-    line-height:1.1;
-    color:#fff3cf;
-    text-shadow:0 1px 0 rgba(120,60,20,.7);
-    cursor:pointer;
-
-    background-image:
-      linear-gradient(
-        to bottom,
-        rgba(255,255,255,.12),
-        rgba(255,255,255,.03) 38%,
-        rgba(0,0,0,.14) 100%
-      ),
-      url('../img/wood.jpg');
-    background-size:100% 100%, cover;
-    background-position:center;
-    background-repeat:no-repeat;
-
-    filter:brightness(1.08) saturate(.96);
-    box-shadow: 0 3px 0 rgba(133,74,26,.85), 0 8px 14px rgba(0,0,0,.45);
-    transition: transform .08s ease-out, box-shadow .08s ease-out, filter .12s ease-out;
-  }
-  
-  #level-overlay .s-btn:hover{
-    filter:brightness(1.12) saturate(.98);
-    transform:translateY(-1px);
-    box-shadow: 0 4px 0 rgba(133,74,26,.9), 0 10px 16px rgba(0,0,0,.48);
-  }
-  
-  #level-overlay .s-btn:active{
-    filter:brightness(.97) saturate(.96);
-    transform:translateY(2px);
-    box-shadow: 0 1px 0 rgba(120,60,20,.9), 0 4px 8px rgba(0,0,0,.55);
-  }
-  
-  /* Scrim logic for Level Overlay */
-  #level-overlay.toast-open{ overflow: hidden; }
-  #level-overlay.toast-open::before{
-    content: ""; position: absolute; inset: 0;
-    background: rgba(0,0,0,.55); z-index: 100001;
+    margin-top:10px; display:flex; gap:10px; justify-content:center; flex-wrap:wrap;
   }
   #level-overlay.toast-open .s-inner{ pointer-events:none; }
+
 </style>
 
 <!-- Load WGo only if not already present on the page -->
