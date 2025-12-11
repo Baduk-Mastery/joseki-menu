@@ -1740,7 +1740,22 @@ cta.innerHTML     = '<span class="s-btn open-btn">Open</span>';
     }
   });
 </script>
-
+<script>
+window.addEventListener("pageshow", function(event) {
+  // If the page is being restored from the bfcache (Back button history)
+  if (event.persisted) {
+    var fade = document.getElementById("menu-fade");
+    if (fade) {
+        // Reset the fade to visible immediately, then fade out
+        fade.classList.remove("is-hidden");
+        void fade.offsetWidth; // Trigger reflow
+        requestAnimationFrame(function(){
+            fade.classList.add("is-hidden");
+        });
+    }
+  }
+});
+</script>
 </body>
 </html>
 
