@@ -2776,32 +2776,17 @@ if (menuConfirmOverlay){
     if (hintBtn)  hintBtn.addEventListener('click', triggerHint);
 // Helper: go back to the joseki selection we came from
 function goBackToSelection(){
-  // 1. Try to use History Back first.
-  // This is crucial because it preserves the "Level Selection" state
-  // on the previous page without reloading it.
-  if (window.history.length > 1) {
+  // If we have a referrer, just step back in history.
+  if (document.referrer){
     window.history.back();
     return;
   }
 
-  // 2. Fallback: If we can't use history (e.g. opened in new tab),
-  // check the referrer string to decide which file to load.
-  var ref = document.referrer || "";
-
-  // Check if we came from "my patterns" (adjust the string match if your URL is different)
-  if (ref.indexOf("my-patterns") !== -1 || ref.indexOf("patterns") !== -1) {
-    try {
-      window.location.replace("../my-patterns/index.html");
-    } catch (e) {
-      window.location.href = "../my-patterns/index.html";
-    }
-    return;
-  }
-
-  // 3. Default Fallback -> Practice List
-  try {
-    window.location.replace("../practice-list/index.html");
-  } catch (e){
+  // No referrer (opened directly / new tab) – fall back to Practice List,
+  // then to main menu as a last resort.
+  try{
+    window.location.href = "../practice-list/index.html";
+  } catch(_){
     window.location.href = "../joseki-menu/index.html";
   }
 }
@@ -3001,7 +2986,6 @@ if (headerBack){
 
 </body>
 </html>
-
 
 
 
