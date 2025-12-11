@@ -1667,33 +1667,45 @@ cta.innerHTML     = '<span class="s-btn open-btn">Open</span>';
     close:()=>PracticeUI.close()
   };
 
-  lvlOverlay.addEventListener('click', function(e){
-  const card = e.target.closest('.level-card');
-  if (!card) return;
+lvlOverlay.addEventListener('click', function(e){
+    const card = e.target.closest('.level-card');
+    if (!card) return;
 
-  if (card.getAttribute('aria-disabled') === 'true'){
-    // Show in-app Pro notification instead of external alert/paywall directly
-    showProToast();
-    return;
-  }
+    if (card.getAttribute('aria-disabled') === 'true'){
+      showProToast();
+      return;
+    }
 
-  const lvl = parseInt(card.getAttribute('data-level') || '2', 10) || 2;
-  window.PracticeConfig = window.PracticeConfig || {};
-  window.PracticeConfig.level = lvl;
+    const lvl = parseInt(card.getAttribute('data-level') || '2', 10) || 2;
+    window.PracticeConfig = window.PracticeConfig || {};
+    window.PracticeConfig.level = lvl;
 
-  // Persist full config (selectedLine + level)
-  savePracticeConfig();
+    savePracticeConfig();
 
-  // Extra safety: only go to board if a line was actually selected
-  if (!window.PracticeConfig.selectedLine){
-    console.warn('[Practice] Level picked but no selectedLine in PracticeConfig; not opening board.');
-    return;
-  }
+    if (!window.PracticeConfig.selectedLine){
+      console.warn('[Practice] Level picked but no selectedLine...');
+      return;
+    }
 
-  // Don’t close overlays here – it causes the flicker back to categories.
-  // Just navigate to the board page; this page will unload anyway.
-  window.location.href = "../practice-board/practice-board.html";
-});
+    /* FIX: Snap to black instantly BEFORE navigating.
+       This ensures the "Back" button cache saves a black screen.
+       We use a tiny 20ms delay to let the browser paint the black overlay 
+       before starting the navigation. This is imperceptible to the user. */
+    var fade = document.getElementById('practice-fade');
+    if (fade) {
+      fade.style.transition = 'none';       // Disable animation
+      fade.classList.remove('is-hidden');   // Show black overlay immediately
+      
+      // Force a browser repaint
+      void fade.offsetHeight; 
+
+      setTimeout(function(){
+        window.location.href = "../practice-board/practice-board.html";
+      }, 20);
+    } else {
+      window.location.href = "../practice-board/practice-board.html";
+    }
+  });
 
 
 
