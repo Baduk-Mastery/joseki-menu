@@ -497,33 +497,79 @@
     }
   }
 
-  /* Centered notice */
+/* Centered notice */
   #drills-root #drills-notice{
     position:fixed; left:50%; top:50%; transform:translate(-50%,-50%);
-    z-index:100001; display:none; padding:0; background:transparent;
+    z-index:100002; /* Lifted to ensure it sits above the scrim (100001) */
+    display:none; padding:0; background:transparent;
     pointer-events:none;
   }
   #drills-root #drills-notice .s-inner{ width:auto; padding:0; margin:0; display:block; }
+
   #drills-root #drills-notice .drills-notice-card{
     pointer-events:auto;
-    background:none;
+    position:relative;
+    z-index:1;
+
+    border-radius:10px;
+    border:1px solid #e2e8f0;
+    box-shadow:0 12px 28px rgba(15,23,42,.18);
+
+    padding:16px;
+    text-align:center;
+    font-family:system-ui,Segoe UI,Arial,sans-serif;
+    color:#fff3cf;
+
     background-image:
-      linear-gradient(rgba(0,0,0,.35), rgba(0,0,0,.45)),
-      var(--wood);
-    background-size:cover; background-position:center;
-    border:2px solid rgba(37,99,235,.75);
-    border-radius:12px;
-    box-shadow:0 8px 20px rgba(2,6,23,.45), inset 0 0 0 1px rgba(255,255,255,.08);
-    min-width:280px; max-width:min(92vw, 420px);
-    max-height:calc(100vh - 32px); overflow:auto;
+      linear-gradient(
+        to bottom,
+        rgba(0,0,0,.10),
+        rgba(0,0,0,.25)
+      ),
+      url('../img/notification.jpg');
+    background-size:cover;
+    background-position:center;
+    background-repeat:no-repeat;
+
+    /* Full width matching board max */
+    width: min(92vw, var(--maxw));
+    max-width: 100%;
+
+    max-height:calc(100vh - 32px);
+    overflow:auto;
     text-shadow:0 1px 2px rgba(0,0,0,.35);
-    padding:10px 12px;
   }
+
+  /* Force inner text to inherit the warm notification color */
+  #drills-root #drills-notice .drills-notice-card .info-title,
+  #drills-root #drills-notice .drills-notice-card .info-desc{
+    color:inherit !important;
+  }
+
+  #drills-root #drills-notice .info-title{
+    font-weight:800;
+    font-size:18px;
+    line-height:1.35;
+    margin-bottom:8px;
+  }
+
   #drills-root #drills-notice .actions{
     margin-top:10px; display:flex; gap:10px; justify-content:center; flex-wrap:wrap;
   }
 
-  /* Lock interactions while notice open */
+/* Lock interactions and darken background while notice open */
+  #drills-root.notice-open #drills-overlay{
+    overflow: hidden;
+  }
+
+  #drills-root.notice-open #drills-overlay::before{
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: rgba(0,0,0,.55); /* dark scrim */
+    z-index: 100001;             /* above content, below notice (100002) */
+  }
+
   #drills-root.notice-open #drills-overlay .s-inner{ pointer-events:none; }
 
 @media (max-width:480px){
