@@ -2774,62 +2774,33 @@ if (menuConfirmOverlay){
       if (isFullscreen) exitFullscreen();
     });
     if (hintBtn)  hintBtn.addEventListener('click', triggerHint);
-// Fade the page to black, then run a navigation callback
-function fadeAndNavigate(cb){
-  var fade = document.getElementById('menu-fade');
-
-  // If there is no overlay or user prefers reduced motion,
-  // just navigate immediately.
-  var reduceMotion = window.matchMedia &&
-    window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-
-  if (!fade || reduceMotion){
-    cb();
-    return;
-  }
-
-  // Show the black overlay again (it will animate from 0 → 1)
-  fade.classList.remove('is-hidden');
-  fade.style.pointerEvents = 'auto';
-
-  var done = false;
-
-  function finish(){
-    if (done) return;
-    done = true;
-    fade.removeEventListener('transitionend', onEnd);
-    cb();
-  }
-
-  function onEnd(ev){
-    if (ev.target !== fade || ev.propertyName !== 'opacity') return;
-    finish();
-  }
-
-  fade.addEventListener('transitionend', onEnd);
-
-  // Safety timeout in case transitionend never fires
-  setTimeout(finish, 950);
-}
-
 // Helper: go back to the joseki selection we came from
 function goBackToSelection(){
-  fadeAndNavigate(function(){
-    // If we have a referrer, just step back in history.
-    if (document.referrer){
+  // If we have a referrer, go back there with a fresh navigation.
+  // This avoids the back/forward cache flicker and lets the target page
+  // start fully covered by its own fade overlay (like the Settings page).
+  if (document.referrer){
+    try{
+      // Replace this page in history, same effect as history.back()
+      // but with a normal forward navigation.
+      window.location.replace(document.referrer);
+      return;
+    } catch (e){
+      // Fallback in case something weird happens
       window.history.back();
       return;
     }
+  }
 
-    // No referrer (opened directly / new tab) – fall back to Practice List,
-    // then to main menu as a last resort.
-    try{
-      window.location.href = "../practice-list/index.html";
-    } catch(_){
-      window.location.href = "../joseki-menu/index.html";
-    }
-  });
+  // No referrer (opened directly / new tab) – fall back to Practice List,
+  // then to main menu as a last resort, also via replace to avoid flicker.
+  try{
+    window.location.replace("../practice-list/index.html");
+  } catch (_){
+    window.location.replace("../joseki-menu/index.html");
+  }
 }
+
 
 // Top-left Back button – go back to previous screen (Practice List, My Patterns, etc.)
 var headerBack = document.getElementById('prac-back-top');
@@ -2997,36 +2968,30 @@ if (headerBack){
     var reduceMotion = window.matchMedia &&
       window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
-    // If the user prefers reduced motion, remove the overlay entirely
-    // so everything is instant (no animations at all).
     if (reduceMotion) {
       fade.remove();
       return;
     }
 
-    function reveal() {
-      // Start from fully opaque black (the default CSS state),
-      // then fade to transparent on the next frame.
+    function runReveal() {
+      // snap to black without animating
+      fade.style.transition = "none";
       fade.classList.remove("is-hidden");
 
+      // force reflow so the browser applies opacity:1 immediately
+      void fade.offsetHeight;
+
+      // hand control back to CSS
+      fade.style.transition = "";
+
+      // fade out on next frame
       requestAnimationFrame(function () {
         fade.classList.add("is-hidden");
       });
     }
 
-    // Normal first load (navigation / reload)
-    if (document.readyState === "complete") {
-      reveal();
-    } else {
-      window.addEventListener("load", reveal, { once: true });
-    }
-
-    // Back/forward cache restores
-    window.addEventListener("pageshow", function (evt) {
-      if (evt.persisted) {
-        reveal();
-      }
-    });
+    // pageshow runs on first load AND when returning via back/forward cache
+    window.addEventListener("pageshow", runReveal);
   })();
 </script>
 
