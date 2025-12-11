@@ -565,18 +565,25 @@
   #level-overlay .level-toast .level-toast-card > div{
     color:inherit !important;
   }
-  #level-overlay .level-toast .level-toast-text{
+/* Title style matching "Heads up" / "Pro feature" */
+  #level-overlay .level-toast .level-toast-title{
     font-weight:800;
     font-size:18px;
     line-height:1.35;
     margin-bottom:8px;
   }
+
+  /* Body text style matching other notifications (16px) */
+  #level-overlay .level-toast .level-toast-text{
+    font-size:16px;
+    line-height:1.4;
+    margin-bottom:14px;
+    font-weight:400; /* Regular weight, not bold */
+    opacity:1;
+  }
+
   #level-overlay .level-toast .level-toast-actions{
-    margin-top:10px;
-    display:flex;
-    gap:10px;
-    justify-content:center;
-    flex-wrap:wrap;
+    margin-top:10px; display:flex; gap:10px; justify-content:center; flex-wrap:wrap;
   }
   #level-overlay.toast-open .s-inner{ pointer-events:none; }
 
@@ -685,6 +692,8 @@
 
   /* Pro-level toast (in-app notification for locked levels) */
 
+ /* Pro-level toast (in-app notification for locked levels) */
+
   let proToast = null, proText = null, proLaterBtn = null, proUpgradeBtn = null;
   function ensureProToast(){
     if (proToast) return;
@@ -694,6 +703,7 @@
     proToast.setAttribute('aria-modal','true');
     proToast.innerHTML =
       '<div class="s-card level-toast-card">' +
+        '<div class="level-toast-title">Pro feature</div>' + // Added Title
         '<div class="level-toast-text">Levels 4 and 5 are part of Joseki Master Pro.</div>' +
         '<div class="level-toast-actions">' +
           '<button type="button" class="s-btn" id="level-pro-later">Maybe later</button>' +
@@ -702,9 +712,9 @@
       '</div>';
     lvlOverlay.appendChild(proToast);
 
-    proText       = proToast.querySelector('.level-toast-text');
-    proLaterBtn   = proToast.querySelector('#level-pro-later');
-    proUpgradeBtn = proToast.querySelector('#level-pro-upgrade');
+    proText           = proToast.querySelector('.level-toast-text');
+    proLaterBtn       = proToast.querySelector('#level-pro-later');
+    proUpgradeBtn     = proToast.querySelector('#level-pro-upgrade');
 
     proLaterBtn.addEventListener('click', hideProToast);
     proUpgradeBtn.addEventListener('click', function(){
