@@ -12,27 +12,6 @@
       font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
     }
 /* Black reveal overlay (covers page on load, then fades away) */
-#menu-fade {
-      position: fixed;
-      inset: 0;
-      background: #000;
-      z-index: 200000; /* <--- INCREASED to sit on top of everything */
-      opacity: 1;
-      transition: opacity .9s ease;
-    }
-
-    /* Triggered by JS to fade out */
-    #menu-fade.is-hidden {
-      opacity: 0;
-      pointer-events: none;
-    }
-
-    @media (prefers-reduced-motion: reduce) {
-      #menu-fade {
-        transition: none;
-      }
-    }
-/* Black reveal overlay (covers page on load, then fades away) */
     #practice-fade{
       position: fixed;
       inset: 0;
@@ -58,7 +37,7 @@
   <script src="../lib/tier-bridge.js"></script>
 </head>
 <body>
-<div id="menu-fade" aria-hidden="true"></div>
+  <div id="practice-fade" aria-hidden="true"></div>
 <noscript>
   <p>
     JavaScript is required to use Practice mode.
@@ -1719,16 +1698,8 @@ cta.innerHTML     = '<span class="s-btn open-btn">Open</span>';
 })();
 </script>
 <script>
-  // Auto-open Practice list when this page loads
-  window.addEventListener('load', function(){
-    if (window.GoPractice && typeof window.GoPractice.open === 'function'){
-      window.GoPractice.open();
-    }
-  });
-</script>
-<script>
   (function () {
-    var fade = document.getElementById("menu-fade");
+    var fade = document.getElementById("practice-fade");
     if (!fade) return;
 
     var reduceMotion = window.matchMedia &&
@@ -1739,35 +1710,37 @@ cta.innerHTML     = '<span class="s-btn open-btn">Open</span>';
       return;
     }
 
-    // Function to run when the page appears (Load or Back button)
     function runReveal() {
-      // 1. Snap to black instantly
+      // snap to black without animating
       fade.style.transition = "none";
       fade.classList.remove("is-hidden");
 
-      // 2. Force browser paint
-      void fade.offsetWidth;
+      // force reflow so the browser applies opacity:1 immediately
+      void fade.offsetHeight;
 
-      // 3. Restore transition
+      // hand control back to CSS
       fade.style.transition = "";
 
-      // 4. Fade out
+      // fade out on next frame
       requestAnimationFrame(function () {
         fade.classList.add("is-hidden");
       });
     }
 
-    // Run fade-in whenever page is shown
+    // pageshow runs on first load AND when returning via back/forward cache
     window.addEventListener("pageshow", runReveal);
-
-    // FLICKER FIX: Before leaving the page, turn the screen black immediately.
-    // This ensures the "snapshot" inside the browser's back-button cache is black.
-    window.addEventListener("pagehide", function(){
-      fade.style.transition = "none";
-      fade.classList.remove("is-hidden");
-    });
   })();
 </script>
+
+<script>
+  // Auto-open Practice list when this page loads
+  window.addEventListener('load', function(){
+    if (window.GoPractice && typeof window.GoPractice.open === 'function'){
+      window.GoPractice.open();
+    }
+  });
+</script>
+
 </body>
 </html>
 
