@@ -503,13 +503,15 @@
   justify-content:center;
   flex-wrap:wrap;
 }
-/* When the remove-favorite toast is open, darken the background
+/* When ANY toast is open (Favorites or Level), darken the background
    and block scrolling/interactions outside the card */
-#practice-overlay.toast-open{
+#practice-overlay.toast-open,
+#level-overlay.toast-open{
   overflow: hidden; /* freeze scroll while toast is open */
 }
 
-#practice-overlay.toast-open::before{
+#practice-overlay.toast-open::before,
+#level-overlay.toast-open::before{
   content: "";
   position: absolute;
   inset: 0;
@@ -517,7 +519,8 @@
   z-index: 100001;             /* below the toast card (100002), above wood */
 }
 
-  #practice-overlay.toast-open .s-inner{ pointer-events:none; }
+#practice-overlay.toast-open .s-inner,
+#level-overlay.toast-open .s-inner{ pointer-events:none; }
 
 /* Pro-level toast inside Level overlay */
   #level-overlay .level-toast{
