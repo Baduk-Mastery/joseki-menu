@@ -2774,32 +2774,37 @@ if (menuConfirmOverlay){
       if (isFullscreen) exitFullscreen();
     });
     if (hintBtn)  hintBtn.addEventListener('click', triggerHint);
-// Helper: go back to the joseki selection we came from
+// Helper: go back to the exact page we came from
 function goBackToSelection(){
-  // If we have a referrer, go back there with a fresh navigation.
-  // This avoids the back/forward cache flicker and lets the target page
-  // start fully covered by its own fade overlay (like the Settings page).
-  if (document.referrer){
+  // 1) Best case: there is an actual previous entry in history.
+  //    This really restores the last page (level list, patterns, etc.).
+  if (window.history && window.history.length > 1){
     try{
-      // Replace this page in history, same effect as history.back()
-      // but with a normal forward navigation.
-      window.location.replace(document.referrer);
-      return;
-    } catch (e){
-      // Fallback in case something weird happens
       window.history.back();
       return;
+    } catch (e){
+      // fall through to referrer / fallbacks
     }
   }
 
-  // No referrer (opened directly / new tab) – fall back to Practice List,
-  // then to main menu as a last resort, also via replace to avoid flicker.
+  // 2) Fallback: use the referrer if available
+  if (document.referrer){
+    try{
+      window.location.replace(document.referrer);
+      return;
+    } catch (e){
+      // fall through to hardcoded fallbacks
+    }
+  }
+
+  // 3) Last-resort fallbacks: known static pages
   try{
     window.location.replace("../practice-list/index.html");
   } catch (_){
     window.location.replace("../joseki-menu/index.html");
   }
 }
+
 
 
 // Top-left Back button – go back to previous screen (Practice List, My Patterns, etc.)
