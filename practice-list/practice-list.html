@@ -473,8 +473,10 @@
   background-position:center;
   background-repeat:no-repeat;
 
-  min-width:280px;
-  max-width:min(92vw, 420px);
+  /* UPDATED: Full width matching board max */
+  width: min(92vw, var(--board-max)); 
+  max-width: 100%;
+  
   max-height:calc(100vh - 32px);
   overflow:auto;
 
@@ -522,7 +524,7 @@
     position:fixed; left:50%; top:50%; transform:translate(-50%,-50%);
     z-index:100002; display:none; pointer-events:none;
   }
-  #level-overlay .level-toast .level-toast-card{
+#level-overlay .level-toast .level-toast-card{
     pointer-events:auto;
     position:relative;
     z-index:1;
@@ -547,8 +549,10 @@
     background-position:center;
     background-repeat:no-repeat;
 
-    min-width:280px;
-    max-width:min(92vw, 420px);
+    /* UPDATED: Full width matching board max */
+    width: min(92vw, var(--board-max));
+    max-width: 100%;
+    
     max-height:calc(100vh - 32px);
     overflow:auto;
 
