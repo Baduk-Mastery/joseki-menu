@@ -49,7 +49,6 @@
 
 </head>
 <body>
-<body>
 
   <div id="drills-fade" aria-hidden="true"></div>
 
@@ -481,20 +480,22 @@
     /* Start at center of screen */
     left: 50%;
     
-    /* Move left by half the content width (max 720px/2 = 360px or 92vw/2 = 46vw) 
-       Then move right by the desktop padding (24px) */
-    transform: translateX(calc( -1 * min(46vw, 360px) + 24px ));
+    /* FIX: Use margin-left instead of transform for positioning.
+       This prevents conflicts with .s-btn:hover transforms. */
+    margin-left: calc( -1 * min(46vw, 360px) + 24px );
+    
+    /* Ensure no transform is applied by default so the button can use its own generic s-btn transforms */
+    transform: none; 
   }
 
   @media (max-width:480px){
     #drills-root .floating-clear{
       bottom: calc(env(safe-area-inset-bottom, 0px) + 20px);
       
-      /* Adjust for mobile padding (12px) */
-      transform: translateX(calc( -1 * min(46vw, 360px) + 12px ));
+      /* Adjust for mobile padding (12px) - Use margin-left here too */
+      margin-left: calc( -1 * min(46vw, 360px) + 12px );
     }
   }
-
   /* Floating Start button (bottom center) */
   #drills-root .floating-start{
     position:fixed;
