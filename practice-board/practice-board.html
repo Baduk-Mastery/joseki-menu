@@ -2775,21 +2775,41 @@ if (menuConfirmOverlay){
     });
     if (hintBtn)  hintBtn.addEventListener('click', triggerHint);
 // Helper: go back to the joseki selection we came from
+// Special-case Practice List to avoid bfcache flicker (like Settings)
+var leavingToSelection = false;
 function goBackToSelection(){
-  // If we have a referrer, just step back in history.
-  if (document.referrer){
+  if (leavingToSelection) return;
+  leavingToSelection = true;
+
+  var ref = document.referrer || "";
+  var PRACTICE_LIST_URL = "../practice-list/index.html";
+
+  // If we came from the Practice List level selector, go there directly,
+  // no history.back → no bfcache flicker.
+  if (ref.indexOf("/practice-list/") !== -1){
+    try {
+      window.location.replace(PRACTICE_LIST_URL);
+    } catch (e){
+      window.location.href = PRACTICE_LIST_URL;
+    }
+    return;
+  }
+
+  // Other referrers (e.g., My Patterns etc.) keep the old history behavior
+  if (ref){
     window.history.back();
     return;
   }
 
-  // No referrer (opened directly / new tab) – fall back to Practice List,
+  // No referrer (open in new tab etc.) – fall back to Practice List,
   // then to main menu as a last resort.
   try{
-    window.location.href = "../practice-list/index.html";
-  } catch(_){
+    window.location.replace(PRACTICE_LIST_URL);
+  } catch (_){
     window.location.href = "../joseki-menu/index.html";
   }
 }
+
 
 // Top-left Back button – go back to previous screen (Practice List, My Patterns, etc.)
 var headerBack = document.getElementById('prac-back-top');
