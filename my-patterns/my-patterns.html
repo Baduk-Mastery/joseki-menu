@@ -1077,8 +1077,8 @@ width: min(92vw, var(--board-max));
     background-position:center;
     background-repeat:no-repeat;
 
-    /* Full width matching board max */
-    width: min(92vw, var(--board-max));
+    /* FIXED: Use hardcoded 720px or fallback because variable is scoped elsewhere */
+    width: min(92vw, 720px);
     max-width: 100%;
     
     max-height:calc(100vh - 32px);
@@ -1115,10 +1115,8 @@ width: min(92vw, var(--board-max));
     flex-wrap:wrap;
   }
 
-  /* CRITICAL FIX: Ensure buttons inside the toast get the wood style.
-     The generic .s-btn rule might be scoped to #ownpatterns-root, 
-     so we explicitly style buttons inside #level-overlay here.
-  */
+  /* CRITICAL FIX: Explicitly style buttons inside #level-overlay 
+     because the main .s-btn style is scoped to #ownpatterns-root */
   #level-overlay .s-btn{
     position:relative;
     display:inline-flex;
@@ -1172,7 +1170,8 @@ width: min(92vw, var(--board-max));
     content: ""; position: absolute; inset: 0;
     background: rgba(0,0,0,.55); z-index: 100001;
   }
-  #level-overlay.toast-open .s-inner{ pointer-events:none; }</style>
+  #level-overlay.toast-open .s-inner{ pointer-events:none; }
+</style>
 
 <!-- Load WGo only if not already present on the page -->
 <script>
