@@ -1052,7 +1052,7 @@ width: min(92vw, var(--board-max));
     position:fixed; left:50%; top:50%; transform:translate(-50%,-50%);
     z-index:100002; display:none; pointer-events:none;
   }
-  #level-overlay .level-toast .level-toast-card{
+ #level-overlay .level-toast .level-toast-card{
     pointer-events:auto;
     position:relative;
     z-index:1;
@@ -1077,9 +1077,9 @@ width: min(92vw, var(--board-max));
     background-position:center;
     background-repeat:no-repeat;
 
-    /* WIDTH FIX: Matches the Practice List notification exactly */
+    /* UPDATED: Match Practice List standard notification width */
     min-width: 280px;
-    max-width: min(92vw, 480px);
+    max-width: min(92vw, 420px);
     
     max-height:calc(100vh - 32px);
     overflow:auto;
@@ -1115,7 +1115,7 @@ width: min(92vw, var(--board-max));
     flex-wrap:wrap;
   }
 
-  /* BUTTON FIX: Explicitly style buttons inside #level-overlay 
+  /* CRITICAL FIX: Explicitly style buttons inside #level-overlay 
      because the main .s-btn style is scoped to #ownpatterns-root */
   #level-overlay .s-btn{
     position:relative;
@@ -2955,6 +2955,7 @@ if (passBtn){
 
 </body>
 </html>
+
 
 
 
