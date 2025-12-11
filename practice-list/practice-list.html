@@ -1432,7 +1432,7 @@ favToast.innerHTML =
       return;
     }
 
-   state.cats.forEach(cat=>{
+ state.cats.forEach(cat=>{
       const card=document.createElement('button');
       card.type='button';
       card.className='s-card prac-card';
@@ -1440,27 +1440,27 @@ favToast.innerHTML =
 
       const thumb=document.createElement('div');
       thumb.className='prac-thumb';
+      
       const meta=document.createElement('div');
       meta.className='prac-meta';
+      
       const title=document.createElement('div');
       title.className='prac-title';
-      const desc=document.createElement('div');
-      desc.className='prac-desc';
+      
+      // Removed the 'desc' element entirely
+      
       const cta=document.createElement('div');
       cta.className='prac-cta';
 
-      const t1 = nicePoint(cat.firstTwo[0], cat.size);
-      const t2 = nicePoint(cat.firstTwo[1], cat.size);
-
-      // UPDATED: Variation count is now the main title, moves are the description
+      // UPDATED: Title shows variation count only. No second line text.
       title.textContent = `${cat.lineIdx.length} variation${cat.lineIdx.length>1?'s':''} (≥ ${MIN_MOVES} moves)`;
-      desc.textContent  = `First two: ${t1} → ${t2}`;
       
       cta.innerHTML     = '<span class="s-btn open-btn">Open</span>';
 
       meta.appendChild(title);
-      meta.appendChild(desc);
+      // meta.appendChild(desc); <--- Removed this line
       meta.appendChild(cta);
+      
       card.appendChild(thumb);
       card.appendChild(meta);
       catsGrid.appendChild(card);
