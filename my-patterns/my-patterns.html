@@ -2658,7 +2658,7 @@ title.textContent = displayName + ' (' + moveCount + ' Moves)';
       var card = e.target.closest('.level-card');
       if (!card) return;
 
-      // REPLACED: Use specific Pro Toast instead of generic OwnShowNotice
+      // Show in-app Pro notification instead of external alert
       if (card.getAttribute('aria-disabled') === 'true'){
         showProToast(); 
         return;
@@ -2674,7 +2674,23 @@ title.textContent = displayName + ' (' + moveCount + ' Moves)';
         return;
       }
 
-      window.location.href = "../practice-board/practice-board.html";
+      // FIX: Snap to black instantly BEFORE navigating.
+      // This forces the "Back" button cache to save a black screen.
+      var fade = document.getElementById('own-fade');
+      if (fade) {
+        fade.style.transition = 'none';       // Disable animation
+        fade.classList.remove('is-hidden');   // Show black overlay immediately
+        
+        // Force a browser repaint so the black screen is rendered
+        void fade.offsetHeight; 
+
+        // Wait 20ms to ensure the paint happens, then navigate
+        setTimeout(function(){
+          window.location.href = "../practice-board/practice-board.html";
+        }, 20);
+      } else {
+        window.location.href = "../practice-board/practice-board.html";
+      }
     });
 
     if (lvlBack){
