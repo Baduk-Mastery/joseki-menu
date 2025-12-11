@@ -386,6 +386,14 @@
 
   var MENU_URL    = '../joseki-menu/index.html';
   var STORAGE_KEY = 'go_prefs';
+  var leavingToMenu = false;
+
+  function goBackToMenu(){
+    if (leavingToMenu) return;
+    leavingToMenu = true;
+    // Always go directly to the menu, no history.back → no bfcache flicker
+    window.location.replace(MENU_URL);
+  }
 
   // Shared prefs object
   var GoPrefs = (window.GoPrefs = window.GoPrefs || {});
@@ -583,17 +591,10 @@
 
   if (backBtn){
     backBtn.addEventListener('click', function(){
-      try {
-        if (window.history && window.history.length > 1){
-          window.history.back();
-        } else {
-          window.location.href = MENU_URL;
-        }
-      } catch (e) {
-        window.location.href = MENU_URL;
-      }
+      goBackToMenu();
     });
   }
+
 
   // Show the overlay and sync UI/state on load
   panel.style.display = 'flex';
