@@ -2774,37 +2774,32 @@ if (menuConfirmOverlay){
       if (isFullscreen) exitFullscreen();
     });
     if (hintBtn)  hintBtn.addEventListener('click', triggerHint);
-// Helper: go back to the exact page we came from
+// Helper: go back to the joseki selection we came from
 function goBackToSelection(){
-  // 1) Best case: there is an actual previous entry in history.
-  //    This really restores the last page (level list, patterns, etc.).
-  if (window.history && window.history.length > 1){
-    try{
-      window.history.back();
-      return;
-    } catch (e){
-      // fall through to referrer / fallbacks
-    }
-  }
-
-  // 2) Fallback: use the referrer if available
+  // If we have a referrer, go back there with a fresh navigation.
+  // This avoids the back/forward cache flicker and lets the target page
+  // start fully covered by its own fade overlay (like the Settings page).
   if (document.referrer){
     try{
+      // Replace this page in history, same effect as history.back()
+      // but with a normal forward navigation.
       window.location.replace(document.referrer);
       return;
     } catch (e){
-      // fall through to hardcoded fallbacks
+      // Fallback in case something weird happens
+      window.history.back();
+      return;
     }
   }
 
-  // 3) Last-resort fallbacks: known static pages
+  // No referrer (opened directly / new tab) – fall back to Practice List,
+  // then to main menu as a last resort, also via replace to avoid flicker.
   try{
     window.location.replace("../practice-list/index.html");
   } catch (_){
     window.location.replace("../joseki-menu/index.html");
   }
 }
-
 
 
 // Top-left Back button – go back to previous screen (Practice List, My Patterns, etc.)
@@ -2882,21 +2877,12 @@ if (headerBack){
     function hideJosekiEverything(){ /* no-op on standalone */ }
     function showJosekiEverything(){ /* no-op on standalone */ }
 
-        function showPracticeUI(){
+    function showPracticeUI(){
       if (window.PageBG && typeof PageBG.add === 'function') PageBG.add();
       setHidden(wrap, false);
       wrap.setAttribute('data-hidden','0');
       refitSoon();
-
-      // After the board has been laid out, fade away the black overlay
-      // so the first size/SGF draw flicker stays hidden behind it.
-      if (window.PracticeFade && typeof window.PracticeFade.reveal === 'function') {
-        setTimeout(function () {
-          window.PracticeFade.reveal();
-        }, 40); // small delay to let initial fit/draw settle
-      }
     }
-
 
     function hidePracticeUI(){
       setHidden(wrap, true);
@@ -3004,23 +2990,14 @@ if (headerBack){
       });
     }
 
-    // Expose a helper so Practice code can decide *when* to fade
-    window.PracticeFade = {
-      reveal: runReveal,
-      element: fade
-    };
-
-    // When coming back from bfcache, re-run the fade quickly
-    window.addEventListener("pageshow", function (e) {
-      if (e.persisted && window.PracticeFade) {
-        runReveal();
-      }
-    });
+    // pageshow runs on first load AND when returning via back/forward cache
+    window.addEventListener("pageshow", runReveal);
   })();
 </script>
 
 </body>
 </html>
+
 
 
 
