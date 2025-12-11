@@ -1432,7 +1432,7 @@ favToast.innerHTML =
       return;
     }
 
-    state.cats.forEach(cat=>{
+   state.cats.forEach(cat=>{
       const card=document.createElement('button');
       card.type='button';
       card.className='s-card prac-card';
@@ -1452,9 +1452,11 @@ favToast.innerHTML =
       const t1 = nicePoint(cat.firstTwo[0], cat.size);
       const t2 = nicePoint(cat.firstTwo[1], cat.size);
 
-      title.textContent=`First two: ${t1} → ${t2}`;
-      desc.textContent  = `${cat.lineIdx.length} variation${cat.lineIdx.length>1?'s':''} (≥ ${MIN_MOVES} moves)`;
-cta.innerHTML     = '<span class="s-btn open-btn">Open</span>';
+      // UPDATED: Variation count is now the main title, moves are the description
+      title.textContent = `${cat.lineIdx.length} variation${cat.lineIdx.length>1?'s':''} (≥ ${MIN_MOVES} moves)`;
+      desc.textContent  = `First two: ${t1} → ${t2}`;
+      
+      cta.innerHTML     = '<span class="s-btn open-btn">Open</span>';
 
       meta.appendChild(title);
       meta.appendChild(desc);
