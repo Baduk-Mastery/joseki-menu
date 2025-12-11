@@ -1077,10 +1077,10 @@ width: min(92vw, var(--board-max));
     background-position:center;
     background-repeat:no-repeat;
 
-    /* WIDTH FIX: Set to full board width (720px) to match Practice List */
+    /* WIDTH FIX: Matches the Practice List notification exactly */
+    min-width: 280px;
     width: min(92vw, 720px);
     max-width: 80%;
-    
     max-height:calc(100vh - 32px);
     overflow:auto;
 
@@ -1115,7 +1115,8 @@ width: min(92vw, var(--board-max));
     flex-wrap:wrap;
   }
 
-  /* BUTTON FIX: Standardize padding to 8px 18px to match Practice List buttons exactly */
+  /* BUTTON FIX: Explicitly style buttons inside #level-overlay 
+     because the main .s-btn style is scoped to #ownpatterns-root */
   #level-overlay .s-btn{
     position:relative;
     display:inline-flex;
@@ -1123,7 +1124,7 @@ width: min(92vw, var(--board-max));
     justify-content:center;
     gap:6px;
 
-    padding:8px 18px; /* Standard size */
+    padding:10px 22px; /* match s-btn-lg */
     border-radius:10px;
     border:1px solid rgba(255,255,255,.40);
 
@@ -2954,6 +2955,7 @@ if (passBtn){
 
 </body>
 </html>
+
 
 
 
