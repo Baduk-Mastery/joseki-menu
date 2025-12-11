@@ -12,6 +12,27 @@
       font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
     }
 /* Black reveal overlay (covers page on load, then fades away) */
+    #menu-fade {
+      position: fixed;
+      inset: 0;
+      background: #000;
+      z-index: 100000; /* above all other content */
+      opacity: 1;
+      transition: opacity .9s ease;
+    }
+
+    /* Triggered by JS to fade out */
+    #menu-fade.is-hidden {
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      #menu-fade {
+        transition: none;
+      }
+    }
+/* Black reveal overlay (covers page on load, then fades away) */
     #practice-fade{
       position: fixed;
       inset: 0;
@@ -37,6 +58,7 @@
   <script src="../lib/tier-bridge.js"></script>
 </head>
 <body>
+<div id="menu-fade" aria-hidden="true"></div>
   <div id="practice-fade" aria-hidden="true"></div>
 <noscript>
   <p>
@@ -1699,7 +1721,8 @@ cta.innerHTML     = '<span class="s-btn open-btn">Open</span>';
 </script>
 <script>
   (function () {
-    var fade = document.getElementById("practice-fade");
+    // MATCHED ID: targeting 'own-fade' because that is what your HTML uses
+    var fade = document.getElementById("own-fade");
     if (!fade) return;
 
     var reduceMotion = window.matchMedia &&
@@ -1711,27 +1734,26 @@ cta.innerHTML     = '<span class="s-btn open-btn">Open</span>';
     }
 
     function runReveal() {
-      // snap to black without animating
+      // 1. Snap to black instantly (no transition)
       fade.style.transition = "none";
       fade.classList.remove("is-hidden");
 
-      // force reflow so the browser applies opacity:1 immediately
-      void fade.offsetHeight;
+      // 2. Force browser to paint the black screen
+      void fade.offsetWidth;
 
-      // hand control back to CSS
+      // 3. Restore transition for the fade-out
       fade.style.transition = "";
 
-      // fade out on next frame
+      // 4. Fade out on next frame
       requestAnimationFrame(function () {
         fade.classList.add("is-hidden");
       });
     }
 
-    // pageshow runs on first load AND when returning via back/forward cache
+    // Runs on initial load AND back button history navigation
     window.addEventListener("pageshow", runReveal);
   })();
 </script>
-
 <script>
   // Auto-open Practice list when this page loads
   window.addEventListener('load', function(){
@@ -1740,7 +1762,40 @@ cta.innerHTML     = '<span class="s-btn open-btn">Open</span>';
     }
   });
 </script>
+<script>
+  (function () {
+    // MATCHED ID: targeting 'menu-fade' to match the HTML we just added
+    var fade = document.getElementById("menu-fade");
+    if (!fade) return;
 
+    var reduceMotion = window.matchMedia &&
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+    if (reduceMotion) {
+      fade.remove();
+      return;
+    }
+
+    function runReveal() {
+      // 1. Snap to black instantly
+      fade.style.transition = "none";
+      fade.classList.remove("is-hidden");
+
+      // 2. Force browser paint
+      void fade.offsetWidth;
+
+      // 3. Restore transition
+      fade.style.transition = "";
+
+      // 4. Fade out
+      requestAnimationFrame(function () {
+        fade.classList.add("is-hidden");
+      });
+    }
+
+    window.addEventListener("pageshow", runReveal);
+  })();
+</script>
 </body>
 </html>
 
