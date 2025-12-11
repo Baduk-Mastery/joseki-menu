@@ -2774,22 +2774,26 @@ if (menuConfirmOverlay){
       if (isFullscreen) exitFullscreen();
     });
     if (hintBtn)  hintBtn.addEventListener('click', triggerHint);
-// Helper: go back to the joseki selection we came from
+// Helper: go back to the joseki selection we came from, without bfcache flicker
 function goBackToSelection(){
-  // If we have a referrer, just step back in history.
-  if (document.referrer){
-    window.history.back();
-    return;
+  var target = null;
+
+  // If we have a same-origin referrer, go there directly (no history.back/bfcache)
+  if (document.referrer && document.referrer.indexOf(location.origin) === 0){
+    target = document.referrer;
+  } else {
+    // No (useful) referrer – fall back to Practice List, then Menu
+    target = "../practice-list/index.html";
   }
 
-  // No referrer (opened directly / new tab) – fall back to Practice List,
-  // then to main menu as a last resort.
   try{
-    window.location.href = "../practice-list/index.html";
-  } catch(_){
-    window.location.href = "../joseki-menu/index.html";
+    // Fresh navigation (like Settings) → fade overlay on target can start from black
+    window.location.replace(target);
+  } catch (_){
+    window.location.href = target;
   }
 }
+
 
 // Top-left Back button – go back to previous screen (Practice List, My Patterns, etc.)
 var headerBack = document.getElementById('prac-back-top');
