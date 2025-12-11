@@ -2774,26 +2774,62 @@ if (menuConfirmOverlay){
       if (isFullscreen) exitFullscreen();
     });
     if (hintBtn)  hintBtn.addEventListener('click', triggerHint);
-// Helper: go back to the joseki selection we came from, without bfcache flicker
-function goBackToSelection(){
-  var target = null;
+// Fade the page to black, then run a navigation callback
+function fadeAndNavigate(cb){
+  var fade = document.getElementById('menu-fade');
 
-  // If we have a same-origin referrer, go there directly (no history.back/bfcache)
-  if (document.referrer && document.referrer.indexOf(location.origin) === 0){
-    target = document.referrer;
-  } else {
-    // No (useful) referrer – fall back to Practice List, then Menu
-    target = "../practice-list/index.html";
+  // If there is no overlay or user prefers reduced motion,
+  // just navigate immediately.
+  var reduceMotion = window.matchMedia &&
+    window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  if (!fade || reduceMotion){
+    cb();
+    return;
   }
 
-  try{
-    // Fresh navigation (like Settings) → fade overlay on target can start from black
-    window.location.replace(target);
-  } catch (_){
-    window.location.href = target;
+  // Show the black overlay again (it will animate from 0 → 1)
+  fade.classList.remove('is-hidden');
+  fade.style.pointerEvents = 'auto';
+
+  var done = false;
+
+  function finish(){
+    if (done) return;
+    done = true;
+    fade.removeEventListener('transitionend', onEnd);
+    cb();
   }
+
+  function onEnd(ev){
+    if (ev.target !== fade || ev.propertyName !== 'opacity') return;
+    finish();
+  }
+
+  fade.addEventListener('transitionend', onEnd);
+
+  // Safety timeout in case transitionend never fires
+  setTimeout(finish, 950);
 }
 
+// Helper: go back to the joseki selection we came from
+function goBackToSelection(){
+  fadeAndNavigate(function(){
+    // If we have a referrer, just step back in history.
+    if (document.referrer){
+      window.history.back();
+      return;
+    }
+
+    // No referrer (opened directly / new tab) – fall back to Practice List,
+    // then to main menu as a last resort.
+    try{
+      window.location.href = "../practice-list/index.html";
+    } catch(_){
+      window.location.href = "../joseki-menu/index.html";
+    }
+  });
+}
 
 // Top-left Back button – go back to previous screen (Practice List, My Patterns, etc.)
 var headerBack = document.getElementById('prac-back-top');
