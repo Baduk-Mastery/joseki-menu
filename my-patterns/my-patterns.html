@@ -2576,12 +2576,21 @@ title.textContent = displayName + ' (' + moveCount + ' Moves)';
 
   if (backTop){
     backTop.addEventListener('click', function(){
+      // Cover the page in black to avoid any flicker before navigation
+      var didCover = startBlackCover();
+
       window.GoOwnPatterns.close();
+
       if (window.GoMenu && typeof window.GoMenu.open === 'function'){
+        // Menu will usually trigger a real navigation
         window.GoMenu.open();
+      } else if (didCover){
+        // Safety fallback if GoMenu.open() doesn't navigate for some reason
+        fadeReveal();
       }
     });
   }
+
 
   if (backEd){
     backEd.addEventListener('click', function(){
@@ -2689,7 +2698,7 @@ if (passBtn){
   }
 
 
-  // Esc handling for whole page (back to menu if root overlay open)
+   // Esc handling for whole page (back to menu if root overlay open)
   window.addEventListener('keydown', function(e){
     if (e.key !== 'Escape') return;
 
@@ -2699,9 +2708,14 @@ if (passBtn){
     }
 
     if (overlay && overlay.style.display !== 'none' && !isNoticeOpen()){
+      // Same fade-to-black transition as the Back button
+      var didCover = startBlackCover();
+
       window.GoOwnPatterns.close();
       if (window.GoMenu && typeof window.GoMenu.open === 'function'){
         window.GoMenu.open();
+      } else if (didCover){
+        fadeReveal();
       }
     }
   });
@@ -2754,6 +2768,8 @@ if (passBtn){
 
 </body>
 </html>
+
+
 
 
 

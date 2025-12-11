@@ -340,6 +340,10 @@
     var freeBtn  = document.getElementById('pl-free-keep');
     var proBtn   = document.getElementById('pl-pro-activate');
 
+    // Prevent double navigation when leaving to menu
+    var leavingToMenu = false;
+
+
     // Fallback Tier store (until /shared/tier.js takes over)
     var Tier = window.Tier || {
       get: function(){
@@ -426,14 +430,20 @@ function updateButtonStates(){
     }
 
     function goBackToMenu(){
+      if (leavingToMenu) return;
+      leavingToMenu = true;
+
       // If used as overlay inside another page, fall back to GoMenu
       if (window.GoMenu && typeof window.GoMenu.open === 'function'){
+        // In host-overlay mode we do want to close this panel and show the host page again
+        close();
         window.GoMenu.open();
         return;
       }
 
-      // Standalone page: always do a fresh navigation to the menu to avoid bfcache flicker
-      window.location.href = '../joseki-menu/index.html';
+      // Standalone Plans page:
+      // Do NOT call close(); keep the wood overlay visible until navigation finishes.
+      window.location.replace('../joseki-menu/index.html');
     }
 
     window.GoPlans = { open: open, close: close, __ready:true };
@@ -442,18 +452,18 @@ function updateButtonStates(){
     var backBtn = document.getElementById('pl-back');
     if (backBtn){
       backBtn.addEventListener('click', function(){
-        close();
         goBackToMenu();
       });
     }
 
+
     // ESC closes and goes back
     document.addEventListener('keydown', function(e){
       if (e.key === 'Escape' && panel.style.display !== 'none'){
-        close();
         goBackToMenu();
       }
     });
+
 
     // Keep status in sync if someone else changes tier
     window.addEventListener('tier:changed', function(){
@@ -468,17 +478,16 @@ function updateButtonStates(){
         if (tier === 'free'){
           // Keep Free: no change, just go back
           refreshStatus();
-          close();
           goBackToMenu();
         } else {
           // Go Free: switch tier, update UI, go back
           Tier.set('free');
           refreshStatus();
-          close();
           goBackToMenu();
         }
       });
     }
+
 
     // Pro button behavior
     if (proBtn){
@@ -488,7 +497,6 @@ function updateButtonStates(){
         if (tier === 'pro'){
           // Keep Pro: no change, just go back
           refreshStatus();
-          close();
           goBackToMenu();
         } else {
           // Go Pro: upgrade
@@ -499,11 +507,11 @@ function updateButtonStates(){
           }
           Tier.set('pro');
           refreshStatus();
-          close();
           goBackToMenu();
         }
       });
     }
+
 
     // Show the overlay immediately when this page loads
     open();
