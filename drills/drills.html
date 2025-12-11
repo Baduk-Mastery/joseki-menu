@@ -1288,8 +1288,8 @@ function showOwn(){
     setTickForLineKey(key);
     updateLibCount(); updateFavCount(); updateOwnCount();
   }
-  function selectLineKeyIn(source, key){
-    if (state.mode === 'blitz') { maybeAutoReplaceIfBlitz(); }
+function selectLineKeyIn(source, key){
+    // Blitz auto-replace removed so it hits the limit check below
     if (state.selectedLib.has(key) || state.selectedFav.has(key) || totalSelectedCount() < MAX_TOTAL){
       if (source === 'lib'){ state.selectedLib.add(key); saveSelection(LIB_SEL_KEY, state.selectedLib); }
       if (source === 'fav'){ state.selectedFav.add(key); saveSelection(FAV_SEL_KEY, state.selectedFav); }
@@ -1305,8 +1305,8 @@ function showOwn(){
     setTickForOwnId(id);
     updateLibCount(); updateFavCount(); updateOwnCount();
   }
-  function selectOwnId(id){
-    if (state.mode === 'blitz') { maybeAutoReplaceIfBlitz(); }
+function selectOwnId(id){
+    // Blitz auto-replace removed so it hits the limit check below
     if (state.selectedOwnIds.has(id) || totalSelectedCount() < MAX_TOTAL){
       state.selectedOwnIds.add(id);
       saveSelection(OWN_SEL_KEY, state.selectedOwnIds);
