@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <title>Joseki Master – Practice List</title>
+  <title>Joseki Dojo – Practice List</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <style>
     html, body{
@@ -694,6 +694,8 @@
 
  /* Pro-level toast (in-app notification for locked levels) */
 
+/* Pro-level toast (in-app notification for locked levels) */
+
   let proToast = null, proText = null, proLaterBtn = null, proUpgradeBtn = null;
   function ensureProToast(){
     if (proToast) return;
@@ -703,8 +705,8 @@
     proToast.setAttribute('aria-modal','true');
     proToast.innerHTML =
       '<div class="s-card level-toast-card">' +
-        '<div class="level-toast-title">Pro feature</div>' + // Added Title
-        '<div class="level-toast-text">Levels 4 and 5 are part of Joseki Master Pro.</div>' +
+        '<div class="level-toast-title">Pro feature</div>' +
+        '<div class="level-toast-text">Levels 4 and 5 are part of Joseki Dojo Pro.</div>' +
         '<div class="level-toast-actions">' +
           '<button type="button" class="s-btn" id="level-pro-later">Maybe later</button>' +
           '<button type="button" class="s-btn" id="level-pro-upgrade">View Pro</button>' +
@@ -718,12 +720,8 @@
 
     proLaterBtn.addEventListener('click', hideProToast);
     proUpgradeBtn.addEventListener('click', function(){
-      if (window.GoPlans && typeof window.GoPlans.open === 'function') {
-        window.GoPlans.open();
-      } else if (window.Paywall && typeof Paywall.open === 'function') {
-        Paywall.open();
-      }
-      hideProToast();
+      // Redirect to plans page
+      window.location.href = "../plans/plans.html";
     });
   }
   function isProToastOpen(){
