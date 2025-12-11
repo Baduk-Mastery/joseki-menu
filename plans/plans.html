@@ -431,12 +431,9 @@ function updateButtonStates(){
         window.GoMenu.open();
         return;
       }
-      // Standalone page: try history first, otherwise go to menu page
-      if (document.referrer && document.referrer.indexOf('menu') !== -1){
-        history.back();
-      }else{
-        window.location.href = '../joseki-menu/index.html';
-      }
+
+      // Standalone page: always do a fresh navigation to the menu to avoid bfcache flicker
+      window.location.href = '../joseki-menu/index.html';
     }
 
     window.GoPlans = { open: open, close: close, __ready:true };
