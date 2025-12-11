@@ -270,21 +270,29 @@
 }
 
 /* Center the title over the full header width without creating a new row */
+/* Center the title over the full header width without creating a new row */
+/* Default: Title flows naturally next to back button (left-aligned) to prevent overlap */
 #drills-root #drills-overlay .s-header .s-title{
-  position: absolute;
-  left: 50%;
-  transform: translateX(-50%);
+  position: static;
+  transform: none;
+  left: auto;
+  text-align: left;
   margin: 0;
-  text-align: center;
-
-  /* Safety so long titles don't overlap too hard */
-  max-width: 70%;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-
-  /* Prevent the title from blocking the back button clicks */
+  flex: 1;      /* Take remaining space */
+  min-width: 0; /* Allow flex shrinking */
   pointer-events: none;
+}
+
+/* Modifier: Force centering ONLY for the short "Drills" headline */
+#drills-root #drills-overlay .s-header .s-title.title-centered{
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  text-align: center;
+  max-width: 70%;
 }
 
 
@@ -832,9 +840,10 @@
   /* Overlay API */
   var overlayOpen = false;
 
-  function showMode(){
+function showMode(){
     state.view='mode';
     titleEl.textContent='Drills';
+    titleEl.classList.add('title-centered'); // Centered
     modeView.style.display='block';
     introCard.style.display='none';
     options.style.display='none';
@@ -880,11 +889,11 @@
     }
   };
 
-  /* Navigation helpers */
-  function showOptions(whichMode){
+function showOptions(whichMode){
     setMode(whichMode || 'complete');
     state.view='options';
     titleEl.textContent='Drills';
+    titleEl.classList.add('title-centered'); // Centered
     modeView.style.display='none';
     introCard.style.display='';
     options.style.display='grid';
@@ -893,10 +902,11 @@
     ownView.style.display='none';
     updateStartButton();
   }
-  function showLib(){
+function showLib(){
     reloadAllSelections();
     state.view='libCats';
     titleEl.textContent='Choose a Category';
+    titleEl.classList.remove('title-centered'); // Left-aligned
     modeView.style.display='none';
     introCard.style.display='none';
     options.style.display='none';
@@ -911,10 +921,11 @@
     else { renderLibCategories(); }
     updateLibCount();
   }
-  function showLibCategory(catKey){
+function showLibCategory(catKey){
     state.view='libVars';
     state.currentCatKey = catKey;
     titleEl.textContent='Select Josekis';
+    titleEl.classList.remove('title-centered'); // Left-aligned
 
     libInfoTitle.textContent = 'Select josekis in this category';
     libInfoDesc.textContent  = 'Tap cards to toggle ✓. Only josekis with 10+ moves are listed.';
@@ -924,10 +935,11 @@
     renderLibVariations(catKey);
   }
 
-  function showFav(){
+function showFav(){
     reloadAllSelections();
     state.view='fav';
     titleEl.textContent='Select Favorites';
+    titleEl.classList.remove('title-centered'); // Left-aligned
     modeView.style.display='none';
     introCard.style.display='none';
     options.style.display='none';
@@ -937,10 +949,11 @@
 
     buildFavoritesList();
   }
-  function showOwn(){
+function showOwn(){
     reloadAllSelections();
     state.view='own';
     titleEl.textContent='Select My Patterns';
+    titleEl.classList.remove('title-centered'); // Left-aligned
     modeView.style.display='none';
     introCard.style.display='none';
     options.style.display='none';
