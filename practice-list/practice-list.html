@@ -1648,11 +1648,7 @@ cta.innerHTML     = '<span class="s-btn open-btn">Open</span>';
 
   // Don’t close overlays here – it causes the flicker back to categories.
   // Just navigate to the board page; this page will unload anyway.
-if (window.GoPracticeEntry) {
-  GoPracticeEntry.mark("practice-list");
-}
-window.location.href = "../practice-board/practice-board.html";
-
+  window.location.href = "../practice-board/practice-board.html";
 });
 
 
@@ -1744,24 +1740,8 @@ window.location.href = "../practice-board/practice-board.html";
     }
   });
 </script>
-<script>
-(function () {
-  try {
-    window.GoPracticeEntry = {
-      mark: function (type) {
-        var info = {
-          type: type || null,          // e.g. "practice-list" or "my-patterns"
-          href: window.location.href,  // the page we started from
-          ts: Date.now()
-        };
-        localStorage.setItem('go_last_practice_entry', JSON.stringify(info));
-      }
-    };
-  } catch (e) {
-    // fail silently
-  }
-})();
-</script>
 
 </body>
 </html>
+
+
