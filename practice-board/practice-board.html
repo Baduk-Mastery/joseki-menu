@@ -2997,30 +2997,36 @@ if (headerBack){
     var reduceMotion = window.matchMedia &&
       window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
+    // If the user prefers reduced motion, remove the overlay entirely
+    // so everything is instant (no animations at all).
     if (reduceMotion) {
       fade.remove();
       return;
     }
 
-    function runReveal() {
-      // snap to black without animating
-      fade.style.transition = "none";
+    function reveal() {
+      // Start from fully opaque black (the default CSS state),
+      // then fade to transparent on the next frame.
       fade.classList.remove("is-hidden");
 
-      // force reflow so the browser applies opacity:1 immediately
-      void fade.offsetHeight;
-
-      // hand control back to CSS
-      fade.style.transition = "";
-
-      // fade out on next frame
       requestAnimationFrame(function () {
         fade.classList.add("is-hidden");
       });
     }
 
-    // pageshow runs on first load AND when returning via back/forward cache
-    window.addEventListener("pageshow", runReveal);
+    // Normal first load (navigation / reload)
+    if (document.readyState === "complete") {
+      reveal();
+    } else {
+      window.addEventListener("load", reveal, { once: true });
+    }
+
+    // Back/forward cache restores
+    window.addEventListener("pageshow", function (evt) {
+      if (evt.persisted) {
+        reveal();
+      }
+    });
   })();
 </script>
 
