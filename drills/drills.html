@@ -472,17 +472,26 @@
   }
   #drills-root .drill-count{ margin-left:auto; opacity:.95; font-size:13px; }
 
-  /* Floating Clear button */
+/* Floating Clear button - Aligned with content left edge */
   #drills-root .floating-clear{
-    position:fixed;
-    left:calc(env(safe-area-inset-left, 0px) + 12px);
-    bottom:calc(env(safe-area-inset-bottom, 0px) + 28px);
-    z-index:100003;
+    position: fixed;
+    bottom: calc(env(safe-area-inset-bottom, 0px) + 28px);
+    z-index: 100003;
+    
+    /* Start at center of screen */
+    left: 50%;
+    
+    /* Move left by half the content width (max 720px/2 = 360px or 92vw/2 = 46vw) 
+       Then move right by the desktop padding (24px) */
+    transform: translateX(calc( -1 * min(46vw, 360px) + 24px ));
   }
+
   @media (max-width:480px){
     #drills-root .floating-clear{
-      left:calc(env(safe-area-inset-left, 0px) + 8px);
-      bottom:calc(env(safe-area-inset-bottom, 0px) + 20px);
+      bottom: calc(env(safe-area-inset-bottom, 0px) + 20px);
+      
+      /* Adjust for mobile padding (12px) */
+      transform: translateX(calc( -1 * min(46vw, 360px) + 12px ));
     }
   }
 
