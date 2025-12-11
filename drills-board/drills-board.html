@@ -2532,6 +2532,30 @@ function startDrill(i, opts){
   currentTransformed = tline;
 
   currentStartIndex = variant.startIndex || 0;
+
+  // --- NEW: Auto-play consecutive setup moves in Blitz ---
+  // If the pattern starts with 2+ stones of the same color (e.g. B->B->B),
+  // fast-forward so they appear on the board instantly.
+  if (blitzMode) {
+    const mvs = tline.moves;
+    let ptr = currentStartIndex;
+    if (ptr < mvs.length) {
+      const startColor = mvs[ptr].color;
+      let count = 1;
+      let next = ptr + 1;
+      
+      while (next < mvs.length && mvs[next].color === startColor) {
+        count++;
+        next++;
+      }
+      
+      if (count >= 2) {
+        currentStartIndex = next;
+      }
+    }
+  }
+  // -------------------------------------------------------
+
   blitzDirectionalIdx = blitzMode
     ? findFirstDirectionalIndex(tline.moves, SIZE)
     : null;
@@ -2556,7 +2580,9 @@ function startDrill(i, opts){
 
     blitzCornerState = {
       tline,
-      startIndex: variant.startIndex,
+      // Update the saved state to use the calculated index, 
+      // so "Retry" also skips the setup moves.
+      startIndex: currentStartIndex, 
       plannedN: blitzCornerPlannedMoves
     };
   }
@@ -2565,7 +2591,6 @@ function startDrill(i, opts){
   setProgress();
   locked = false;
 }
-
 
   function restartSameCornerBlitz(){
     if (!blitzMode || !blitzCornerState) return;
