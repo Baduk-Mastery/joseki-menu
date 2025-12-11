@@ -2882,12 +2882,21 @@ if (headerBack){
     function hideJosekiEverything(){ /* no-op on standalone */ }
     function showJosekiEverything(){ /* no-op on standalone */ }
 
-    function showPracticeUI(){
+        function showPracticeUI(){
       if (window.PageBG && typeof PageBG.add === 'function') PageBG.add();
       setHidden(wrap, false);
       wrap.setAttribute('data-hidden','0');
       refitSoon();
+
+      // After the board has been laid out, fade away the black overlay
+      // so the first size/SGF draw flicker stays hidden behind it.
+      if (window.PracticeFade && typeof window.PracticeFade.reveal === 'function') {
+        setTimeout(function () {
+          window.PracticeFade.reveal();
+        }, 40); // small delay to let initial fit/draw settle
+      }
     }
+
 
     function hidePracticeUI(){
       setHidden(wrap, true);
@@ -2995,8 +3004,18 @@ if (headerBack){
       });
     }
 
-    // pageshow runs on first load AND when returning via back/forward cache
-    window.addEventListener("pageshow", runReveal);
+    // Expose a helper so Practice code can decide *when* to fade
+    window.PracticeFade = {
+      reveal: runReveal,
+      element: fade
+    };
+
+    // When coming back from bfcache, re-run the fade quickly
+    window.addEventListener("pageshow", function (e) {
+      if (e.persisted && window.PracticeFade) {
+        runReveal();
+      }
+    });
   })();
 </script>
 
