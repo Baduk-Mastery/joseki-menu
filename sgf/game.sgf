@@ -1,6 +1,9 @@
-(;CA[utf-8]FF[4]AP[Sabaki:web]SZ[19]GM[1]KM[6.5]MULTIGOGM[1]
+(;CA[utf-8]GM[1]AP[Sabaki:web]SZ[19]FF[4]KM[6.5]MULTIGOGM[1]
 
 (;B[ij];W[kj];B[ji];W[ki];B[kh];W[kg];B[lh];W[mi];B[mj];W[kl];B[jl];W[ih])
-(;B[kj];W[jk];B[jj];W[ij];B[ii];W[ji];B[jh];W[kh])
-(;B[jj];W[jk];B[jl];W[ik];B[kk])
-(;B[ki];W[ji];B[jh];W[kh]))
+(;B[kj];W[jk];B[jj];W[ij];B[ii];W[ji];B[jh];W[kh];B[pj];W[mk];B[ll];W[jm];B[im]
+;W[gl];B[fh];W[fg];B[hf];W[kf];B[kg])
+(;B[jj];W[jk];B[jl];W[ik];B[kk];W[pi];B[oi];W[hg];B[gh];W[gk];B[kn];W[mn];B[li]
+;W[kg];B[il];W[hm];B[gm];W[hi];B[ih])
+(;B[ki];W[ji];B[jh];W[kh];B[ni];W[mj];B[kk];W[hl];B[gk];W[gh];B[hf];W[if];B[kg]
+;W[lg];B[kf];W[ke]))
