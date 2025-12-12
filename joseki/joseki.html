@@ -532,10 +532,11 @@ box-sizing: border-box;
 
 <!-- Simple click sound (local file) -->
 <script>
-  window.StoneSFX = (function () {
-    var audio = new Audio("../sound/click.mp3");
-    audio.preload = "auto";
-    var lastPlay = 0;
+window.StoneSFX = (function () {
+  var audio = new Audio("../sound/click.mp3");
+  audio.volume = 0.35; 
+  audio.preload = "auto";
+  var lastPlay = 0;
     return {
       play: function () {
         var now = Date.now();
