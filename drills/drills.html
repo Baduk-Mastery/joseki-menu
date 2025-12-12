@@ -1814,6 +1814,58 @@ function selectOwnId(id){
         // sel looks like: { library: [...], favorites: [...], own: [...], mode: 'complete'|'blitz' }
         if (sel && typeof sessionStorage !== 'undefined') {
 sel.sgfUrl = ACTIVE_SGF_URL; // important
+// --- manifest -> sgfUrl resolution (runs on drills.html) ---
+const MANIFEST_URL = '../data/sgf-manifest.json';   // adjust to your real path
+sel.manifestUrl = MANIFEST_URL;
+
+// whatever you call the chosen library id/slug on the drills list page
+// examples: sel.libraryId = activeLibraryId;  OR  sel.libraryId = 'drills';
+sel.libraryId = sel.libraryId || activeLibraryId;   // adjust to your code
+
+async function findSgfUrlInManifest(manifest, libraryId){
+  if (!manifest || !libraryId) return "";
+
+  // supports a few common shapes
+  const direct =
+    (manifest[libraryId] && typeof manifest[libraryId] === 'string') ? manifest[libraryId] :
+    (manifest[libraryId] && (manifest[libraryId].sgfUrl || manifest[libraryId].url || manifest[libraryId].sgf)) ? (manifest[libraryId].sgfUrl || manifest[libraryId].url || manifest[libraryId].sgf) :
+    "";
+
+  if (direct) return direct;
+
+  const libs = manifest.libraries || manifest.libs || manifest.items;
+  if (Array.isArray(libs)){
+    const hit = libs.find(x =>
+      x && (x.id === libraryId || x.key === libraryId || x.slug === libraryId || x.name === libraryId)
+    );
+    if (hit) return hit.sgfUrl || hit.url || hit.sgf || hit.path || "";
+  }
+
+  if (libs && typeof libs === 'object'){
+    const x = libs[libraryId];
+    if (typeof x === 'string') return x;
+    if (x && typeof x === 'object') return x.sgfUrl || x.url || x.sgf || x.path || "";
+  }
+
+  return "";
+}
+
+async function resolveLibrarySgfUrl(){
+  const r = await fetch(MANIFEST_URL, { cache: 'no-store' });
+  const m = await r.json();
+  const u = await findSgfUrlInManifest(m, sel.libraryId);
+  if (!u) return "";
+
+  // make relative URLs safe no matter where drills-board lives
+  return new URL(u, MANIFEST_URL).href;
+}
+
+// IMPORTANT: drills-board expects sel.sgfUrl (or one of the other names)
+sel.sgfUrl = await resolveLibrarySgfUrl();
+// optional extra: also store a plain key your drills-board already checks
+sessionStorage.setItem('go:drills_sgf_url', sel.sgfUrl || "");
+// --- end manifest -> sgfUrl resolution ---
+
 sessionStorage.setItem('go:drills_next_selection', JSON.stringify(sel));
 
         }
