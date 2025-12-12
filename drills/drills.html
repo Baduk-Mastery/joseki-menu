@@ -1939,6 +1939,14 @@ function selectOwnId(id){
 
     // pageshow runs on first load AND when returning via back/forward cache
     window.addEventListener("pageshow", runReveal);
+
+    // FIX: Fade to black instantly when leaving the page (prevents "blank wood" flash)
+    window.addEventListener('pagehide', function(){
+      if (fade) {
+        fade.style.transition = 'none';
+        fade.classList.remove('is-hidden');
+      }
+    });
   })();
 </script>
 
