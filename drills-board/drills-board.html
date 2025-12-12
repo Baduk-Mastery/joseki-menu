@@ -913,7 +913,57 @@ if (!window.StoneSFX) {
 })();
 
 (function DrillBoardMount(){
-  const SGF_URL = "../sgf/library-1.sgf";  // same as drills.html
+const SGF_MANIFEST_URL = "../sgf/manifest.json";
+const MIN_MOVES = 10; // Keep this line
+
+function resolveLibrarySgfUrls(){
+  if (resolveLibrarySgfUrls._p) return resolveLibrarySgfUrls._p;
+  resolveLibrarySgfUrls._p = fetch(SGF_MANIFEST_URL, { cache:'no-cache' })
+    .then(function(r){
+      if (!r.ok) throw new Error('Manifest HTTP ' + r.status);
+      return r.text();
+    })
+    .then(function(raw){
+      raw = (raw || '').trim();
+      if (!raw) throw new Error('Empty manifest');
+      
+      var m = null;
+      if (raw[0] === '{' || raw[0] === '['){
+        try { m = JSON.parse(raw); } catch(e){ throw new Error('Bad JSON manifest'); }
+      }
+      
+      var files = [];
+      if (!m){
+        files = raw.split(/\?|[\r\n]+/).map(function(s){ return s.trim(); }).filter(Boolean);
+      } else if (typeof m === 'string'){
+        files = [m];
+      } else if (Array.isArray(m)){
+        files = m.filter(function(x){ return typeof x === 'string' && x.trim(); }).map(function(x){ return x.trim(); });
+      } else {
+        if (typeof m.library === 'string') files = [m.library];
+        else if (m.library && typeof m.library.file === 'string') files = [m.library.file];
+        else if (Array.isArray(m.library) && m.library.length) files = m.library;
+        else if (Array.isArray(m.files) && m.files.length) files = m.files;
+        else if (Array.isArray(m.library_files) && m.library_files.length) files = m.library_files;
+        else if (typeof m.sgf === 'string') files = [m.sgf];
+        else if (typeof m.default === 'string') files = [m.default];
+      }
+      
+      files = (files || []).map(function(s){ return (s || '').trim(); }).filter(Boolean);
+      if (!files.length) throw new Error('Unrecognized manifest format');
+      
+      var base = new URL(SGF_MANIFEST_URL, window.location.href);
+      var urls = files.map(function(f){
+        return new URL(f, base).toString();
+      });
+      return urls;
+    })
+    .catch(function(err){
+      console.warn('[Drills Board] manifest failed:', err);
+      throw err;
+    });
+  return resolveLibrarySgfUrls._p;
+}
   const MIN_MOVES = 10;
 
   /* ===== Plan helpers (match drills list) ===== */
@@ -2898,25 +2948,38 @@ btnNext.addEventListener('click', function(){
     };
   }
 
-  function fetchLibraryLines(){
-    return fetch(SGF_URL, { cache:'no-cache' }).then(r=>r.text()).then(txt=>{
-      const trees = parseAllTrees(txt);
-      const lines=[];
-      for (const seq of trees){
-        linkify(seq,null);
-        const size = parseSZ(seq[0]?.SZ);
-        const rootAB = listCoords(seq[0]?.AB, size);
-        const rootAW = listCoords(seq[0]?.AW, size);
-        const paths  = enumerateLines(seq,size);
-        for (const moves of paths){
-          if ((moves?.length||0) >= MIN_MOVES){
-            lines.push({ size, rootAB, rootAW, moves });
+function fetchLibraryLines(){
+  return resolveLibrarySgfUrls()
+    .then(function(urls){
+      // Fetch ALL files found in the manifest
+      return Promise.all(urls.map(function(url){
+        return fetch(url, { cache:'no-cache' }).then(function(r){
+          if (!r.ok) throw new Error('SGF HTTP ' + r.status);
+          return r.text();
+        });
+      }));
+    })
+    .then(function(texts){
+      // Combine all parsed lines into one big list
+      const allLines = [];
+      texts.forEach(function(txt){
+        const trees = parseAllTrees(txt);
+        for (const seq of trees){
+          linkify(seq, null);
+          const size = parseSZ(seq[0]?.SZ);
+          const rootAB = listCoords(seq[0]?.AB, size);
+          const rootAW = listCoords(seq[0]?.AW, size);
+          const paths = enumerateLines(seq, size);
+          for (const moves of paths){
+            if ((moves?.length||0) >= MIN_MOVES){
+              allLines.push({ size, rootAB, rootAW, moves });
+            }
           }
         }
-      }
-      return lines;
+      });
+      return allLines;
     });
-  }
+}
   // Helper: get selections either from GoDrills (inline/Bubble)
   // or from sessionStorage (drills.html → drills-board.html bridge)
   function getDrillSelections(){
