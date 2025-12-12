@@ -722,7 +722,7 @@ body.bg-wood [class*="blur"]{
   var animId = 0;
   var returnAnchor = null;
 
-  var isPanning = false, panStart = null, tapStart = null;
+  var isPanning = false, panStart = null, tapStart = null, activePointerId = null;
   var TAP_SLOP2 = 64;
   var isFlinging = false, flingId = 0, flingVX = 0, flingVY = 0, flingLastTime = 0;
   var panSamplePrev = null, panSampleCurr = null;
@@ -1093,8 +1093,10 @@ unlockExitBtn();
 
   function bindZoomPointerHandlers(){
     mount.addEventListener('pointerdown', function(e){
+if (activePointerId !== null) return;
       if (!zoomEnabled) return;
       if (e.pointerType !== 'touch' && e.button !== 0) return;
+activePointerId = e.pointerId;
       isPanning = false;   // reset per gesture
       tapStart = null;
       cancelFling();
@@ -1134,6 +1136,7 @@ unlockExitBtn();
 
     mount.addEventListener('pointermove', function(e){
       if (!zoomEnabled) return;
+if (activePointerId !== null && e.pointerId !== activePointerId) return;
       if (!panStart) return;
       if (scale <= 1.01 && !isFullscreen) return;
 
@@ -1155,6 +1158,7 @@ unlockExitBtn();
     }, {passive:false});
 
     mount.addEventListener('pointerup', function(e){
+if (activePointerId !== null && e.pointerId !== activePointerId) return;
       if (!zoomEnabled) return;
 
       if (!tapStart) {
