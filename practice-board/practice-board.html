@@ -2786,17 +2786,26 @@ if (menuConfirmOverlay){
       });
     }
 
-    if (menuConfirmOk){
+if (menuConfirmOk){
       menuConfirmOk.addEventListener('click', function(e){
         e.stopPropagation();
-        closeMenuConfirm();
-        if (window.GoMenu && typeof GoMenu.open === 'function'){
-          GoMenu.open();
-        } else if (window.BackConfirm && typeof BackConfirm.show === 'function'){
-          BackConfirm.show();
-        } else {
-          try { window.location.href = "../joseki-menu/index.html"; } catch(e){}
+     
+        var fade = document.getElementById("menu-fade");
+        if (fade) {
+          fade.style.transition = "none";     // Disable fade animation (instant)
+          fade.classList.remove("is-hidden"); // Show black overlay
+          void fade.offsetHeight;             // Force paint
         }
+
+        setTimeout(function(){
+            if (window.GoMenu && typeof GoMenu.open === 'function'){
+              GoMenu.open();
+            } else if (window.BackConfirm && typeof BackConfirm.show === 'function'){
+              BackConfirm.show();
+            } else {
+              try { window.location.href = "../joseki-menu/index.html"; } catch(e){}
+            }
+        }, 10);
       });
     }
 

@@ -2140,11 +2140,20 @@ hook('jbtnForward', function(){
     });
   }
 
-  if (menuConfirmOk){
+if (menuConfirmOk){
     menuConfirmOk.addEventListener('click', function(e){
       e.stopPropagation();
-      closeMenuConfirm();
-      window.location.href = MENU_URL;
+      
+      var fade = document.getElementById("page-fade");
+      if (fade) {
+        fade.style.transition = "none";     // Disable fade animation (make it instant)
+        fade.classList.remove("is-hidden"); // Show black overlay
+        void fade.offsetHeight;             // Force paint
+      }
+
+      setTimeout(function(){
+        window.location.href = MENU_URL;
+      }, 10);
     });
   }
 
