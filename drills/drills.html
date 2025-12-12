@@ -1813,7 +1813,9 @@ function selectOwnId(id){
         var sel = window.GoDrills.getSelections();
         // sel looks like: { library: [...], favorites: [...], own: [...], mode: 'complete'|'blitz' }
         if (sel && typeof sessionStorage !== 'undefined') {
-          sessionStorage.setItem('go:drills_next_selection', JSON.stringify(sel));
+sel.sgfUrl = ACTIVE_SGF_URL; // important
+sessionStorage.setItem('go:drills_next_selection', JSON.stringify(sel));
+
         }
       }
     } catch (_) {}
