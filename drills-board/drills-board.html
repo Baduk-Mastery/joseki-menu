@@ -1496,7 +1496,9 @@ function redraw(){
 
 
   if (blitzMode) drawBlitzMarkers();
+  else drawAmbiguityMarker();
 }
+
 
 
 
@@ -1559,15 +1561,123 @@ function drawBlitzMarkers(){
 
   const shouldLabel =
     (nextAbsIdx === 0) ||
-    (dirIdx != null && nextAbsIdx === dirIdx);
+    (dirIdx != null && nextAbsIdx === dirIdx) ||
+    isAmbiguousNextMove();
 
   if (!shouldLabel) return;
+
 
   // Only draw if the point is empty
   if (grid && grid[next.y] && grid[next.y][next.x] === null){
     board.addObject({ x: next.x, y: next.y, type: 'LB', text: 'A' });
   }
 }
+  function _seqSig(moves, start, len){
+    let out = '';
+    for (let i = 0; i < len; i++){
+      const m = moves[start + i];
+      if (!m) return null;
+      out += (m.color || 'B')[0] + ':' + m.x + ',' + m.y + '|';
+    }
+    return out;
+  }
+
+  function _rootSig(tline){
+    const ab = (tline.rootAB || []).map(p => p.x + ',' + p.y).sort().join('|');
+    const aw = (tline.rootAW || []).map(p => p.x + ',' + p.y).sort().join('|');
+    return 'AB:' + ab + ';AW:' + aw;
+  }
+
+  function _effectiveStartIndexForCompare(tline, rawStartIndex){
+    let si = rawStartIndex || 0;
+
+    // Blitz has your “auto-setup same-color streak skip” behavior.
+    // Mirror it here so ambiguity detection matches what the user actually sees.
+    if (blitzMode){
+      const mvs = tline.moves || [];
+      if (si < mvs.length){
+        const startColor = mvs[si].color;
+        let next = si + 1;
+        while (next < mvs.length && mvs[next].color === startColor) next++;
+        if ((next - si) >= 2) si = next;
+      }
+    }
+    return si;
+  }
+
+  function _playedCountSinceStart(tline, startIdx, remainLen){
+    const total = (tline && tline.moves) ? tline.moves.length : 0;
+    return Math.max(0, total - (startIdx || 0) - (remainLen || 0));
+  }
+
+  function isAmbiguousNextMove(){
+    if (!currentTransformed || !remain || remain.length === 0) return false;
+    if (!slots || slots.length < 2) return false;
+
+    const curMoves = currentTransformed.moves || [];
+    const curStart = currentStartIndex || 0; // already “effective” in your live drill
+    const p = _playedCountSinceStart(currentTransformed, curStart, remain.length);
+
+    const curNextAbs = curStart + p;
+    const curNext = curMoves[curNextAbs];
+    if (!curNext) return false;
+
+    const curPrefix = _seqSig(curMoves, curStart, p) || '';
+    const curRoot   = _rootSig(currentTransformed);
+
+    for (let sIdx = 0; sIdx < slots.length; sIdx++){
+      if (sIdx === index) continue;
+
+      const s = slots[sIdx];
+      if (!s || !s.base) continue;
+
+      const key  = s.key;
+      const base = s.base;
+
+      // runPlan should already exist, but this keeps it robust
+      try { ensureRunPlanFor(key, base); } catch(_){}
+
+      const plan = runPlan[key];
+      const v = plan && plan.get ? plan.get(sIdx) : null;
+      if (!v) continue;
+
+      const t = makeTransformed(base, v.orientIdx, v.swap);
+      const otherStart = _effectiveStartIndexForCompare(t, v.startIndex || 0);
+
+      // Only consider truly “same looking drill state”
+      if (otherStart !== curStart) continue;
+      if (_rootSig(t) !== curRoot) continue;
+
+      const otherMoves = t.moves || [];
+      if (otherStart + p >= otherMoves.length) continue;
+
+      const otherPrefix = _seqSig(otherMoves, otherStart, p) || '';
+      if (otherPrefix !== curPrefix) continue;
+
+      const otherNext = otherMoves[otherStart + p];
+      if (!otherNext) continue;
+
+      if (otherNext.x !== curNext.x || otherNext.y !== curNext.y){
+        return true; // same prefix, different next move => ambiguous
+      }
+    }
+
+    return false;
+  }
+
+  function drawAmbiguityMarker(){
+    if (!board || !currentTransformed || !remain || !remain.length) return;
+    if (!isAmbiguousNextMove()) return;
+
+    const next = remain[0];
+    if (!next) return;
+    if (!inside(next.x, next.y)) return;
+
+    // Only draw if empty
+    if (grid && grid[next.y] && grid[next.y][next.x] !== null) return;
+
+    board.addObject({ x: next.x, y: next.y, type: 'LB', text: 'A' });
+  }
 
 
   function shuffle(a){ for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } return a; }
