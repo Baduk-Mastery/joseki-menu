@@ -535,8 +535,13 @@ box-sizing: border-box;
   window.StoneSFX = (function () {
     var audio = new Audio("../sound/click.mp3");
     audio.preload = "auto";
+    var lastPlay = 0;
     return {
       play: function () {
+        var now = Date.now();
+        // Debounce: prevent playing again if called within 50ms
+        if (now - lastPlay < 50) return;
+        lastPlay = now;
         try {
           audio.currentTime = 0;
           audio.play();
