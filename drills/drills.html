@@ -1047,64 +1047,62 @@ function showOwn(){
   var SGF_MANIFEST_URL = "../sgf/manifest.json";
   var MIN_MOVES = 10;
 
-  function resolveLibrarySgfUrl(){
-    if (resolveLibrarySgfUrl._p) return resolveLibrarySgfUrl._p;
+  function resolveLibrarySgfUrls(){
+  if (resolveLibrarySgfUrls._p) return resolveLibrarySgfUrls._p;
 
-    resolveLibrarySgfUrl._p = fetch(SGF_MANIFEST_URL, { cache:'no-cache' })
-      .then(function(r){
-        if (!r.ok) throw new Error('Manifest HTTP ' + r.status);
-        return r.text();
-      })
-      .then(function(raw){
-        raw = (raw || '').trim();
-        if (!raw) throw new Error('Empty manifest');
+  resolveLibrarySgfUrls._p = fetch(SGF_MANIFEST_URL, { cache:'no-cache' })
+    .then(function(r){
+      if (!r.ok) throw new Error('Manifest HTTP ' + r.status);
+      return r.text();
+    })
+    .then(function(raw){
+      raw = (raw || '').trim();
+      if (!raw) throw new Error('Empty manifest');
 
-        // Allow either JSON manifest or a plain-text manifest (first non-empty line)
-        var m = null;
-        if (raw[0] === '{' || raw[0] === '['){
-          try { m = JSON.parse(raw); } catch(e){ throw new Error('Bad JSON manifest'); }
-        }
+      // Parse JSON if it looks like JSON, otherwise treat as plain-text manifest
+      var m = null;
+      if (raw[0] === '{' || raw[0] === '['){
+        try { m = JSON.parse(raw); } catch(e){ throw new Error('Bad JSON manifest'); }
+      }
 
-        var file = null;
+      var files = [];
 
-        // If plain text, use first non-empty line
-        if (!m){
-          file = raw.split(/\r?\n/).map(function(s){ return s.trim(); }).filter(Boolean)[0] || null;
-        } else if (typeof m === 'string'){
-          file = m;
-        } else if (Array.isArray(m)){
-          file = (typeof m[0] === 'string') ? m[0] : null;
-        } else {
-          // Try a few common shapes:
-          // { "library": "library-1.sgf" }
-          // { "library": { "file": "library-1.sgf" } }
-          // { "sgf": "library-1.sgf" } / { "default": "library-1.sgf" }
-          // { "files": ["library-1.sgf", ...] }
-          if (typeof m.library === 'string') file = m.library;
-          else if (m.library && typeof m.library.file === 'string') file = m.library.file;
-          else if (typeof m.sgf === 'string') file = m.sgf;
-          else if (typeof m.default === 'string') file = m.default;
-          else if (Array.isArray(m.files) && typeof m.files[0] === 'string') file = m.files[0];
-          else if (Array.isArray(m.library_files) && typeof m.library_files[0] === 'string') file = m.library_files[0];
-        }
+      // Plain text: allow MULTIPLE lines (this is the key difference)
+      if (!m){
+        files = raw.split(/\r?\n/).map(function(s){ return s.trim(); }).filter(Boolean);
+      } else if (typeof m === 'string'){
+        files = [m];
+      } else if (Array.isArray(m)){
+        files = m.filter(function(x){ return typeof x === 'string' && x.trim(); }).map(function(x){ return x.trim(); });
+      } else {
+        // Common JSON shapes
+        if (typeof m.library === 'string') files = [m.library];
+        else if (m.library && typeof m.library.file === 'string') files = [m.library.file];
+        else if (Array.isArray(m.library) && m.library.length) files = m.library;
+        else if (Array.isArray(m.files) && m.files.length) files = m.files;
+        else if (Array.isArray(m.library_files) && m.library_files.length) files = m.library_files;
+        else if (typeof m.sgf === 'string') files = [m.sgf];
+        else if (typeof m.default === 'string') files = [m.default];
+      }
 
-        if (!file) throw new Error('Unrecognized manifest format');
+      files = (files || []).map(function(s){ return (s || '').trim(); }).filter(Boolean);
+      if (!files.length) throw new Error('Unrecognized manifest format');
 
-        // If manifest returns just a filename, prefix ../sgf/
-        if (!/^https?:\/\//.test(file) && !file.startsWith('/') && !file.includes('../')){
-          file = '../sgf/' + file.replace(/^\.?\//,'');
-        }
+      // Resolve each entry relative to the manifest URL (avoids ../sgf/sgf/... bugs)
+      var base = new URL(SGF_MANIFEST_URL, window.location.href);
+      var urls = files.map(function(f){
+        return new URL(f, base).toString();
+      });
 
-        return file;
-      })
-.catch(function(err){
-  console.warn('[Drills] manifest failed:', err);
-  throw err; // <- fail hard, no fallback
-});
+      return urls;
+    })
+    .catch(function(err){
+      console.warn('[Drills] manifest failed:', err);
+      throw err; // fail hard
+    });
 
-
-    return resolveLibrarySgfUrl._p;
-  }
+  return resolveLibrarySgfUrls._p;
+}
 
 
   function rb(str,i){ let out='',k=i; while(k<str.length){ const ch=str[k++]; if(ch==='\\'){ if(k<str.length) out+=str[k++]; continue; } if(ch===']') break; out+=ch; } return {t:out,n:k}; }
@@ -1490,52 +1488,58 @@ function selectOwnId(id){
     loading.innerHTML='<div class="info-title">Loading…</div><div class="info-desc">Reading joseki (10+ moves)…</div>';
     libCatsGrid.appendChild(loading);
 
-    resolveLibrarySgfUrl()
-      .then(function(url){
-        state.__libSgfUrl = url; // optional, for debugging
-        return fetch(url, { cache:'no-cache' }).then(function(r){
-          if (!r.ok) throw new Error('SGF HTTP ' + r.status);
-          return r.text();
-        });
-      })
+  resolveLibrarySgfUrls()
+  .then(function(urls){
+    state.__libSgfUrls = urls; // debugging
+    return Promise.all(urls.map(function(url){
+      return fetch(url, { cache:'no-cache' }).then(function(r){
+        if (!r.ok) throw new Error('SGF HTTP ' + r.status + ' for ' + url);
+        return r.text();
+      });
+    }));
+  })
+  .then(function(texts){
+    const lines = [];
 
-      .then(txt=>{
-        const trees=parseAllTrees(txt);
-        const lines=[];
-        for (const seq of trees){
-          linkify(seq,null);
-          const size=parseSZ(seq[0]?.SZ);
-          const rootAB=listCoords(seq[0]?.AB, size);
-          const rootAW=listCoords(seq[0]?.AW, size);
-          const paths=enumerateLines(seq,size);
-          for (const moves of paths){
-            if ((moves?.length||0) >= MIN_MOVES){
-              lines.push({ size, rootAB, rootAW, moves });
-            }
+    texts.forEach(function(txt){
+      const trees = parseAllTrees(txt);
+      for (const seq of trees){
+        linkify(seq,null);
+        const size = parseSZ(seq[0]?.SZ);
+        const rootAB = listCoords(seq[0]?.AB, size);
+        const rootAW = listCoords(seq[0]?.AW, size);
+        const paths = enumerateLines(seq,size);
+        for (const moves of paths){
+          if ((moves?.length||0) >= MIN_MOVES){
+            lines.push({ size, rootAB, rootAW, moves });
           }
         }
-        state.linesLib = lines;
+      }
+    });
 
-        const catMap = new Map();
-        for (let i=0;i<lines.length;i++){
-          const mv = lines[i].moves; if (mv.length < 2) continue;
-          const s = lines[i].size || 19, m1 = mv[0], m2 = mv[1];
-          const key = `${s}|${m1.color}:${m1.x},${m1.y}|${m2.color}:${m2.x},${m2.y}`;
-          if (!catMap.has(key)) catMap.set(key, { key, size:s, firstTwo:[m1,m2], lineIdx:[] });
-          catMap.get(key).lineIdx.push(i);
-        }
-        state.libCats = Array.from(catMap.values());
+    state.linesLib = lines;
 
-        renderLibCategories();
-        state.builtLib = true;
-      })
-      .catch(err=>{
-        libCatsGrid.innerHTML='';
-        const errEl=document.createElement('div');
-        errEl.className='s-card';
-        errEl.innerHTML='<div class="info-title">Could not load SGF</div><div class="info-desc">'+(err?.message||'Unknown error')+'</div>';
-        libCatsGrid.appendChild(errEl);
-      });
+    const catMap = new Map();
+    for (let i=0;i<lines.length;i++){
+      const mv = lines[i].moves; if (mv.length < 2) continue;
+      const s = lines[i].size || 19, m1 = mv[0], m2 = mv[1];
+      const key = `${s}|${m1.color}:${m1.x},${m1.y}|${m2.color}:${m2.x},${m2.y}`;
+      if (!catMap.has(key)) catMap.set(key, { key, size:s, firstTwo:[m1,m2], lineIdx:[] });
+      catMap.get(key).lineIdx.push(i);
+    }
+    state.libCats = Array.from(catMap.values());
+
+    renderLibCategories();
+    state.builtLib = true;
+  })
+  .catch(err=>{
+    libCatsGrid.innerHTML='';
+    const errEl=document.createElement('div');
+    errEl.className='s-card';
+    errEl.innerHTML='<div class="info-title">Could not load SGF</div><div class="info-desc">'+(err?.message||'Unknown error')+'</div>';
+    libCatsGrid.appendChild(errEl);
+  });
+
   }
 
   function renderLibCategories(){
