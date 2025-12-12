@@ -913,8 +913,19 @@ if (!window.StoneSFX) {
 })();
 
 (function DrillBoardMount(){
-  const SGF_URL = "../sgf/library-1.sgf";  // same as drills.html
+  const DEFAULT_SGF_URL = "../sgf/library-1.sgf";  // fallback
   const MIN_MOVES = 10;
+
+  function sgfUrlFromQuery(){
+    try{
+      const p = new URLSearchParams(window.location.search || "");
+      // support multiple param names so you can choose what you like
+      return p.get('sgf') || p.get('sgfUrl') || p.get('library') || "";
+    }catch(_){
+      return "";
+    }
+  }
+
 
   /* ===== Plan helpers (match drills list) ===== */
   var Tier = window.Tier || {
@@ -2898,10 +2909,14 @@ btnNext.addEventListener('click', function(){
     };
   }
 
-  function fetchLibraryLines(){
-    return fetch(SGF_URL, { cache:'no-cache' }).then(r=>r.text()).then(txt=>{
+function fetchLibraryLines(sgfUrl){
+  const url = sgfUrl || DEFAULT_SGF_URL;
+
+  return fetch(url, { cache:'no-cache' })
+    .then(r => r.text())
+    .then(txt => {
       const trees = parseAllTrees(txt);
-      const lines=[];
+      const lines = [];
       for (const seq of trees){
         linkify(seq,null);
         const size = parseSZ(seq[0]?.SZ);
@@ -2916,7 +2931,8 @@ btnNext.addEventListener('click', function(){
       }
       return lines;
     });
-  }
+}
+
   // Helper: get selections either from GoDrills (inline/Bubble)
   // or from sessionStorage (drills.html → drills-board.html bridge)
   function getDrillSelections(){
@@ -2946,6 +2962,11 @@ btnNext.addEventListener('click', function(){
 
       // Read selections via helper (GoDrills on same page OR sessionStorage bridge)
       const sel = getDrillSelections();
+const ACTIVE_SGF_URL =
+  sgfUrlFromQuery() ||
+  (sel && (sel.sgfUrl || sel.sgf || sel.librarySgf || sel.libraryFile)) ||
+  DEFAULT_SGF_URL;
+
       const selMode = (sel && sel.mode === 'blitz') ? 'blitz' : 'complete';
       blitzMode = (selMode === 'blitz');
       blitzInitialBudgetGranted = false;
@@ -3041,7 +3062,7 @@ timerMs = 0;
           .map(normalizeLineLike);
 
         if ((sel.library || []).length){
-          fetchLibraryLines().then(allLib => {
+fetchLibraryLines(ACTIVE_SGF_URL).then(allLib => {
             const libPick = allLib.filter(l => (sel.library || []).includes(lineKey(l)));
             go([ ...libPick, ...favPick, ...ownPick ]);
           }).catch(() => {
@@ -3054,7 +3075,8 @@ timerMs = 0;
       }
 
       // Fallback: no selection info → load full library (old behavior)
-      fetchLibraryLines().then(go).catch(() => alert('Could not load drills.'));
+fetchLibraryLines(ACTIVE_SGF_URL).then(go).catch(() => alert('Could not load drills.'));
+
 
     },
 
