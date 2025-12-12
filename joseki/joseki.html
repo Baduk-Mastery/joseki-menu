@@ -540,8 +540,8 @@ window.StoneSFX = (function () {
     return {
       play: function () {
         var now = Date.now();
-        // Debounce: prevent playing again if called within 50ms
-        if (now - lastPlay < 50) return;
+        // Debounce: prevent playing again if called within 100ms
+        if (now - lastPlay < 100) return;
         lastPlay = now;
         try {
           audio.currentTime = 0;
