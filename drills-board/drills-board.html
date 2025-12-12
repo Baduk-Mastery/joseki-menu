@@ -1496,6 +1496,13 @@ function redraw(){
 
 
   if (blitzMode) drawBlitzMarkers();
+if (isAmbiguous && remain.length > 0) {
+    const next = remain[0];
+    // Ensure valid grid and empty spot
+    if (grid && grid[next.y] && grid[next.y][next.x] === null) {
+      board.addObject({ x: next.x, y: next.y, type: 'LB', text: 'A' });
+    }
+  }
 }
 
 
@@ -2521,7 +2528,47 @@ window.addEventListener('go:prefs-changed', function(e){
     remain = tline.moves.slice(startIndex).map(m=>({x:m.x,y:m.y,color:m.color}));
     redraw();
   }
+let isAmbiguous = false;
 
+function checkAmbiguity(){
+  isAmbiguous = false;
+  if (!currentTransformed || !remain || !remain.length) return;
+
+  const myNext = remain[0];
+
+  const movesPlayed = currentTransformed.moves.length - remain.length;
+
+  for (let k=0; k<slots.length; k++){
+    if (k === index) continue; // skip current slot
+
+    const otherSlot = slots[k];
+    const planMap = runPlan[otherSlot.key];
+    if (!planMap) continue;
+    
+    const otherVar = planMap.get(k);
+    if (!otherVar) continue;
+
+    const otherLine = makeTransformed(otherSlot.base, otherVar.orientIdx, otherVar.swap);
+
+    if (otherLine.moves.length <= movesPlayed) continue;
+
+    let historyMatch = true;
+    for (let m=0; m < movesPlayed; m++){
+       const mine = currentTransformed.moves[m];
+       const theirs = otherLine.moves[m];
+       if (mine.x !== theirs.x || mine.y !== theirs.y || mine.color !== theirs.color){
+         historyMatch = false; break;
+       }
+    }
+    if (!historyMatch) continue;
+
+    const otherNext = otherLine.moves[movesPlayed];
+    if (otherNext.x !== myNext.x || otherNext.y !== myNext.y){
+       isAmbiguous = true;
+       return; // Found a conflict, stop checking
+    }
+  }
+}
 function startDrill(i, opts){
   opts = opts || {};
   forceZoomOutForOutcome();
@@ -2572,7 +2619,7 @@ function startDrill(i, opts){
 
   prepareCorner(tline, currentStartIndex);
 
-
+  checkAmbiguity();
   blitzCornerPlannedMoves = remain.length;
 
     if (blitzMode){
@@ -2608,13 +2655,9 @@ function startDrill(i, opts){
     locked = false;
   }
 
-  function onBoardClick(x,y){
+ function onBoardClick(x,y){
     if (isZoomAnimating) return; // NEW: block board clicks during zoom-in anim
     if (locked || timeUp) return;
-    if (x<0 || y<0 || x>=SIZE) return;
-    if (grid[y][x] !== null) return;
-    if (!remain.length) return;
-
     if (x<0 || y<0 || x>=SIZE) return;
     if (grid[y][x] !== null) return;
     if (!remain.length) return;
@@ -2623,9 +2666,14 @@ function startDrill(i, opts){
     if (next.x === x && next.y === y){
       playMove(x,y,next.color, false);
       remain.shift();
-  if (blitzMode && remain.length){
-    redraw();
-  }
+
+      // NEW: Re-calculate ambiguity for the NEW board state
+      if (remain.length) {
+         checkAmbiguity();
+         redraw(); 
+      } else if (blitzMode && remain.length){
+         redraw();
+      }
 
       if (!remain.length){
         solvedCount++;
