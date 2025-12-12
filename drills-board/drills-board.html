@@ -1488,15 +1488,13 @@ function redraw(){
 
     if (showLast && lastMove){
       const v = grid[lastMove.y] && grid[lastMove.y][lastMove.x];
-      if (v){ // only mark if the stone still exists
+      if (v){ 
         board.addObject({ x:lastMove.x, y:lastMove.y, type:'CR' });
       }
     }
   }catch(_){}
 
-
   if (blitzMode) drawBlitzMarkers();
-if (blitzMode) drawBlitzMarkers();
 
   // NEW: If ambiguous, show 'A' on the next move
   if (isAmbiguous && remain.length > 0) {
@@ -1507,7 +1505,6 @@ if (blitzMode) drawBlitzMarkers();
     }
   }
 }
-
 function cornerEdgesForFirstMove(m1, S){
   const dL = m1.x;
   const dR = (S - 1) - m1.x;
@@ -2676,9 +2673,9 @@ function startDrill(i, opts){
     const next = remain[0];
     if (next.x === x && next.y === y){
       playMove(x,y,next.color, false);
-      remain.shift();
+      remain.shift(); // Move is played, shift to next
 
-      // NEW: Re-check ambiguity for the new board state
+      // NEW: Re-calculate ambiguity for the NEW board state
       if (remain.length) {
          checkAmbiguity();
          redraw(); 
