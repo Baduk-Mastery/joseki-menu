@@ -3003,16 +3003,15 @@ function fetchLibraryLines(){
     }
   }
 
-  const DrillBoard = {
+ const DrillBoard = {
     load: function(linesOrNull, opts){
       PER = Math.max(1, parseInt((opts && opts.perJoseki) || 3, 10) || 3);
 
-      // Read selections via helper (GoDrills on same page OR sessionStorage bridge)
+      // Read selections
       const sel = getDrillSelections();
       const selMode = (sel && sel.mode === 'blitz') ? 'blitz' : 'complete';
       blitzMode = (selMode === 'blitz');
       blitzInitialBudgetGranted = false;
-
 
       function buildSlots(baseLines){
         const raw = [];
@@ -3032,6 +3031,25 @@ function fetchLibraryLines(){
       }
 
       function go(lines){
+        // === FIX START: Wait for WGo to load ===
+        if (!window.WGo) {
+          console.log("Waiting for WGo...");
+          return setTimeout(function(){ go(lines); }, 100);
+        }
+
+        // Initialize board now that WGo is surely ready
+        if (!board) {
+            // Set initial size based on first drill if available
+            if (lines && lines.length > 0) SIZE = lines[0].size || 19; 
+            initBoard(); 
+        }
+
+        // Double check: if board failed to init, wait again
+        if (!board) {
+            return setTimeout(function(){ go(lines); }, 100);
+        }
+        // === FIX END ===
+
         const usable = (lines||[]).filter(l => Array.isArray(l.moves) && l.moves.length >= MIN_MOVES).map(normalizeLineLike);
         if (!usable.length){
           alert('No eligible drills (need patterns with 10+ moves).');
@@ -3046,11 +3064,9 @@ function fetchLibraryLines(){
         blitzCornerState = null;
         timeUp = false;
 
-                if (blitzMode){
-          // Reset timer visuals, but do NOT start timer yet.
-          // startDrill() will add the first corner budget and start the timer.
-blitzInitialBudgetGranted = false;
-timerMs = 0;
+        if (blitzMode){
+          blitzInitialBudgetGranted = false;
+          timerMs = 0;
 
           ensureTimerEl();
           if (timerEl){
@@ -3058,8 +3074,6 @@ timerMs = 0;
             timerEl.textContent = fmtMs(timerMs);
           }
           stopTimer();
-
-                   // Lock input during countdown
           locked = true;
 
           waitForDrillFade()
@@ -3069,12 +3083,9 @@ timerMs = 0;
               timeUp = false;
               startDrill(0);
             });
-
-
         } else {
           if (timerEl) timerEl.style.display = 'none';
           stopTimer();
-
           startDrill(0);
         }
 
@@ -3086,20 +3097,19 @@ timerMs = 0;
         return;
       }
 
-      // If we have a selection (from GoDrills or from sessionStorage),
-      // use ONLY those lines instead of the full library.
+      // If we have a selection...
       if (sel && (
           (sel.library && sel.library.length) ||
           (sel.favorites && sel.favorites.length) ||
           (sel.own && sel.own.length)
         )){
 
-        const favMap   = readFavs();
+        const favMap    = readFavs();
         const favLines = Object.values(favMap).map(normalizeLineLike);
         const favPick  = favLines.filter(l => (sel.favorites || []).includes(lineKey(l)));
 
-        const ownAll   = loadOwnPatterns();
-        const ownPick  = ownAll
+        const ownAll    = loadOwnPatterns();
+        const ownPick   = ownAll
           .filter(p => (sel.own || []).includes(p.id))
           .map(normalizeLineLike);
 
@@ -3116,9 +3126,8 @@ timerMs = 0;
         return;
       }
 
-      // Fallback: no selection info → load full library (old behavior)
+      // Fallback: load full library
       fetchLibraryLines().then(go).catch(() => alert('Could not load drills.'));
-
     },
 
     exit: function(){
