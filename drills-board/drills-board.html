@@ -913,18 +913,32 @@ if (!window.StoneSFX) {
 })();
 
 (function DrillBoardMount(){
-  const DEFAULT_SGF_URL = "../sgf/library-1.sgf";  // fallback
-  const MIN_MOVES = 10;
+  const MIN_MOVES = 10; 
+
 
   function sgfUrlFromQuery(){
     try{
       const p = new URLSearchParams(window.location.search || "");
       // support multiple param names so you can choose what you like
-      return p.get('sgf') || p.get('sgfUrl') || p.get('library') || "";
+     return p.get('sgf') || p.get('sgfUrl') || p.get('library') || p.get('libraryUrl') || p.get('file') || p.get('src') || p.get('sgf_file') || "";
+
     }catch(_){
       return "";
     }
   }
+function resolveSgfUrl(sel){
+  const q = sgfUrlFromQuery();
+  if (q) return q;
+
+  if (!sel || typeof sel !== 'object') return "";
+
+  return (
+    sel.sgfUrl || sel.sgfURL || sel.sgf || sel.sgfPath ||
+    sel.librarySgfUrl || sel.librarySgfURL || sel.librarySgf ||
+    sel.libraryFile || sel.libraryUrl || sel.libraryURL || sel.libraryPath ||
+    sel.sourceSgf || sel.sourceUrl || sel.url || ""
+  );
+}
 
 
   /* ===== Plan helpers (match drills list) ===== */
@@ -2910,9 +2924,10 @@ btnNext.addEventListener('click', function(){
   }
 
 function fetchLibraryLines(sgfUrl){
-  const url = sgfUrl || DEFAULT_SGF_URL;
+  const url = (sgfUrl || "").trim();
+  if (!url) return Promise.reject(new Error('No SGF library URL provided'));
 
-  return fetch(url, { cache:'no-cache' })
+  return fetch(url, { cache:'no-store' })
     .then(r => r.text())
     .then(txt => {
       const trees = parseAllTrees(txt);
@@ -2960,12 +2975,13 @@ function fetchLibraryLines(sgfUrl){
     load: function(linesOrNull, opts){
       PER = Math.max(1, parseInt((opts && opts.perJoseki) || 3, 10) || 3);
 
-      // Read selections via helper (GoDrills on same page OR sessionStorage bridge)
-      const sel = getDrillSelections();
-const ACTIVE_SGF_URL =
-  sgfUrlFromQuery() ||
-  (sel && (sel.sgfUrl || sel.sgf || sel.librarySgf || sel.libraryFile)) ||
-  DEFAULT_SGF_URL;
+const sel = getDrillSelections();
+const ACTIVE_SGF_URL = resolveSgfUrl(sel);
+
+// (optional but very useful once) debug
+try{ console.log('[DrillsBoard] selection:', sel); }catch(_){}
+try{ console.log('[DrillsBoard] ACTIVE_SGF_URL:', ACTIVE_SGF_URL); }catch(_){}
+
 
       const selMode = (sel && sel.mode === 'blitz') ? 'blitz' : 'complete';
       blitzMode = (selMode === 'blitz');
@@ -2990,7 +3006,7 @@ const ACTIVE_SGF_URL =
       }
 
       function go(lines){
-        const usable = (lines||[]).filter(l => Array.isArray(l.moves) && l.moves.length >= MIN_MOVES).map(normalizeLineLike);
+       const usable = (lines||[]).map(normalizeLineLike).filter(l => Array.isArray(l.moves) && l.moves.length >= MIN_MOVES);
         if (!usable.length){
           alert('No eligible drills (need patterns with 10+ moves).');
           return;
@@ -3044,38 +3060,84 @@ timerMs = 0;
         return;
       }
 
-      // If we have a selection (from GoDrills or from sessionStorage),
-      // use ONLY those lines instead of the full library.
-      if (sel && (
-          (sel.library && sel.library.length) ||
-          (sel.favorites && sel.favorites.length) ||
-          (sel.own && sel.own.length)
-        )){
+ function firstArray(obj, names){
+  for (const n of names){
+    const v = obj && obj[n];
+    if (Array.isArray(v) && v.length) return v;
+  }
+  return [];
+}
 
-        const favMap   = readFavs();
-        const favLines = Object.values(favMap).map(normalizeLineLike);
-        const favPick  = favLines.filter(l => (sel.favorites || []).includes(lineKey(l)));
+// Accept multiple possible selection shapes
+const inlineLines = firstArray(sel, ['lines','selectedLines','libraryLines']);
+let libKeys = firstArray(sel, ['library','libraryKeys','libKeys','keys','selectedLibraryKeys']);
+const favKeys = firstArray(sel, ['favorites','favs','favoriteKeys']);
+const ownIds  = firstArray(sel, ['own','ownIds','ownPatterns','ownPatternIds','patterns']);
 
-        const ownAll   = loadOwnPatterns();
-        const ownPick  = ownAll
-          .filter(p => (sel.own || []).includes(p.id))
-          .map(normalizeLineLike);
+// If someone stored library keys under `lines: ["19|B:..."]`, treat them as library keys
+if (!libKeys.length && inlineLines.length && typeof inlineLines[0] === 'string'){
+  libKeys = inlineLines;
+}
 
-        if ((sel.library || []).length){
-fetchLibraryLines(ACTIVE_SGF_URL).then(allLib => {
-            const libPick = allLib.filter(l => (sel.library || []).includes(lineKey(l)));
-            go([ ...libPick, ...favPick, ...ownPick ]);
-          }).catch(() => {
-            go([ ...favPick, ...ownPick ]);
-          });
-        } else {
-          go([ ...favPick, ...ownPick ]);
-        }
+// If we were given full line objects directly, use them immediately
+if (inlineLines.length && typeof inlineLines[0] === 'object'){
+  go(inlineLines);
+  return;
+}
+
+const hasAnyPick = libKeys.length || favKeys.length || ownIds.length;
+
+if (hasAnyPick){
+  const favMap   = readFavs();
+  const favLines = Object.values(favMap).map(normalizeLineLike);
+  const favPick  = favLines.filter(l => favKeys.includes(lineKey(l)));
+
+  const ownAll   = loadOwnPatterns();
+  const ownPick  = ownAll
+    .filter(p => ownIds.includes(p.id))
+    .map(normalizeLineLike);
+
+  if (libKeys.length){
+    if (!ACTIVE_SGF_URL){
+      alert(
+        'No SGF library URL was provided for the selected library drills.\n\n' +
+        'Fix: pass ?sgf=... to this page OR store sel.sgfUrl in go:drills_next_selection.'
+      );
+      return;
+    }
+
+    fetchLibraryLines(ACTIVE_SGF_URL).then(allLib => {
+      const libPick = allLib.filter(l => libKeys.includes(lineKey(l)));
+
+      if (!libPick.length){
+        alert(
+          'Selected patterns were not found in this SGF file.\n' +
+          'This usually means drills-board is loading a different SGF than drills.html.\n\n' +
+          'SGF used here:\n' + ACTIVE_SGF_URL
+        );
         return;
       }
 
-      // Fallback: no selection info → load full library (old behavior)
-fetchLibraryLines(ACTIVE_SGF_URL).then(go).catch(() => alert('Could not load drills.'));
+      go([ ...libPick, ...favPick, ...ownPick ]);
+    }).catch(() => {
+      alert('Could not load SGF library:\n' + ACTIVE_SGF_URL);
+    });
+
+  } else {
+    go([ ...favPick, ...ownPick ]);
+  }
+  return;
+}
+
+// No selection info: only allow direct-open if a query sgf was provided
+if (ACTIVE_SGF_URL){
+  fetchLibraryLines(ACTIVE_SGF_URL).then(go).catch(() => {
+    alert('Could not load drills from:\n' + ACTIVE_SGF_URL);
+  });
+} else {
+  alert('No drill selection found. Go back to the drills list and start again.');
+}
+
 
 
     },
