@@ -1004,7 +1004,7 @@ function showOwn(){
     });
   }
 
-  /* Back button behavior */
+/* Back button behavior */
   backBtn && backBtn.addEventListener('click', function(){
     if (state.view === 'libVars'){
       state.currentCatKey = null;
@@ -1022,12 +1022,15 @@ function showOwn(){
     if (state.view === 'options'){
       showMode(); return;
     }
+    
+    // FIX: When leaving the page, do NOT call close(). 
+    // This keeps the current UI visible until the new page actually loads.
     if (state.view === 'mode'){
-      close();
       if (window.GoMenu && typeof window.GoMenu.open === 'function') window.GoMenu.open();
       return;
     }
-    close();
+    
+    // Fallback
     if (window.GoMenu && typeof window.GoMenu.open === 'function') window.GoMenu.open();
   });
 
