@@ -595,6 +595,8 @@
   #drills-root #drills-notice .actions{
     margin-top:10px; display:flex; gap:10px; justify-content:center; flex-wrap:wrap;
   }
+    margin-top:10px; display:flex; gap:10px; justify-content:center; flex-wrap:wrap;
+  }
 
 /* Lock interactions and darken background while notice open */
   #drills-root.notice-open #drills-overlay{
@@ -1810,26 +1812,8 @@ function selectOwnId(id){
       if (window.GoDrills && typeof window.GoDrills.getSelections === 'function') {
         var sel = window.GoDrills.getSelections();
         // sel looks like: { library: [...], favorites: [...], own: [...], mode: 'complete'|'blitz' }
-if (sel && typeof sessionStorage !== 'undefined') {
-
-  // Give drills-board something usable without async/await
-  sel.sgfManifestUrl = SGF_MANIFEST_URL;
-
-  // If library SGFs were already resolved while building the list, pass them along
-  sel.sgfUrls = (state.__libSgfUrls && state.__libSgfUrls.length)
-    ? state.__libSgfUrls.slice()
-    : [];
-
-  // Backwards-compat: drills-board may only look for a single URL
-  if (!sel.sgfUrl) sel.sgfUrl = sel.sgfUrls[0] || "";
-
-  sessionStorage.setItem('go:drills_next_selection', JSON.stringify(sel));
-  if (sel.sgfUrl) sessionStorage.setItem('go:drills_sgf_url', sel.sgfUrl);
-}
-// --- end manifest -> sgfUrl resolution ---
-
-sessionStorage.setItem('go:drills_next_selection', JSON.stringify(sel));
-
+        if (sel && typeof sessionStorage !== 'undefined') {
+          sessionStorage.setItem('go:drills_next_selection', JSON.stringify(sel));
         }
       }
     } catch (_) {}
@@ -1949,6 +1933,8 @@ sessionStorage.setItem('go:drills_next_selection', JSON.stringify(sel));
 
 </body>
 </html>
+
+
 
 
 
