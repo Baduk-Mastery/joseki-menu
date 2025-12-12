@@ -1097,10 +1097,11 @@ function showOwn(){
 
         return file;
       })
-      .catch(function(err){
-        console.warn('[Drills] manifest failed, using fallback SGF:', err);
-        return SGF_URL_FALLBACK;
-      });
+.catch(function(err){
+  console.warn('[Drills] manifest failed:', err);
+  throw err; // <- fail hard, no fallback
+});
+
 
     return resolveLibrarySgfUrl._p;
   }
