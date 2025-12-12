@@ -2143,6 +2143,7 @@ applyPanAndSize(true);
   }
 
   function updatePan(e){
+if (activePointerId !== null && e.pointerId !== activePointerId) return;
     if (!isFullscreen || scale <= 1 || !panStart) return;
 
     const dx = e.clientX - panStart.x;
@@ -2266,6 +2267,7 @@ const spacingY = SIZE > 1 ? Math.abs(getYcss(1) - firstY) : 0;
 
   // Tap/drag handling on the drills board mount (touch only)
   mount.addEventListener('pointerdown', function(e){
+if (activePointerId !== null) return;
     if (!zoomEnabled) return;
     if (e.pointerType && e.pointerType !== 'touch') return;
     if (isZoomAnimating){
@@ -2310,6 +2312,7 @@ const boardY = (sy + offsetY) / scale;
 
 // Use capture so we intercept before WGo's own click handler
   mount.addEventListener('pointerup', function(e){
+if (activePointerId !== null && e.pointerId !== activePointerId) return;
     if (countdownLock || locked || timeUp){
       suppressNextBoardClick = true;
       tapStart = null;
