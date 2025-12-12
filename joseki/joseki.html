@@ -2183,18 +2183,101 @@ koPoint = null;
   };
 
 
-  // ---------- load SGF (local file) ----------
-  var SGF_URL = "../sgf/library-1.sgf";
+// ---------- load SGF (Manifest) ----------
+  var SGF_MANIFEST_URL = "../sgf/manifest.json";
 
-  function loadSGFText(txt){
+  // 1. Helper to resolve manifest URLs (Matches Drills logic)
+  function resolveLibrarySgfUrls(){
+      return fetch(SGF_MANIFEST_URL, { cache:'no-cache' })
+      .then(function(r){
+          if (!r.ok) throw new Error('Manifest HTTP ' + r.status);
+          return r.text();
+      })
+      .then(function(raw){
+          raw = (raw || '').trim();
+          if (!raw) throw new Error('Empty manifest');
+          var m = null;
+          if (raw[0] === '{' || raw[0] === '['){
+              try { m = JSON.parse(raw); } catch(e){ throw new Error('Bad JSON manifest'); }
+          }
+          var files = [];
+          if (!m){
+              files = raw.split(/\?|\n/).map(function(s){ return s.trim(); }).filter(Boolean);
+          } else if (typeof m === 'string'){
+              files = [m];
+          } else if (Array.isArray(m)){
+              files = m.filter(function(x){ return typeof x === 'string' && x.trim(); });
+          } else {
+              if (typeof m.library === 'string') files = [m.library];
+              else if (Array.isArray(m.library)) files = m.library;
+              else if (Array.isArray(m.files)) files = m.files;
+          }
+          var base = new URL(SGF_MANIFEST_URL, window.location.href);
+          return files.map(function(f){ return new URL(f, base).toString(); });
+      });
+  }
+
+  // 2. Main Loader: Fetches ALL files, merges them, and initializes the board
+  function loadSGFManifest(){
+    resolveLibrarySgfUrls().then(function(urls){
+        return Promise.all(urls.map(function(u){
+            return fetch(u, { cache:'no-cache' }).then(function(r){ return r.text(); });
+        }));
+    }).then(function(texts){
+        // Combine all file contents
+        var combinedTxt = texts.join('\n');
+        loadCombinedSGFText(combinedTxt);
+    }).catch(function(err){
+        console.error('SGF Manifest load failed:', err);
+    });
+  }
+
+  // 3. Parsing Logic: Handles multiple game trees (files) and merges them into one root
+  function loadCombinedSGFText(txt){
     try{
       if (txt.charCodeAt && txt.charCodeAt(0)===0xFEFF) txt = txt.slice(1);
-      var parsed = parseGameTree(txt, txt.indexOf('('));
-      var rootSeq = parsed.seq && parsed.seq.length ? parsed.seq : [];
-      if (!rootSeq.length){ hasSGF=false; freeMode=false; redraw(); updateDesc(); updatePassButtonState(); return; }
-      linkify(rootSeq, null);
-      sgfRootSeq = rootSeq;
-      extractRoot(rootSeq);
+
+      var combinedRoot = null;
+      var cursor = 0;
+
+      // Loop through ALL trees found in the text (handling multiple files)
+      while(true){
+         var start = txt.indexOf('(', cursor);
+         if (start === -1) break;
+         
+         var parsed = parseGameTree(txt, start);
+         cursor = parsed.next;
+         
+         var seq = parsed.seq;
+         if (seq && seq.length){
+            var thisRoot = seq[0];
+            linkify(seq, null); // Set up internal links for this tree
+
+            if (!combinedRoot) {
+                // First tree found becomes the master root
+                combinedRoot = thisRoot;
+                if (!combinedRoot.variations) combinedRoot.variations = [];
+            } else {
+                // Subsequent trees (e.g. from file 2) get merged into the master root
+                if (thisRoot.variations && thisRoot.variations.length) {
+                    for (var v=0; v<thisRoot.variations.length; v++) {
+                         var varSeq = thisRoot.variations[v];
+                         // Re-link the parent of this variation to the master root
+                         if (varSeq.length) varSeq[0].prev = combinedRoot;
+                         combinedRoot.variations.push(varSeq);
+                    }
+                }
+            }
+         }
+      }
+
+      if (!combinedRoot){ 
+        hasSGF=false; freeMode=false; redraw(); updateDesc(); updatePassButtonState(); return; 
+      }
+
+      // Initialize the board with the combined result
+      sgfRootSeq = [combinedRoot];
+      extractRoot(sgfRootSeq);
       hasSGF = true;
       freeMode = false;
       josekiAnchor = null;
@@ -2202,6 +2285,7 @@ koPoint = null;
       buildPositionTo(null);
       fitBoard();
       try { if (window.PageBG && typeof PageBG.add === 'function') PageBG.add(); } catch(e){}
+
     }catch(e){
       console.error('SGF parse error:', e);
       hasSGF=false; freeMode=false;
@@ -2210,14 +2294,9 @@ koPoint = null;
       updatePassButtonState();
     }
   }
-  function fetchAndLoadSGF(url){
-    fetch(url, { cache:'no-cache' })
-      .then(function(r){ return r.text(); })
-      .then(function(t){ loadSGFText(t); })
-      .catch(function(err){ console.error('SGF load failed:', err); });
-  }
-  fetchAndLoadSGF(SGF_URL);
 
+  // Start the loading process
+  loadSGFManifest();
 })(); // mountBoard
 } // _mainBoardMounted
 </script>
