@@ -1359,62 +1359,6 @@ favToast.innerHTML =
 
   const state = { built:false, view:'cats', lines:[], cats:[], currentCatKey:null };
 
-  function buildFromSGF(url){
-    ensureGrids();
-    catsGrid.innerHTML='';
-    varsGrid.innerHTML='';
-    varsGrid.style.display='none';
-    catsGrid.style.display='grid';
-
-    const loading=document.createElement('div');
-    loading.className='s-card prac-card';
-    loading.innerHTML='<div class="prac-meta"><div class="prac-title">Loading…</div><div class="prac-desc">Reading joseki and grouping by the first two moves.</div></div>';
-    catsGrid.appendChild(loading);
-
-    fetch(url, { cache:'no-cache' })
-      .then(r=>r.text())
-      .then(txt=>{
-        const trees=parseAllTrees(txt);
-        if(!trees.length) throw new Error('Empty SGF');
-
-        const lines=[];
-        for (const seq of trees){
-          linkify(seq,null);
-          const size   = parseSZ(seq[0]?.SZ);
-          const rootAB = listCoords(seq[0]?.AB, size);
-          const rootAW = listCoords(seq[0]?.AW, size);
-          const paths  = enumerateLines(seq, size);
-          for (const moves of paths){
-            if ((moves?.length || 0) >= MIN_MOVES){
-              lines.push({ size, rootAB, rootAW, moves });
-            }
-          }
-        }
-
-        const catMap = new Map();
-        for (let i=0;i<lines.length;i++){
-          const mv=lines[i].moves;
-          if (mv.length < 2) continue;
-          const s = lines[i].size || 19, m1 = mv[0], m2 = mv[1];
-          const key = `${s}|${m1.color}:${m1.x},${m1.y}|${m2.color}:${m2.x},${m2.y}`;
-          if (!catMap.has(key)) catMap.set(key, { key, size:s, firstTwo:[m1,m2], lineIdx:[] });
-          catMap.get(key).lineIdx.push(i);
-        }
-
-        state.lines = lines;
-        state.cats  = Array.from(catMap.values());
-        showCategories();
-        console.log('[Practice List] lines(≥'+MIN_MOVES+'): ', lines.length, 'cats:', state.cats.length);
-      })
-      .catch(err=>{
-        catsGrid.innerHTML='';
-        const errEl=document.createElement('div');
-        errEl.className='s-card prac-card';
-        errEl.innerHTML='<div class="prac-meta"><div class="prac-title">Could not load SGF</div><div class="prac-desc">' + (err?.message || 'Unknown error') + '</div></div>';
-        catsGrid.appendChild(errEl);
-        console.error('SGF parsing failed:', err);
-      });
-  }
 function buildFromSGFUrls(urls){
   ensureGrids();
   catsGrid.innerHTML='';
