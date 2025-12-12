@@ -1157,8 +1157,11 @@ if (activePointerId !== null && e.pointerId !== activePointerId) return;
       }
     }, {passive:false});
 
-    mount.addEventListener('pointerup', function(e){
-if (activePointerId !== null && e.pointerId !== activePointerId) return;
+mount.addEventListener('pointerup', function(e){
+      if (activePointerId !== null && e.pointerId !== activePointerId) return;
+      
+      activePointerId = null; 
+
       if (!zoomEnabled) return;
 
       if (!tapStart) {
@@ -1202,7 +1205,7 @@ if (activePointerId !== null && e.pointerId !== activePointerId) return;
         }
       }
     }, {passive:false});
-    mount.addEventListener('pointercancel', function(e){
+mount.addEventListener('pointercancel', function(e){
       if (!zoomEnabled) return;
 
       try { mount.releasePointerCapture(e.pointerId); } catch(_){}
@@ -1210,11 +1213,14 @@ if (activePointerId !== null && e.pointerId !== activePointerId) return;
       // Reset gesture state
       tapStart = null;
       panStart = null;
+      
+      // FIX: Reset the lock here too
+      activePointerId = null; 
+      
       isPanning = false;
       panSamplePrev = null;
       panSampleCurr = null;
 
-      // Stop momentum if a gesture was canceled mid-flight
       cancelFling();
     }, {passive:false});
 
