@@ -1042,10 +1042,69 @@ function showOwn(){
     else if (type === 'own'){ showOwn(); }
   });
 
-  /* SGF + thumbnails + keys */
-  /* Update this path to your drills SGF file if needed */
-  var SGF_URL = "../sgf/library-1.sgf";
+  /* SGF + thumbnails + keys (manifest-based) */
+  // Use the same manifest approach as Practice (adjust filename if yours differs)
+  var SGF_MANIFEST_URL = "../sgf/manifest.json";
   var MIN_MOVES = 10;
+
+  function resolveLibrarySgfUrl(){
+    if (resolveLibrarySgfUrl._p) return resolveLibrarySgfUrl._p;
+
+    resolveLibrarySgfUrl._p = fetch(SGF_MANIFEST_URL, { cache:'no-cache' })
+      .then(function(r){
+        if (!r.ok) throw new Error('Manifest HTTP ' + r.status);
+        return r.text();
+      })
+      .then(function(raw){
+        raw = (raw || '').trim();
+        if (!raw) throw new Error('Empty manifest');
+
+        // Allow either JSON manifest or a plain-text manifest (first non-empty line)
+        var m = null;
+        if (raw[0] === '{' || raw[0] === '['){
+          try { m = JSON.parse(raw); } catch(e){ throw new Error('Bad JSON manifest'); }
+        }
+
+        var file = null;
+
+        // If plain text, use first non-empty line
+        if (!m){
+          file = raw.split(/\r?\n/).map(function(s){ return s.trim(); }).filter(Boolean)[0] || null;
+        } else if (typeof m === 'string'){
+          file = m;
+        } else if (Array.isArray(m)){
+          file = (typeof m[0] === 'string') ? m[0] : null;
+        } else {
+          // Try a few common shapes:
+          // { "library": "library-1.sgf" }
+          // { "library": { "file": "library-1.sgf" } }
+          // { "sgf": "library-1.sgf" } / { "default": "library-1.sgf" }
+          // { "files": ["library-1.sgf", ...] }
+          if (typeof m.library === 'string') file = m.library;
+          else if (m.library && typeof m.library.file === 'string') file = m.library.file;
+          else if (typeof m.sgf === 'string') file = m.sgf;
+          else if (typeof m.default === 'string') file = m.default;
+          else if (Array.isArray(m.files) && typeof m.files[0] === 'string') file = m.files[0];
+          else if (Array.isArray(m.library_files) && typeof m.library_files[0] === 'string') file = m.library_files[0];
+        }
+
+        if (!file) throw new Error('Unrecognized manifest format');
+
+        // If manifest returns just a filename, prefix ../sgf/
+        if (!/^https?:\/\//.test(file) && !file.startsWith('/') && !file.includes('../')){
+          file = '../sgf/' + file.replace(/^\.?\//,'');
+        }
+
+        return file;
+      })
+      .catch(function(err){
+        console.warn('[Drills] manifest failed, using fallback SGF:', err);
+        return SGF_URL_FALLBACK;
+      });
+
+    return resolveLibrarySgfUrl._p;
+  }
+
 
   function rb(str,i){ let out='',k=i; while(k<str.length){ const ch=str[k++]; if(ch==='\\'){ if(k<str.length) out+=str[k++]; continue; } if(ch===']') break; out+=ch; } return {t:out,n:k}; }
   function parseTree(str,i){
@@ -1430,8 +1489,15 @@ function selectOwnId(id){
     loading.innerHTML='<div class="info-title">Loading…</div><div class="info-desc">Reading joseki (10+ moves)…</div>';
     libCatsGrid.appendChild(loading);
 
-    fetch(SGF_URL, { cache:'no-cache' })
-      .then(r=>r.text())
+    resolveLibrarySgfUrl()
+      .then(function(url){
+        state.__libSgfUrl = url; // optional, for debugging
+        return fetch(url, { cache:'no-cache' }).then(function(r){
+          if (!r.ok) throw new Error('SGF HTTP ' + r.status);
+          return r.text();
+        });
+      })
+
       .then(txt=>{
         const trees=parseAllTrees(txt);
         const lines=[];
