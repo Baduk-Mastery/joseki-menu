@@ -1496,12 +1496,6 @@ function redraw(){
 
 
   if (blitzMode) drawBlitzMarkers();
-if (isAmbiguous && remain.length > 0) {
-    const next = remain[0];
-    if (grid[next.y][next.x] === null) {
-      board.addObject({ x: next.x, y: next.y, type: 'LB', text: 'A' });
-    }
-  }
 }
 
 
@@ -2527,55 +2521,6 @@ window.addEventListener('go:prefs-changed', function(e){
     remain = tline.moves.slice(startIndex).map(m=>({x:m.x,y:m.y,color:m.color}));
     redraw();
   }
-// --- NEW: Ambiguity Detection ---
-let isAmbiguous = false;
-
-function checkAmbiguity(currentSlotIdx, tline, startIdx){
-  isAmbiguous = false;
-  // The move the user is expected to play next
-  const myNext = tline.moves[startIdx];
-  if (!myNext) return;
-
-  // Compare against all other active slots in this session
-  for (let k=0; k<slots.length; k++){
-    if (k === currentSlotIdx) continue; // skip self
-
-    const otherSlot = slots[k];
-    // Retrieve the specific randomization plan for slot k
-    const planMap = runPlan[otherSlot.key];
-    if (!planMap) continue;
-    const otherVar = planMap.get(k);
-    if (!otherVar) continue;
-
-    // 1. If visual start state differs (different number of stones), user can tell them apart.
-    // (We use startIdx as a proxy for board state).
-    if ((otherVar.startIndex||0) !== startIdx) continue;
-
-    // 2. Generate the transformed moves for the other slot to compare coordinates
-    const otherLine = makeTransformed(otherSlot.base, otherVar.orientIdx, otherVar.swap);
-
-    // 3. Check if the history on board is identical
-    let historyMatch = true;
-    for (let m=0; m<startIdx; m++){
-       const m1 = tline.moves[m];
-       const m2 = otherLine.moves[m];
-       if (m1.x!==m2.x || m1.y!==m2.y || m1.color!==m2.color){
-         historyMatch = false; break;
-       }
-    }
-    if (!historyMatch) continue;
-
-    // 4. History matches! Now check if the NEXT move is different.
-    const otherNext = otherLine.moves[startIdx];
-    if (otherNext){
-       // If the other slot expects a different move/color at this exact moment -> Ambiguous
-       if (otherNext.x !== myNext.x || otherNext.y !== myNext.y){
-         isAmbiguous = true;
-         return;
-       }
-    }
-  }
-}
 
 function startDrill(i, opts){
   opts = opts || {};
@@ -2626,7 +2571,7 @@ function startDrill(i, opts){
     : null;
 
   prepareCorner(tline, currentStartIndex);
-  checkAmbiguity(index, tline, currentStartIndex);
+
 
   blitzCornerPlannedMoves = remain.length;
 
@@ -3290,6 +3235,8 @@ timerMs = 0;
 
 </body>
 </html>
+
+
 
 
 
