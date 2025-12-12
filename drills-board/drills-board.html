@@ -926,18 +926,38 @@ if (!window.StoneSFX) {
       return "";
     }
   }
+function readAnyStoredUrl(){
+  const keys = [
+    'go:drills_sgf_url',
+    'go:drills_library_sgf_url',
+    'go:active_sgf_url',
+    'go:library_sgf_url',
+    'go:last_sgf_url'
+  ];
+  for (const k of keys){
+    try{
+      const v = (sessionStorage && sessionStorage.getItem(k)) || (localStorage && localStorage.getItem(k));
+      if (v && typeof v === 'string' && v.trim()) return v.trim();
+    }catch(_){}
+  }
+  return "";
+}
+
 function resolveSgfUrl(sel){
   const q = sgfUrlFromQuery();
   if (q) return q;
 
-  if (!sel || typeof sel !== 'object') return "";
+  if (sel && typeof sel === 'object'){
+    const v = (
+      sel.sgfUrl || sel.sgfURL || sel.sgf || sel.sgfPath ||
+      sel.librarySgfUrl || sel.librarySgfURL || sel.librarySgf ||
+      sel.libraryFile || sel.libraryUrl || sel.libraryURL || sel.libraryPath ||
+      sel.sourceSgf || sel.sourceUrl || sel.url || ""
+    );
+    if (v && String(v).trim()) return String(v).trim();
+  }
 
-  return (
-    sel.sgfUrl || sel.sgfURL || sel.sgf || sel.sgfPath ||
-    sel.librarySgfUrl || sel.librarySgfURL || sel.librarySgf ||
-    sel.libraryFile || sel.libraryUrl || sel.libraryURL || sel.libraryPath ||
-    sel.sourceSgf || sel.sourceUrl || sel.url || ""
-  );
+  return readAnyStoredUrl();
 }
 
 
