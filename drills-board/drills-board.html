@@ -913,57 +913,7 @@ if (!window.StoneSFX) {
 })();
 
 (function DrillBoardMount(){
-const SGF_MANIFEST_URL = "../sgf/manifest.json";
-const MIN_MOVES = 10; // Keep this line
-
-function resolveLibrarySgfUrls(){
-  if (resolveLibrarySgfUrls._p) return resolveLibrarySgfUrls._p;
-  resolveLibrarySgfUrls._p = fetch(SGF_MANIFEST_URL, { cache:'no-cache' })
-    .then(function(r){
-      if (!r.ok) throw new Error('Manifest HTTP ' + r.status);
-      return r.text();
-    })
-    .then(function(raw){
-      raw = (raw || '').trim();
-      if (!raw) throw new Error('Empty manifest');
-      
-      var m = null;
-      if (raw[0] === '{' || raw[0] === '['){
-        try { m = JSON.parse(raw); } catch(e){ throw new Error('Bad JSON manifest'); }
-      }
-      
-      var files = [];
-      if (!m){
-        files = raw.split(/\?|[\r\n]+/).map(function(s){ return s.trim(); }).filter(Boolean);
-      } else if (typeof m === 'string'){
-        files = [m];
-      } else if (Array.isArray(m)){
-        files = m.filter(function(x){ return typeof x === 'string' && x.trim(); }).map(function(x){ return x.trim(); });
-      } else {
-        if (typeof m.library === 'string') files = [m.library];
-        else if (m.library && typeof m.library.file === 'string') files = [m.library.file];
-        else if (Array.isArray(m.library) && m.library.length) files = m.library;
-        else if (Array.isArray(m.files) && m.files.length) files = m.files;
-        else if (Array.isArray(m.library_files) && m.library_files.length) files = m.library_files;
-        else if (typeof m.sgf === 'string') files = [m.sgf];
-        else if (typeof m.default === 'string') files = [m.default];
-      }
-      
-      files = (files || []).map(function(s){ return (s || '').trim(); }).filter(Boolean);
-      if (!files.length) throw new Error('Unrecognized manifest format');
-      
-      var base = new URL(SGF_MANIFEST_URL, window.location.href);
-      var urls = files.map(function(f){
-        return new URL(f, base).toString();
-      });
-      return urls;
-    })
-    .catch(function(err){
-      console.warn('[Drills Board] manifest failed:', err);
-      throw err;
-    });
-  return resolveLibrarySgfUrls._p;
-}
+  const SGF_URL = "../sgf/library-1.sgf";  // same as drills.html
   const MIN_MOVES = 10;
 
   /* ===== Plan helpers (match drills list) ===== */
@@ -2948,38 +2898,25 @@ btnNext.addEventListener('click', function(){
     };
   }
 
-function fetchLibraryLines(){
-  return resolveLibrarySgfUrls()
-    .then(function(urls){
-      // Fetch ALL files found in the manifest
-      return Promise.all(urls.map(function(url){
-        return fetch(url, { cache:'no-cache' }).then(function(r){
-          if (!r.ok) throw new Error('SGF HTTP ' + r.status);
-          return r.text();
-        });
-      }));
-    })
-    .then(function(texts){
-      // Combine all parsed lines into one big list
-      const allLines = [];
-      texts.forEach(function(txt){
-        const trees = parseAllTrees(txt);
-        for (const seq of trees){
-          linkify(seq, null);
-          const size = parseSZ(seq[0]?.SZ);
-          const rootAB = listCoords(seq[0]?.AB, size);
-          const rootAW = listCoords(seq[0]?.AW, size);
-          const paths = enumerateLines(seq, size);
-          for (const moves of paths){
-            if ((moves?.length||0) >= MIN_MOVES){
-              allLines.push({ size, rootAB, rootAW, moves });
-            }
+  function fetchLibraryLines(){
+    return fetch(SGF_URL, { cache:'no-cache' }).then(r=>r.text()).then(txt=>{
+      const trees = parseAllTrees(txt);
+      const lines=[];
+      for (const seq of trees){
+        linkify(seq,null);
+        const size = parseSZ(seq[0]?.SZ);
+        const rootAB = listCoords(seq[0]?.AB, size);
+        const rootAW = listCoords(seq[0]?.AW, size);
+        const paths  = enumerateLines(seq,size);
+        for (const moves of paths){
+          if ((moves?.length||0) >= MIN_MOVES){
+            lines.push({ size, rootAB, rootAW, moves });
           }
         }
-      });
-      return allLines;
+      }
+      return lines;
     });
-}
+  }
   // Helper: get selections either from GoDrills (inline/Bubble)
   // or from sessionStorage (drills.html → drills-board.html bridge)
   function getDrillSelections(){
@@ -3003,15 +2940,16 @@ function fetchLibraryLines(){
     }
   }
 
- const DrillBoard = {
+  const DrillBoard = {
     load: function(linesOrNull, opts){
       PER = Math.max(1, parseInt((opts && opts.perJoseki) || 3, 10) || 3);
 
-      // Read selections
+      // Read selections via helper (GoDrills on same page OR sessionStorage bridge)
       const sel = getDrillSelections();
       const selMode = (sel && sel.mode === 'blitz') ? 'blitz' : 'complete';
       blitzMode = (selMode === 'blitz');
       blitzInitialBudgetGranted = false;
+
 
       function buildSlots(baseLines){
         const raw = [];
@@ -3031,25 +2969,6 @@ function fetchLibraryLines(){
       }
 
       function go(lines){
-        // === FIX START: Wait for WGo to load ===
-        if (!window.WGo) {
-          console.log("Waiting for WGo...");
-          return setTimeout(function(){ go(lines); }, 100);
-        }
-
-        // Initialize board now that WGo is surely ready
-        if (!board) {
-            // Set initial size based on first drill if available
-            if (lines && lines.length > 0) SIZE = lines[0].size || 19; 
-            initBoard(); 
-        }
-
-        // Double check: if board failed to init, wait again
-        if (!board) {
-            return setTimeout(function(){ go(lines); }, 100);
-        }
-        // === FIX END ===
-
         const usable = (lines||[]).filter(l => Array.isArray(l.moves) && l.moves.length >= MIN_MOVES).map(normalizeLineLike);
         if (!usable.length){
           alert('No eligible drills (need patterns with 10+ moves).');
@@ -3064,9 +2983,11 @@ function fetchLibraryLines(){
         blitzCornerState = null;
         timeUp = false;
 
-        if (blitzMode){
-          blitzInitialBudgetGranted = false;
-          timerMs = 0;
+                if (blitzMode){
+          // Reset timer visuals, but do NOT start timer yet.
+          // startDrill() will add the first corner budget and start the timer.
+blitzInitialBudgetGranted = false;
+timerMs = 0;
 
           ensureTimerEl();
           if (timerEl){
@@ -3074,6 +2995,8 @@ function fetchLibraryLines(){
             timerEl.textContent = fmtMs(timerMs);
           }
           stopTimer();
+
+                   // Lock input during countdown
           locked = true;
 
           waitForDrillFade()
@@ -3083,9 +3006,12 @@ function fetchLibraryLines(){
               timeUp = false;
               startDrill(0);
             });
+
+
         } else {
           if (timerEl) timerEl.style.display = 'none';
           stopTimer();
+
           startDrill(0);
         }
 
@@ -3097,19 +3023,20 @@ function fetchLibraryLines(){
         return;
       }
 
-      // If we have a selection...
+      // If we have a selection (from GoDrills or from sessionStorage),
+      // use ONLY those lines instead of the full library.
       if (sel && (
           (sel.library && sel.library.length) ||
           (sel.favorites && sel.favorites.length) ||
           (sel.own && sel.own.length)
         )){
 
-        const favMap    = readFavs();
+        const favMap   = readFavs();
         const favLines = Object.values(favMap).map(normalizeLineLike);
         const favPick  = favLines.filter(l => (sel.favorites || []).includes(lineKey(l)));
 
-        const ownAll    = loadOwnPatterns();
-        const ownPick   = ownAll
+        const ownAll   = loadOwnPatterns();
+        const ownPick  = ownAll
           .filter(p => (sel.own || []).includes(p.id))
           .map(normalizeLineLike);
 
@@ -3126,8 +3053,9 @@ function fetchLibraryLines(){
         return;
       }
 
-      // Fallback: load full library
+      // Fallback: no selection info → load full library (old behavior)
       fetchLibraryLines().then(go).catch(() => alert('Could not load drills.'));
+
     },
 
     exit: function(){
