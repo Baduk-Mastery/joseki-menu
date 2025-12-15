@@ -19,6 +19,24 @@
   transition: opacity .9s ease;
 }
 
+#drill-notif-dim{
+  position: fixed;
+  inset: 0;
+  z-index: 99999;           /* below .drill-notif (100000), above board/zoom UI */
+  background: rgba(0,0,0,.55);
+  opacity: 0;
+  transition: opacity .35s ease;
+  pointer-events: none;     /* never blocks clicks; the notif containers still do */
+}
+
+#drill-notif-dim.is-on{
+  opacity: 1;
+}
+
+@media (prefers-reduced-motion: reduce){
+  #drill-notif-dim{ transition: none; }
+}
+
 /* Triggered by JS */
 #drill-fade.is-hidden{
   opacity: 0;
@@ -191,7 +209,9 @@ body.drill-countdown-lock #go-board-drill *{
 
 /* class kept for clarity/future tweaks */
 .blitz-chip{ }
-
+/* =========================
+   Blitz countdown overlay
+   ========================= */
 #blitz-countdown{
   position: fixed;
   inset: 0;
@@ -200,18 +220,7 @@ body.drill-countdown-lock #go-board-drill *{
   align-items: center;
   justify-content: center;
   background: rgba(0,0,0,.55);
-
-  /* NEW: allow “preload while dark” without showing */
-  opacity: 0;
-  transition: opacity .12s linear;
-  pointer-events: none;
 }
-
-#blitz-countdown.is-visible{
-  opacity: 1;
-  pointer-events: auto;
-}
-
 
 #blitz-countdown-card{
   min-width: 220px;
@@ -606,7 +615,8 @@ body.drill-zoom-mode #drill-ctrls{
   align-items:center;
   justify-content:center;
   padding:0;
-  background:rgba(0,0,0,.55);
+  background: transparent;
+
 }
 
 /* Card skin copied from My Patterns own-notice-card / own-toast-card */
@@ -784,8 +794,10 @@ body.drill-zoom-mode #drill-ctrls{
 </head>
 <body>
   <div id="drill-fade" aria-hidden="true"></div>
-<!-- ================= DRILL BOARD (adds Blitz mode) ================= -->
+  <div id="drill-notif-dim" aria-hidden="true"></div>
+
 <div id="drill-root">
+
   <div id="drill-inner">
 
  <!-- Top bar (Practice-style Back placement) -->
@@ -1316,6 +1328,11 @@ if (!window.StoneSFX) {
   // Blitz countdown elements
   const blitzCdM   = document.getElementById('blitz-countdown');
   const blitzCdNum = document.getElementById('blitz-countdown-number');
+  const notifDim = document.getElementById('drill-notif-dim');
+  function setNotifDim(on){
+    if (!notifDim) return;
+    notifDim.classList.toggle('is-on', !!on);
+  }
 
   // --- board state ---
   let SIZE = 19, board=null, grid=null;
@@ -1467,93 +1484,43 @@ function ensureTimerEl(){
   }
 
   function stopTimer(){ if (timerId){ clearInterval(timerId); timerId=null; } }
-
-const _BLITZ_BG_URL = new URL('../img/notification.jpg', window.location.href).toString();
-let _blitzAssetsPromise = null;
-
-function ensureBlitzAssetsReady(){
-  if (_blitzAssetsPromise) return _blitzAssetsPromise;
-
-  _blitzAssetsPromise = new Promise((resolve) => {
-    const img = new Image();
-    const done = () => resolve();
-
-    img.onload = done;
-    img.onerror = done;
-    img.src = _BLITZ_BG_URL;
-
-    // Decode if supported (this is the key part)
-    if (img.decode) img.decode().then(done).catch(done);
-  });
-
-  return _blitzAssetsPromise;
-}
-
-function primeBlitzCountdown(){
-  if (!blitzCdM || !blitzCdNum) return;
-
-  ensureBlitzAssetsReady();
-
-  blitzCdNum.textContent = String(BLITZ_COUNTDOWN_SECONDS);
-  blitzCdM.style.display = 'flex';
-
-  blitzCdM.style.visibility = 'hidden';
-
-  blitzCdM.classList.remove('is-visible');
-
-  void blitzCdM.offsetHeight;
-}
-
-
   /* =========================
      Blitz countdown (3-2-1-Go)
      ========================= */
   const BLITZ_COUNTDOWN_SECONDS = 3;
 
-function runBlitzCountdown(){
-  return ensureBlitzAssetsReady().then(() => new Promise(resolve => {
-    if (!blitzCdM || !blitzCdNum){
-      resolve();
-      return;
-    }
-
-    // Ensure it’s mounted/primed
-    primeBlitzCountdown();
-
-    // Make it eligible to be shown (still transparent until class toggles)
-    blitzCdM.style.visibility = 'visible';
-
-    // Reveal on next frame
-    requestAnimationFrame(() => blitzCdM.classList.add('is-visible'));
-
-    let n = BLITZ_COUNTDOWN_SECONDS;
-    blitzCdNum.textContent = String(n);
-
-    const stepMs = 650;
-
-    function tick(){
-      n -= 1;
-
-      if (n <= 0){
-        blitzCdNum.textContent = 'Go!';
-        setTimeout(() => {
-          blitzCdM.classList.remove('is-visible');
-          setTimeout(() => {
-            blitzCdM.style.display = 'none';
-            blitzCdM.style.visibility = 'hidden';
-            resolve();
-          }, 120);
-        }, 180);
+  function runBlitzCountdown(){
+    return new Promise(resolve => {
+      if (!blitzCdM || !blitzCdNum){
+        resolve();
         return;
       }
 
+      let n = BLITZ_COUNTDOWN_SECONDS;
       blitzCdNum.textContent = String(n);
-      setTimeout(tick, stepMs);
-    }
+      blitzCdM.style.display = 'flex';
 
-    setTimeout(tick, stepMs);
-  }));
-}
+      const stepMs = 650;
+
+      function tick(){
+        n -= 1;
+
+        if (n <= 0){
+          blitzCdNum.textContent = 'Go!';
+          setTimeout(() => {
+            blitzCdM.style.display = 'none';
+            resolve();
+          }, 180);
+          return;
+        }
+
+        blitzCdNum.textContent = String(n);
+        setTimeout(tick, stepMs);
+      }
+
+      setTimeout(tick, stepMs);
+    });
+  }
 
   // board helpers
 function initBoard(){
@@ -2982,20 +2949,17 @@ timerMs = 0;
     }
     stopTimer();
 
-        // Lock input during countdown
-    locked = true;
+          locked = true;
 
-primeBlitzCountdown();
-
-Promise.all([ ensureBlitzAssetsReady(), waitForDrillFade() ])
-  .then(() => runBlitzCountdown())
-  .then(() => {
-    locked = false;
-    timeUp = false;
-    if (slots.length){
-      startDrill(0);
-    }
-  });
+          setNotifDim(true);           
+          waitForDrillFade()
+            .then(runBlitzCountdown)
+            .then(() => {
+              setNotifDim(false);      
+              locked = false;
+              timeUp = false;
+              startDrill(0);
+            });
 
 
     // Prevent the non-blitz start below
@@ -3255,17 +3219,19 @@ timerMs = 0;
           stopTimer();
 
                    // Lock input during countdown
-          locked = true;
+           locked = true;
 
-primeBlitzCountdown();
-
-Promise.all([ ensureBlitzAssetsReady(), waitForDrillFade() ])
-  .then(() => runBlitzCountdown())
-  .then(() => {
-    locked = false;
-    timeUp = false;
-    startDrill(0);
-  });
+    setNotifDim(true);          
+    waitForDrillFade()
+      .then(runBlitzCountdown)
+      .then(() => {
+        setNotifDim(false);    
+        locked = false;
+        timeUp = false;
+        if (slots.length){
+          startDrill(0);
+        }
+      });
 
 
 
