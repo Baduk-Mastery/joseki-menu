@@ -1463,6 +1463,25 @@ function ensureTimerEl(){
      ========================= */
   const BLITZ_COUNTDOWN_SECONDS = 3;
 
+  // NEW: render the countdown overlay during the black fade (warm-up),
+  // but keep it invisible and non-interactive until we're ready to start.
+  function primeBlitzCountdown(){
+    if (!blitzCdM || !blitzCdNum) return;
+
+    // Ensure correct initial content and layout is ready
+    blitzCdNum.textContent = String(BLITZ_COUNTDOWN_SECONDS);
+
+    // Mount it so the browser can paint it (behind #drill-fade due to z-index)
+    blitzCdM.style.display = 'flex';
+
+    // Keep it invisible + non-blocking during fade
+    blitzCdM.style.opacity = '0';
+    blitzCdM.style.pointerEvents = 'none';
+
+    // Force a layout/paint flush so it’s actually “loaded”
+    void blitzCdM.offsetHeight;
+  }
+
   function runBlitzCountdown(){
     return new Promise(resolve => {
       if (!blitzCdM || !blitzCdNum){
@@ -1470,9 +1489,15 @@ function ensureTimerEl(){
         return;
       }
 
+
+      blitzCdM.style.display = 'flex';
+
+
+      blitzCdM.style.opacity = '1';
+      blitzCdM.style.pointerEvents = 'auto';
+
       let n = BLITZ_COUNTDOWN_SECONDS;
       blitzCdNum.textContent = String(n);
-      blitzCdM.style.display = 'flex';
 
       const stepMs = 650;
 
@@ -1483,6 +1508,8 @@ function ensureTimerEl(){
           blitzCdNum.textContent = 'Go!';
           setTimeout(() => {
             blitzCdM.style.display = 'none';
+            blitzCdM.style.opacity = '0';
+            blitzCdM.style.pointerEvents = 'none';
             resolve();
           }, 180);
           return;
@@ -2910,31 +2937,33 @@ function onBoardClick(x,y){
   blitzCornerState = null;
   timeUp = false;
 
-  if (blitzMode){
-    // Reset timer visuals, but do NOT start timer yet.
-    // startDrill() will add the first corner budget and start the timer.
+        if (blitzMode){
+          // Reset timer visuals, but do NOT start timer yet.
+          // startDrill() will add the first corner budget and start the timer.
 blitzInitialBudgetGranted = false;
 timerMs = 0;
 
-    ensureTimerEl();
-    if (timerEl){
-      timerEl.style.display = 'block';
-      timerEl.textContent = fmtMs(timerMs);
-    }
-    stopTimer();
+          ensureTimerEl();
+          if (timerEl){
+            timerEl.style.display = 'block';
+            timerEl.textContent = fmtMs(timerMs);
+          }
+          stopTimer();
 
-        // Lock input during countdown
-    locked = true;
+          // Lock input during countdown
+          locked = true;
 
-    waitForDrillFade()
-      .then(runBlitzCountdown)
-      .then(() => {
-        locked = false;
-        timeUp = false;
-        if (slots.length){
-          startDrill(0);
-        }
-      });
+          // NEW: warm up the countdown overlay during the black fade
+          primeBlitzCountdown();
+
+          waitForDrillFade()
+            .then(runBlitzCountdown)   // countdown starts ONLY after fade is fully gone
+            .then(() => {
+              locked = false;
+              timeUp = false;
+              startDrill(0);
+            });
+
 
     // Prevent the non-blitz start below
     return;
@@ -3192,16 +3221,21 @@ timerMs = 0;
           }
           stopTimer();
 
-                   // Lock input during countdown
-          locked = true;
+    // Lock input during countdown
+    locked = true;
 
-          waitForDrillFade()
-            .then(runBlitzCountdown)
-            .then(() => {
-              locked = false;
-              timeUp = false;
-              startDrill(0);
-            });
+    // NEW: warm up the countdown overlay during the black fade
+    primeBlitzCountdown();
+
+    waitForDrillFade()
+      .then(runBlitzCountdown)
+      .then(() => {
+        locked = false;
+        timeUp = false;
+        if (slots.length){
+          startDrill(0);
+        }
+      });
 
 
         } else {
