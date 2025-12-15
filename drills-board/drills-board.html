@@ -191,9 +191,7 @@ body.drill-countdown-lock #go-board-drill *{
 
 /* class kept for clarity/future tweaks */
 .blitz-chip{ }
-/* =========================
-   Blitz countdown overlay
-   ========================= */
+
 #blitz-countdown{
   position: fixed;
   inset: 0;
@@ -202,7 +200,18 @@ body.drill-countdown-lock #go-board-drill *{
   align-items: center;
   justify-content: center;
   background: rgba(0,0,0,.55);
+
+  /* NEW: allow “preload while dark” without showing */
+  opacity: 0;
+  transition: opacity .12s linear;
+  pointer-events: none;
 }
+
+#blitz-countdown.is-visible{
+  opacity: 1;
+  pointer-events: auto;
+}
+
 
 #blitz-countdown-card{
   min-width: 220px;
@@ -1458,43 +1467,60 @@ function ensureTimerEl(){
   }
 
   function stopTimer(){ if (timerId){ clearInterval(timerId); timerId=null; } }
+function primeBlitzCountdown(){
+  if (!blitzCdM || !blitzCdNum) return;
+
+  // Mount it so layout + background image decode happens while screen is black
+  blitzCdNum.textContent = String(BLITZ_COUNTDOWN_SECONDS);
+  blitzCdM.style.display = 'flex';
+  blitzCdM.classList.remove('is-visible'); // stays fully transparent
+}
+
   /* =========================
      Blitz countdown (3-2-1-Go)
      ========================= */
   const BLITZ_COUNTDOWN_SECONDS = 3;
 
-  function runBlitzCountdown(){
-    return new Promise(resolve => {
-      if (!blitzCdM || !blitzCdNum){
-        resolve();
-        return;
-      }
+function runBlitzCountdown(){
+  return new Promise(resolve => {
+    if (!blitzCdM || !blitzCdNum){
+      resolve();
+      return;
+    }
 
-      let n = BLITZ_COUNTDOWN_SECONDS;
-      blitzCdNum.textContent = String(n);
-      blitzCdM.style.display = 'flex';
+    // Ensure it’s mounted (safe if already primed)
+    primeBlitzCountdown();
 
-      const stepMs = 650;
+    // Reveal on next frame (prevents any flash and avoids late paint)
+    requestAnimationFrame(() => blitzCdM.classList.add('is-visible'));
 
-      function tick(){
-        n -= 1;
+    let n = BLITZ_COUNTDOWN_SECONDS;
+    blitzCdNum.textContent = String(n);
 
-        if (n <= 0){
-          blitzCdNum.textContent = 'Go!';
+    const stepMs = 650;
+
+    function tick(){
+      n -= 1;
+
+      if (n <= 0){
+        blitzCdNum.textContent = 'Go!';
+        setTimeout(() => {
+          blitzCdM.classList.remove('is-visible');
           setTimeout(() => {
             blitzCdM.style.display = 'none';
             resolve();
-          }, 180);
-          return;
-        }
-
-        blitzCdNum.textContent = String(n);
-        setTimeout(tick, stepMs);
+          }, 120);
+        }, 180);
+        return;
       }
 
+      blitzCdNum.textContent = String(n);
       setTimeout(tick, stepMs);
-    });
-  }
+    }
+
+    setTimeout(tick, stepMs);
+  });
+}
 
   // board helpers
 function initBoard(){
@@ -2926,15 +2952,18 @@ timerMs = 0;
         // Lock input during countdown
     locked = true;
 
-    waitForDrillFade()
-      .then(runBlitzCountdown)
-      .then(() => {
-        locked = false;
-        timeUp = false;
-        if (slots.length){
-          startDrill(0);
-        }
-      });
+primeBlitzCountdown();
+
+waitForDrillFade()
+  .then(runBlitzCountdown)
+  .then(() => {
+    locked = false;
+    timeUp = false;
+    if (slots.length){
+      startDrill(0);
+    }
+  });
+
 
     // Prevent the non-blitz start below
     return;
@@ -3195,13 +3224,16 @@ timerMs = 0;
                    // Lock input during countdown
           locked = true;
 
-          waitForDrillFade()
-            .then(runBlitzCountdown)
-            .then(() => {
-              locked = false;
-              timeUp = false;
-              startDrill(0);
-            });
+primeBlitzCountdown();
+
+waitForDrillFade()
+  .then(runBlitzCountdown)
+  .then(() => {
+    locked = false;
+    timeUp = false;
+    startDrill(0);
+  });
+
 
 
         } else {
