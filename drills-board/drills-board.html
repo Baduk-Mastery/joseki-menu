@@ -1467,14 +1467,43 @@ function ensureTimerEl(){
   }
 
   function stopTimer(){ if (timerId){ clearInterval(timerId); timerId=null; } }
+
+const _BLITZ_BG_URL = new URL('../img/notification.jpg', window.location.href).toString();
+let _blitzAssetsPromise = null;
+
+function ensureBlitzAssetsReady(){
+  if (_blitzAssetsPromise) return _blitzAssetsPromise;
+
+  _blitzAssetsPromise = new Promise((resolve) => {
+    const img = new Image();
+    const done = () => resolve();
+
+    img.onload = done;
+    img.onerror = done;
+    img.src = _BLITZ_BG_URL;
+
+    // Decode if supported (this is the key part)
+    if (img.decode) img.decode().then(done).catch(done);
+  });
+
+  return _blitzAssetsPromise;
+}
+
 function primeBlitzCountdown(){
   if (!blitzCdM || !blitzCdNum) return;
 
-  // Mount it so layout + background image decode happens while screen is black
+  ensureBlitzAssetsReady();
+
   blitzCdNum.textContent = String(BLITZ_COUNTDOWN_SECONDS);
   blitzCdM.style.display = 'flex';
-  blitzCdM.classList.remove('is-visible'); // stays fully transparent
+
+  blitzCdM.style.visibility = 'hidden';
+
+  blitzCdM.classList.remove('is-visible');
+
+  void blitzCdM.offsetHeight;
 }
+
 
   /* =========================
      Blitz countdown (3-2-1-Go)
@@ -1482,16 +1511,19 @@ function primeBlitzCountdown(){
   const BLITZ_COUNTDOWN_SECONDS = 3;
 
 function runBlitzCountdown(){
-  return new Promise(resolve => {
+  return ensureBlitzAssetsReady().then(() => new Promise(resolve => {
     if (!blitzCdM || !blitzCdNum){
       resolve();
       return;
     }
 
-    // Ensure it’s mounted (safe if already primed)
+    // Ensure it’s mounted/primed
     primeBlitzCountdown();
 
-    // Reveal on next frame (prevents any flash and avoids late paint)
+    // Make it eligible to be shown (still transparent until class toggles)
+    blitzCdM.style.visibility = 'visible';
+
+    // Reveal on next frame
     requestAnimationFrame(() => blitzCdM.classList.add('is-visible'));
 
     let n = BLITZ_COUNTDOWN_SECONDS;
@@ -1508,6 +1540,7 @@ function runBlitzCountdown(){
           blitzCdM.classList.remove('is-visible');
           setTimeout(() => {
             blitzCdM.style.display = 'none';
+            blitzCdM.style.visibility = 'hidden';
             resolve();
           }, 120);
         }, 180);
@@ -1519,7 +1552,7 @@ function runBlitzCountdown(){
     }
 
     setTimeout(tick, stepMs);
-  });
+  }));
 }
 
   // board helpers
@@ -2954,8 +2987,8 @@ timerMs = 0;
 
 primeBlitzCountdown();
 
-waitForDrillFade()
-  .then(runBlitzCountdown)
+Promise.all([ ensureBlitzAssetsReady(), waitForDrillFade() ])
+  .then(() => runBlitzCountdown())
   .then(() => {
     locked = false;
     timeUp = false;
@@ -3226,8 +3259,8 @@ timerMs = 0;
 
 primeBlitzCountdown();
 
-waitForDrillFade()
-  .then(runBlitzCountdown)
+Promise.all([ ensureBlitzAssetsReady(), waitForDrillFade() ])
+  .then(() => runBlitzCountdown())
   .then(() => {
     locked = false;
     timeUp = false;
