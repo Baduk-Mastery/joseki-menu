@@ -7,7 +7,8 @@
 <link rel="preload" href="../img/notification.jpg" as="image">
 
 <link rel="preload" href="../sound/click.mp3" as="audio">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+
 <style>
 /* Black reveal overlay (covers drills page on load, then fades away) */
 #drill-fade{
@@ -1481,6 +1482,24 @@ function ensureTimerEl(){
     // Force a layout/paint flush so it’s actually “loaded”
     void blitzCdM.offsetHeight;
   }
+// Warm everything up immediately (during the black fade) so nothing “pops” later.
+(function warmupNotifAssets(){
+  try{
+    // Force fetch + decode of the images used by your notif cards / wood UI
+    var urls = ['../img/notification.jpg', '../img/wood.jpg'];
+    urls.forEach(function(src){
+      var im = new Image();
+      im.src = src;
+      if (im.decode) im.decode().catch(function(){});
+    });
+  }catch(_){}
+
+  // Also prime the countdown DOM early so layout/paint happens under #drill-fade
+  try{
+    primeBlitzCountdown();
+  }catch(_){}
+})();
+
 
   function runBlitzCountdown(){
     return new Promise(resolve => {
