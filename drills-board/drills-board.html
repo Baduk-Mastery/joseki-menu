@@ -2745,46 +2745,44 @@ function startDrill(i, opts){
     locked = false;
   }
 
-  function onBoardClick(x,y){
-    if (isZoomAnimating) return; // NEW: block board clicks during zoom-in anim
-    if (locked || timeUp) return;
-    if (x<0 || y<0 || x>=SIZE) return;
-    if (grid[y][x] !== null) return;
-    if (!remain.length) return;
+function onBoardClick(x,y){
+  if (isZoomAnimating) return; // NEW: block board clicks during zoom-in anim
+  if (locked || timeUp) return;
+  if (x<0 || y<0 || x>=SIZE) return;
+  if (grid[y][x] !== null) return;
+  if (!remain.length) return;
 
-    if (x<0 || y<0 || x>=SIZE) return;
-    if (grid[y][x] !== null) return;
-    if (!remain.length) return;
+  const next = remain[0];
+  if (next.x === x && next.y === y){
 
-    const next = remain[0];
-    if (next.x === x && next.y === y){
-      playMove(x,y,next.color, false);
-      remain.shift();
-  if (blitzMode && remain.length){
-    redraw();
-  }
+    // IMPORTANT: consume the move BEFORE playMove(), so the redraw inside playMove()
+    // sees the updated remain[] and can draw the "A" marker immediately (even in zoom).
+    remain.shift();
 
-      if (!remain.length){
-        solvedCount++;
-        if (blitzMode){
-          timerMs += blitzCornerPlannedMoves * 750;
-          if (timerEl) timerEl.textContent = fmtMs(timerMs);
-        }
-        if (index >= (slots.length - 1)) {
-          showClearedThenDone();
-        } else {
-          showClearedAuto();
-        }
-      }
-    } else {
-      failedCount++;
+    playMove(x,y,next.color, false);
+
+    if (!remain.length){
+      solvedCount++;
       if (blitzMode){
-        showWrongThenRestart();
+        timerMs += blitzCornerPlannedMoves * 750;
+        if (timerEl) timerEl.textContent = fmtMs(timerMs);
+      }
+      if (index >= (slots.length - 1)) {
+        showClearedThenDone();
       } else {
-        showWrongAuto();
+        showClearedAuto();
       }
     }
+  } else {
+    failedCount++;
+    if (blitzMode){
+      showWrongThenRestart();
+    } else {
+      showWrongAuto();
+    }
   }
+}
+
 
   function showWrongThenRestart(){
     clearTimers();
