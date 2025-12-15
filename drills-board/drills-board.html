@@ -1464,40 +1464,62 @@ function ensureTimerEl(){
      ========================= */
   const BLITZ_COUNTDOWN_SECONDS = 3;
 
-  // NEW: render the countdown overlay during the black fade (warm-up),
-  // but keep it invisible and non-interactive until we're ready to start.
-  function primeBlitzCountdown(){
-    if (!blitzCdM || !blitzCdNum) return;
+function primeBlitzCountdown(){
+  if (!blitzCdM || !blitzCdNum) return;
 
-    // Ensure correct initial content and layout is ready
-    blitzCdNum.textContent = String(BLITZ_COUNTDOWN_SECONDS);
+  blitzCdNum.textContent = String(BLITZ_COUNTDOWN_SECONDS);
 
-    // Mount it so the browser can paint it (behind #drill-fade due to z-index)
-    blitzCdM.style.display = 'flex';
-
-    // Keep it invisible + non-blocking during fade
-    blitzCdM.style.opacity = '0';
-    blitzCdM.style.pointerEvents = 'none';
-
-    // Force a layout/paint flush so it’s actually “loaded”
-    void blitzCdM.offsetHeight;
-  }
-// Warm everything up immediately (during the black fade) so nothing “pops” later.
-(function warmupNotifAssets(){
+  // Only do the "force paint" trick while the black reveal overlay is still covering.
+  // (Prevents a faint 0.01 overlay ever being visible on Retry etc.)
+  var fade = document.getElementById('drill-fade');
+  var fadeCovers = false;
   try{
-    // Force fetch + decode of the images used by your notif cards / wood UI
-    var urls = ['../img/notification.jpg', '../img/wood.jpg'];
-    urls.forEach(function(src){
+    if (fade){
+      var op = parseFloat(getComputedStyle(fade).opacity || '1');
+      fadeCovers = !fade.classList.contains('is-hidden') || op > 0.5;
+    }
+  }catch(_){
+    fadeCovers = !!fade;
+  }
+  if (!fadeCovers) return;
+
+  // Force a real paint/rasterization (many browsers skip painting at opacity:0)
+  blitzCdM.style.display = 'flex';
+  blitzCdM.style.opacity = '0.01';          // tiny >0 => gets painted under the black fade
+  blitzCdM.style.pointerEvents = 'none';
+  blitzCdM.style.willChange = 'opacity';
+
+  var card = document.getElementById('blitz-countdown-card');
+  if (card){
+    card.style.transform = 'translateZ(0)';
+    card.style.willChange = 'opacity, transform';
+  }
+
+  void blitzCdM.offsetHeight; // flush
+}
+
+// One-time warmup: decode images + fonts, and (only during black fade) force-paint the countdown once.
+const blitzWarmupReady = (function warmupNotifAssets(){
+  var urls = ['../img/notification.jpg', '../img/wood.jpg'];
+
+  var decodes = urls.map(function(src){
+    try{
       var im = new Image();
       im.src = src;
-      if (im.decode) im.decode().catch(function(){});
-    });
-  }catch(_){}
+      return im.decode ? im.decode().catch(function(){}) : Promise.resolve();
+    }catch(_){
+      return Promise.resolve();
+    }
+  });
 
-  // Also prime the countdown DOM early so layout/paint happens under #drill-fade
-  try{
-    primeBlitzCountdown();
-  }catch(_){}
+  var fontsReady =
+    (document.fonts && document.fonts.ready)
+      ? document.fonts.ready.catch(function(){})
+      : Promise.resolve();
+
+  try{ primeBlitzCountdown(); }catch(_){}
+
+  return Promise.all(decodes.concat([fontsReady])).then(function(){});
 })();
 
 
@@ -2975,13 +2997,14 @@ timerMs = 0;
           // NEW: warm up the countdown overlay during the black fade
           primeBlitzCountdown();
 
-          waitForDrillFade()
-            .then(runBlitzCountdown)   // countdown starts ONLY after fade is fully gone
-            .then(() => {
-              locked = false;
-              timeUp = false;
-              startDrill(0);
-            });
+waitForDrillFade()
+  .then(() => blitzWarmupReady)
+  .then(runBlitzCountdown)
+  .then(() => {
+    locked = false;
+    timeUp = false;
+    startDrill(0);
+  });
 
 
     // Prevent the non-blitz start below
@@ -3246,15 +3269,17 @@ timerMs = 0;
     // NEW: warm up the countdown overlay during the black fade
     primeBlitzCountdown();
 
-    waitForDrillFade()
-      .then(runBlitzCountdown)
-      .then(() => {
-        locked = false;
-        timeUp = false;
-        if (slots.length){
-          startDrill(0);
-        }
-      });
+waitForDrillFade()
+  .then(() => blitzWarmupReady)
+  .then(runBlitzCountdown)
+  .then(() => {
+    locked = false;
+    timeUp = false;
+    if (slots.length){
+      startDrill(0);
+    }
+  });
+
 
 
         } else {
