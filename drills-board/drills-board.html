@@ -1165,6 +1165,129 @@ if (!window.StoneSFX) {
   }
   const ROT_IDX_ONLY = [0,2,4,6]; // pure rotations (corners)
 
+  function _ptStr(p){ return p.x + ',' + p.y; }
+  function _sortedPtsStr(arr){
+    return (arr || []).map(_ptStr).sort().join(';');
+  }
+
+  // Returns { key: canonicalPrefixKey, next: canonicalNextMoveStrOrNull }
+  // depth d means: moves[0..d-1] are in the prefix, next is moves[d] (if exists).
+  function canonicalPrefixAndNext(line, depth){
+    const S = line.size || 19;
+    const moves = line.moves || [];
+    const d = Math.max(0, Math.min(depth|0, moves.length));
+
+    // cache by your existing lineKey + depth
+    const ckey = lineKey(line) + '::d' + d;
+    const hit = canonCache.get(ckey);
+    if (hit) return hit;
+
+    const ORS = ORIENT_FUNCS(S);
+
+    let bestKey = null;
+    let bestNext = null;
+
+    for (let oi = 0; oi < 8; oi++){
+      const o = ORS[oi % ORS.length];
+      const tf = (p) => {
+        const t = o({x:p.x, y:p.y}, S);
+        return { x:t.x, y:t.y };
+      };
+
+      for (let swap = 0; swap < 2; swap++){
+        const doSwap = !!swap;
+
+        // roots (sorted so key is stable)
+        const ABt = (line.rootAB || []).map(tf);
+        const AWt = (line.rootAW || []).map(tf);
+
+        const abStr = _sortedPtsStr(doSwap ? AWt : ABt);
+        const awStr = _sortedPtsStr(doSwap ? ABt : AWt);
+
+        // prefix moves (in order)
+        let mvStr = '';
+        if (d > 0){
+          mvStr = moves.slice(0, d).map(m => {
+            const t = tf(m);
+            const c = doSwap ? (m.color === 'B' ? 'W' : 'B') : m.color;
+            return c[0] + ':' + t.x + ',' + t.y;
+          }).join('|');
+        }
+
+        const keyStr = S + '|AB:' + abStr + '|AW:' + awStr + '|M:' + mvStr;
+
+        if (bestKey === null || keyStr < bestKey){
+          bestKey = keyStr;
+
+          if (d < moves.length){
+            const nm = moves[d];
+            const t = tf(nm);
+            const c = doSwap ? (nm.color === 'B' ? 'W' : 'B') : nm.color;
+            bestNext = c[0] + ':' + t.x + ',' + t.y;
+          } else {
+            bestNext = null;
+          }
+        }
+      }
+    }
+
+    const out = { key: bestKey, next: bestNext };
+    canonCache.set(ckey, out);
+    return out;
+  }
+
+  function computeNextAbsIdxFromState(){
+    if (!currentTransformed || !remain) return null;
+    const moves = currentTransformed.moves || [];
+    const total = moves.length;
+    const startIdx = currentStartIndex || 0;
+    const playedCount = Math.max(0, total - startIdx - remain.length);
+    const nextAbsIdx = startIdx + playedCount;
+    if (nextAbsIdx < 0 || nextAbsIdx >= total) return null;
+    return nextAbsIdx;
+  }
+
+  // If nextAbsIdx is provided, uses it; otherwise derives from current state.
+  function shouldShowAmbiguityA(nextAbsIdx){
+    if (!activeBaseLines || activeBaseLines.length < 2) return false;
+    if (!currentBaseLine) return false;
+    if (!remain || !remain.length) return false;
+
+    const d = (typeof nextAbsIdx === 'number') ? nextAbsIdx : computeNextAbsIdxFromState();
+    if (d == null) return false;
+
+    const cur = canonicalPrefixAndNext(currentBaseLine, d);
+    if (!cur || !cur.next) return false;
+
+    const nextSet = new Set();
+
+    for (const line of activeBaseLines){
+      const info = canonicalPrefixAndNext(line, d);
+      if (!info) continue;
+      if (info.key === cur.key){
+        if (info.next) nextSet.add(info.next);
+        if (nextSet.size > 1) return true; // early exit: ambiguity confirmed
+      }
+    }
+    return false;
+  }
+
+  function drawAmbiguityMarkerComplete(){
+    if (blitzMode) return;
+    if (!board) return;
+    if (!remain || !remain.length) return;
+
+    if (!shouldShowAmbiguityA()) return;
+
+    const next = remain[0];
+    if (!next) return;
+    if (!inside(next.x, next.y)) return;
+
+    if (grid && grid[next.y] && grid[next.y][next.x] === null){
+      board.addObject({ x: next.x, y: next.y, type: 'LB', text: 'A' });
+    }
+  }
+
   // --- UI elements ---
   const wrap   = document.getElementById('go-board-drill-wrap');
   const mount  = document.getElementById('go-board-drill');
@@ -1253,8 +1376,16 @@ function getGridSpacing(){
   let index  = 0;                 // current slot
   let remain = [];                // remaining transformed moves
   let currentTransformed = null;
-let currentStartIndex = 0;
-let blitzDirectionalIdx = null;
+  let currentBaseLine = null;           // NEW: the untransformed base line for this drill
+  let currentStartIndex = 0;
+  let blitzDirectionalIdx = null;
+
+  // NEW: all unique selected base variations in the current run (for ambiguity checks)
+  let activeBaseLines = [];
+
+  // NEW: cache for canonical prefix computations (keyed by lineKey + depth)
+  const canonCache = new Map();
+
 
   // BLITZ flags + timer
   let blitzMode = false;
@@ -1496,7 +1627,9 @@ function redraw(){
 
 
   if (blitzMode) drawBlitzMarkers();
+  else drawAmbiguityMarkerComplete();
 }
+
 
 
 
@@ -1559,7 +1692,9 @@ function drawBlitzMarkers(){
 
   const shouldLabel =
     (nextAbsIdx === 0) ||
-    (dirIdx != null && nextAbsIdx === dirIdx);
+    (dirIdx != null && nextAbsIdx === dirIdx) ||
+    shouldShowAmbiguityA(nextAbsIdx); // NEW: only adds "A" at true branch ambiguity
+
 
   if (!shouldLabel) return;
 
@@ -2531,6 +2666,8 @@ function startDrill(i, opts){
   if (index >= slots.length){ showDone(); return; }
 
   const slot = slots[index], base = slot.base, key  = slot.key;
+  currentBaseLine = base; 
+
 
   SIZE = base.size || 19;
   if (!board) initBoard();
@@ -3027,6 +3164,10 @@ btnNext.addEventListener('click', function(){
 
       function go(lines){
         const usable = (lines||[]).filter(l => Array.isArray(l.moves) && l.moves.length >= MIN_MOVES).map(normalizeLineLike);
+     
+        activeBaseLines = usable.slice();
+        canonCache.clear();
+
         if (!usable.length){
           alert('No eligible drills (need patterns with 10+ moves).');
           return;
